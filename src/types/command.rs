@@ -1,35 +1,6 @@
-//! # 6. Client Commands
+//! Client Commands
 //!
-//! IMAP4rev1 commands are described in this section.  Commands are
-//! organized by the state in which the command is permitted.  Commands
-//! which are permitted in multiple states are listed in the minimum
-//! permitted state (for example, commands valid in authenticated and
-//! selected state are listed in the authenticated state commands).
-//!
-//! Command arguments, identified by "Arguments:" in the command
-//! descriptions below, are described by function, not by syntax.  The
-//! precise syntax of command arguments is described in the Formal Syntax
-//! section.
-//!
-//! Some commands cause specific server responses to be returned; these
-//! are identified by "Responses:" in the command descriptions below.
-//! See the response descriptions in the Responses section for
-//! information on these responses, and the Formal Syntax section for the
-//! precise syntax of these responses.  It is possible for server data to
-//! be transmitted as a result of any command.  Thus, commands that do
-//! not specifically require server data specify "no specific responses
-//! for this command" instead of "none".
-//!
-//! The "Result:" in the command description refers to the possible
-//! tagged status responses to a command, and any special interpretation
-//! of these status responses.
-//!
-//! The state of a connection is only changed by successful commands
-//! which are documented as changing state.  A rejected command (BAD
-//! response) never changes the state of the connection or of the
-//! selected mailbox.  A failed command (NO response) generally does not
-//! change the state of the connection or of the selected mailbox; the
-//! exception being the SELECT and EXAMINE commands.
+//! see https://tools.ietf.org/html/rfc3501#section-6
 
 use crate::{
     parse::datetime::DateTime,
@@ -73,10 +44,7 @@ impl Command {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CommandBody {
-    // ## 6.1. Client Commands - Any State
-    //
-    //    The following commands are valid in any state: CAPABILITY, NOOP, and
-    //    LOGOUT.
+    // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
     /// ### 6.1.1.  CAPABILITY Command
     ///
     /// * Arguments:  none
@@ -112,6 +80,8 @@ pub enum CommandBody {
     /// Experimental/Expansion" for information about the form of site or
     /// implementation-specific capabilities.
     ///
+    /// # Trace
+    ///
     /// ```text
     /// C: abcd CAPABILITY
     /// S: * CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI
@@ -142,6 +112,8 @@ pub enum CommandBody {
     /// preferred method to do this).  The NOOP command can also be used
     /// to reset any inactivity autologout timer on the server.
     ///
+    /// # Trace
+    ///
     /// ```text
     /// C: a002 NOOP
     /// S: a002 OK NOOP completed
@@ -168,6 +140,8 @@ pub enum CommandBody {
     /// before the (tagged) OK response, and then close the network
     /// connection.
     ///
+    /// # Trace
+    ///
     /// ```text
     /// C: A023 LOGOUT
     /// S: * BYE IMAP4rev1 Server logging out
@@ -176,35 +150,7 @@ pub enum CommandBody {
     /// ```
     Logout,
 
-    // ## 6.2.    Client Commands - Not Authenticated State
-    //
-    // In the not authenticated state, the AUTHENTICATE or LOGIN command
-    // establishes authentication and enters the authenticated state.  The
-    // AUTHENTICATE command provides a general mechanism for a variety of
-    // authentication techniques, privacy protection, and integrity
-    // checking; whereas the LOGIN command uses a traditional user name and
-    // plaintext password pair and has no means of establishing privacy
-    // protection or integrity checking.
-    //
-    // The STARTTLS command is an alternate form of establishing session
-    // privacy protection and integrity checking, but does not establish
-    // authentication or enter the authenticated state.
-    //
-    // Server implementations MAY allow access to certain mailboxes without
-    // establishing authentication.  This can be done by means of the
-    // ANONYMOUS [SASL] authenticator described in [ANONYMOUS].  An older
-    // convention is a LOGIN command using the userid "anonymous"; in this
-    // case, a password is required although the server may choose to accept
-    // any password.  The restrictions placed on anonymous users are
-    // implementation-dependent.
-    //
-    // Once authenticated (including as anonymous), it is not possible to
-    // re-enter not authenticated state.
-    //
-    // In addition to the universal commands (CAPABILITY, NOOP, and LOGOUT),
-    // the following commands are valid in the not authenticated state:
-    // STARTTLS, AUTHENTICATE and LOGIN.  See the Security Considerations
-    // section for important information about these commands.
+    // ----- Not Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.2) -----
     /// ### 6.2.1.  STARTTLS Command
     ///
     /// * Arguments:  none
@@ -415,17 +361,7 @@ pub enum CommandBody {
     ///   LOGINDISABLED capability is advertised.
     Login(AString, AString),
 
-    // ## 6.3.    Client Commands - Authenticated State
-    //
-    // In the authenticated state, commands that manipulate mailboxes as
-    // atomic entities are permitted.  Of these commands, the SELECT and
-    // EXAMINE commands will select a mailbox for access and enter the
-    // selected state.
-    //
-    // In addition to the universal commands (CAPABILITY, NOOP, and LOGOUT),
-    // the following commands are valid in the authenticated state: SELECT,
-    // EXAMINE, CREATE, DELETE, RENAME, SUBSCRIBE, UNSUBSCRIBE, LIST, LSUB,
-    // STATUS, and APPEND.
+    // ----- Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.3) -----
     /// ### 6.3.1.  SELECT Command
     ///
     /// * Arguments:  mailbox name
@@ -1109,16 +1045,7 @@ pub enum CommandBody {
     ///   envelope information.
     Append(Mailbox, Option<Vec<Flag>>, Option<DateTime>, Vec<u8>),
 
-    // ## 6.4.    Client Commands - Selected State
-    //
-    //    In the selected state, commands that manipulate messages in a mailbox
-    //    are permitted.
-    //
-    //    In addition to the universal commands (CAPABILITY, NOOP, and LOGOUT),
-    //    and the authenticated state commands (SELECT, EXAMINE, CREATE,
-    //    DELETE, RENAME, SUBSCRIBE, UNSUBSCRIBE, LIST, LSUB, STATUS, and
-    //    APPEND), the following commands are valid in the selected state:
-    //    CHECK, CLOSE, EXPUNGE, SEARCH, FETCH, STORE, COPY, and UID.
+    // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
     /// ### 6.4.1.  CHECK Command
     ///
     /// * Arguments:  none
@@ -1477,7 +1404,8 @@ pub enum CommandBody {
     /// ```
     Uid(CommandBodyUid),
 
-    // ## 6.5.    Client Commands - Experimental/Expansion
+    // ----- Experimental/Expansion (https://tools.ietf.org/html/rfc3501#section-6.5) -----
+
     // ### 6.5.1.  X<atom> Command
     //
     // * Arguments:  implementation defined
@@ -1497,6 +1425,8 @@ pub enum CommandBody {
     // send any such untagged responses, unless the client requested it
     // by issuing the associated experimental command.
     //
+    // # Trace
+    //
     // ```text
     // C: a441 CAPABILITY
     // S: * CAPABILITY IMAP4rev1 XPIG-LATIN
@@ -1506,7 +1436,7 @@ pub enum CommandBody {
     // S: A442 OK XPIG-LATIN ompleted-cay
     // ```
     //X,
-    /// Idle Extension (RFC 2177)
+    /// ----- Idle Extension (https://tools.ietf.org/html/rfc2177) -----
     Idle,
 }
 
@@ -1553,40 +1483,26 @@ pub enum CommandBodyUid {
     Store(Vec<Sequence>, StoreType, StoreResponse, Vec<Flag>),
 }
 
-/// The currently defined status data items that can be requested are:
+/// The currently defined status data items that can be requested.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StatusItem {
-    /// `MESSAGES`
-    ///
     /// The number of messages in the mailbox.
     Messages,
 
-    /// `RECENT`
-    ///
     /// The number of messages with the \Recent flag set.
     Recent,
 
-    /// `UIDNEXT`
-    ///
-    /// The next unique identifier value of the mailbox.  Refer to
-    /// section 2.3.1.1 for more information.
+    /// The next unique identifier value of the mailbox.
     UidNext,
 
-    /// `UIDVALIDITY`
-    ///
-    /// The unique identifier validity value of the mailbox.  Refer to
-    /// section 2.3.1.1 for more information.
+    /// The unique identifier validity value of the mailbox.
     UidValidity,
 
-    /// `UNSEEN`
-    ///
     /// The number of messages which do not have the \Seen flag set.
     Unseen,
 }
 
-/// The defined search keys are as follows.  Refer to the Formal
-/// Syntax section for the precise syntactic definitions of the
-/// arguments.
+/// The defined search keys.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SearchKey {
     // <Not in RFC.>
@@ -1601,173 +1517,134 @@ pub enum SearchKey {
     // See also the corresponding `search` parser.
     And(Vec<SearchKey>),
 
-    /// <sequence set>
-    ///    Messages with message sequence numbers corresponding to the
-    ///    specified message sequence number set.
+    /// Messages with message sequence numbers corresponding to the
+    /// specified message sequence number set.
     SequenceSet(Vec<Sequence>),
 
-    /// ALL
-    ///    All messages in the mailbox; the default initial key for
-    ///    ANDing.
+    /// All messages in the mailbox; the default initial key for ANDing.
     All,
 
-    /// ANSWERED
-    ///    Messages with the \Answered flag set.
+    /// Messages with the \Answered flag set.
     Answered,
 
-    /// BCC <string>
-    ///    Messages that contain the specified string in the envelope
-    ///    structure's BCC field.
+    /// Messages that contain the specified string in the envelope
+    /// structure's BCC field.
     Bcc(AString),
 
-    /// BEFORE <date>
-    ///   Messages whose internal date (disregarding time and timezone)
-    ///   is earlier than the specified date.
+    /// Messages whose internal date (disregarding time and timezone)
+    /// is earlier than the specified date.
     Before(NaiveDate),
 
-    /// BODY <string>
-    ///    Messages that contain the specified string in the body of the
-    ///    message.
+    /// Messages that contain the specified string in the body of the
+    /// message.
     Body(AString),
 
-    /// CC <string>
-    ///    Messages that contain the specified string in the envelope
-    ///    structure's CC field.
+    /// Messages that contain the specified string in the envelope
+    /// structure's CC field.
     Cc(AString),
 
-    /// DELETED
-    ///    Messages with the \Deleted flag set.
+    /// Messages with the \Deleted flag set.
     Deleted,
 
-    /// DRAFT
-    ///    Messages with the \Draft flag set.
+    /// Messages with the \Draft flag set.
     Draft,
 
-    /// FLAGGED
-    ///    Messages with the \Flagged flag set.
+    /// Messages with the \Flagged flag set.
     Flagged,
 
-    /// FROM <string>
-    ///    Messages that contain the specified string in the envelope
-    ///    structure's FROM field.
+    /// Messages that contain the specified string in the envelope
+    /// structure's FROM field.
     From(AString),
 
-    /// HEADER <field-name> <string>
-    ///    Messages that have a header with the specified field-name (as
-    ///    defined in [RFC-2822]) and that contains the specified string
-    ///    in the text of the header (what comes after the colon).  If the
-    ///    string to search is zero-length, this matches all messages that
-    ///    have a header line with the specified field-name regardless of
-    ///    the contents.
+    /// Messages that have a header with the specified field-name (as
+    /// defined in [RFC-2822]) and that contains the specified string
+    /// in the text of the header (what comes after the colon).  If the
+    /// string to search is zero-length, this matches all messages that
+    /// have a header line with the specified field-name regardless of
+    /// the contents.
     Header(AString, AString),
 
-    /// KEYWORD <flag>
-    ///    Messages with the specified keyword flag set.
+    /// Messages with the specified keyword flag set.
     Keyword(Keyword),
 
-    /// LARGER <n>
-    ///    Messages with an [RFC-2822] size larger than the specified
-    ///    number of octets.
+    /// Messages with an [RFC-2822] size larger than the specified
+    /// number of octets.
     Larger(u32),
 
-    /// NEW
-    ///    Messages that have the \Recent flag set but not the \Seen flag.
-    ///    This is functionally equivalent to "(RECENT UNSEEN)".
+    /// Messages that have the \Recent flag set but not the \Seen flag.
+    /// This is functionally equivalent to "(RECENT UNSEEN)".
     New,
 
-    /// NOT <search-key>
-    ///    Messages that do not match the specified search key.
+    /// Messages that do not match the specified search key.
     Not(Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
 
-    /// OLD
-    ///    Messages that do not have the \Recent flag set.  This is
-    ///    functionally equivalent to "NOT RECENT" (as opposed to "NOT
-    ///    NEW").
+    /// Messages that do not have the \Recent flag set.  This is
+    /// functionally equivalent to "NOT RECENT" (as opposed to "NOT
+    /// NEW").
     Old,
 
-    /// ON <date>
-    ///    Messages whose internal date (disregarding time and timezone)
-    ///    is within the specified date.
+    /// Messages whose internal date (disregarding time and timezone)
+    /// is within the specified date.
     On(NaiveDate),
 
-    /// OR <search-key1> <search-key2>
-    ///    Messages that match either search key.
+    /// Messages that match either search key.
     Or(Box<SearchKey>, Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
-
-    /// RECENT
-    ///    Messages that have the \Recent flag set.
     Recent,
 
-    /// SEEN
-    ///    Messages that have the \Seen flag set.
+    /// Messages that have the \Seen flag set.
     Seen,
 
-    /// SENTBEFORE <date>
-    ///    Messages whose [RFC-2822] Date: header (disregarding time and
-    ///    timezone) is earlier than the specified date.
+    /// Messages whose [RFC-2822] Date: header (disregarding time and
+    /// timezone) is earlier than the specified date.
     SentBefore(NaiveDate),
 
-    /// SENTON <date>
-    ///    Messages whose [RFC-2822] Date: header (disregarding time and
-    ///    timezone) is within the specified date.
+    /// Messages whose [RFC-2822] Date: header (disregarding time and
+    /// timezone) is within the specified date.
     SentOn(NaiveDate),
 
-    /// SENTSINCE <date>
-    ///    Messages whose [RFC-2822] Date: header (disregarding time and
-    ///    timezone) is within or later than the specified date.
+    /// Messages whose [RFC-2822] Date: header (disregarding time and
+    /// timezone) is within or later than the specified date.
     SentSince(NaiveDate),
 
-    /// SINCE <date>
-    ///    Messages whose internal date (disregarding time and timezone)
-    ///    is within or later than the specified date.
+    /// Messages whose internal date (disregarding time and timezone)
+    /// is within or later than the specified date.
     Since(NaiveDate),
 
-    /// SMALLER <n>
-    ///    Messages with an [RFC-2822] size smaller than the specified
-    ///    number of octets.
+    /// Messages with an [RFC-2822] size smaller than the specified
+    /// number of octets.
     Smaller(u32),
 
-    /// SUBJECT <string>
-    ///    Messages that contain the specified string in the envelope
-    ///    structure's SUBJECT field.
+    /// Messages that contain the specified string in the envelope
+    /// structure's SUBJECT field.
     Subject(AString),
 
-    /// TEXT <string>
-    ///    Messages that contain the specified string in the header or
-    ///    body of the message.
+    /// Messages that contain the specified string in the header or
+    /// body of the message.
     Text(AString),
 
-    /// TO <string>
-    ///    Messages that contain the specified string in the envelope
-    ///    structure's TO field.
+    /// Messages that contain the specified string in the envelope
+    /// structure's TO field.
     To(AString),
 
-    /// UID <sequence set>
-    ///    Messages with unique identifiers corresponding to the specified
-    ///    unique identifier set.  Sequence set ranges are permitted.
+    /// Messages with unique identifiers corresponding to the specified
+    /// unique identifier set.  Sequence set ranges are permitted.
     Uid(Vec<Sequence>),
 
-    /// UNANSWERED
-    ///    Messages that do not have the \Answered flag set.
+    /// Messages that do not have the \Answered flag set.
     Unanswered,
 
-    /// UNDELETED
-    ///    Messages that do not have the \Deleted flag set.
+    /// Messages that do not have the \Deleted flag set.
     Undeleted,
 
-    /// UNDRAFT
-    ///    Messages that do not have the \Draft flag set.
+    /// Messages that do not have the \Draft flag set.
     Undraft,
 
-    /// UNFLAGGED
-    ///    Messages that do not have the \Flagged flag set.
+    /// Messages that do not have the \Flagged flag set.
     Unflagged,
 
-    /// UNKEYWORD <flag>
-    ///    Messages that do not have the specified keyword flag set.
+    /// Messages that do not have the specified keyword flag set.
     Unkeyword(Keyword),
 
-    /// UNSEEN
-    ///    Messages that do not have the \Seen flag set.
+    /// Messages that do not have the \Seen flag set.
     Unseen,
 }
