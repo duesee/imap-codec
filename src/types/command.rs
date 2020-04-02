@@ -1589,6 +1589,8 @@ pub enum SearchKey {
 
     /// Messages that match either search key.
     Or(Box<SearchKey>, Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
+
+    /// Messages that have the \Recent flag set.
     Recent,
 
     /// Messages that have the \Seen flag set.
