@@ -292,3 +292,6 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 * [ ] charset
 * [x] tag
 
+# License
+
+This crate is dual-licensed under Apache 2.0 and MIT terms.
