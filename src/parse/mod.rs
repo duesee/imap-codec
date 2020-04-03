@@ -68,12 +68,6 @@ where
     }
 }
 
-pub fn _one_of<'a, Input: 'a, Error: nom::error::ParseError<Input>>(
-    _range: &[u8],
-) -> impl Fn(Input) -> IResult<Input, Input, Error> {
-    move |_i: Input| unimplemented!()
-}
-
 pub fn _range<'a, Input: 'a, Error: nom::error::ParseError<Input>>(
     _min: u8,
     _max: u8,
@@ -95,18 +89,6 @@ pub fn is_alpha(i: u8) -> bool {
 /// TODO: Also accepts "\n" only (without "\r".)
 pub fn crlf(input: &[u8]) -> IResult<&[u8], &[u8]> {
     line_ending(input)
-}
-
-pub fn is_ctl(i: u8) -> bool {
-    match i {
-        0x00..=0x1f => true,
-        _ => false,
-    }
-}
-
-/// CTL = %x00-1F / %x7F ; controls
-pub fn ctl(input: &[u8]) -> IResult<&[u8], u8> {
-    one(is_ctl)(input)
 }
 
 pub fn is_digit(i: u8) -> bool {
