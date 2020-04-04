@@ -1,17 +1,17 @@
-use crate::parse::{digit, dquote, sp};
-use chrono::NaiveDate;
+use crate::parse::{dquote, is_digit, sp};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{map, value},
-    multi::{count, many_m_n},
+    bytes::streaming::{tag, tag_no_case, take_while_m_n},
+    character::streaming::char,
+    combinator::{map, map_res, recognize, value},
     sequence::tuple,
     IResult,
 };
-use std::str::FromStr;
+use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
-pub fn date(input: &[u8]) -> IResult<&[u8], NaiveDate> {
+pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     let parser = alt((
         date_text,
         map(tuple((dquote, date_text, dquote)), |(_, date_text, _)| {
@@ -25,7 +25,7 @@ pub fn date(input: &[u8]) -> IResult<&[u8], NaiveDate> {
 }
 
 /// date-text = date-day "-" date-month "-" date-year
-pub fn date_text(input: &[u8]) -> IResult<&[u8], NaiveDate> {
+pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     let parser = tuple((
         date_day,
         tag_no_case(b"-"),
@@ -36,19 +36,22 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], NaiveDate> {
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
-    Ok((remaining, NaiveDate::from_ymd(y.into(), m.into(), d.into())))
+    Ok((
+        remaining,
+        NaiveDate::from_ymd_opt(y.into(), m.into(), d.into()),
+    ))
 }
 
 /// date-day = 1*2DIGIT ; Day of month
 pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = many_m_n(1, 2, digit);
+    let parser = map_res(
+        map_res(take_while_m_n(1, 2, is_digit), from_utf8),
+        str::parse::<u8>,
+    );
 
-    let (remaining, parsed_date_day) = parser(input)?;
+    let (remaining, date_day) = parser(input)?;
 
-    Ok((
-        remaining,
-        u8::from_str(&String::from_utf8(parsed_date_day).unwrap()).unwrap(),
-    ))
+    Ok((remaining, date_day))
 }
 
 /// date-month = "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" / "Jul" / "Aug" / "Sep" / "Oct" / "Nov" / "Dec"
@@ -75,41 +78,45 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 
 /// date-year = 4DIGIT
 pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
-    let parser = count(digit, 4);
+    let parser = map_res(
+        map_res(take_while_m_n(4, 4, is_digit), from_utf8),
+        str::parse::<u16>,
+    );
 
-    let (remaining, parsed_date_year) = parser(input)?;
+    let (remaining, year) = parser(input)?;
 
-    Ok((
-        remaining,
-        u16::from_str(&String::from_utf8(parsed_date_year).unwrap()).unwrap(),
-    ))
+    Ok((remaining, year))
 }
 
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; Hours minutes seconds
-pub fn time(input: &[u8]) -> IResult<&[u8], (u8, u8, u8)> {
+pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let parser = tuple((
-        map(count(digit, 2), |h| {
-            u8::from_str(&String::from_utf8(h).unwrap()).unwrap()
-        }),
+        map_res(
+            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            str::parse::<u8>,
+        ),
         tag(b":"),
-        map(count(digit, 2), |m| {
-            u8::from_str(&String::from_utf8(m).unwrap()).unwrap()
-        }),
+        map_res(
+            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            str::parse::<u8>,
+        ),
         tag(b":"),
-        map(count(digit, 2), |s| {
-            u8::from_str(&String::from_utf8(s).unwrap()).unwrap()
-        }),
+        map_res(
+            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            str::parse::<u8>,
+        ),
     ));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
 
-    Ok((remaining, (h, m, s)))
+    Ok((
+        remaining,
+        NaiveTime::from_hms_opt(h.into(), m.into(), s.into()),
+    ))
 }
 
-pub type DateTime = ((u8, u8, u16), (u8, u8, u8), String);
-
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
-pub fn date_time(input: &[u8]) -> IResult<&[u8], ((u8, u8, u16), (u8, u8, u8), String)> {
+pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
     let parser = tuple((
         dquote,
         date_day_fixed,
@@ -126,19 +133,29 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], ((u8, u8, u16), (u8, u8, u8), S
 
     let (remaining, (_, d, _, m, _, y, _, time, _, zone, _)) = parser(input)?;
 
-    Ok((remaining, ((d, m, y), time, zone)))
+    let date = NaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
+
+    match (date, time, zone) {
+        (Some(date), Some(time), Some(zone)) => Ok((
+            remaining,
+            Some(DateTime::from_utc(NaiveDateTime::new(date, time), zone)),
+        )),
+        _ => Ok((remaining, None)),
+    }
 }
 
 /// date-day-fixed = (SP DIGIT) / 2DIGIT ; Fixed-format version of date-day
 pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = alt((
-        map(tuple((sp, digit)), |(_, day)| {
-            u8::from_str(&String::from_utf8(vec![day]).unwrap()).unwrap()
-        }),
-        map(count(digit, 2), |raw| {
-            u8::from_str(&String::from_utf8(raw).unwrap()).unwrap()
-        }),
-    ));
+    let parser = map_res(
+        map_res(
+            alt((
+                recognize(tuple((sp, take_while_m_n(1, 1, is_digit)))),
+                take_while_m_n(2, 2, is_digit),
+            )),
+            |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()),
+        ),
+        str::parse::<u8>,
+    );
 
     let (remaining, parsed_date_day_fixed) = parser(input)?;
 
@@ -152,18 +169,30 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
 ///          ; Universal Time).  Subtracting the timezone
 ///          ; from the given time will give the UT form.
 ///          ; The Universal Time zone is "+0000".
-pub fn zone(input: &[u8]) -> IResult<&[u8], String> {
+pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let parser = tuple((
-        alt((
-            value(String::from("+"), tag(b"+")),
-            value(String::from("-"), tag(b"-")),
-        )),
-        map(count(digit, 4), |raw| String::from_utf8(raw).unwrap()),
+        alt((char('+'), char('-'))),
+        map_res(
+            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            str::parse::<i32>,
+        ),
+        map_res(
+            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            str::parse::<i32>,
+        ),
     ));
 
-    let (remaining, (sign, hhmm)) = parser(input)?;
+    let (remaining, (sign, hh, mm)) = parser(input)?;
 
-    Ok((remaining, sign + &hhmm))
+    let offset = 3600 * hh + 60 * mm;
+
+    let zone = match sign {
+        '+' => FixedOffset::east_opt(offset),
+        '-' => FixedOffset::west_opt(offset),
+        _ => unreachable!(),
+    };
+
+    Ok((remaining, zone))
 }
 
 #[cfg(test)]
@@ -174,22 +203,22 @@ mod test {
     fn test_date() {
         let (rem, val) = date(b"1-Feb-2020xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
     }
 
     #[test]
     fn test_date_text() {
         let (rem, val) = date_text(b"1-Feb-2020").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, NaiveDate::from_ymd(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
     }
 
     #[test]
@@ -201,6 +230,10 @@ mod test {
         let (rem, val) = date_day(b"01xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(val, 1);
+
+        let (rem, val) = date_day(b"999xxx").unwrap();
+        assert_eq!(rem, b"9xxx");
+        assert_eq!(val, 99);
     }
 
     #[test]
@@ -246,46 +279,68 @@ mod test {
 
     #[test]
     fn test_time() {
-        let (rem, val) = time(b"00:00:00xxx").unwrap();
+        assert!(time(b"1:34:56xxx").is_err());
+        assert!(time(b"12:3:56xxx").is_err());
+        assert!(time(b"12:34:5xxx").is_err());
+
+        let (rem, val) = time(b"12:34:56xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, (0, 0, 0));
+        assert_eq!(val, NaiveTime::from_hms_opt(12, 34, 56));
 
         let (rem, val) = time(b"99:99:99 ").unwrap();
         assert_eq!(rem, b" ");
-        assert_eq!(val, (99, 99, 99));
+        assert_eq!(val, NaiveTime::from_hms_opt(99, 99, 99));
 
-        let (rem, val) = time(b"00:00:00").unwrap();
+        let (rem, val) = time(b"12:34:56").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, (0, 0, 0));
+        assert_eq!(val, NaiveTime::from_hms_opt(12, 34, 56));
 
         let (rem, val) = time(b"99:99:99").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, (99, 99, 99));
+        assert_eq!(val, NaiveTime::from_hms_opt(99, 99, 99));
     }
 
     #[test]
     fn test_date_time() {
         let (rem, val) = date_time(b"\" 1-Feb-1985 12:34:56 +0100\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, ((1, 2, 1985), (12, 34, 56), String::from("+0100")));
+        assert_eq!(
+            val,
+            Some(DateTime::from_utc(
+                NaiveDateTime::new(
+                    NaiveDate::from_ymd(1985, 2, 1),
+                    NaiveTime::from_hms(12, 34, 56)
+                ),
+                FixedOffset::east(3600)
+            ))
+        );
     }
 
     #[test]
     fn test_zone() {
         let (rem, val) = zone(b"+0000xxx").unwrap();
+        eprintln!("{:?}", val);
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, "+0000");
+        assert_eq!(val, FixedOffset::east_opt(0));
 
         let (rem, val) = zone(b"+0000").unwrap();
+        eprintln!("{:?}", val);
         assert_eq!(rem, b"");
-        assert_eq!(val, "+0000");
+        assert_eq!(val, FixedOffset::east_opt(0));
 
-        let (rem, val) = zone(b"-9999xxx").unwrap();
+        let (rem, val) = zone(b"-0205xxx").unwrap();
+        eprintln!("{:?}", val);
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, "-9999");
+        assert_eq!(val, FixedOffset::west_opt(2 * 3600 + 5 * 60));
 
-        let (rem, val) = zone(b"-9999").unwrap();
+        let (rem, val) = zone(b"-1159").unwrap();
+        eprintln!("{:?}", val);
         assert_eq!(rem, b"");
-        assert_eq!(val, "-9999");
+        assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
+
+        let (rem, val) = zone(b"-1159").unwrap();
+        eprintln!("{:?}", val);
+        assert_eq!(rem, b"");
+        assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
     }
 }

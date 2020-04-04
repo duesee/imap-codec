@@ -26,8 +26,7 @@ use crate::{
 use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,
-    combinator::value,
-    combinator::{map, opt},
+    combinator::{map, map_opt, opt, value},
     multi::{many1, separated_list, separated_nonempty_list},
     sequence::tuple,
     IResult,
@@ -106,7 +105,13 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     Ok((
         remaining,
-        CommandBody::Append(mailbox, flag_list, date_time, literal.to_vec()),
+        // FIXME: do not use unwrap()
+        CommandBody::Append(
+            mailbox,
+            flag_list,
+            date_time.map(|maybe_date| maybe_date.unwrap()),
+            literal.to_vec(),
+        ),
     ))
 }
 
@@ -516,9 +521,10 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
             map(tuple((tag_no_case(b"BCC"), sp, astring)), |(_, _, val)| {
                 SearchKey::Bcc(val)
             }),
-            map(tuple((tag_no_case(b"BEFORE"), sp, date)), |(_, _, date)| {
-                SearchKey::Before(date)
-            }),
+            map(
+                tuple((tag_no_case(b"BEFORE"), sp, map_opt(date, |date| date))),
+                |(_, _, date)| SearchKey::Before(date),
+            ),
             map(tuple((tag_no_case(b"BODY"), sp, astring)), |(_, _, val)| {
                 SearchKey::Body(val)
             }),
@@ -536,14 +542,16 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
             value(SearchKey::Old, tag_no_case(b"OLD")),
-            map(tuple((tag_no_case(b"ON"), sp, date)), |(_, _, date)| {
-                SearchKey::On(date)
-            }),
+            map(
+                tuple((tag_no_case(b"ON"), sp, map_opt(date, |date| date))),
+                |(_, _, date)| SearchKey::On(date),
+            ),
             value(SearchKey::Recent, tag_no_case(b"RECENT")),
             value(SearchKey::Seen, tag_no_case(b"SEEN")),
-            map(tuple((tag_no_case(b"SINCE"), sp, date)), |(_, _, date)| {
-                SearchKey::Since(date)
-            }),
+            map(
+                tuple((tag_no_case(b"SINCE"), sp, map_opt(date, |date| date))),
+                |(_, _, date)| SearchKey::Since(date),
+            ),
             map(
                 tuple((tag_no_case(b"SUBJECT"), sp, astring)),
                 |(_, _, val)| SearchKey::Subject(val),
@@ -582,14 +590,15 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
                 |(_, _, alt1, _, alt2)| SearchKey::Or(Box::new(alt1), Box::new(alt2)),
             ),
             map(
-                tuple((tag_no_case(b"SENTBEFORE"), sp, date)),
+                tuple((tag_no_case(b"SENTBEFORE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentBefore(date),
             ),
-            map(tuple((tag_no_case(b"SENTON"), sp, date)), |(_, _, date)| {
-                SearchKey::SentOn(date)
-            }),
             map(
-                tuple((tag_no_case(b"SENTSINCE"), sp, date)),
+                tuple((tag_no_case(b"SENTON"), sp, map_opt(date, |date| date))),
+                |(_, _, date)| SearchKey::SentOn(date),
+            ),
+            map(
+                tuple((tag_no_case(b"SENTSINCE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentSince(date),
             ),
             map(

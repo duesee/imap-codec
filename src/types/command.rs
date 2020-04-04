@@ -2,18 +2,15 @@
 //!
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
-use crate::{
-    parse::datetime::DateTime,
-    types::{
-        core::AString,
-        data_items::MacroOrDataItems,
-        mailbox::{Mailbox, MailboxWithWildcards},
-        message_attributes::{Flag, Keyword},
-        response::{Code, Status},
-        AuthMechanism, Sequence, StoreResponse, StoreType,
-    },
+use crate::types::{
+    core::AString,
+    data_items::MacroOrDataItems,
+    mailbox::{Mailbox, MailboxWithWildcards},
+    message_attributes::{Flag, Keyword},
+    response::{Code, Status},
+    AuthMechanism, Sequence, StoreResponse, StoreType,
 };
-use chrono::NaiveDate;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 
 #[derive(Debug, PartialEq)]
 pub struct Command {
@@ -1043,7 +1040,12 @@ pub enum CommandBody {
     ///   Note: The APPEND command is not used for message delivery,
     ///   because it does not provide a mechanism to transfer [SMTP]
     ///   envelope information.
-    Append(Mailbox, Option<Vec<Flag>>, Option<DateTime>, Vec<u8>),
+    Append(
+        Mailbox,
+        Option<Vec<Flag>>,
+        Option<DateTime<FixedOffset>>,
+        Vec<u8>,
+    ),
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
     /// ### 6.4.1.  CHECK Command
