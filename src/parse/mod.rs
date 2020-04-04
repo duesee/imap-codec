@@ -98,17 +98,12 @@ pub fn crlf(input: &[u8]) -> IResult<&[u8], &[u8]> {
     line_ending(input)
 }
 
-pub fn is_digit(i: u8) -> bool {
-    match i {
+/// DIGIT = %x30-39 ; 0-9
+pub fn is_digit(byte: u8) -> bool {
+    match byte {
         b'0'..=b'9' => true,
         _ => false,
     }
-}
-
-/// DIGIT = %x30-39 ; 0-9
-/// FIXME: this function returns u8 as ascii
-pub fn digit(input: &[u8]) -> IResult<&[u8], u8> {
-    one(is_digit)(input)
 }
 
 /// DQUOTE = %x22 ; " (Double Quote)

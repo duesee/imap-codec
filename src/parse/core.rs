@@ -1,5 +1,5 @@
 use crate::{
-    parse::{crlf, dquote, is_digit, one},
+    parse::{crlf, dquote, one},
     types::core::{AString, Atom, NString, Nil, String as IMAPString},
 };
 use nom::{
@@ -43,12 +43,11 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
 }
 
 /// digit-nz = %x31-39 ; 1-9
-pub fn digit_nz(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = one(|c| is_digit(c) && c != 0);
-
-    let (remaining, parsed_digit_nz) = parser(input)?;
-
-    Ok((remaining, parsed_digit_nz))
+pub fn is_digit_nz(byte: u8) -> bool {
+    match byte {
+        b'1'..=b'9' => true,
+        _ => false,
+    }
 }
 
 // ----- string -----
