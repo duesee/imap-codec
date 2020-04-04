@@ -30,10 +30,17 @@ use crate::{
     types::core::Atom,
 };
 use nom::{
-    branch::alt, bytes::streaming::tag as nom_tag, bytes::streaming::take_while1,
-    character::streaming::line_ending, combinator::map, error::ParseError, Err, Err::Incomplete,
+    branch::alt,
+    bytes::streaming::tag as nom_tag,
+    bytes::streaming::take_while1,
+    character::streaming::line_ending,
+    combinator::{map, map_res},
+    error::ParseError,
+    Err,
+    Err::Incomplete,
     IResult, Needed,
 };
+use std::str::from_utf8;
 
 pub mod address;
 pub mod base64;
@@ -135,10 +142,10 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
 }
 
 /// tag = 1*<any ASTRING-CHAR except "+">
-pub fn tag(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = take_while1(|b| is_astring_char(b) && b != b'+');
+pub fn tag(input: &[u8]) -> IResult<&[u8], &str> {
+    let parser = map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8);
 
-    let (remaining, parsed_tag_) = parser(input)?;
+    let (remaining, tag) = parser(input)?;
 
-    Ok((remaining, String::from_utf8(parsed_tag_.to_vec()).unwrap()))
+    Ok((remaining, tag))
 }

@@ -45,7 +45,7 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
 
     let (remaining, (tag, _, command_body, _)) = parser(input)?;
 
-    Ok((remaining, Command::new(&tag, command_body)))
+    Ok((remaining, Command::new(tag, command_body)))
 }
 
 /// # Command Any
