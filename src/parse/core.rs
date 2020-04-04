@@ -1,17 +1,17 @@
 use crate::{
-    parse::{crlf, digit, dquote, is_digit, one},
+    parse::{crlf, dquote, is_digit, one},
     types::core::{AString, Atom, NString, Nil, String as IMAPString},
 };
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while1},
     character::streaming::digit1,
-    combinator::{map, value},
+    combinator::{map, map_res, value},
     error::ErrorKind,
-    multi::many0,
     sequence::tuple,
     IResult,
 };
+use std::str::from_utf8;
 
 // ----- number -----
 
@@ -19,36 +19,27 @@ use nom::{
 ///           ; Unsigned 32-bit integer
 ///           ; (0 <= n < 4,294,967,296)
 pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
-    use std::str::FromStr;
+    let parser = map_res(map_res(digit1, from_utf8), str::parse::<u32>);
 
-    map(digit1, |value: &[u8]| {
-        let number = String::from_utf8(value.to_vec()).unwrap();
-        u32::from_str(&number).unwrap()
-    })(input)
+    let (remaining, number) = parser(input)?;
+
+    Ok((remaining, number))
 }
 
 /// nz-number = digit-nz *DIGIT
 ///              ; Non-zero unsigned 32-bit integer
 ///              ; (0 < n < 4,294,967,296)
 pub fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
-    let parser = alt((
-        map(tuple((tag(b"-"), digit_nz, many0(digit))), |_| {
-            (b'0', vec![])
-        }), // FIXME: hack for Outlook for Android (and probably others). Allow negative UIDs?
-        tuple((digit_nz, many0(digit))),
-    ));
+    let (remaining, number) = number(input)?;
 
-    let (remaining, (first, tail)) = parser(input)?;
+    if number == 0 {
+        return Err(nom::Err::Error(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::Verify,
+        )));
+    }
 
-    let mut all = vec![first];
-    all.extend_from_slice(&tail);
-    let all = all
-        .iter()
-        .map(|c| format!("{}", *c as char))
-        .collect::<Vec<String>>()
-        .join("");
-
-    Ok((remaining, str::parse::<u32>(&all).unwrap()))
+    Ok((remaining, number))
 }
 
 /// digit-nz = %x31-39 ; 1-9
@@ -251,6 +242,26 @@ mod test {
     //fn test_quoted_specials() {
     //    unimplemented!();
     //}
+
+    #[test]
+    fn test_number() {
+        assert!(number(b"").is_err());
+        assert!(number(b"?").is_err());
+
+        assert!(number(b"0?").is_ok());
+        assert!(number(b"55?").is_ok());
+        assert!(number(b"999?").is_ok());
+    }
+
+    #[test]
+    fn test_nz_number() {
+        assert!(number(b"").is_err());
+        assert!(number(b"?").is_err());
+
+        assert!(nz_number(b"0?").is_err());
+        assert!(nz_number(b"55?").is_ok());
+        assert!(nz_number(b"999?").is_ok());
+    }
 
     #[test]
     fn test_literal() {

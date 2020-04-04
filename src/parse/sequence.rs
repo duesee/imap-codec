@@ -98,8 +98,8 @@ mod test {
 
     #[test]
     fn test_seq_number() {
-        let (rem, val) = seq_number(b"0?").unwrap();
-        println!("{:?}, {:?}", rem, val);
+        // Must not be 0.
+        assert!(seq_number(b"0?").is_err());
 
         let (rem, val) = seq_number(b"1?").unwrap();
         println!("{:?}, {:?}", rem, val);
@@ -110,13 +110,16 @@ mod test {
 
     #[test]
     fn test_seq_range() {
+        // Must not be 0.
+        assert!(seq_range(b"0:1?").is_err());
+
         assert_eq!(
-            (SeqNo::Value(0), SeqNo::Value(1)),
-            seq_range(b"0:1?").unwrap().1
+            (SeqNo::Value(1), SeqNo::Value(2)),
+            seq_range(b"1:2?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Value(0), SeqNo::Unlimited),
-            seq_range(b"0:*?").unwrap().1
+            (SeqNo::Value(1), SeqNo::Unlimited),
+            seq_range(b"1:*?").unwrap().1
         );
         assert_eq!(
             (SeqNo::Unlimited, SeqNo::Value(10)),
