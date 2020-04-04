@@ -35,10 +35,7 @@ use nom::{
     bytes::streaming::take_while1,
     character::streaming::line_ending,
     combinator::{map, map_res},
-    error::ParseError,
-    Err,
-    Err::Incomplete,
-    IResult, Needed,
+    IResult,
 };
 use std::str::from_utf8;
 
@@ -57,30 +54,6 @@ pub mod response;
 pub mod section;
 pub mod sequence;
 pub mod status;
-
-pub fn one<'a, F, Error: ParseError<&'a [u8]>>(
-    cond: F,
-) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], u8, Error>
-where
-    F: Fn(u8) -> bool,
-{
-    move |i| {
-        if i.is_empty() {
-            Err(Incomplete(Needed::Size(1)))
-        } else if cond(i[0]) {
-            Ok((&i[1..], i[0]))
-        } else {
-            Err(Err::Error(Error::from_char(i, i[0] as char)))
-        }
-    }
-}
-
-pub fn _range<'a, Input: 'a, Error: nom::error::ParseError<Input>>(
-    _min: u8,
-    _max: u8,
-) -> impl Fn(Input) -> IResult<Input, Input, Error> {
-    move |_i: Input| unimplemented!()
-}
 
 // ----- Required ABNF Core Rules (RFC5234 B.1.) -----
 

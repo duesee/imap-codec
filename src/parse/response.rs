@@ -1,6 +1,7 @@
+use crate::parse::core::is_text_char;
 use crate::{
     parse::{
-        _range, auth_type,
+        auth_type,
         base64::base64,
         charset,
         core::{atom, nz_number, text},
@@ -12,11 +13,12 @@ use crate::{
     },
     types::response::{Code, Continuation},
 };
+use nom::bytes::complete::take_while1;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
-    multi::{many0, many1},
+    multi::many0,
     sequence::tuple,
     IResult,
 };
@@ -80,8 +82,7 @@ pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, String)> {
 ///                  "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
 ///                  "UIDNEXT" SP nz-number / "UIDVALIDITY" SP nz-number /
 ///                  "UNSEEN" SP nz-number /
-///                  atom [SP 1*(%x01-09 / %x0B-0C / %x0E-5C / %x5E-7F)]
-///                   ; mod: was atom [SP 1*<any TEXT-CHAR except "]">]
+///                  atom [SP 1*<any TEXT-CHAR except "]">]
 fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
     let parser = alt((
         map(tag_no_case(b"ALERT"), |_| unimplemented!()),
@@ -130,12 +131,7 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                 atom,
                 opt(tuple((
                     sp,
-                    many1(alt((
-                        map(_range(0x01, 0x09), |_| unimplemented!()),
-                        map(_range(0x0b, 0x0c), |_| unimplemented!()),
-                        map(_range(0x0e, 0x5c), |_| unimplemented!()),
-                        map(_range(0x5e, 0x7f), |_| unimplemented!()),
-                    ))),
+                    take_while1(|byte| is_text_char(byte) && byte != b'"'),
                 ))),
             )),
             |_| unimplemented!(),
