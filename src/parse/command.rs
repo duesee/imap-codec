@@ -285,7 +285,7 @@ pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
 
     let (remaining, parsed_authenticate_data) = parser(input)?;
 
-    Ok((remaining, parsed_authenticate_data))
+    Ok((remaining, parsed_authenticate_data.to_owned()))
 }
 
 /// # Command Select

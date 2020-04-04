@@ -238,7 +238,7 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
         sp,
         alt((
             map(resp_text, |(code, text)| Continuation::Basic { code, text }),
-            map(base64, Continuation::Base64),
+            map(base64, |str| Continuation::Base64(str.to_owned())),
         )),
         crlf,
     ));

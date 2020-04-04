@@ -90,7 +90,7 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 ## Base64
 
 * [x] base64
-* [ ] base64-char
+* [x] base64-char
 * [ ] base64-terminal
 
 ## Body
