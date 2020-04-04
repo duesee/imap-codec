@@ -127,8 +127,8 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], Atom> {
 /// errata id: 261
 pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
     let parser = alt((
-        map(atom, |val| val.0), // TODO: really make a std::string::String out of newtype Atom?
-        quoted,                 // TODO: quoted is already a std::string::String
+        map(atom, |val| val.0), // FIXME: just take String from Atom?
+        map(quoted, |cow_str| cow_str.to_owned().to_string()), // TODO: is this correct?
     ));
 
     let (remaining, charset) = parser(input)?;

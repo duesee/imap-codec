@@ -1,16 +1,17 @@
 use crate::{
-    parse::{crlf, dquote, one},
+    parse::{crlf, dquote},
     types::core::{AString, Atom, NString, Nil, String as IMAPString},
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{escaped, tag, tag_no_case, take, take_while1},
-    character::streaming::digit1,
+    bytes::streaming::{escaped, tag, tag_no_case, take, take_while1, take_while_m_n},
+    character::streaming::{digit1, one_of},
     combinator::{map, map_res, value},
     error::ErrorKind,
     sequence::tuple,
     IResult,
 };
+use std::borrow::Cow;
 use std::str::from_utf8;
 
 // ----- number -----
@@ -55,8 +56,10 @@ pub fn is_digit_nz(byte: u8) -> bool {
 /// string = quoted / literal
 pub fn string(input: &[u8]) -> IResult<&[u8], IMAPString> {
     let parser = alt((
-        map(quoted, IMAPString::Quoted),
-        map(literal, |bytes| IMAPString::Literal(bytes.to_vec())),
+        map(quoted, |cow_str| {
+            IMAPString::Quoted(cow_str.to_owned().to_string())
+        }), // TODO: is this correct?
+        map(literal, |bytes| IMAPString::Literal(bytes.to_owned())),
     ));
 
     let (remaining, parsed_string) = parser(input)?;
@@ -65,50 +68,72 @@ pub fn string(input: &[u8]) -> IResult<&[u8], IMAPString> {
 }
 
 /// quoted = DQUOTE *QUOTED-CHAR DQUOTE
-pub fn quoted(input: &[u8]) -> IResult<&[u8], String> {
+///
+/// This function only allocates a new String, when needed, i.e. when
+/// quoted chars need to be replaced.
+pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
     let parser = tuple((
         dquote,
-        escaped(one(is_quoted_char_inner), '\\', quoted_specials),
+        map_res(
+            escaped(
+                take_while1(is_any_text_char_except_quoted_specials),
+                '\\',
+                one_of("\\\""),
+            ),
+            from_utf8,
+        ),
         dquote,
     ));
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    Ok((remaining, String::from_utf8(quoted.to_vec()).unwrap()))
-}
+    let mut quoted = Cow::Borrowed(quoted);
 
-pub fn is_quoted_char_inner(c: u8) -> bool {
-    match c {
-        0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x21 | 0x23..=0x5b | 0x5d..=0x7f => true,
-        _ => false,
+    if quoted.contains("\\\\") {
+        quoted = Cow::Owned(quoted.replace("\\\\", "\\"))
     }
+
+    if quoted.contains("\\\"") {
+        quoted = Cow::Owned(quoted.replace("\\\"", "\""))
+    }
+
+    Ok((remaining, quoted))
 }
 
-/// QUOTED-CHAR = (%x01-09 / %x0B-0C / %x0E-21 / %x23-5B / %x5D-7F) / "\" quoted-specials
-///                 ; mod: was <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
-pub fn quoted_char(input: &[u8]) -> IResult<&[u8], String> {
+/// QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
+pub fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
     let parser = alt((
-        map(one(is_quoted_char_inner), |c| format!("{}", c)),
-        map(tuple((tag(b"\\"), quoted_specials)), |(bs, qs)| {
-            let mut val = Vec::new();
-            val.extend_from_slice(bs);
-            val.extend_from_slice(qs);
-            String::from_utf8(val).unwrap()
-        }),
+        map(
+            take_while_m_n(1, 1, is_any_text_char_except_quoted_specials),
+            |bytes: &[u8]| {
+                assert_eq!(bytes.len(), 1);
+                bytes[0] as char
+            },
+        ),
+        map(
+            tuple((
+                tag_no_case("\\"),
+                take_while_m_n(1, 1, |byte| is_quoted_specials(byte)),
+            )),
+            |(_, bytes): (_, &[u8])| {
+                assert_eq!(bytes.len(), 1);
+                bytes[0] as char
+            },
+        ),
     ));
 
-    let (_remaining, _parsed_quoted_char) = parser(input)?;
+    let (remaining, quoted_char) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, quoted_char))
+}
+
+fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
+    is_text_char(byte) && !is_quoted_specials(byte)
 }
 
 /// quoted-specials = DQUOTE / "\"
-pub fn quoted_specials(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = alt((dquote, tag(b"\\")));
-
-    let (remaining, parsed_quoted_specials) = parser(input)?;
-
-    Ok((remaining, parsed_quoted_specials))
+pub fn is_quoted_specials(byte: u8) -> bool {
+    byte == b'"' || byte == b'\\'
 }
 
 /// literal = "{" number "}" CRLF *CHAR8
@@ -202,6 +227,29 @@ pub fn nil(input: &[u8]) -> IResult<&[u8], Nil> {
     Ok((remaining, parsed_nil))
 }
 
+// ----- text -----
+
+/// text = 1*TEXT-CHAR
+pub fn text(input: &[u8]) -> IResult<&[u8], String> {
+    let parser = take_while1(is_text_char);
+
+    let (remaining, parsed_text) = parser(input)?;
+
+    Ok((
+        remaining,
+        String::from_utf8(parsed_text.to_owned()).unwrap(),
+    ))
+}
+
+/// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F
+///               ; mod: was <any CHAR except CR and LF>
+pub fn is_text_char(c: u8) -> bool {
+    match c {
+        0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f => true,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -220,27 +268,31 @@ mod test {
         assert_eq!(rem, b" yyy");
     }
 
-    //#[test]
-    //fn test_string() {
-    //    unimplemented!();
-    //}
-
     #[test]
     fn test_quoted() {
         let (rem, val) = quoted(b"\"asdasd\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(val, "asdasd".to_string());
+
+        let (rem, val) = quoted(b"\"as\\\"dasd\"xxx").unwrap();
+        assert_eq!(rem, b"xxx");
+        assert_eq!(val, "as\"dasd".to_string());
+
+        let (rem, _val) = quoted(b"\"Hello\"xxx").unwrap();
+        assert_eq!(rem, b"xxx");
+        //assert!(val.is_borrowed()); // TODO: currently unstable, use later
+
+        let (rem, _val) = quoted(b"\"Hel\\\"lo\"xxx").unwrap();
+        assert_eq!(rem, b"xxx");
+        //assert!(val.is_owned()); // TODO: currently unstable, use later
     }
 
-    //#[test]
-    //fn test_quoted_char() {
-    //    unimplemented!();
-    //}
-
-    //#[test]
-    //fn test_quoted_specials() {
-    //    unimplemented!();
-    //}
+    #[test]
+    fn test_quoted_char() {
+        let (rem, val) = quoted_char(b"\\\"xxx").unwrap();
+        assert_eq!(rem, b"xxx");
+        assert_eq!(val, '"');
+    }
 
     #[test]
     fn test_number() {
@@ -272,15 +324,6 @@ mod test {
         assert_eq!(val, b"123");
     }
 
-    //#[test]
-    //fn test_astring() {
-    //    unimplemented!();
-    //}
-
-    #[test]
-    //fn test_astring_char() {
-    //    unimplemented!();
-    //}
     #[test]
     fn test_nil() {
         assert!(nil(b"nil").is_ok());

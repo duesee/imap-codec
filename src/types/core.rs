@@ -6,12 +6,9 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
-use crate::{
-    codec::{escape, Codec},
-    parse::core::is_quoted_char_inner,
-};
+use crate::codec::{escape, Codec};
 use serde::Deserialize;
-use std::{convert::TryFrom, fmt};
+use std::fmt;
 
 // ## 4.1. Atom
 //
@@ -21,7 +18,7 @@ pub struct Atom(pub std::string::String);
 
 impl Codec for Atom {
     fn serialize(&self) -> Vec<u8> {
-        self.0.as_bytes().to_owned()
+        format!("{}", self.0).as_bytes().to_owned()
     }
 
     fn deserialize(input: &[u8]) -> Result<(&[u8], Self), std::string::String>
@@ -65,7 +62,7 @@ pub enum String {
 impl Codec for String {
     fn serialize(&self) -> Vec<u8> {
         match self {
-            Self::Quoted(val) => [b"\"", val.as_bytes(), b"\""].concat(),
+            Self::Quoted(val) => [b"\"", format!("{}", val).as_bytes(), b"\""].concat(),
             Self::Literal(val) => [
                 b"{",
                 val.len().to_string().as_bytes(),
@@ -89,40 +86,7 @@ impl std::fmt::Display for String {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::Quoted(val) => write!(f, "\"{}\"", val),
-            Self::Literal(val) => write!(
-                f,
-                "{{{}}}\r\n{}",
-                val.len(),
-                std::string::String::from_utf8(val.to_owned())
-                    .expect("not every literal is valid UTF-8...")
-            ),
-        }
-    }
-}
-
-impl TryFrom<std::string::String> for String {
-    type Error = std::string::String;
-
-    fn try_from(value: std::string::String) -> Result<Self, Self::Error> {
-        if value.is_ascii() && value.bytes().all(is_quoted_char_inner) {
-            Ok(String::Quoted(value))
-        } else {
-            Err(format!(
-                "String \"{}\" contains data, which is invalid for an imap string",
-                escape(value.as_bytes())
-            ))
-        }
-    }
-}
-
-impl TryFrom<&'static str> for String {
-    type Error = &'static str;
-
-    fn try_from(value: &'static str) -> Result<Self, Self::Error> {
-        if value.is_ascii() && value.bytes().all(is_quoted_char_inner) {
-            Ok(String::Quoted(value.to_owned()))
-        } else {
-            Err("String contains data, which is invalid for an imap string")
+            Self::Literal(val) => write!(f, "{{{}}}\r\n<{}>", val.len(), escape(val)),
         }
     }
 }
@@ -166,13 +130,13 @@ impl std::fmt::Display for NString {
 
 impl From<std::string::String> for NString {
     fn from(val: std::string::String) -> Self {
-        NString::String(String::try_from(val).unwrap())
+        NString::String(String::Quoted(val))
     }
 }
 
 impl From<&'static str> for NString {
     fn from(val: &'static str) -> Self {
-        NString::String(String::try_from(val).unwrap())
+        NString::String(String::Quoted(val.to_owned()))
     }
 }
 
@@ -202,7 +166,7 @@ impl fmt::Display for AString {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
             AString::Atom(atom) => write!(f, "{}", atom),
-            AString::String(_imap_str) => write!(f, "{}", _imap_str),
+            AString::String(imap_str) => write!(f, "{}", imap_str),
         }
     }
 }

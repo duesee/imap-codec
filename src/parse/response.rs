@@ -3,7 +3,7 @@ use crate::{
         _range, auth_type,
         base64::base64,
         charset,
-        core::{atom, nz_number},
+        core::{atom, nz_number, text},
         crlf,
         flag::flag_perm,
         mailbox::mailbox_data,
@@ -14,7 +14,7 @@ use crate::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while1},
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
     multi::{many0, many1},
     sequence::tuple,
@@ -70,27 +70,6 @@ pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, String)> {
     let (remaining, parsed_resp_text) = parser(input)?;
 
     Ok((remaining, parsed_resp_text))
-}
-
-/// text = 1*TEXT-CHAR
-pub fn text(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = take_while1(is_text_char);
-
-    let (remaining, parsed_text) = parser(input)?;
-
-    Ok((
-        remaining,
-        String::from_utf8(parsed_text.to_owned()).unwrap(),
-    ))
-}
-
-/// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F
-///               ; mod: was <any CHAR except CR and LF>
-pub fn is_text_char(c: u8) -> bool {
-    match c {
-        0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f => true,
-        _ => false,
-    }
 }
 
 /// ; errata id: 261
