@@ -253,6 +253,7 @@ pub fn is_text_char(c: u8) -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
+    use assert_matches::assert_matches;
 
     #[test]
     fn test_atom() {
@@ -270,21 +271,33 @@ mod test {
 
     #[test]
     fn test_quoted() {
-        let (rem, val) = quoted(b"\"asdasd\"xxx").unwrap();
-        assert_eq!(rem, b"xxx");
-        assert_eq!(val, "asdasd".to_string());
+        let (rem, val) = quoted(br#""Hello"???"#).unwrap();
+        assert_eq!(rem, b"???");
+        assert_eq!(val, "Hello");
 
-        let (rem, val) = quoted(b"\"as\\\"dasd\"xxx").unwrap();
-        assert_eq!(rem, b"xxx");
-        assert_eq!(val, "as\"dasd".to_string());
+        // Allowed escapes...
+        assert!(quoted(br#""Hello \" "???"#).is_ok());
+        assert!(quoted(br#""Hello \\ "???"#).is_ok());
 
-        let (rem, _val) = quoted(b"\"Hello\"xxx").unwrap();
-        assert_eq!(rem, b"xxx");
-        //assert!(val.is_borrowed()); // TODO: currently unstable, use later
+        // Not allowed escapes...
+        assert!(quoted(br#""Hello \a "???"#).is_err());
+        assert!(quoted(br#""Hello \z "???"#).is_err());
+        assert!(quoted(br#""Hello \? "???"#).is_err());
 
-        let (rem, _val) = quoted(b"\"Hel\\\"lo\"xxx").unwrap();
-        assert_eq!(rem, b"xxx");
-        //assert!(val.is_owned()); // TODO: currently unstable, use later
+        let (rem, val) = quoted(br#""Hello \"World\""???"#).unwrap();
+        assert_eq!(rem, br#"???"#);
+        // Should it be this (Hello \"World\") ...
+        //assert_eq!(val, r#"Hello \"World\""#);
+        // ... or this (Hello "World")?
+        assert_eq!(val, r#"Hello "World""#); // fails
+
+        // Test Incomplete
+        assert_matches!(quoted(br#""#), Err(nom::Err::Incomplete(_)));
+        assert_matches!(quoted(br#""\"#), Err(nom::Err::Incomplete(_)));
+        assert_matches!(quoted(br#""Hello "#), Err(nom::Err::Incomplete(_)));
+
+        // Test Error
+        assert_matches!(quoted(br#"\"#), Err(nom::Err::Error(_)));
     }
 
     #[test]
