@@ -6,23 +6,23 @@ use crate::parse::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::tag_no_case,
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
     multi::{many0, many1},
-    sequence::tuple,
+    sequence::{delimited, tuple},
     IResult,
 };
 
 /// body = "(" (body-type-1part / body-type-mpart) ")"
 pub fn body(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        tag_no_case(b"("),
+    let parser = delimited(
+        tag(b"("),
         alt((
             map(body_type_1part, |_| unimplemented!()),
             map(body_type_mpart, |_| unimplemented!()),
         )),
-        tag_no_case(b")"),
-    ));
+        tag(b")"),
+    );
 
     let (_remaining, _parsed_body) = parser(input)?;
 
@@ -152,14 +152,11 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((
-                tag_no_case(b"("),
-                string,
-                sp,
-                string,
-                many0(tuple((sp, string, sp, string))),
-                tag_no_case(b")"),
-            )),
+            delimited(
+                tag(b"("),
+                tuple((string, sp, string, many0(tuple((sp, string, sp, string))))),
+                tag(b")"),
+            ),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -192,7 +189,7 @@ pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((
+            delimited(
                 dquote,
                 alt((
                     map(tag_no_case(b"7BIT"), |_| unimplemented!()),
@@ -202,7 +199,7 @@ pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], ()> {
                     map(tag_no_case(b"QUOTED-PRINTABLE"), |_| unimplemented!()),
                 )),
                 dquote,
-            )),
+            ),
             |_| unimplemented!(),
         ),
         map(string, |_| unimplemented!()),
@@ -302,12 +299,11 @@ pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(nstring, |_| unimplemented!()),
         map(
-            tuple((
-                tag_no_case(b"("),
-                string,
-                many0(tuple((sp, string))),
-                tag_no_case(b")"),
-            )),
+            delimited(
+                tag(b"("),
+                tuple((string, many0(tuple((sp, string))))),
+                tag(b")"),
+            ),
             |_| unimplemented!(),
         ),
     ));
@@ -341,10 +337,10 @@ pub fn body_extension(input: &[u8]) -> IResult<&[u8], ()> {
         map(number, |_| unimplemented!()),
         map(
             tuple((
-                tag_no_case(b"("),
+                tag(b"("),
                 body_extension,
                 many0(tuple((sp, body_extension))),
-                tag_no_case(b")"),
+                tag(b")"),
             )),
             |_| unimplemented!(),
         ),

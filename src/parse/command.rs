@@ -13,7 +13,7 @@ use crate::{
         sequence::sequence_set,
         sp,
         status::status_att,
-        tag,
+        tag as imap_tag,
     },
     types::{
         command::{Command, CommandBody, CommandBodyUid, SearchKey},
@@ -25,10 +25,10 @@ use crate::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::tag_no_case,
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, opt, value},
     multi::{many1, separated_list, separated_nonempty_list},
-    sequence::tuple,
+    sequence::{delimited, tuple},
     IResult,
 };
 
@@ -36,7 +36,7 @@ use nom::{
 ///            ; Modal based on state
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     let parser = tuple((
-        tag,
+        imap_tag,
         sp,
         alt((command_any, command_auth, command_nonauth, command_select)),
         crlf,
@@ -188,12 +188,10 @@ pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
         sp,
         mailbox,
         sp,
-        tag_no_case(b"("),
-        separated_list(sp, status_att),
-        tag_no_case(b")"),
+        delimited(tag(b"("), separated_list(sp, status_att), tag(b")")),
     ));
 
-    let (remaining, (_, _, mailbox, _, _, status_att, _)) = parser(input)?;
+    let (remaining, (_, _, mailbox, _, status_att)) = parser(input)?;
 
     Ok((remaining, CommandBody::Status(mailbox, status_att)))
 }
@@ -338,12 +336,8 @@ pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
                 MacroOrDataItems::DataItems(vec![fetch_att])
             }),
             map(
-                tuple((
-                    tag_no_case(b"("),
-                    separated_list(sp, fetch_att),
-                    tag_no_case(b")"),
-                )),
-                |(_, fetch_attrs, _)| MacroOrDataItems::DataItems(fetch_attrs),
+                delimited(tag(b"("), separated_list(sp, fetch_att), tag(b")")),
+                |fetch_attrs| MacroOrDataItems::DataItems(fetch_attrs),
             ),
         )),
     ));
@@ -612,12 +606,12 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
             map(sequence_set, SearchKey::SequenceSet),
             map(
-                tuple((
-                    tag_no_case(b"("),
+                delimited(
+                    tag(b"("),
                     separated_nonempty_list(sp, search_key),
-                    tag_no_case(b")"),
-                )),
-                |(_, val, _)| match val.len() {
+                    tag(b")"),
+                ),
+                |val| match val.len() {
                     0 => unreachable!(),
                     1 => val.first().unwrap().clone(),
                     _ => SearchKey::And(val),

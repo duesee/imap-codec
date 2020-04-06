@@ -7,7 +7,11 @@ use crate::{
     types::core::NString,
 };
 use nom::{
-    branch::alt, bytes::streaming::tag_no_case, combinator::map, multi::many1, sequence::tuple,
+    branch::alt,
+    bytes::streaming::tag,
+    combinator::map,
+    multi::many1,
+    sequence::{delimited, tuple},
     IResult,
 };
 
@@ -15,29 +19,31 @@ use nom::{
 ///            env-sender SP env-reply-to SP env-to SP env-cc SP
 ///            env-bcc SP env-in-reply-to SP env-message-id ")"
 pub fn envelope(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        tag_no_case(b"("),
-        env_date,
-        sp,
-        env_subject,
-        sp,
-        env_from,
-        sp,
-        env_sender,
-        sp,
-        env_reply_to,
-        sp,
-        env_to,
-        sp,
-        env_cc,
-        sp,
-        env_bcc,
-        sp,
-        env_in_reply_to,
-        sp,
-        env_message_id,
-        tag_no_case(b")"),
-    ));
+    let parser = delimited(
+        tag(b"("),
+        tuple((
+            env_date,
+            sp,
+            env_subject,
+            sp,
+            env_from,
+            sp,
+            env_sender,
+            sp,
+            env_reply_to,
+            sp,
+            env_to,
+            sp,
+            env_cc,
+            sp,
+            env_bcc,
+            sp,
+            env_in_reply_to,
+            sp,
+            env_message_id,
+        )),
+        tag(b")"),
+    );
 
     let (_remaining, _parsed_envelope) = parser(input)?;
 
@@ -58,7 +64,7 @@ pub fn env_subject(input: &[u8]) -> IResult<&[u8], NString> {
 pub fn env_from(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -73,7 +79,7 @@ pub fn env_from(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn env_sender(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -88,7 +94,7 @@ pub fn env_sender(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn env_reply_to(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -103,7 +109,7 @@ pub fn env_reply_to(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn env_to(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -118,7 +124,7 @@ pub fn env_to(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn env_cc(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -133,7 +139,7 @@ pub fn env_cc(input: &[u8]) -> IResult<&[u8], ()> {
 pub fn env_bcc(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"("), many1(address), tag_no_case(b")"))),
+            delimited(tag(b"("), many1(address), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
