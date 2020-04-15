@@ -3,13 +3,8 @@ use crate::{
     types::{SeqNo, Sequence},
 };
 use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::map,
-    combinator::value,
-    multi::separated_nonempty_list,
-    sequence::tuple,
-    IResult,
+    branch::alt, bytes::streaming::tag, combinator::map, combinator::value,
+    multi::separated_nonempty_list, sequence::tuple, IResult,
 };
 
 /// ; errata id: 261
@@ -25,19 +20,14 @@ use nom::{
 ///                  ; 10,9,8,7,6,5,4,5,6,7 and MAY be reordered and
 ///                  ; overlap coalesced to be 4,5,6,7,8,9,10.
 pub fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
-    let parser = separated_nonempty_list(
-        // TODO: I made a mistake here by not using nonempty. Check other occurences.
+    separated_nonempty_list(
         tag(b","),
         alt((
-            // TODO: ordering is important
+            // Ordering is important!
             map(seq_range, |(from, to)| Sequence::Range(from, to)),
             map(seq_number, Sequence::Single),
         )),
-    );
-
-    let (remaining, parsed_sequence_set) = parser(input)?;
-
-    Ok((remaining, parsed_sequence_set))
+    )(input)
 }
 
 /// seq-range = seq-number ":" seq-number
@@ -49,7 +39,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
 ///               ; 3291:* includes the UID of the last message in
 ///               ; the mailbox, even if that value is less than 3291.
 pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
-    let parser = tuple((seq_number, tag_no_case(b":"), seq_number));
+    let parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
 
@@ -73,14 +63,10 @@ pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
 ///                ; messages in the selected mailbox.  This
 ///                ; includes "*" if the selected mailbox is empty.
 pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
-    let parser = alt((
+    alt((
         map(nz_number, SeqNo::Value),
         value(SeqNo::Unlimited, tag(b"*")),
-    ));
-
-    let (remaining, parsed_seq_number) = parser(input)?;
-
-    Ok((remaining, parsed_seq_number))
+    ))(input)
 }
 
 #[cfg(test)]

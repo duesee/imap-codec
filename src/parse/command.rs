@@ -3,23 +3,23 @@ use crate::{
         auth_type,
         base64::base64,
         charset,
-        core::{astring, literal, number, nz_number},
+        core::{astring, atom, literal, number, nz_number},
         crlf,
         datetime::{date, date_time},
-        flag::{flag, flag_keyword, flag_list},
+        flag::{flag, flag_list},
         header::header_fld_name,
         mailbox::{list_mailbox, mailbox},
         section::section,
         sequence::sequence_set,
         sp,
         status::status_att,
-        tag as imap_tag,
+        tag_imap,
     },
     types::{
         command::{Command, CommandBody, CommandBodyUid, SearchKey},
         core::AString,
         data_items::{DataItem, Macro, MacroOrDataItems},
-        message_attributes::Flag,
+        flag::Flag,
         AuthMechanism, StoreResponse, StoreType,
     },
 };
@@ -36,7 +36,7 @@ use nom::{
 ///            ; Modal based on state
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     let parser = tuple((
-        imap_tag,
+        tag_imap,
         sp,
         alt((command_any, command_auth, command_nonauth, command_select)),
         crlf,
@@ -101,17 +101,17 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
         literal,
     ));
 
-    let (remaining, (_, _, mailbox, flag_list, date_time, _, literal)) = parser(input)?;
+    let (remaining, (_, _, mailbox, flags, date_time, _, literal)) = parser(input)?;
 
     Ok((
         remaining,
         // FIXME: do not use unwrap()
-        CommandBody::Append(
+        CommandBody::Append {
             mailbox,
-            flag_list,
-            date_time.map(|maybe_date| maybe_date.unwrap()),
-            literal.to_vec(),
-        ),
+            flags,
+            date: date_time.map(|maybe_date| maybe_date.unwrap()),
+            message: literal.to_vec(),
+        },
     ))
 }
 
@@ -148,18 +148,18 @@ pub fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
 
-    let (remaining, (_, _, mailbox, _, list_mailbox)) = parser(input)?;
+    let (remaining, (_, _, reference, _, mailbox)) = parser(input)?;
 
-    Ok((remaining, CommandBody::List(mailbox, list_mailbox)))
+    Ok((remaining, CommandBody::List { reference, mailbox }))
 }
 
 /// lsub = "LSUB" SP mailbox SP list-mailbox
 pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"LSUB"), sp, mailbox, sp, list_mailbox));
 
-    let (remaining, (_, _, mailbox, _, list_mailbox)) = parser(input)?;
+    let (remaining, (_, _, reference, _, mailbox)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Lsub(mailbox, list_mailbox)))
+    Ok((remaining, CommandBody::Lsub { reference, mailbox }))
 }
 
 /// rename = "RENAME" SP mailbox SP mailbox
@@ -167,9 +167,9 @@ pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"RENAME"), sp, mailbox, sp, mailbox));
 
-    let (remaining, (_, _, mailbox_old, _, mailbox_new)) = parser(input)?;
+    let (remaining, (_, _, old, _, new)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Rename(mailbox_old, mailbox_new)))
+    Ok((remaining, CommandBody::Rename { old, new }))
 }
 
 /// select = "SELECT" SP mailbox
@@ -191,9 +191,9 @@ pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
         delimited(tag(b"("), separated_list(sp, status_att), tag(b")")),
     ));
 
-    let (remaining, (_, _, mailbox, _, status_att)) = parser(input)?;
+    let (remaining, (_, _, mailbox, _, items)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Status(mailbox, status_att)))
+    Ok((remaining, CommandBody::Status { mailbox, items }))
 }
 
 /// subscribe = "SUBSCRIBE" SP mailbox
@@ -244,27 +244,19 @@ pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"LOGIN"), sp, userid, sp, password));
 
-    let (remaining, (_, _, userid, _, password)) = parser(input)?;
+    let (remaining, (_, _, username, _, password)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Login(userid, password)))
+    Ok((remaining, CommandBody::Login { username, password }))
 }
 
 /// userid = astring
 fn userid(input: &[u8]) -> IResult<&[u8], AString> {
-    let parser = astring;
-
-    let (remaining, parsed_userid) = parser(input)?;
-
-    Ok((remaining, parsed_userid))
+    astring(input)
 }
 
 /// password = astring
 fn password(input: &[u8]) -> IResult<&[u8], AString> {
-    let parser = astring;
-
-    let (remaining, parsed_password) = parser(input)?;
-
-    Ok((remaining, parsed_password))
+    astring(input)
 }
 
 /// authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)
@@ -275,12 +267,7 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 
     // Server must send "+" at this point...
 
-    let output = match auth_type.0.to_lowercase().as_ref() {
-        "plain" => AuthMechanism::Plain,
-        other => AuthMechanism::Other(other.to_owned()),
-    };
-
-    Ok((remaining, output))
+    Ok((remaining, auth_type))
 }
 
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
@@ -316,9 +303,15 @@ pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"COPY"), sp, sequence_set, sp, mailbox));
 
-    let (remaining, (_, _, seq_set, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Copy(seq_set, mailbox)))
+    Ok((
+        remaining,
+        CommandBody::Copy {
+            sequence_set,
+            mailbox,
+        },
+    ))
 }
 
 /// fetch = "FETCH" SP sequence-set SP ("ALL" / "FULL" / "FAST" / fetch-att / "(" fetch-att *(SP fetch-att) ")")
@@ -342,19 +335,27 @@ pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
         )),
     ));
 
-    let (remaining, (_, _, seq, _, fetch_attrs)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, items)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Fetch(seq, fetch_attrs)))
+    Ok((
+        remaining,
+        CommandBody::Fetch {
+            sequence_set,
+            items,
+        },
+    ))
 }
 
-/// fetch-att = "ENVELOPE" / "FLAGS" / "INTERNALDATE" /
+/// fetch-att = "ENVELOPE" /
+///             "FLAGS" /
+///             "INTERNALDATE" /
 ///             "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
-///             "BODY" ["STRUCTURE"] / "UID" /
+///             "BODY" ["STRUCTURE"] /
+///             "UID" /
 ///             "BODY" section ["<" number "." nz-number ">"] /
 ///             "BODY.PEEK" section ["<" number "." nz-number ">"]
 fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
     let parser = alt((
-        // TODO: ordering is important
         value(DataItem::Envelope, tag_no_case(b"ENVELOPE")),
         value(DataItem::Flags, tag_no_case(b"FLAGS")),
         value(DataItem::InternalDate, tag_no_case(b"INTERNALDATE")),
@@ -363,32 +364,32 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
             tuple((
                 tag_no_case(b"BODY.PEEK"),
                 section,
-                opt(tuple((
-                    tag_no_case(b"<"),
-                    number,
-                    tag_no_case(b"."),
-                    nz_number,
-                    tag_no_case(b">"),
-                ))),
+                opt(delimited(
+                    tag(b"<"),
+                    tuple((number, tag(b"."), nz_number)),
+                    tag(b">"),
+                )),
             )),
-            |(_, section, byterange)| {
-                DataItem::BodyPeek(section, byterange.map(|(_, start, _, end, _)| (start, end)))
+            |(_, section, byterange)| DataItem::BodyExt {
+                section,
+                partial: byterange.map(|(start, _, end)| (start, end)),
+                peek: true,
             },
         ),
         map(
             tuple((
                 tag_no_case(b"BODY"),
                 section,
-                opt(tuple((
-                    tag_no_case(b"<"),
-                    number,
-                    tag_no_case(b"."),
-                    nz_number,
-                    tag_no_case(b">"),
-                ))),
+                opt(delimited(
+                    tag(b"<"),
+                    tuple((number, tag(b"."), nz_number)),
+                    tag(b">"),
+                )),
             )),
-            |(_, section, byterange)| {
-                DataItem::BodyExt(section, byterange.map(|(_, start, _, end, _)| (start, end)))
+            |(_, section, byterange)| DataItem::BodyExt {
+                section,
+                partial: byterange.map(|(start, _, end)| (start, end)),
+                peek: false,
             },
         ),
         value(DataItem::Body, tag_no_case(b"BODY")),
@@ -407,12 +408,16 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
 pub fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, store_att_flags));
 
-    let (remaining, (_, _, sequence_set, _, (store_type, store_response, flag_list))) =
-        parser(input)?;
+    let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
 
     Ok((
         remaining,
-        CommandBody::Store(sequence_set, store_type, store_response, flag_list),
+        CommandBody::Store {
+            sequence_set,
+            kind,
+            response,
+            flags,
+        },
     ))
 }
 
@@ -432,8 +437,8 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
             ),
             tag_no_case(b"FLAGS"),
             map(opt(tag_no_case(b".SILENT")), |x| match x {
-                Some(_) => StoreResponse::Answer,
-                None => StoreResponse::Silent,
+                Some(_) => StoreResponse::Silent,
+                None => StoreResponse::Answer,
             }),
         )),
         sp,
@@ -454,12 +459,32 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let (remaining, (_, _, cmd)) = parser(input)?;
 
     let uid_body = match cmd {
-        CommandBody::Copy(seq, mailbox) => CommandBodyUid::Copy(seq, mailbox),
-        CommandBody::Fetch(seq, attrs) => CommandBodyUid::Fetch(seq, attrs),
-        CommandBody::Search(charset, criteria) => CommandBodyUid::Search(charset, criteria),
-        CommandBody::Store(seq, store_type, store_response, flag_list) => {
-            CommandBodyUid::Store(seq, store_type, store_response, flag_list)
-        }
+        CommandBody::Copy {
+            sequence_set,
+            mailbox,
+        } => CommandBodyUid::Copy {
+            sequence_set,
+            mailbox,
+        },
+        CommandBody::Fetch {
+            sequence_set,
+            items,
+        } => CommandBodyUid::Fetch {
+            sequence_set,
+            items,
+        },
+        CommandBody::Search { charset, criteria } => CommandBodyUid::Search { charset, criteria },
+        CommandBody::Store {
+            sequence_set,
+            kind,
+            response,
+            flags,
+        } => CommandBodyUid::Store {
+            sequence_set,
+            kind,
+            response,
+            flags,
+        },
         _ => unreachable!(),
     };
 
@@ -479,7 +504,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
         many1(map(tuple((sp, search_key)), |(_, search_key)| search_key)),
     ));
 
-    let (remaining, (_, maybe_charset, criteria)) = parser(input)?;
+    let (remaining, (_, charset, criteria)) = parser(input)?;
 
     let criteria = match criteria.len() {
         0 => unreachable!(),
@@ -487,25 +512,46 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
         _ => SearchKey::And(criteria),
     };
 
-    Ok((remaining, CommandBody::Search(maybe_charset, criteria)))
+    Ok((remaining, CommandBody::Search { charset, criteria }))
 }
 
-/// search-key = "ALL" / "ANSWERED" / "BCC" SP astring /
-///              "BEFORE" SP date / "BODY" SP astring /
-///              "CC" SP astring / "DELETED" / "FLAGGED" /
-///              "FROM" SP astring / "KEYWORD" SP flag-keyword /
-///              "NEW" / "OLD" / "ON" SP date / "RECENT" / "SEEN" /
-///              "SINCE" SP date / "SUBJECT" SP astring /
-///              "TEXT" SP astring / "TO" SP astring /
-///              "UNANSWERED" / "UNDELETED" / "UNFLAGGED" /
-///              "UNKEYWORD" SP flag-keyword / "UNSEEN" /
+/// search-key = "ALL" /
+///              "ANSWERED" /
+///              "BCC" SP astring /
+///              "BEFORE" SP date /
+///              "BODY" SP astring /
+///              "CC" SP astring /
+///              "DELETED" /
+///              "FLAGGED" /
+///              "FROM" SP astring /
+///              "KEYWORD" SP flag-keyword /
+///              "NEW" /
+///              "OLD" /
+///              "ON" SP date /
+///              "RECENT" /
+///              "SEEN" /
+///              "SINCE" SP date /
+///              "SUBJECT" SP astring /
+///              "TEXT" SP astring /
+///              "TO" SP astring /
+///              "UNANSWERED" /
+///              "UNDELETED" /
+///              "UNFLAGGED" /
+///              "UNKEYWORD" SP flag-keyword /
+///              "UNSEEN" /
 ///                ; Above this line were in [IMAP2]
-///              "DRAFT" / "HEADER" SP header-fld-name SP astring /
-///              "LARGER" SP number / "NOT" SP search-key /
+///              "DRAFT" /
+///              "HEADER" SP header-fld-name SP astring /
+///              "LARGER" SP number /
+///              "NOT" SP search-key /
 ///              "OR" SP search-key SP search-key /
-///              "SENTBEFORE" SP date / "SENTON" SP date /
-///              "SENTSINCE" SP date / "SMALLER" SP number /
-///              "UID" SP sequence-set / "UNDRAFT" / sequence-set /
+///              "SENTBEFORE" SP date /
+///              "SENTON" SP date /
+///              "SENTSINCE" SP date /
+///              "SMALLER" SP number /
+///              "UID" SP sequence-set /
+///              "UNDRAFT" /
+///              sequence-set /
 ///              "(" search-key *(SP search-key) ")"
 pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
     let parser = alt((
@@ -531,7 +577,10 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
                 SearchKey::From(val)
             }),
             map(
-                tuple((tag_no_case(b"KEYWORD"), sp, flag_keyword)),
+                // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
+                // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
+                // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
+                tuple((tag_no_case(b"KEYWORD"), sp, atom)),
                 |(_, _, val)| SearchKey::Keyword(val),
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
@@ -562,7 +611,10 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
             value(SearchKey::Undeleted, tag_no_case(b"UNDELETED")),
             value(SearchKey::Unflagged, tag_no_case(b"UNFLAGGED")),
             map(
-                tuple((tag_no_case(b"UNKEYWORD"), sp, flag_keyword)),
+                // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
+                // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
+                // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
+                tuple((tag_no_case(b"UNKEYWORD"), sp, atom)),
                 |(_, _, val)| SearchKey::Unkeyword(val),
             ),
             value(SearchKey::Unseen, tag_no_case(b"UNSEEN")),
@@ -654,12 +706,18 @@ mod test {
         use Sequence::*;
 
         let (_rem, val) = search(b"search (uid 5)???").unwrap();
-        assert_eq!(val, CommandBody::Search(None, Uid(vec![Single(Value(5))])));
+        assert_eq!(
+            val,
+            CommandBody::Search {
+                charset: None,
+                criteria: Uid(vec![Single(Value(5))])
+            }
+        );
 
         let (_rem, val) = search(b"search (uid 5 or uid 5 (uid 1 uid 2) not (uid 5))???").unwrap();
-        let expected = CommandBody::Search(
-            None,
-            And(vec![
+        let expected = CommandBody::Search {
+            charset: None,
+            criteria: And(vec![
                 Uid(vec![Single(Value(5))]),
                 Or(
                     Box::new(Uid(vec![Single(Value(5))])),
@@ -670,7 +728,7 @@ mod test {
                 ),
                 Not(Box::new(Uid(vec![Single(Value(5))]))),
             ]),
-        );
+        };
         assert_eq!(val, expected);
     }
 }

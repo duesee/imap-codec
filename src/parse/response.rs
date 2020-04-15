@@ -1,146 +1,167 @@
-use crate::parse::core::is_text_char;
 use crate::{
     parse::{
         auth_type,
         base64::base64,
         charset,
-        core::{atom, nz_number, text},
+        core::{atom, is_text_char, nz_number, text},
         crlf,
         flag::flag_perm,
         mailbox::mailbox_data,
         message::message_data,
-        sp, tag as imap_tag,
+        sp, tag_imap,
     },
-    types::response::{Code, Continuation},
+    types::{
+        response::{Code, Continuation, Data, Response, Status},
+        Capability,
+    },
 };
-use nom::bytes::complete::take_while1;
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt},
-    multi::many0,
-    sequence::tuple,
+    bytes::streaming::{tag, tag_no_case, take_while1},
+    combinator::{map, map_res, opt, value},
+    multi::separated_nonempty_list,
+    sequence::{delimited, tuple},
     IResult,
 };
+use std::str::from_utf8;
 
 // ----- greeting -----
 
 /// greeting = "*" SP (resp-cond-auth / resp-cond-bye) CRLF
-pub fn greeting(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
     let parser = tuple((
-        tag_no_case(b"*"),
+        tag(b"*"),
         sp,
         alt((
-            map(resp_cond_auth, |_| unimplemented!()),
-            map(resp_cond_bye, |_| unimplemented!()),
+            map(
+                resp_cond_auth,
+                |(raw_status, (maybe_code, comment))| match raw_status.to_lowercase().as_ref() {
+                    "ok" => Status::ok(None, maybe_code, comment),
+                    "preauth" => Status::preauth(maybe_code, comment),
+                    _ => unreachable!(),
+                },
+            ),
+            map(resp_cond_bye, |(maybe_code, comment)| {
+                Status::bye(maybe_code, comment)
+            }),
         )),
         crlf,
     ));
 
-    let (_remaining, _parsed_greeting) = parser(input)?;
+    let (remaining, (_, _, status, _)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, Response::Status(status)))
 }
 
 /// resp-cond-auth = ("OK" / "PREAUTH") SP resp-text
 ///                    ; Authentication condition
-fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], ()> {
+fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> {
     let parser = tuple((
-        alt((
-            map(tag_no_case(b"OK"), |_| unimplemented!()),
-            map(tag_no_case(b"PREAUTH"), |_| unimplemented!()),
-        )),
+        map_res(
+            alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
+            from_utf8,
+        ),
         sp,
         resp_text,
     ));
 
-    let (_remaining, _parsed_resp_cond_auth) = parser(input)?;
+    let (remaining, (raw_status, _, resp_text)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, (raw_status, resp_text)))
 }
 
 /// resp-text = ["[" resp-text-code "]" SP] text
-pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, String)> {
+pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((
         opt(map(
-            tuple((tag(b"["), resp_text_code, tag(b"]"), sp)),
-            |(_, code, _, _)| code,
+            tuple((delimited(tag(b"["), resp_text_code, tag(b"]")), sp)),
+            |(code, _)| code,
         )),
         text,
     ));
 
-    let (remaining, parsed_resp_text) = parser(input)?;
+    let (remaining, resp_text) = parser(input)?;
 
-    Ok((remaining, parsed_resp_text))
+    Ok((remaining, resp_text))
 }
 
 /// ; errata id: 261
 /// resp-text-code = "ALERT" /
 ///                  "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
-///                  capability-data / "PARSE" /
+///                  capability-data /
+///                  "PARSE" /
 ///                  "PERMANENTFLAGS" SP "(" [flag-perm *(SP flag-perm)] ")" /
-///                  "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
-///                  "UIDNEXT" SP nz-number / "UIDVALIDITY" SP nz-number /
+///                  "READ-ONLY" /
+///                  "READ-WRITE" /
+///                  "TRYCREATE" /
+///                  "UIDNEXT" SP nz-number /
+///                  "UIDVALIDITY" SP nz-number /
 ///                  "UNSEEN" SP nz-number /
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
-    let parser = alt((
-        map(tag_no_case(b"ALERT"), |_| unimplemented!()),
+    alt((
+        value(Code::Alert, tag_no_case(b"ALERT")),
         map(
             tuple((
                 tag_no_case(b"BADCHARSET"),
-                opt(tuple((
-                    sp,
-                    tag_no_case(b"("),
-                    charset,
-                    many0(tuple((sp, charset))),
-                    tag_no_case(b")"),
-                ))),
+                opt(map(
+                    tuple((
+                        sp,
+                        delimited(tag(b"("), separated_nonempty_list(sp, charset), tag(b")")),
+                    )),
+                    |(_, charsets)| charsets,
+                )),
             )),
-            |_| unimplemented!(),
+            |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or(Vec::new())),
         ),
-        map(capability_data, |_| unimplemented!()),
-        map(tag_no_case(b"PARSE"), |_| unimplemented!()),
+        map(capability_data, |caps| Code::Capability(caps)),
+        value(Code::Parse, tag_no_case(b"PARSE")),
         map(
             tuple((
                 tag_no_case(b"PERMANENTFLAGS"),
                 sp,
-                tag_no_case(b"("),
-                opt(tuple((flag_perm, many0(tuple((sp, flag_perm)))))),
-                tag_no_case(b")"),
+                delimited(
+                    tag(b"("),
+                    map(opt(separated_nonempty_list(sp, flag_perm)), |maybe_flags| {
+                        maybe_flags.unwrap_or(Vec::new())
+                    }),
+                    tag(b")"),
+                ),
             )),
-            |_| unimplemented!(),
+            |(_, _, flags)| Code::PermanentFlags(flags),
         ),
-        map(tag_no_case(b"READ-ONLY"), |_| unimplemented!()),
-        map(tag_no_case(b"READ-WRITE"), |_| unimplemented!()),
-        map(tag_no_case(b"TRYCREATE"), |_| unimplemented!()),
+        value(Code::ReadOnly, tag_no_case(b"READ-ONLY")),
+        value(Code::ReadWrite, tag_no_case(b"READ-WRITE")),
+        value(Code::TryCreate, tag_no_case(b"TRYCREATE")),
         map(
             tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
-            |_| unimplemented!(),
+            |(_, _, num)| Code::UidNext(num),
         ),
         map(
             tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
-            |_| unimplemented!(),
+            |(_, _, num)| Code::UidValidity(num),
         ),
         map(
             tuple((tag_no_case(b"UNSEEN"), sp, nz_number)),
-            |_| unimplemented!(),
+            |(_, _, num)| Code::Unseen(num),
         ),
         map(
             tuple((
                 atom,
-                opt(tuple((
-                    sp,
-                    take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                ))),
+                opt(map(
+                    tuple((
+                        sp,
+                        map_res(
+                            take_while1(|byte| is_text_char(byte) && byte != b'"'),
+                            from_utf8,
+                        ),
+                    )),
+                    |(_, params)| params,
+                )),
             )),
-            |_| unimplemented!(),
+            |(atom, maybe_params)| Code::Other(atom, maybe_params.map(|inner| inner.to_owned())),
         ),
-    ));
-
-    let (_remaining, _parsed_resp_text_code) = parser(input)?;
-
-    unimplemented!();
+    ))(input)
 }
 
 /// capability-data = "CAPABILITY" *(SP capability) SP "IMAP4rev1" *(SP capability)
@@ -148,71 +169,86 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
 ///                     ; and LOGINDISABLED capabilities
 ///                     ; Servers which offer RFC 1730 compatibility MUST
 ///                     ; list "IMAP4" as the first capability.
-pub fn capability_data(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
     let parser = tuple((
-        tag_no_case(b"CAPABILITY"),
-        many0(tuple((sp, capability))),
+        tag_no_case("CAPABILITY"),
         sp,
-        tag_no_case(b"IMAP4rev1"),
-        many0(tuple((sp, capability))),
+        separated_nonempty_list(sp, capability),
     ));
 
-    let (_remaining, _parsed_capability_data) = parser(input)?;
+    let (rem, (_, _, caps)) = parser(input)?;
 
-    unimplemented!();
+    if !caps.contains(&Capability::Imap4Rev1) {
+        return Err(nom::Err::Error(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::Verify,
+        )));
+    }
+
+    Ok((rem, caps))
 }
 
 /// capability = ("AUTH=" auth-type) / atom
 ///                ; New capabilities MUST begin with "X" or be
 ///                ; registered with IANA as standard or
 ///                ; standards-track
-pub fn capability(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
+pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
+    alt((
         map(
             tuple((tag_no_case(b"AUTH="), auth_type)),
-            |_| unimplemented!(),
+            |(_, mechanism)| Capability::Auth(mechanism),
         ),
-        map(atom, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_capability) = parser(input)?;
-
-    unimplemented!();
+        map(atom, |atom| {
+            match atom.0.to_lowercase().as_ref() {
+                "imap4rev1" => Capability::Imap4Rev1,
+                "starttls" => Capability::StartTls,
+                // RFC 2177 IMAP4 IDLE command
+                "idle" => Capability::Idle,
+                // RFC 5161 The IMAP ENABLE Extension
+                "enable" => Capability::Enable,
+                // RFC 2221 IMAP4 Login Referrals
+                "loginreferrals" => Capability::LoginReferrals,
+                _ => Capability::Other(atom),
+            }
+        }),
+    ))(input)
 }
 
 /// resp-cond-bye = "BYE" SP resp-text
-pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((tag_no_case(b"BYE"), sp, resp_text));
 
-    let (_remaining, _parsed_resp_cond_bye) = parser(input)?;
+    let (remaining, (_, _, resp_text)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, resp_text))
 }
 
 // ----- response -----
 
 /// response = *(continue-req / response-data) response-done
-pub fn response(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        many0(alt((
-            map(continue_req, |_| unimplemented!()),
-            map(response_data, |_| unimplemented!()),
-        ))),
-        response_done,
-    ));
-
-    let (_remaining, _parsed_response) = parser(input)?;
-
-    unimplemented!();
+pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
+    // Divert from standard here for better usability.
+    // response_data already contains the bye response, thus
+    // response_done could also be response_tagged.
+    //
+    // However, I will keep it as it is for now.
+    alt((
+        map(continue_req, Response::Continuation),
+        response_data,
+        map(response_done, Response::Status),
+    ))(input)
 }
 
 /// continue-req = "+" SP (resp-text / base64) CRLF
 pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
     let parser = tuple((
-        tag_no_case(b"+"),
+        tag(b"+"),
         sp,
         alt((
-            map(resp_text, |(code, text)| Continuation::Basic { code, text }),
+            map(resp_text, |(code, text)| Continuation::Basic {
+                code,
+                text: text.to_owned(),
+            }),
             map(base64, |str| Continuation::Base64(str.to_owned())),
         )),
         crlf,
@@ -223,72 +259,89 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
     Ok((remaining, continuation))
 }
 
-/// response-data = "*" SP (resp-cond-state / resp-cond-bye /
-///                   mailbox-data / message-data / capability-data) CRLF
-pub fn response_data(input: &[u8]) -> IResult<&[u8], ()> {
+/// response-data = "*" SP (
+///                 resp-cond-state /
+///                 resp-cond-bye /
+///                 mailbox-data /
+///                 message-data /
+///                 capability-data
+///                 ) CRLF
+pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
     let parser = tuple((
-        tag_no_case(b"*"),
+        tag(b"*"),
         sp,
         alt((
-            map(resp_cond_state, |_| unimplemented!()),
-            map(resp_cond_bye, |_| unimplemented!()),
-            map(mailbox_data, |_| unimplemented!()),
-            map(message_data, |_| unimplemented!()),
-            map(capability_data, |_| unimplemented!()),
+            map(resp_cond_state, |(raw_status, code, text)| {
+                let status = match raw_status.to_lowercase().as_ref() {
+                    "ok" => Status::ok(None, code, text),
+                    "no" => Status::no(None, code, text),
+                    "bad" => Status::bad(None, code, text),
+                    _ => unreachable!(),
+                };
+
+                Response::Status(status)
+            }),
+            map(resp_cond_bye, |(code, text)| {
+                Response::Status(Status::bye(code, text))
+            }),
+            map(mailbox_data, Response::Data),
+            map(message_data, Response::Data),
+            map(capability_data, |caps| {
+                Response::Data(Data::Capability(caps))
+            }),
         )),
         crlf,
     ));
 
-    let (_remaining, _parsed_response_data) = parser(input)?;
+    let (remaining, (_, _, response, _)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, response))
 }
 
 /// resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text
 ///                     ; Status condition
-pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str)> {
     let parser = tuple((
-        alt((
-            map(tag_no_case(b"OK"), |_| unimplemented!()),
-            map(tag_no_case(b"NO"), |_| unimplemented!()),
-            map(tag_no_case(b"BAD"), |_| unimplemented!()),
-        )),
+        alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
         sp,
         resp_text,
     ));
 
-    let (_remaining, _parsed_resp_cond_state) = parser(input)?;
+    let (remaining, (raw_status, _, (maybe_code, text))) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        (from_utf8(raw_status).expect("can't fail"), maybe_code, text),
+    ))
 }
 
 /// response-done = response-tagged / response-fatal
-pub fn response_done(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(response_tagged, |_| unimplemented!()),
-        map(response_fatal, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_response_done) = parser(input)?;
-
-    unimplemented!();
+pub fn response_done(input: &[u8]) -> IResult<&[u8], Status> {
+    alt((response_tagged, response_fatal))(input)
 }
 
 /// response-tagged = tag SP resp-cond-state CRLF
-pub fn response_tagged(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((imap_tag, sp, resp_cond_state, crlf));
+pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
+    let parser = tuple((tag_imap, sp, resp_cond_state, crlf));
 
-    let (_remaining, _parsed_response_tagged) = parser(input)?;
+    let (remaining, (tag, _, (raw_status, maybe_code, text), _)) = parser(input)?;
 
-    unimplemented!();
+    let status = match raw_status.to_lowercase().as_ref() {
+        "ok" => Status::ok(Some(tag), maybe_code, text),
+        "no" => Status::no(Some(tag), maybe_code, text),
+        "bad" => Status::bad(Some(tag), maybe_code, text),
+        _ => unreachable!(),
+    };
+
+    Ok((remaining, status))
 }
 
 /// response-fatal = "*" SP resp-cond-bye CRLF
 ///                    ; Server closes connection immediately
-pub fn response_fatal(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
     let parser = tuple((tag_no_case(b"*"), sp, resp_cond_bye, crlf));
 
-    let (_remaining, _parsed_response_fatal) = parser(input)?;
+    let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, Status::bye(maybe_code, text)))
 }

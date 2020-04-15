@@ -4,21 +4,22 @@ use crate::{
             astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
         },
         dquote,
-        flag::{flag_extension, flag_list},
+        flag::{flag_list, mbx_list_flags},
         sp,
         status::status_att_list,
     },
     types::{
-        core::{AString, Atom, String as IMAPString},
+        core::{AString, String as IMAPString},
         mailbox::{Mailbox, MailboxWithWildcards},
+        response::Data,
     },
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{tag_no_case, take_while1},
+    bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, opt, value},
     multi::many0,
-    sequence::tuple,
+    sequence::{delimited, tuple},
     IResult,
 };
 
@@ -59,11 +60,11 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     let parser = alt((
         value(Mailbox::Inbox, tag_no_case(b"INBOX")),
         map(astring, |a_str| match a_str {
-            AString::Atom(Atom(str)) => {
+            AString::Atom(str) => {
                 if str.to_lowercase() == "inbox" {
                     Mailbox::Inbox
                 } else {
-                    Mailbox::Other(AString::Atom(Atom(str)))
+                    Mailbox::Other(AString::Atom(str))
                 }
             }
             AString::String(imap_str) => match imap_str {
@@ -103,11 +104,11 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
 ///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                number SP "EXISTS" /
 ///                number SP "RECENT"
-pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
+pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
+    alt((
         map(
             tuple((tag_no_case(b"FLAGS"), sp, flag_list)),
-            |_| unimplemented!(),
+            |(_, _, flags)| Data::Flags(flags),
         ),
         map(
             tuple((tag_no_case(b"LIST"), sp, mailbox_list)),
@@ -118,8 +119,11 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], ()> {
             |_| unimplemented!(),
         ),
         map(
-            tuple((tag_no_case(b"SEARCH"), many0(tuple((sp, nz_number))))),
-            |_| unimplemented!(),
+            tuple((
+                tag_no_case(b"SEARCH"),
+                many0(map(tuple((sp, nz_number)), |(_, num)| num)),
+            )),
+            |(_, nums)| Data::Search(nums),
         ),
         map(
             tuple((
@@ -127,33 +131,28 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], ()> {
                 sp,
                 mailbox,
                 sp,
-                tag_no_case(b"("),
-                opt(status_att_list),
-                tag_no_case(b")"),
+                delimited(tag(b"("), opt(status_att_list), tag(b")")),
             )),
-            |_| unimplemented!(),
+            |(_, _, name, _, items)| Data::Status {
+                name,
+                items: items.unwrap_or(Vec::new()),
+            },
         ),
         map(
             tuple((number, sp, tag_no_case(b"EXISTS"))),
-            |_| unimplemented!(),
+            |(num, _, _)| Data::Exists(num),
         ),
         map(
             tuple((number, sp, tag_no_case(b"RECENT"))),
-            |_| unimplemented!(),
+            |(num, _, _)| Data::Recent(num),
         ),
-    ));
-
-    let (_remaining, _parsed_mailbox_data) = parser(input)?;
-
-    unimplemented!();
+    ))(input)
 }
 
 /// mailbox-list = "(" [mbx-list-flags] ")" SP (DQUOTE QUOTED-CHAR DQUOTE / nil) SP mailbox
 pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = tuple((
-        tag_no_case(b"("),
-        opt(mbx_list_flags),
-        tag_no_case(b")"),
+        delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         sp,
         alt((
             map(tuple((dquote, quoted_char, dquote)), |_| unimplemented!()),
@@ -164,55 +163,6 @@ pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], ()> {
     ));
 
     let (_remaining, _parsed_mailbox_list) = parser(input)?;
-
-    unimplemented!();
-}
-
-/// mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) / mbx-list-oflag *(SP mbx-list-oflag)
-pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            tuple((
-                many0(tuple((mbx_list_oflag, sp))),
-                mbx_list_sflag,
-                many0(tuple((sp, mbx_list_oflag))),
-            )),
-            |_| unimplemented!(),
-        ),
-        map(
-            tuple((mbx_list_oflag, many0(tuple((sp, mbx_list_oflag))))),
-            |_| unimplemented!(),
-        ),
-    ));
-
-    let (_remaining, _parsed_mbx_list_flags) = parser(input)?;
-
-    unimplemented!();
-}
-
-/// mbx-list-oflag = "\Noinferiors" / flag-extension
-///                    ; Other flags; multiple possible per LIST response
-pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(tag_no_case(b"\\Noinferiors"), |_| unimplemented!()),
-        map(flag_extension, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_mbx_list_oflag) = parser(input)?;
-
-    unimplemented!();
-}
-
-/// mbx-list-sflag = "\Noselect" / "\Marked" / "\Unmarked"
-///                    ; Selectability flags; only one per LIST response
-pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(tag_no_case(b"\\Noselect"), |_| unimplemented!()),
-        map(tag_no_case(b"\\Marked"), |_| unimplemented!()),
-        map(tag_no_case(b"\\Unmarked"), |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_mbx_list_sflag) = parser(input)?;
 
     unimplemented!();
 }

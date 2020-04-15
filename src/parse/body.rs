@@ -1,14 +1,17 @@
-use crate::parse::{
-    core::{nil, nstring, number, string},
-    dquote,
-    envelope::envelope,
-    sp,
+use crate::{
+    parse::{
+        core::{nil, nstring, number, string},
+        dquote,
+        envelope::envelope,
+        sp,
+    },
+    types::core::{NString, String as IMAPString},
 };
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
-    multi::{many0, many1},
+    multi::{many0, many1, separated_nonempty_list},
     sequence::{delimited, tuple},
     IResult,
 };
@@ -93,7 +96,7 @@ pub fn media_basic(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = tuple((
         alt((
             map(
-                tuple((
+                delimited(
                     dquote,
                     alt((
                         map(tag_no_case(b"APPLICATION"), |_| unimplemented!()),
@@ -103,7 +106,7 @@ pub fn media_basic(input: &[u8]) -> IResult<&[u8], ()> {
                         map(tag_no_case(b"VIDEO"), |_| unimplemented!()),
                     )),
                     dquote,
-                )),
+                ),
                 |_| unimplemented!(),
             ),
             map(string, |_| unimplemented!()),
@@ -119,12 +122,8 @@ pub fn media_basic(input: &[u8]) -> IResult<&[u8], ()> {
 
 /// media-subtype = string
 ///                   ; Defined in [MIME-IMT]
-pub fn media_subtype(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = string;
-
-    let (_remaining, _parsed_media_subtype) = parser(input)?;
-
-    unimplemented!();
+pub fn media_subtype(input: &[u8]) -> IResult<&[u8], IMAPString> {
+    string(input)
 }
 
 // ---
@@ -148,13 +147,16 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], ()> {
     unimplemented!();
 }
 
-/// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
+/// body-fld-param = "("
+///                  string SP string *(SP string SP string)
+///                  ")" /
+///                  nil
 pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
             delimited(
                 tag(b"("),
-                tuple((string, sp, string, many0(tuple((sp, string, sp, string))))),
+                separated_nonempty_list(sp, tuple((string, sp, string))),
                 tag(b")"),
             ),
             |_| unimplemented!(),
@@ -168,21 +170,13 @@ pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], ()> {
 }
 
 /// body-fld-id = nstring
-pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = nstring;
-
-    let (_remaining, _parsed_body_fld_id) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], NString> {
+    nstring(input)
 }
 
 /// body-fld-desc = nstring
-pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = nstring;
-
-    let (_remaining, _parsed_body_fld_desc) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
+    nstring(input)
 }
 
 /// body-fld-enc = (DQUOTE ("7BIT" / "8BIT" / "BINARY" / "BASE64"/ "QUOTED-PRINTABLE") DQUOTE) / string
@@ -211,12 +205,8 @@ pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], ()> {
 }
 
 /// body-fld-octets = number
-pub fn body_fld_octets(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = number;
-
-    let (_remaining, _parsed_body_fld_octets) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
+    number(input)
 }
 
 // ---
@@ -226,12 +216,8 @@ pub fn body_fld_octets(input: &[u8]) -> IResult<&[u8], ()> {
 // body
 
 /// body-fld-lines = number
-pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = number;
-
-    let (_remaining, _parsed_body_fld_lines) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
+    number(input)
 }
 
 // ---
@@ -265,25 +251,15 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], ()> {
 // ---
 
 /// body-fld-md5 = nstring
-pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = nstring;
-
-    let (_remaining, _parsed_body_fld_md5) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
+    nstring(input)
 }
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
 pub fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(
-            tuple((
-                tag_no_case(b"("),
-                string,
-                sp,
-                body_fld_param,
-                tag_no_case(b")"),
-            )),
+            delimited(tag(b"("), tuple((string, sp, body_fld_param)), tag(b")")),
             |_| unimplemented!(),
         ),
         map(nil, |_| unimplemented!()),
@@ -299,11 +275,7 @@ pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = alt((
         map(nstring, |_| unimplemented!()),
         map(
-            delimited(
-                tag(b"("),
-                tuple((string, many0(tuple((sp, string))))),
-                tag(b")"),
-            ),
+            delimited(tag(b"("), separated_nonempty_list(sp, string), tag(b")")),
             |_| unimplemented!(),
         ),
     ));
@@ -314,12 +286,8 @@ pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], ()> {
 }
 
 /// body-fld-loc = nstring
-pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = nstring;
-
-    let (_remaining, _parsed_body_fld_loc) = parser(input)?;
-
-    unimplemented!();
+pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
+    nstring(input)
 }
 
 // ---
@@ -336,12 +304,11 @@ pub fn body_extension(input: &[u8]) -> IResult<&[u8], ()> {
         map(nstring, |_| unimplemented!()),
         map(number, |_| unimplemented!()),
         map(
-            tuple((
+            delimited(
                 tag(b"("),
-                body_extension,
-                many0(tuple((sp, body_extension))),
+                separated_nonempty_list(sp, body_extension),
                 tag(b")"),
-            )),
+            ),
             |_| unimplemented!(),
         ),
     ));
@@ -418,9 +385,13 @@ pub fn media_message(input: &[u8]) -> IResult<&[u8], ()> {
 /// media-text = DQUOTE "TEXT" DQUOTE SP media-subtype
 ///                ; Defined in [MIME-IMT]
 pub fn media_text(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((dquote, tag_no_case(b"TEXT"), dquote, sp, media_subtype));
+    let parser = tuple((
+        delimited(dquote, tag_no_case(b"TEXT"), dquote),
+        sp,
+        media_subtype,
+    ));
 
-    let (_remaining, _parsed_media_text) = parser(input)?;
+    let (_remaining, (_text, _, _media_subtype)) = parser(input)?;
 
     unimplemented!();
 }

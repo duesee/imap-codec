@@ -6,34 +6,32 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
-use crate::codec::{escape, Codec};
+use crate::codec::Codec;
 use serde::Deserialize;
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 // ## 4.1. Atom
-//
-// An atom consists of one or more non-special characters.
+
+/// An atom consists of one or more non-special characters.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Atom(pub std::string::String);
-
-impl Codec for Atom {
-    fn serialize(&self) -> Vec<u8> {
-        format!("{}", self.0).as_bytes().to_owned()
-    }
-
-    fn deserialize(input: &[u8]) -> Result<(&[u8], Self), std::string::String>
-    where
-        Self: Sized,
-    {
-        use crate::parse::core::atom;
-
-        atom(input).map_err(|_| "Error parsing Atom".to_string())
-    }
-}
 
 impl fmt::Display for Atom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Codec for Atom {
+    fn serialize(&self) -> Vec<u8> {
+        format!("{}", self.0).into_bytes()
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Atom>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }
 
@@ -47,70 +45,83 @@ pub type Number = u32;
 // ## 4.3. String
 
 /// A string is in one of two forms: either literal or quoted string.
+///
+/// The empty string is represented as either "" (a quoted string
+/// with zero characters between double quotes) or as {0} followed
+/// by CRLF (a literal with an octet count of 0).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum String {
-    /// The literal form is the general form of string.
+    /// A literal is a sequence of zero or more octets (including CR and
+    /// LF), prefix-quoted with an octet count in the form of an open
+    /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
+    /// In the case of literals transmitted from server to client, the
+    /// CRLF is immediately followed by the octet data.  In the case of
+    /// literals transmitted from client to server, the client MUST wait
+    /// to receive a command continuation request (...) before sending
+    /// the octet data (and the remainder of the command).
+    ///
+    /// Note: Even if the octet count is 0, a client transmitting a
+    /// literal MUST wait to receive a command continuation request.
+    ///
     /// FIXME: must not contain a zero (\x00)
     Literal(Vec<u8>),
     /// The quoted string form is an alternative that avoids the overhead of
-    /// processing a literal at the cost of limitations of characters
-    /// which may be used.
+    /// processing a literal at the cost of limitations of characters which may be used.
+    ///
+    /// A quoted string is a sequence of zero or more 7-bit characters,
+    /// excluding CR and LF, with double quote (<">) characters at each end.
+    ///
     /// FIXME: not every std::string::String (UTF-8) is a valid "quoted IMAP string"
     Quoted(std::string::String),
+}
+
+pub fn escape_quoted<'a>(unescaped: &'a str) -> Cow<'a, str> {
+    let mut escaped = Cow::Borrowed(unescaped);
+
+    if unescaped.contains("\\") {
+        escaped = Cow::Owned(unescaped.replace("\\", "\\\\"));
+    }
+
+    if unescaped.contains("\"") {
+        escaped = Cow::Owned(unescaped.replace("\"", "\\\""));
+    }
+
+    escaped
+}
+
+pub fn unescape_quoted<'a>(escaped: &'a str) -> Cow<'a, str> {
+    let mut unescaped = Cow::Borrowed(escaped);
+
+    if unescaped.contains("\\\\") {
+        unescaped = Cow::Owned(unescaped.replace("\\\\", "\\"));
+    }
+
+    if unescaped.contains("\\\"") {
+        unescaped = Cow::Owned(unescaped.replace("\\\"", "\""));
+    }
+
+    unescaped
 }
 
 impl Codec for String {
     fn serialize(&self) -> Vec<u8> {
         match self {
-            Self::Quoted(val) => [b"\"", format!("{}", val).as_bytes(), b"\""].concat(),
-            Self::Literal(val) => [
-                b"{",
-                val.len().to_string().as_bytes(),
-                b"}",
-                b"\r\n",
-                val.as_ref(),
-            ]
-            .concat(),
+            Self::Literal(val) => {
+                let mut out = format!("{{{}}}\r\n", val.len()).into_bytes();
+                out.extend_from_slice(val);
+                out
+            }
+            Self::Quoted(val) => format!("\"{}\"", escape_quoted(val)).into_bytes(),
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), std::string::String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
     where
         Self: Sized,
     {
         unimplemented!()
     }
 }
-
-impl std::fmt::Display for String {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            Self::Quoted(val) => write!(f, "\"{}\"", val),
-            Self::Literal(val) => write!(f, "{{{}}}\r\n<{}>", val.len(), escape(val)),
-        }
-    }
-}
-
-// A literal is a sequence of zero or more octets (including CR and
-// LF), prefix-quoted with an octet count in the form of an open
-// brace ("{"), the number of octets, close brace ("}"), and CRLF.
-// In the case of literals transmitted from server to client, the
-// CRLF is immediately followed by the octet data.  In the case of
-// literals transmitted from client to server, the client MUST wait
-// to receive a command continuation request (described later in
-// this document) before sending the octet data (and the remainder
-// of the command).
-//
-// A quoted string is a sequence of zero or more 7-bit characters,
-// excluding CR and LF, with double quote (<">) characters at each
-// end.
-//
-// The empty string is represented as either "" (a quoted string
-// with zero characters between double quotes) or as {0} followed
-// by CRLF (a literal with an octet count of 0).
-//
-//   Note: Even if the octet count is 0, a client transmitting a
-//   literal MUST wait to receive a command continuation request.
 
 // TODO: use `Option<String>` instead?
 #[derive(Debug, Clone, PartialEq)]
@@ -119,12 +130,19 @@ pub enum NString {
     String(String),
 }
 
-impl std::fmt::Display for NString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl Codec for NString {
+    fn serialize(&self) -> Vec<u8> {
         match self {
-            Self::Nil => write!(f, "nil"),
-            Self::String(imap_str) => write!(f, "{}", imap_str),
+            NString::Nil => b"NIL".to_vec(),
+            NString::String(imap_str) => imap_str.serialize(),
         }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), NString>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }
 
@@ -142,32 +160,23 @@ impl From<&'static str> for NString {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum AString {
-    Atom(Atom),
+    Atom(std::string::String),
     String(String),
 }
 
 impl Codec for AString {
     fn serialize(&self) -> Vec<u8> {
         match self {
-            AString::Atom(atom) => atom.serialize(),
+            AString::Atom(atom) => atom.as_bytes().to_vec(),
             AString::String(imap_str) => imap_str.serialize(),
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), std::string::String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), AString>
     where
         Self: Sized,
     {
         unimplemented!()
-    }
-}
-
-impl fmt::Display for AString {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self {
-            AString::Atom(atom) => write!(f, "{}", atom),
-            AString::String(imap_str) => write!(f, "{}", imap_str),
-        }
     }
 }
 

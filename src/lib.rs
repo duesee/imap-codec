@@ -324,66 +324,6 @@ pub mod state;
    considerations.  Specifically, they MUST either (1) verify that the
    size of the data does not exceed the underlying transport's available
    window size, or (2) use non-blocking writes.
-
-5.4.    Autologout Timer
-
-   If a server has an inactivity autologout timer, the duration of that
-   timer MUST be at least 30 minutes.  The receipt of ANY command from
-   the client during that interval SHOULD suffice to reset the
-   autologout timer.
-
-5.5.    Multiple Commands in Progress
-
-   The client MAY send another command without waiting for the
-   completion result response of a command, subject to ambiguity rules
-   (see below) and flow control constraints on the underlying data
-   stream.  Similarly, a server MAY begin processing another command
-   before processing the current command to completion, subject to
-   ambiguity rules.  However, any command continuation request responses
-   and command continuations MUST be negotiated before any subsequent
-   command is initiated.
-
-   The exception is if an ambiguity would result because of a command
-   that would affect the results of other commands.  Clients MUST NOT
-   send multiple commands without waiting if an ambiguity would result.
-   If the server detects a possible ambiguity, it MUST execute commands
-   to completion in the order given by the client.
-
-   The most obvious example of ambiguity is when a command would affect
-   the results of another command, e.g., a FETCH of a message's flags
-   and a STORE of that same message's flags.
-
-   A non-obvious ambiguity occurs with commands that permit an untagged
-   EXPUNGE response (commands other than FETCH, STORE, and SEARCH),
-   since an untagged EXPUNGE response can invalidate sequence numbers in
-   a subsequent command.  This is not a problem for FETCH, STORE, or
-   SEARCH commands because servers are prohibited from sending EXPUNGE
-   responses while any of those commands are in progress.  Therefore, if
-   the client sends any command other than FETCH, STORE, or SEARCH, it
-   MUST wait for the completion result response before sending a command
-   with message sequence numbers.
-
-        Note: UID FETCH, UID STORE, and UID SEARCH are different
-        commands from FETCH, STORE, and SEARCH.  If the client
-        sends a UID command, it must wait for a completion result
-        response before sending a command with message sequence
-        numbers.
-
-   For example, the following non-waiting command sequences are invalid:
-
-      FETCH + NOOP + STORE
-      STORE + COPY + FETCH
-      COPY + COPY
-      CHECK + FETCH
-
-   The following are examples of valid non-waiting command sequences:
-
-      FETCH + STORE + SEARCH + CHECK
-      STORE + COPY + EXPUNGE
-
-      UID SEARCH + UID SEARCH may be valid or invalid as a non-waiting
-      command sequence, depending upon whether or not the second UID
-      SEARCH contains message sequence numbers.
 */
 
 pub mod codec;
@@ -393,7 +333,10 @@ pub mod utils;
 
 #[cfg(test)]
 mod test {
-    use crate::parse::command::command;
+    use crate::{
+        codec::escape,
+        parse::{command::command, response::response},
+    };
     use nom::AsBytes;
 
     #[test]
@@ -438,11 +381,15 @@ mod test {
         for (side, test) in transcript.iter() {
             match side {
                 'C' => {
-                    command(test).unwrap();
+                    let (_rem, cmd) = command(test).unwrap();
+                    println!("// {}", escape(test).trim());
+                    println!("{:?}\n", cmd);
                 }
                 'S' => {
                     // FIXME: many response parsers are not implemented yet. Activate this test later.
-                    // response(test).unwrap();
+                    let (_rem, rsp) = response(test).unwrap();
+                    println!("// {}", escape(test).trim());
+                    println!("{:?}\n", rsp);
                 }
                 _ => unreachable!(),
             };

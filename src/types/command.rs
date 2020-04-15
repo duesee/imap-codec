@@ -3,10 +3,10 @@
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
 use crate::types::{
-    core::AString,
+    core::{AString, Atom},
     data_items::MacroOrDataItems,
+    flag::Flag,
     mailbox::{Mailbox, MailboxWithWildcards},
-    message_attributes::{Flag, Keyword},
     response::{Code, Status},
     AuthMechanism, Sequence, StoreResponse, StoreType,
 };
@@ -307,10 +307,6 @@ pub enum CommandBody {
     ///    wkhbfa2QteAQAgAG1yYwE=
     /// S: A001 OK GSSAPI authentication successful
     /// ```
-    ///
-    ///   Note: The line breaks within server challenges and client
-    ///   responses are for editorial clarity and are not in real
-    ///   authenticators.
     Authenticate(AuthMechanism),
 
     /// ### 6.2.3.  LOGIN Command
@@ -356,7 +352,10 @@ pub enum CommandBody {
     ///   a protection mechanism against password snooping.  A client
     ///   implementation MUST NOT send a LOGIN command if the
     ///   LOGINDISABLED capability is advertised.
-    Login(AString, AString),
+    Login {
+        username: AString,
+        password: AString,
+    },
 
     // ----- Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.3) -----
     /// ### 6.3.1.  SELECT Command
@@ -668,7 +667,7 @@ pub enum CommandBody {
     /// S: * LIST () "." old-mail
     /// S: Z434 OK LIST completed
     /// ```
-    Rename(Mailbox, Mailbox),
+    Rename { old: Mailbox, new: Mailbox },
 
     /// ### 6.3.6.  SUBSCRIBE Command
     ///
@@ -867,7 +866,10 @@ pub enum CommandBody {
     /// S: * LIST () "/" ~/Mail/meetings
     /// S: A202 OK LIST completed
     /// ```
-    List(Mailbox, MailboxWithWildcards),
+    List {
+        reference: Mailbox,
+        mailbox: MailboxWithWildcards,
+    },
 
     /// ### 6.3.9.  LSUB Command
     ///
@@ -908,7 +910,10 @@ pub enum CommandBody {
     /// S: * LSUB (\NoSelect) "." #news.comp.mail
     /// S: A003 OK LSUB completed
     /// ```
-    Lsub(Mailbox, MailboxWithWildcards),
+    Lsub {
+        reference: Mailbox,
+        mailbox: MailboxWithWildcards,
+    },
 
     /// ### 6.3.10. STATUS Command
     ///
@@ -966,7 +971,10 @@ pub enum CommandBody {
     /// S: * STATUS blurdybloop (MESSAGES 231 UIDNEXT 44292)
     /// S: A042 OK STATUS completed
     /// ```
-    Status(Mailbox, Vec<StatusItem>),
+    Status {
+        mailbox: Mailbox,
+        items: Vec<StatusItem>,
+    },
 
     /// 6.3.11. APPEND Command
     ///
@@ -1040,12 +1048,12 @@ pub enum CommandBody {
     ///   Note: The APPEND command is not used for message delivery,
     ///   because it does not provide a mechanism to transfer [SMTP]
     ///   envelope information.
-    Append(
-        Mailbox,
-        Option<Vec<Flag>>,
-        Option<DateTime<FixedOffset>>,
-        Vec<u8>,
-    ),
+    Append {
+        mailbox: Mailbox,
+        flags: Option<Vec<Flag>>,
+        date: Option<DateTime<FixedOffset>>,
+        message: Vec<u8>,
+    },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
     /// ### 6.4.1.  CHECK Command
@@ -1202,7 +1210,10 @@ pub enum CommandBody {
     /// text, it is not possible to show actual UTF-8 data.  The
     /// "XXXXXX" is a placeholder for what would be 6 octets of
     /// 8-bit data in an actual transaction.
-    Search(Option<String>, SearchKey),
+    Search {
+        charset: Option<String>,
+        criteria: SearchKey,
+    },
 
     /// ### 6.4.5.  FETCH Command
     ///
@@ -1240,7 +1251,10 @@ pub enum CommandBody {
     /// S: * 4 FETCH ....
     /// S: A654 OK FETCH completed
     /// ```
-    Fetch(Vec<Sequence>, MacroOrDataItems),
+    Fetch {
+        sequence_set: Vec<Sequence>,
+        items: MacroOrDataItems,
+    },
 
     /// ### 6.4.6.  STORE Command
     ///
@@ -1300,7 +1314,12 @@ pub enum CommandBody {
     /// S: * 4 FETCH (FLAGS (\Deleted \Flagged \Seen))
     /// S: A003 OK STORE completed
     /// ```
-    Store(Vec<Sequence>, StoreType, StoreResponse, Vec<Flag>),
+    Store {
+        sequence_set: Vec<Sequence>,
+        kind: StoreType,
+        response: StoreResponse,
+        flags: Vec<Flag>,
+    },
 
     /// 6.4.7.  COPY Command
     ///
@@ -1333,7 +1352,10 @@ pub enum CommandBody {
     /// C: A003 COPY 2:4 MEETING
     /// S: A003 OK COPY completed
     /// ```
-    Copy(Vec<Sequence>, Mailbox),
+    Copy {
+        sequence_set: Vec<Sequence>,
+        mailbox: Mailbox,
+    },
 
     /// ### 6.4.8.  UID Command
     ///
@@ -1452,25 +1474,25 @@ impl CommandBody {
             Logout => "LOGOUT",
             StartTLS => "STARTTLS",
             Authenticate(_) => "AUTHENTICATE",
-            Login(_, _) => "LOGIN",
+            Login { .. } => "LOGIN",
             Select(_) => "SELECT",
             Examine(_) => "EXAMINE",
             Create(_) => "CREATE",
             Delete(_) => "DELETE",
-            Rename(_, _) => "RENAME",
+            Rename { .. } => "RENAME",
             Subscribe(_) => "SUBSCRIBE",
             Unsubscribe(_) => "UNSUBSCRIBE",
-            List(_, _) => "LIST",
-            Lsub(_, _) => "LSUB",
-            Status(_, _) => "STATUS",
-            Append(_, _, _, _) => "APPEND",
+            List { .. } => "LIST",
+            Lsub { .. } => "LSUB",
+            Status { .. } => "STATUS",
+            Append { .. } => "APPEND",
             Check => "CHECK",
             Close => "CLOSE",
             Expunge => "EXPUNGE",
-            Search(_, _) => "SEARCH",
-            Fetch(_, _) => "FETCH",
-            Store(_, _, _, _) => "STORE",
-            Copy(_, _) => "COPY",
+            Search { .. } => "SEARCH",
+            Fetch { .. } => "FETCH",
+            Store { .. } => "STORE",
+            Copy { .. } => "COPY",
             Uid(_) => "UID",
             Idle => "IDLE",
         }
@@ -1479,10 +1501,24 @@ impl CommandBody {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CommandBodyUid {
-    Copy(Vec<Sequence>, Mailbox),
-    Fetch(Vec<Sequence>, MacroOrDataItems),
-    Search(Option<String>, SearchKey),
-    Store(Vec<Sequence>, StoreType, StoreResponse, Vec<Flag>),
+    Copy {
+        sequence_set: Vec<Sequence>,
+        mailbox: Mailbox,
+    },
+    Fetch {
+        sequence_set: Vec<Sequence>,
+        items: MacroOrDataItems,
+    },
+    Search {
+        charset: Option<String>,
+        criteria: SearchKey,
+    },
+    Store {
+        sequence_set: Vec<Sequence>,
+        kind: StoreType,
+        response: StoreResponse,
+        flags: Vec<Flag>,
+    },
 }
 
 /// The currently defined status data items that can be requested.
@@ -1567,7 +1603,7 @@ pub enum SearchKey {
     Header(AString, AString),
 
     /// Messages with the specified keyword flag set.
-    Keyword(Keyword),
+    Keyword(Atom),
 
     /// Messages with an [RFC-2822] size larger than the specified
     /// number of octets.
@@ -1647,7 +1683,7 @@ pub enum SearchKey {
     Unflagged,
 
     /// Messages that do not have the specified keyword flag set.
-    Unkeyword(Keyword),
+    Unkeyword(Atom),
 
     /// Messages that do not have the \Seen flag set.
     Unseen,

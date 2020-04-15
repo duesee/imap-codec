@@ -1,7 +1,8 @@
-use crate::codec::Codec;
-use crate::types::core::{AString, String as IMAPString};
+use crate::{
+    codec::Codec,
+    types::core::{AString, String as IMAPString},
+};
 use serde::Deserialize;
-use std::fmt;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -10,19 +11,10 @@ pub enum MailboxWithWildcards {
     V2(IMAPString),
 }
 
-impl std::fmt::Display for MailboxWithWildcards {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        match self {
-            MailboxWithWildcards::V1(str) => write!(f, "{}", str),
-            MailboxWithWildcards::V2(imap_str) => write!(f, "{}", imap_str),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-// FIXME: prevent `Mailbox::Other("Inbox")`?
 pub enum Mailbox {
     Inbox,
+    // FIXME: prevent `Mailbox::Other("Inbox")`?
     Other(AString),
 }
 
@@ -34,17 +26,11 @@ impl Codec for Mailbox {
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Mailbox>
     where
         Self: Sized,
     {
         unimplemented!()
-    }
-}
-
-impl fmt::Display for Mailbox {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", String::from_utf8(self.serialize()).unwrap())
     }
 }
 

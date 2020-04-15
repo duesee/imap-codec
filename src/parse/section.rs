@@ -4,20 +4,16 @@ use crate::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::tag_no_case,
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, value},
     multi::separated_nonempty_list,
-    sequence::tuple,
+    sequence::{delimited, tuple},
     IResult,
 };
 
 /// section = "[" [section-spec] "]"
 pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
-    let parser = tuple((tag_no_case(b"["), opt(section_spec), tag_no_case(b"]")));
-
-    let (remaining, (_, section_spec, _)) = parser(input)?;
-
-    Ok((remaining, section_spec))
+    delimited(tag(b"["), opt(section_spec), tag(b"]"))(input)
 }
 
 /// section-spec = section-msgtext / (section-part ["." section-text])
@@ -32,7 +28,7 @@ pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
             PartSpecifier::Mime => unreachable!(),
         }),
         map(
-            tuple((section_part, opt(tuple((tag_no_case(b"."), section_text))))),
+            tuple((section_part, opt(tuple((tag(b"."), section_text))))),
             |(part_number, maybe_part_specifier)| {
                 if let Some((_, part_specifier)) = maybe_part_specifier {
                     match part_specifier {
@@ -83,7 +79,7 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 /// section-part = nz-number *("." nz-number)
 ///                  ; body part nesting
 pub fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
-    let parser = separated_nonempty_list(tag_no_case(b"."), nz_number);
+    let parser = separated_nonempty_list(tag(b"."), nz_number);
 
     let (remaining, parsed_section_part) = parser(input)?;
 

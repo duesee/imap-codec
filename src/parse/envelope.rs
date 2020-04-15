@@ -1,3 +1,4 @@
+use crate::types::response::{Address, Envelope};
 use crate::{
     parse::{
         address::address,
@@ -15,10 +16,19 @@ use nom::{
     IResult,
 };
 
-/// envelope = "(" env-date SP env-subject SP env-from SP
-///            env-sender SP env-reply-to SP env-to SP env-cc SP
-///            env-bcc SP env-in-reply-to SP env-message-id ")"
-pub fn envelope(input: &[u8]) -> IResult<&[u8], ()> {
+/// envelope = "("
+///            env-date SP
+///            env-subject SP
+///            env-from SP
+///            env-sender SP
+///            env-reply-to SP
+///            env-to SP
+///            env-cc SP
+///            env-bcc SP
+///            env-in-reply-to SP
+///            env-message-id
+///            ")"
+pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     let parser = delimited(
         tag(b"("),
         tuple((
@@ -45,9 +55,46 @@ pub fn envelope(input: &[u8]) -> IResult<&[u8], ()> {
         tag(b")"),
     );
 
-    let (_remaining, _parsed_envelope) = parser(input)?;
+    let (
+        remaining,
+        (
+            date,
+            _,
+            subject,
+            _,
+            from,
+            _,
+            sender,
+            _,
+            reply_to,
+            _,
+            to,
+            _,
+            cc,
+            _,
+            bcc,
+            _,
+            in_reply_to,
+            _,
+            message_id,
+        ),
+    ) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        Envelope {
+            date,
+            subject,
+            from,
+            sender,
+            reply_to,
+            to,
+            cc,
+            bcc,
+            in_reply_to,
+            message_id,
+        },
+    ))
 }
 
 /// env-date = nstring
@@ -61,93 +108,51 @@ pub fn env_subject(input: &[u8]) -> IResult<&[u8], NString> {
 }
 
 /// env-from = "(" 1*address ")" / nil
-pub fn env_from(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_from) = parser(input)?;
-
-    unimplemented!();
+pub fn env_from(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-sender = "(" 1*address ")" / nil
-pub fn env_sender(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_sender) = parser(input)?;
-
-    unimplemented!();
+pub fn env_sender(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-reply-to = "(" 1*address ")" / nil
-pub fn env_reply_to(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_reply_to) = parser(input)?;
-
-    unimplemented!();
+pub fn env_reply_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-to = "(" 1*address ")" / nil
-pub fn env_to(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_to) = parser(input)?;
-
-    unimplemented!();
+pub fn env_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-cc = "(" 1*address ")" / nil
-pub fn env_cc(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_cc) = parser(input)?;
-
-    unimplemented!();
+pub fn env_cc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-bcc = "(" 1*address ")" / nil
-pub fn env_bcc(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(tag(b"("), many1(address), tag(b")")),
-            |_| unimplemented!(),
-        ),
-        map(nil, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_env_bcc) = parser(input)?;
-
-    unimplemented!();
+pub fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+    alt((
+        delimited(tag(b"("), many1(address), tag(b")")),
+        map(nil, |_| Vec::new()),
+    ))(input)
 }
 
 /// env-in-reply-to = nstring

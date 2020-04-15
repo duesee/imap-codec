@@ -1,41 +1,120 @@
-# IMAP Server Protocol (Parser and Types)
+# IMAP Protocol (Parser and Types)
 
-This library implements the parsing of IMAP commands (no responses) and the construction and serialization of IMAP responses.
-It is thus only useful when implementing an IMAP *server*.
+This library provides
 
-If you are working on an IMAP *client*, consider using https://github.com/djc/tokio-imap (imap-proto).
+* Server-side IMAP
+  * complete parsing of IMAP commands
+  * construction/serialization of many responses
 
-All types in this crate should be designed in a way which makes it hard (or impossible) to construct invalid messages.
+* Client-side IMAP
+  * semi-complete parsing of responses
+  * construction/serialization of some commands
+
+A goal of this library is to provide an API which makes it hard (or impossible) to construct invalid messages.
+
+If you are working on an IMAP *client*, consider using https://github.com/djc/tokio-imap (imap-proto) first,
+as it seems to have better support for responses and received more review.
+
 I am not aware of a more complete implementation of the IMAP server side in Rust. (Please tell me if there is one!)
 
 # Future of this Crate
 
-There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception.
-Ideally, I would like to see this merged in a generic IMAP library. This is also why this is not published on crates.io.
+There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception as it
+implements mostly the server functionality. I will continue to work on this library, but 
 
 ## Known issues
 
-Some work must be done to improve the quality of this implementation.
+This library emerged from the need for an IMAP testing tool and some work must be done to further improve the quality of the implementation.
 
-* [ ] remove prototype artifacts like `unwrap()`s and `unimplemented()`s
-* [ ] do not allocate when not needed. Make good use of `Cow`.
-* [ ] settle on "core types", i.e. when to use `&[u8]` and `&str` and when to wrap primitive types, e.g. in an `Atom` or `IMAPString`?
-* [ ] ...
+* [ ] remove remaining prototype artifacts like `unwrap()`s and `unimplemented()`s
+* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser).
+* [ ] settle on "core types", i.e. decide when to use `&[u8]` or `&str` and when to wrap primitive types in `Atom` or `IMAPString`?
 
 # Documentation
 
-This project started by copy-pasting the full IMAP RFC in a lib.rs file. This helped me in understanding the protocol.
-However, a lot of comments are irrelevant and should be removed. The IMAP RFC should also be cited in an appropriate way.
+Initially, I started with a huge lib.rs with the whole IMAP RFC in it. This helped me in understanding the protocol.
+However, a lot of comments are irrelevant for parsing and should be removed. The IMAP RFC is also not cited in an appropriate way.
 
 # Usage notes
 
-Have a look at the `parse_command` example. You can run it with...
+Have a look at the `parse_*` examples. You can run it with...
 
 ```text
-cargo run --example=parse_command
+cargo run --example=parse_*
 ```
 
-Type any valid IMAP4REV1 command and see what you get.
+Type any valid IMAP4REV1 command and see if you are happy with what you get.
+
+# Example (trace from the IMAP RFC)
+
+```rust
+// * OK IMAP4rev1 Service Ready\r
+Status(Ok { tag: None, code: None, text: "IMAP4rev1 Service Ready" })
+
+// a001 login mrc secret\r
+Command { tag: "a001", body: Login { username: Atom("mrc"), password: Atom("secret") } }
+
+// a001 OK LOGIN completed\r
+Status(Ok { tag: Some("a001"), code: None, text: "LOGIN completed" })
+
+// a002 select inbox\r
+Command { tag: "a002", body: Select(Inbox) }
+
+// * 18 EXISTS\r
+Data(Exists(18))
+
+// * FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r
+Data(Flags([Answered, Flagged, Deleted, Seen, Draft]))
+
+// * 2 RECENT\r
+Data(Recent(2))
+
+// * OK [UNSEEN 17] Message 17 is the first unseen message\r
+Status(Ok { tag: None, code: Some(Unseen(17)), text: "Message 17 is the first unseen message" })
+
+// * OK [UIDVALIDITY 3857529045] UIDs valid\r
+Status(Ok { tag: None, code: Some(UidValidity(3857529045)), text: "UIDs valid" })
+
+// a002 OK [READ-WRITE] SELECT completed\r
+Status(Ok { tag: Some("a002"), code: Some(ReadWrite), text: "SELECT completed" })
+
+// a003 fetch 12 full\r
+Command { tag: "a003", body: Fetch { sequence_set: [Single(Value(12))], items: Macro(Full) } }
+
+// * 12 FETCH (FLAGS (\\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700")\r
+Data(Fetch(12, [Flags([Seen]), InternalDate(1996-07-16T19:44:25-07:00)]))
+
+// a003 OK FETCH completed\r
+Status(Ok { tag: Some("a003"), code: None, text: "FETCH completed" })
+
+// a004 fetch 12 body[header]\r
+Command { tag: "a004", body: Fetch { sequence_set: [Single(Value(12))], items: DataItems([BodyExt { section: Some(Header(None)), partial: None, peek: false }]) } }
+
+// * 12 FETCH (BODY[HEADER] {3}\r
+XXX)\r
+Data(Fetch(12, [BodyExt { section: Some(Header(None)), origin: None, data: String(Literal([88, 88, 88])) }]))
+
+// a004 OK FETCH completed\r
+Status(Ok { tag: Some("a004"), code: None, text: "FETCH completed" })
+
+// a005 store 12 +flags \\deleted\r
+Command { tag: "a005", body: Store { sequence_set: [Single(Value(12))], kind: Add, response: Answer, flags: [Deleted] } }
+
+// * 12 FETCH (FLAGS (\\Seen \\Deleted))\r
+Data(Fetch(12, [Flags([Seen, Deleted])]))
+
+// a005 OK +FLAGS completed\r
+Status(Ok { tag: Some("a005"), code: None, text: "+FLAGS completed" })
+
+// a006 logout\r
+Command { tag: "a006", body: Logout }
+
+// * BYE IMAP4rev1 server terminating connection\r
+Status(Bye { code: None, text: "IMAP4rev1 server terminating connection" })
+
+// a006 OK LOGOUT completed\r
+Status(Ok { tag: Some("a006"), code: None, text: "LOGOUT completed" })
+```
 
 ## IMAP literals
 
@@ -91,7 +170,7 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 
 * [x] base64
 * [x] base64-char
-* [ ] base64-terminal
+* [x] base64-terminal (not required)
 
 ## Body
 
@@ -163,10 +242,10 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 
 * [x] string
 * [x] quoted
-* [ ] QUOTED-CHAR
+* [x] QUOTED-CHAR
 * [x] quoted-specials
-* [ ] literal
-* [ ] CHAR8
+* [x] literal
+* [x] CHAR8
 
 ## astring
 
@@ -195,15 +274,15 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 
 # Envelope
 
-* [ ] envelope
+* [x] envelope
 * [x] env-date
 * [x] env-subject
-* [ ] env-from
-* [ ] env-sender
-* [ ] env-reply-to
-* [ ] env-to
-* [ ] env-cc
-* [ ] env-bcc
+* [x] env-from
+* [x] env-sender
+* [x] env-reply-to
+* [x] env-to
+* [x] env-cc
+* [x] env-bcc
 * [x] env-in-reply-to
 * [x] env-message-id
 
@@ -212,9 +291,9 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 * [x] flag
 * [x] flag-keyword
 * [x] flag-extension
-* [ ] flag-fetch
+* [x] flag-fetch
 * [x] flag-list
-* [ ] flag-perm
+* [x] flag-perm
 
 # Header
 
@@ -227,18 +306,18 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 * [x] list-char
 * [x] list-wildcards
 
-* [ ] mailbox
+* [x] mailbox
 * [ ] mailbox-data
 * [ ] mailbox-list
-* [ ] mbx-list-flags
-* [ ] mbx-list-oflag
-* [ ] mbx-list-sflag
+* [x] mbx-list-flags
+* [x] mbx-list-oflag
+* [x] mbx-list-sflag
 
 # Message
 
-* [ ] message-data
-* [ ] msg-att
-* [ ] msg-att-dynamic
+* [x] message-data
+* [x] msg-att
+* [x] msg-att-dynamic
 * [ ] msg-att-static
 * [x] uniqueid
 
@@ -246,25 +325,25 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 
 ## greeting
 
-* [ ] greeting
-* [ ] resp-cond-auth
+* [x] greeting
+* [x] resp-cond-auth
 * [x] resp-text
 * [x] text
 * [x] TEXT-CHAR
-* [ ] resp-text-code
-* [ ] capability-data
-* [ ] capability
-* [ ] resp-cond-bye
+* [x] resp-text-code
+* [x] capability-data
+* [x] capability
+* [x] resp-cond-bye
 
 ## response
 
-* [ ] response
+* [x] response
 * [x] continue-req
-* [ ] response-data
-* [ ] resp-cond-state
-* [ ] response-done
-* [ ] response-tagged
-* [ ] response-fatal
+* [x] response-data
+* [x] resp-cond-state
+* [x] response-done
+* [x] response-tagged
+* [x] response-fatal
 
 # Section
 

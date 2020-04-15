@@ -24,13 +24,7 @@ pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 
 /// date-text = date-day "-" date-month "-" date-year
 pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
-    let parser = tuple((
-        date_day,
-        tag_no_case(b"-"),
-        date_month,
-        tag_no_case(b"-"),
-        date_year,
-    ));
+    let parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
@@ -115,21 +109,23 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
 pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
-    let parser = tuple((
+    let parser = delimited(
         dquote,
-        date_day_fixed,
-        tag(b"-"),
-        date_month,
-        tag(b"-"),
-        date_year,
-        sp,
-        time,
-        sp,
-        zone,
+        tuple((
+            date_day_fixed,
+            tag(b"-"),
+            date_month,
+            tag(b"-"),
+            date_year,
+            sp,
+            time,
+            sp,
+            zone,
+        )),
         dquote,
-    ));
+    );
 
-    let (remaining, (_, d, _, m, _, y, _, time, _, zone, _)) = parser(input)?;
+    let (remaining, (d, _, m, _, y, _, time, _, zone)) = parser(input)?;
 
     let date = NaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
 

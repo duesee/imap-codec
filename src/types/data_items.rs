@@ -43,59 +43,53 @@ pub enum DataItem {
     Body,
 
     /// `BODY[<section>]<<partial>>`
-    ///
-    /// # Section
-    ///
-    /// The text of a particular body section.  The section
-    /// specification is a set of zero or more part specifiers
-    /// delimited by periods.
-    ///
-    /// An empty section specification refers to the entire message, including the header.
-    ///
-    /// See [Section](Section) and [PartSpecifier](PartSpecifier).
-    ///
-    /// Every message has at least one part number.  Non-[MIME-IMB]
-    /// messages, and non-multipart [MIME-IMB] messages with no
-    /// encapsulated message, only have a part 1.
-    ///
-    /// Multipart messages are assigned consecutive part numbers, as
-    /// they occur in the message.  If a particular part is of type
-    /// message or multipart, its parts MUST be indicated by a period
-    /// followed by the part number within that nested multipart part.
-    ///
-    /// A part of type MESSAGE/RFC822 also has nested part numbers,
-    /// referring to parts of the MESSAGE part's body.
-    ///
-    /// # Partial
-    ///
-    /// It is possible to fetch a substring of the designated text.
-    /// This is done by appending an open angle bracket ("<"), the
-    /// octet position of the first desired octet, a period, the
-    /// maximum number of octets desired, and a close angle bracket
-    /// (">") to the part specifier.  If the starting octet is beyond
-    /// the end of the text, an empty string is returned.
-    ///
-    /// Any partial fetch that attempts to read beyond the end of the
-    /// text is truncated as appropriate.  A partial fetch that starts
-    /// at octet 0 is returned as a partial fetch, even if this
-    /// truncation happened.
-    ///
-    ///    Note: This means that BODY[]<0.2048> of a 1500-octet message
-    ///    will return BODY[]<0> with a literal of size 1500, not
-    ///    BODY[].
-    ///
-    ///    Note: A substring fetch of a HEADER.FIELDS or
-    ///    HEADER.FIELDS.NOT part specifier is calculated after
-    ///    subsetting the header.
-    ///
-    /// The `\Seen` flag is implicitly set; if this causes the flags to
-    /// change, they SHOULD be included as part of the FETCH responses.
-    BodyExt(Option<Section>, Option<(u32, u32)>),
-
-    /// `BODY.PEEK[<section>]<<partial>>`
-    ///
-    /// An alternate form of `BODY[<section>]` that does not implicitly set the `\Seen` flag.
-    BodyPeek(Option<Section>, Option<(u32, u32)>),
+    BodyExt {
+        /// The text of a particular body section.  The section
+        /// specification is a set of zero or more part specifiers
+        /// delimited by periods.
+        ///
+        /// An empty section specification refers to the entire message, including the header.
+        ///
+        /// See [Section](Section) and [PartSpecifier](PartSpecifier).
+        ///
+        /// Every message has at least one part number.  Non-[MIME-IMB]
+        /// messages, and non-multipart [MIME-IMB] messages with no
+        /// encapsulated message, only have a part 1.
+        ///
+        /// Multipart messages are assigned consecutive part numbers, as
+        /// they occur in the message.  If a particular part is of type
+        /// message or multipart, its parts MUST be indicated by a period
+        /// followed by the part number within that nested multipart part.
+        ///
+        /// A part of type MESSAGE/RFC822 also has nested part numbers,
+        /// referring to parts of the MESSAGE part's body.
+        section: Option<Section>,
+        /// It is possible to fetch a substring of the designated text.
+        /// This is done by appending an open angle bracket ("<"), the
+        /// octet position of the first desired octet, a period, the
+        /// maximum number of octets desired, and a close angle bracket
+        /// (">") to the part specifier.  If the starting octet is beyond
+        /// the end of the text, an empty string is returned.
+        ///
+        /// Any partial fetch that attempts to read beyond the end of the
+        /// text is truncated as appropriate.  A partial fetch that starts
+        /// at octet 0 is returned as a partial fetch, even if this
+        /// truncation happened.
+        ///
+        ///    Note: This means that BODY[]<0.2048> of a 1500-octet message
+        ///    will return BODY[]<0> with a literal of size 1500, not
+        ///    BODY[].
+        ///
+        ///    Note: A substring fetch of a HEADER.FIELDS or
+        ///    HEADER.FIELDS.NOT part specifier is calculated after
+        ///    subsetting the header.
+        ///
+        partial: Option<(u32, u32)>,
+        /// Defines, wheather BODY or BODY.PEEK should be used.
+        ///
+        /// `BODY[...]` implicitly sets the `\Seen` flag where `BODY.PEEK[...]` does not.
+        peek: bool,
+    },
 
     /// `BODYSTRUCTURE`
     ///

@@ -3,13 +3,15 @@
 use crate::{
     codec::Codec,
     types::{
-        core::{NString, Number, String as IMAPString},
+        core::{Atom, NString, Number, String as IMAPString},
+        data_items::Section,
+        flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
-        message_attributes::Flag,
         Capability,
     },
-    utils::{join, join_or_nil},
+    utils::{join, join_bytes},
 };
+use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
 
 /// Server responses are in three forms.
@@ -32,7 +34,10 @@ pub enum Response {
 }
 
 // FIXME: IMAP tags != UTF-8 String
-type Tag = String;
+pub type Tag = String;
+
+// FIXME: IMAP text != UTF-8 String, must not be empty
+pub type Text = String;
 
 /// ## 7.1. Server Responses - Status Responses
 ///
@@ -44,20 +49,7 @@ type Tag = String;
 pub enum Status {
     /// ### 7.1.1. OK Response
     ///
-    /// * Contents:
-    ///   * OPTIONAL response code
-    ///   * human-readable text
-    ///
     /// The OK response indicates an information message from the server.
-    /// When tagged, it indicates successful completion of the associated
-    /// command.  The human-readable text MAY be presented to the user as
-    /// an information message.  The untagged form indicates an
-    /// information-only message; the nature of the information MAY be
-    /// indicated by a response code.
-    ///
-    /// The untagged form is also used as one of three possible greetings
-    /// at connection startup.  It indicates that the connection is not
-    /// yet authenticated and that a LOGIN command is needed.
     ///
     /// # Trace
     ///
@@ -67,19 +59,27 @@ pub enum Status {
     /// S: * OK [ALERT] System shutdown in 10 minutes
     /// S: A001 OK LOGIN Completed
     /// ```
-    Ok(Option<Tag>, Option<Code>, Text),
+    Ok {
+        /// When tagged, it indicates successful completion of the associated
+        /// command.  The human-readable text MAY be presented to the user as
+        /// an information message.
+        ///
+        /// The untagged form indicates an information-only message; the nature
+        /// of the information MAY be indicated by a response code.
+        ///
+        /// The untagged form is also used as one of three possible greetings
+        /// at connection startup.  It indicates that the connection is not
+        /// yet authenticated and that a LOGIN command is needed.
+        tag: Option<Tag>,
+        /// Response code (optional)
+        code: Option<Code>,
+        /// Human-readable text (must be at least 1 character!)
+        text: Text,
+    },
 
     /// ### 7.1.2. NO Response
     ///
-    /// * Contents:
-    ///   * OPTIONAL response code
-    ///   * human-readable text
-    ///
-    /// The NO response indicates an operational error message from the
-    /// server.  When tagged, it indicates unsuccessful completion of the
-    /// associated command.  The untagged form indicates a warning; the
-    /// command can still complete successfully.  The human-readable text
-    /// describes the condition.
+    /// The NO response indicates an operational error message from the server.
     ///
     /// # Trace
     ///
@@ -92,20 +92,20 @@ pub enum Status {
     /// S: * NO Disk is 99% full, please delete unnecessary data
     /// S: A223 NO COPY failed: disk is full
     /// ```
-    No(Option<Tag>, Option<Code>, Text),
+    No {
+        /// When tagged, it indicates unsuccessful completion of the
+        /// associated command.  The untagged form indicates a warning; the
+        /// command can still complete successfully.
+        tag: Option<Tag>,
+        /// Response code (optional)
+        code: Option<Code>,
+        /// The human-readable text describes the condition. (must be at least 1 character!)
+        text: Text,
+    },
 
     /// ### 7.1.3. BAD Response
     ///
-    /// * Contents:
-    ///   * OPTIONAL response code
-    ///   * human-readable text
-    ///
-    /// The BAD response indicates an error message from the server.  When
-    /// tagged, it reports a protocol-level error in the client's command;
-    /// the tag indicates the command that caused the error.  The untagged
-    /// form indicates a protocol-level error for which the associated
-    /// command can not be determined; it can also indicate an internal
-    /// server failure.  The human-readable text describes the condition.
+    /// The BAD response indicates an error message from the server.
     ///
     /// # Trace
     ///
@@ -119,13 +119,20 @@ pub enum Status {
     /// S: * OK Salvage successful, no data lost
     /// S: A443 OK Expunge completed
     /// ```
-    Bad(Option<Tag>, Option<Code>, Text),
+    Bad {
+        /// When tagged, it reports a protocol-level error in the client's command;
+        /// the tag indicates the command that caused the error.  The untagged
+        /// form indicates a protocol-level error for which the associated
+        /// command can not be determined; it can also indicate an internal
+        /// server failure.
+        tag: Option<Tag>,
+        /// Response code (optional)
+        code: Option<Code>,
+        /// The human-readable text describes the condition. (must be at least 1 character!)
+        text: Text,
+    },
 
     /// ### 7.1.4. PREAUTH Response
-    ///
-    /// * Contents:
-    ///   * OPTIONAL response code
-    ///   * human-readable text
     ///
     /// The PREAUTH response is always untagged, and is one of three
     /// possible greetings at connection startup.  It indicates that the
@@ -137,18 +144,19 @@ pub enum Status {
     /// ```text
     /// S: * PREAUTH IMAP4rev1 server logged in as Smith
     /// ```
-    PreAuth(Option<Code>, Text),
+    PreAuth {
+        /// Response code (optional)
+        code: Option<Code>,
+        /// Human-readable text (must be at least 1 character!)
+        text: Text,
+    },
 
     /// ### 7.1.5. BYE Response
     ///
-    /// * Contents:
-    ///   * OPTIONAL response code
-    ///   * human-readable text
-    ///
     /// The BYE response is always untagged, and indicates that the server
-    /// is about to close the connection.  The human-readable text MAY be
-    /// displayed to the user in a status report by the client.  The BYE
-    /// response is sent under one of four conditions:
+    /// is about to close the connection.
+    ///
+    /// The BYE response is sent under one of four conditions:
     ///
     ///    1) as part of a normal logout sequence.  The server will close
     ///       the connection after sending the tagged OK response to the
@@ -178,50 +186,72 @@ pub enum Status {
     /// ```text
     /// S: * BYE Autologout; idle for too long
     /// ```
-    Bye(Option<Code>, Text),
+    Bye {
+        /// Response code (optional)
+        code: Option<Code>,
+        /// The human-readable text MAY be displayed to the user in a status
+        /// report by the client. (must be at least 1 character!)
+        text: Text,
+    },
 }
 
-// FIXME: must not be empty
-pub type Text = String;
-
 impl Status {
-    pub fn greeting(code: Option<Code>, comment: &str) -> Self {
-        Status::Ok(None, code, comment.to_owned())
+    pub fn greeting(code: Option<Code>, text: &str) -> Self {
+        Status::Ok {
+            tag: None,
+            code,
+            text: text.to_owned(),
+        }
     }
 
-    pub fn ok(tag: Option<&str>, code: Option<Code>, comment: &str) -> Self {
-        Status::Ok(tag.map(|x| x.to_owned()), code, comment.to_owned())
+    pub fn ok(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+        Status::Ok {
+            tag: tag.map(str::to_owned),
+            code,
+            text: text.to_owned(),
+        }
     }
 
-    pub fn no(tag: Option<&str>, code: Option<Code>, comment: &str) -> Self {
-        Status::No(tag.map(|x| x.to_owned()), code, comment.to_owned())
+    pub fn no(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+        Status::No {
+            tag: tag.map(str::to_owned),
+            code,
+            text: text.to_owned(),
+        }
     }
 
-    pub fn bad(tag: Option<&str>, code: Option<Code>, comment: &str) -> Self {
-        Status::Bad(tag.map(|x| x.to_owned()), code, comment.to_owned())
+    pub fn bad(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+        Status::Bad {
+            tag: tag.map(str::to_owned),
+            code,
+            text: text.to_owned(),
+        }
     }
 
-    pub fn preauth(code: Option<Code>, comment: &str) -> Self {
-        Status::PreAuth(code, comment.to_owned())
+    pub fn preauth(code: Option<Code>, text: &str) -> Self {
+        Status::PreAuth {
+            code,
+            text: text.to_owned(),
+        }
     }
 
-    pub fn bye(code: Option<Code>, comment: &str) -> Self {
-        Status::Bye(code, comment.to_owned())
+    pub fn bye(code: Option<Code>, text: &str) -> Self {
+        Status::Bye {
+            code,
+            text: text.to_owned(),
+        }
     }
 }
 
 impl Codec for Status {
     fn serialize(&self) -> Vec<u8> {
         fn format_status(
-            tag: &Option<Tag>,
+            tag: &Option<String>,
             status: &str,
             code: &Option<Code>,
             comment: &str,
         ) -> String {
-            let tag = match tag {
-                Some(tag) => tag.to_owned(),
-                None => String::from("*"),
-            };
+            let tag = tag.as_deref().unwrap_or("*");
 
             match code {
                 Some(code) => format!("{} {} [{}] {}\r\n", tag, status, code, comment),
@@ -230,21 +260,17 @@ impl Codec for Status {
         }
 
         match self {
-            Self::Ok(tag, code, comment) => format_status(tag, "OK", code, comment).into_bytes(),
-            Self::No(tag, code, comment) => format_status(tag, "NO", code, comment).into_bytes(),
-            Self::Bad(tag, code, comment) => format_status(tag, "BAD", code, comment).into_bytes(),
-            Self::PreAuth(code, comment) => match code {
-                Some(code) => format!("* PREAUTH [{}] {}\r\n", code, comment).into_bytes(),
-                None => format!("* PREAUTH {}\r\n", comment).into_bytes(),
-            },
-            Self::Bye(code, comment) => match code {
-                Some(code) => format!("* BYE [{}] {}\r\n", code, comment).into_bytes(),
-                None => format!("* BYE {}\r\n", comment).into_bytes(),
-            },
+            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text).into_bytes(),
+            Status::No { tag, code, text } => format_status(tag, "NO", code, text).into_bytes(),
+            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text).into_bytes(),
+            Status::PreAuth { code, text } => {
+                format_status(&None, "PREAUTH", code, text).into_bytes()
+            }
+            Status::Bye { code, text } => format_status(&None, "BYE", code, text).into_bytes(),
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Status>
     where
         Self: Sized,
     {
@@ -315,16 +341,9 @@ pub enum Data {
 
     /// ### 7.2.2. LIST Response
     ///
-    /// * Contents:
-    ///   * name attributes
-    ///   * hierarchy delimiter
-    ///   * name
-    ///
     /// The LIST response occurs as a result of a LIST command.  It
     /// returns a single name that matches the LIST specification.  There
     /// can be multiple LIST responses for a single LIST command.
-    ///
-    /// See [NameAttribute](enum.NameAttribute.html).
     ///
     /// The hierarchy delimiter is a character used to delimit levels of
     /// hierarchy in a mailbox name.  A client can use it to create child
@@ -343,14 +362,16 @@ pub enum Data {
     /// ```text
     /// S: * LIST (\Noselect) "/" ~/Mail/foo
     /// ```
-    List(Vec<NameAttribute>, String, String),
+    List {
+        /// Name attributes
+        items: Vec<FlagNameAttribute>,
+        /// Hierarchy delimiter
+        delimiter: String,
+        /// Name
+        name: String, // TODO: `String` or `Mailbox`?
+    },
 
     /// ### 7.2.3. LSUB Response
-    ///
-    /// * Contents:
-    ///   * name attributes
-    ///   * hierarchy delimiter
-    ///   * name
     ///
     /// The LSUB response occurs as a result of an LSUB command.  It
     /// returns a single name that matches the LSUB specification.  There
@@ -362,13 +383,16 @@ pub enum Data {
     /// ```text
     /// S: * LSUB () "." #news.comp.mail.misc
     /// ```
-    Lsub(Vec<NameAttribute>, String, String),
+    Lsub {
+        /// Name attributes
+        items: Vec<FlagNameAttribute>,
+        /// Hierarchy delimiter
+        delimiter: String,
+        /// Name
+        name: String, // TODO: `String` or `Mailbox`?
+    },
 
     /// ### 7.2.4 STATUS Response
-    ///
-    /// * Contents:
-    ///   * name
-    ///   * status parenthesized list
     ///
     /// The STATUS response occurs as a result of an STATUS command.  It
     /// returns the mailbox name that matches the STATUS specification and
@@ -379,7 +403,12 @@ pub enum Data {
     /// ```text
     /// S: * STATUS blurdybloop (MESSAGES 231 UIDNEXT 44292)
     /// ```
-    Status(Mailbox, Vec<StatusItemResp>),
+    Status {
+        /// Name
+        name: Mailbox,
+        /// Status parenthesized list
+        items: Vec<StatusItemResponse>,
+    },
 
     /// ### 7.2.5. SEARCH Response
     ///
@@ -425,14 +454,11 @@ pub enum Data {
     // message count.
     /// ### 7.3.1. EXISTS Response
     ///
-    /// * Contents: none
-    ///
     /// The EXISTS response reports the number of messages in the mailbox.
     /// This response occurs as a result of a SELECT or EXAMINE command,
     /// and if the size of the mailbox changes (e.g., new messages).
     ///
-    /// The update from the EXISTS response MUST be recorded by the
-    /// client.
+    /// The update from the EXISTS response MUST be recorded by the client.
     ///
     /// # Trace
     ///
@@ -442,8 +468,6 @@ pub enum Data {
     Exists(u32),
 
     /// ### 7.3.2. RECENT Response
-    ///
-    /// * Contents:   none
     ///
     /// The RECENT response reports the number of messages with the
     /// \Recent flag set.  This response occurs as a result of a SELECT or
@@ -464,8 +488,7 @@ pub enum Data {
     ///   look at message flags to see which have the \Recent flag
     ///   set, or to do a SEARCH RECENT.
     ///
-    /// The update from the RECENT response MUST be recorded by the
-    /// client.
+    /// The update from the RECENT response MUST be recorded by the client.
     ///
     /// # Trace
     ///
@@ -481,8 +504,6 @@ pub enum Data {
     // command with the same name.  Immediately following the "*" token is a
     // number that represents a message sequence number.
     /// ### 7.4.1. EXPUNGE Response
-    ///
-    /// * Contents: none
     ///
     /// The EXPUNGE response reports that the specified message sequence
     /// number has been permanently removed from the mailbox.  The message
@@ -517,8 +538,7 @@ pub enum Data {
     ///   commands from FETCH, STORE, and SEARCH.  An EXPUNGE
     ///   response MAY be sent during a UID command.
     ///
-    /// The update from the EXPUNGE response MUST be recorded by the
-    /// client.
+    /// The update from the EXPUNGE response MUST be recorded by the client.
     ///
     /// # Trace
     ///
@@ -529,76 +549,82 @@ pub enum Data {
 
     /// ### 7.4.2. FETCH Response
     ///
-    /// * Contents: message data
-    ///
     /// The FETCH response returns data about a message to the client.
     /// The data are pairs of data item names and their values in
     /// parentheses.  This response occurs as the result of a FETCH or
     /// STORE command, as well as by unilateral server decision (e.g.,
     /// flag updates).
     ///
-    /// See [DataItemResp](enum.DataItemResp.html).
-    ///
     /// # Trace
     ///
     /// ```text
     /// S: * 23 FETCH (FLAGS (\Seen) RFC822.SIZE 44827)
     /// ```
-    Fetch(u32, Vec<DataItemResp>),
+    Fetch {
+        /// Message SEQ or UID
+        msg: u32,
+        /// Message data
+        items: Vec<DataItemResponse>,
+    },
 }
-
-pub type Inbox = String;
 
 impl Codec for Data {
     fn serialize(&self) -> Vec<u8> {
         match self {
-            Self::Capability(caps) => format!("* CAPABILITY {}\r\n", join(caps, " ")).into_bytes(),
-            Self::List(name_attrs, hierarchy_delimiter, name) => format!(
+            Data::Capability(caps) => format!("* CAPABILITY {}\r\n", join(caps, " ")).into_bytes(),
+            Data::List {
+                items,
+                delimiter,
+                name,
+            } => format!(
                 "* LIST ({}) \"{}\" {}\r\n",
-                join(name_attrs, " "),
-                hierarchy_delimiter,
+                join(items, " "),
+                delimiter,
                 name
             )
             .into_bytes(),
-            Self::Lsub(name_attrs, hierarchy_delimiter, name) => format!(
+            Data::Lsub {
+                items,
+                delimiter,
+                name,
+            } => format!(
                 "* LSUB ({}) \"{}\" {}\r\n",
-                join(name_attrs, " "),
-                hierarchy_delimiter,
+                join(items, " "),
+                delimiter,
                 name
             )
             .into_bytes(),
-            Self::Status(name, status_list) => {
-                //write!(&mut retVal, b"* STATUS \"{}\" ({})\r\n", name, join(status_list, " "));
-                [
-                    b"*".as_ref(),
-                    b" ",
-                    b"STATUS",
-                    b" ",
-                    name.serialize().as_ref(),
-                    b" ",
-                    b"(",
-                    join(status_list, " ").as_bytes(),
-                    b")",
-                    b"\r\n",
-                ]
-                .concat()
-            }
-            Self::Search(seqs) => {
+            Data::Status { name, items } => [
+                b"* STATUS ".as_ref(),
+                name.serialize().as_ref(),
+                b" (",
+                join(items, " ").as_bytes(),
+                b")\r\n",
+            ]
+            .concat(),
+            Data::Search(seqs) => {
                 if seqs.is_empty() {
                     "* SEARCH\r\n".to_string().into_bytes()
                 } else {
                     format!("* SEARCH {}\r\n", join(seqs, " ")).into_bytes()
                 }
             }
-            Self::Flags(flags) => format!("* FLAGS ({})\r\n", join(flags, " ")).into_bytes(),
-            Self::Exists(count) => format!("* {} EXISTS\r\n", count).into_bytes(),
-            Self::Recent(count) => format!("* {} RECENT\r\n", count).into_bytes(),
-            Self::Expunge(seq) => format!("* {} EXPUNGE\r\n", seq).into_bytes(),
-            Self::Fetch(_, _) => unimplemented!(),
+            Data::Flags(flags) => format!("* FLAGS ({})\r\n", join(flags, " ")).into_bytes(),
+            Data::Exists(count) => format!("* {} EXISTS\r\n", count).into_bytes(),
+            Data::Recent(count) => format!("* {} RECENT\r\n", count).into_bytes(),
+            Data::Expunge(msg) => format!("* {} EXPUNGE\r\n", msg).into_bytes(),
+            Data::Fetch { msg, items } => [
+                b"* ".as_ref(),
+                msg.to_string().as_bytes(),
+                b" FETCH (",
+                join_bytes(items.iter().map(|item| item.serialize()).collect(), b" ").as_ref(),
+                b")\r\n",
+            ]
+            .concat(),
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Data>
     where
         Self: Sized,
     {
@@ -606,79 +632,30 @@ impl Codec for Data {
     }
 }
 
-/// Four name attributes are defined.
+pub type Inbox = String;
+
+/// The currently defined status data items.
 #[derive(Debug, Clone, PartialEq)]
-pub enum NameAttribute {
-    /// `\Noinferiors`
-    ///
-    /// It is not possible for any child levels of hierarchy to exist
-    /// under this name; no child levels exist now and none can be
-    /// created in the future.
-    Noinferiors,
-
-    /// `\Noselect`
-    ///
-    /// It is not possible to use this name as a selectable mailbox.
-    Noselect,
-
-    /// `\Marked`
-    /// The mailbox has been marked "interesting" by the server; the
-    /// mailbox probably contains messages that have been added since
-    /// the last time the mailbox was selected.
-    Marked,
-
-    /// `\Unmarked`
-    ///
-    /// The mailbox does not contain any additional messages since the
-    /// last time the mailbox was selected.
-    Unmarked,
-}
-
-impl std::fmt::Display for NameAttribute {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            Self::Noinferiors => write!(f, "\\Noinferiors"),
-            Self::Noselect => write!(f, "\\Noselect"),
-            Self::Marked => write!(f, "\\Marked"),
-            Self::Unmarked => write!(f, "\\Unmarked"),
-        }
-    }
-}
-
-/// The currently defined status data items that can be requested are:
-///
-/// Note: this was copied from the Fetch Command Spec.
-#[derive(Debug, Clone, PartialEq)]
-pub enum StatusItemResp {
-    /// `MESSAGES`
-    ///
+pub enum StatusItemResponse {
     /// The number of messages in the mailbox.
     Messages(u32),
 
-    /// `RECENT`
-    ///
     /// The number of messages with the \Recent flag set.
     Recent(u32),
 
-    /// `UIDNEXT`
-    ///
     /// The next unique identifier value of the mailbox.  Refer to
     /// section 2.3.1.1 for more information.
     UidNext(u32),
 
-    /// `UIDVALIDITY`
-    ///
     /// The unique identifier validity value of the mailbox.  Refer to
     /// section 2.3.1.1 for more information.
     UidValidity(u32),
 
-    /// `UNSEEN`
-    ///
     /// The number of messages which do not have the \Seen flag set.
     Unseen(u32),
 }
 
-impl std::fmt::Display for StatusItemResp {
+impl std::fmt::Display for StatusItemResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::Messages(count) => write!(f, "MESSAGES {}", count),
@@ -755,16 +732,11 @@ impl Codec for Continuation {
         }
     }
 
-    fn deserialize(input: &[u8]) -> Result<(&[u8], Self), String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Continuation>
     where
         Self: Sized,
     {
-        use crate::parse::response::continue_req;
-
-        match continue_req(input) {
-            Ok((rem, parsed)) => Ok((rem, parsed)),
-            Err(error) => Err(format!("{:?}", error)),
-        }
+        unimplemented!()
     }
 }
 
@@ -792,7 +764,7 @@ pub enum Code {
     /// this implementation.  If the optional list of charsets is
     /// given, this lists the charsets that are supported by this
     /// implementation.
-    BadCharset(Option<Vec<String>>),
+    BadCharset(Vec<String>),
 
     /// `CAPABILITY`
     ///
@@ -808,7 +780,7 @@ pub enum Code {
     /// The human-readable text represents an error in parsing the
     /// [RFC-2822] header or [MIME-IMB] headers of a message in the
     /// mailbox.
-    Parse(String),
+    Parse,
 
     /// `PERMANENTFLAGS`
     ///
@@ -869,6 +841,9 @@ pub enum Code {
     /// SHOULD ignore response codes that they do not recognize.
     X,
 
+    /// TODO: allowed by resp_text_code
+    Other(Atom, Option<String>),
+
     /// IMAP4 Login Referrals (RFC 2221)
     Referral(String), // TODO: the imap url is more complicated than that...
 }
@@ -880,29 +855,49 @@ impl Code {
 }
 
 impl std::fmt::Display for Code {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Alert => write!(f, "ALERT"),
-            Self::BadCharset(_) => unimplemented!(),
-            Self::Capability(caps) => write!(f, "CAPABILITY {}", join(caps, " ")),
-            Self::Parse(_) => unimplemented!(),
-            Self::PermanentFlags(flags) => write!(f, "PERMANENTFLAGS ({})", join(flags, " ")),
-            Self::ReadOnly => write!(f, "READ-ONLY"),
-            Self::ReadWrite => write!(f, "READ-WRITE"),
-            Self::TryCreate => unimplemented!(),
-            Self::UidNext(next) => write!(f, "UIDNEXT {}", next),
-            Self::UidValidity(validity) => write!(f, "UIDVALIDITY {}", validity),
-            Self::Unseen(seq) => write!(f, "UNSEEN {}", seq),
-            Self::X => unimplemented!(),
+            Code::Alert => write!(f, "ALERT"),
+            Code::BadCharset(charsets) => {
+                write!(f, "BADCHARSET")?;
+                for charset in charsets {
+                    write!(f, " {}", charset)?;
+                }
+                Ok(())
+            }
+            Code::Capability(caps) => write!(f, "CAPABILITY {}", join(caps, " ")),
+            Code::Parse => write!(f, "PARSE"),
+            Code::PermanentFlags(flags) => write!(f, "PERMANENTFLAGS ({})", join(flags, " ")),
+            Code::ReadOnly => write!(f, "READ-ONLY"),
+            Code::ReadWrite => write!(f, "READ-WRITE"),
+            Code::TryCreate => unimplemented!(),
+            Code::UidNext(next) => write!(f, "UIDNEXT {}", next),
+            Code::UidValidity(validity) => write!(f, "UIDVALIDITY {}", validity),
+            Code::Unseen(seq) => write!(f, "UNSEEN {}", seq),
+            Code::X => unimplemented!(),
+            Code::Other(_atom, _params) => unimplemented!(),
             // RFC 2221
-            Self::Referral(imap_url) => write!(f, "REFERRAL {}", imap_url),
+            Code::Referral(url) => write!(f, "REFERRAL {}", url),
         }
+    }
+}
+
+impl Codec for Code {
+    fn serialize(&self) -> Vec<u8> {
+        format!("{}", self).into_bytes()
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }
 
 /// The current data items are:
 #[derive(Debug, Clone, PartialEq)]
-pub enum DataItemResp {
+pub enum DataItemResponse {
     /// `BODY`
     ///
     /// A form of BODYSTRUCTURE without extension data.
@@ -938,7 +933,11 @@ pub enum DataItemResp {
     /// into a textual form, such as BASE64, prior to being sent to the
     /// client.  To derive the original binary data, the client MUST
     /// decode the transfer encoded string.
-    BodyExt(Option<SectionResp>, Option<u32>),
+    BodyExt {
+        section: Option<Section>,
+        origin: Option<u32>,
+        data: NString,
+    },
 
     /// `BODYSTRUCTURE`
     ///
@@ -963,17 +962,17 @@ pub enum DataItemResp {
     /// `FLAGS`
     ///
     /// A parenthesized list of flags that are set for this message.
-    Flags,
+    Flags(Vec<Flag>),
 
     /// `INTERNALDATE`
     ///
     /// A string representing the internal date of the message.
-    InternalDate,
+    InternalDate(DateTime<FixedOffset>),
 
     /// `RFC822`
     ///
     /// Equivalent to BODY[].
-    Rfc822,
+    Rfc822(NString),
 
     /// `RFC822.HEADER`
     ///
@@ -982,26 +981,58 @@ pub enum DataItemResp {
     /// a result of a FETCH of RFC822.HEADER.  BODY[HEADER] response
     /// data occurs as a result of a FETCH of BODY[HEADER] (which sets
     /// \Seen) or BODY.PEEK[HEADER] (which does not set \Seen).
-    Rfc822Header,
+    Rfc822Header(NString),
 
     /// `RFC822.SIZE`
     ///
     /// A number expressing the [RFC-2822] size of the message.
-    Rfc822Size,
+    Rfc822Size(u32),
 
     /// `RFC822.TEXT`
     ///
     /// Equivalent to BODY[TEXT].
-    Rfc822Text,
+    Rfc822Text(NString),
 
     /// `UID`
     ///
     /// A number expressing the unique identifier of the message.
-    Uid,
+    Uid(u32),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum SectionResp {}
+impl Codec for DataItemResponse {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            DataItemResponse::Body => unimplemented!(),
+            DataItemResponse::BodyExt {
+                section: _,
+                origin: _,
+                data: _,
+            } => unimplemented!(),
+            DataItemResponse::BodyStructure(_structure) => unimplemented!(),
+            DataItemResponse::Envelope(_envelope) => unimplemented!(),
+            DataItemResponse::Flags(flags) => format!("({})", join(flags, " ")).into_bytes(),
+            DataItemResponse::InternalDate(_datetime) => unimplemented!(),
+            DataItemResponse::Rfc822(nstring) => {
+                [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat()
+            }
+            DataItemResponse::Rfc822Header(nstring) => {
+                [b"RFC822.HEADER ".as_ref(), nstring.serialize().as_ref()].concat()
+            }
+            DataItemResponse::Rfc822Size(size) => format!("RFC822.SIZE {}", size).into_bytes(),
+            DataItemResponse::Rfc822Text(nstring) => {
+                [b"RFC822.TEXT ".as_ref(), nstring.serialize().as_ref()].concat()
+            }
+            DataItemResponse::Uid(uid) => format!("UID {}", uid).into_bytes(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), DataItemResponse>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BodyStructure {
@@ -1063,45 +1094,45 @@ pub enum BodyStructure {
     Multi(Vec<BodyStructure>, String, Option<MultiPartExtensionData>),
 }
 
-impl Codec for BodyStructure {
-    fn serialize(&self) -> Vec<u8> {
-        use std::fmt::Write;
-
-        match self {
-            Self::Single(body) => format!("{}", body).into_bytes(),
-            Self::Multi(bodystructs, subtype, extensions) => {
-                let mut ret_val = String::new();
-
-                write!(ret_val, "(").unwrap();
-                for bodystruct in bodystructs {
-                    write!(
-                        ret_val,
-                        "{}",
-                        String::from_utf8(bodystruct.serialize()).unwrap()
-                    )
-                    .unwrap();
-                }
-
-                write!(ret_val, " {}", subtype).unwrap();
-
-                if let Some(_extensions) = extensions {
-                    unimplemented!();
-                }
-
-                write!(ret_val, ")").unwrap();
-
-                ret_val.into_bytes()
-            }
-        }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
-}
+// impl Codec for BodyStructure {
+//     fn serialize(&self) -> Vec<u8> {
+//         use std::fmt::Write;
+//
+//         match self {
+//             Self::Single(body) => format!("{}", body).into_bytes(),
+//             Self::Multi(bodystructs, subtype, extensions) => {
+//                 let mut ret_val = String::new();
+//
+//                 write!(ret_val, "(").unwrap();
+//                 for bodystruct in bodystructs {
+//                     write!(
+//                         ret_val,
+//                         "{}",
+//                         String::from_utf8(bodystruct.serialize()).unwrap()
+//                     )
+//                     .unwrap();
+//                 }
+//
+//                 write!(ret_val, " {}", subtype).unwrap();
+//
+//                 if let Some(_extensions) = extensions {
+//                     unimplemented!();
+//                 }
+//
+//                 write!(ret_val, ")").unwrap();
+//
+//                 ret_val.into_bytes()
+//             }
+//         }
+//     }
+//
+//     fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), BodyStructure>
+//     where
+//         Self: Sized,
+//     {
+//         unimplemented!()
+//     }
+// }
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,
@@ -1153,36 +1184,37 @@ impl Codec for BodyStructure {
 /// TODO: many invariants here...
 #[derive(Debug, Clone, PartialEq)]
 pub struct Envelope {
-    date: IMAPString, // TODO: must not be empty string
-    subject: IMAPString,
-    from: Vec<Address>,      // nil if absent or empty
-    sender: Vec<Address>,    // set to from if absent or empty
-    reply_to: Vec<Address>,  // set to from if absent or empty
-    to: Vec<Address>,        // nil if absent or empty
-    cc: Vec<Address>,        // nil if absent or empty
-    bcc: Vec<Address>,       // nil if absent or empty
-    in_reply_to: IMAPString, // TODO: must not be empty string
-    message_id: IMAPString,  // TODO: must not be empty string
+    pub date: NString, // TODO: must not be empty string
+    pub subject: NString,
+    pub from: Vec<Address>,     // serialize as nil if empty?
+    pub sender: Vec<Address>,   // TODO: set to from if absent or empty
+    pub reply_to: Vec<Address>, // TODO: set to from if absent or empty
+    pub to: Vec<Address>,       // serialize as nil if empty?
+    pub cc: Vec<Address>,       // serialize as nil if empty?
+    pub bcc: Vec<Address>,      // serialize as nil if empty?
+    pub in_reply_to: NString,   // TODO: must not be empty string
+    pub message_id: NString,    // TODO: must not be empty string
 }
 
-impl std::fmt::Display for Envelope {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "({} {} {} ({}) ({}) {} {} {} {} {})",
-            self.date,
-            self.subject,
-            join_or_nil(&self.from, " "),
-            join(&self.sender, " "),   // FIXME: set to from if empty
-            join(&self.reply_to, " "), // FIXME: set to from if empty
-            join_or_nil(&self.to, " "),
-            join_or_nil(&self.cc, " "),
-            join_or_nil(&self.bcc, " "),
-            self.in_reply_to,
-            self.message_id,
-        )
-    }
-}
+// FIXME
+// impl std::fmt::Display for Envelope {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+//         write!(
+//             f,
+//             "({} {} {} ({}) ({}) {} {} {} {} {})",
+//             self.date,
+//             self.subject,
+//             join_or_nil(&self.from, " "),
+//             join(&self.sender, " "),   // FIXME: set to from if empty
+//             join(&self.reply_to, " "), // FIXME: set to from if empty
+//             join_or_nil(&self.to, " "),
+//             join_or_nil(&self.cc, " "),
+//             join_or_nil(&self.bcc, " "),
+//             self.in_reply_to,
+//             self.message_id,
+//         )
+//     }
+// }
 
 /// An address structure is a parenthesized list that describes an
 /// electronic mail address.  The fields of an address structure
@@ -1210,17 +1242,17 @@ impl Address {
     }
 }
 
-impl std::fmt::Display for Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "({} {} {} {})",
-            self.name, self.adl, self.mailbox, self.host
-        )
-    }
-}
-#[derive(Debug, Clone, PartialEq)]
+// impl std::fmt::Display for Address {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+//         write!(
+//             f,
+//             "({} {} {} {})",
+//             self.name, self.adl, self.mailbox, self.host
+//         )
+//     }
+// }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Body {
     // The basic fields of a non-multipart body part are in the following order:
     //
@@ -1272,66 +1304,66 @@ pub struct Body {
     pub extension: Option<SinglePartExtensionData>,
 }
 
-impl std::fmt::Display for Body {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let param_list = if self.parameter_list.is_empty() {
-            String::from("nil")
-        } else {
-            String::from("(")
-                + &self
-                    .parameter_list
-                    .iter()
-                    .map(|(key, value)| format!("{} {}", key, value))
-                    .collect::<Vec<String>>()
-                    .join(" ")
-                + ")"
-        };
-
-        match &self.specific {
-            SpecificFields::Basic { type_, subtype } => write!(
-                f,
-                "({} {} {} {} {} {} {})",
-                type_,
-                subtype,
-                param_list,
-                self.id,
-                self.description,
-                self.content_transfer_encoding,
-                self.size
-            ),
-            SpecificFields::MessageRfc822 {
-                envelope,
-                body_structure,
-                number_of_lines,
-            } => write!(
-                f,
-                r#"("message" "rfc822" {} {} {} {} {} {} {} {})"#,
-                param_list,
-                self.id,
-                self.description,
-                self.content_transfer_encoding,
-                self.size,
-                envelope,
-                String::from_utf8(body_structure.serialize()).unwrap(),
-                number_of_lines
-            ),
-            SpecificFields::Text {
-                subtype,
-                number_of_lines,
-            } => write!(
-                f,
-                r#"("text" {} {} {} {} {} {} {})"#,
-                subtype,
-                param_list,
-                self.id,
-                self.description,
-                self.content_transfer_encoding,
-                self.size,
-                number_of_lines
-            ),
-        }
-    }
-}
+// impl std::fmt::Display for Body {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+//         let param_list = if self.parameter_list.is_empty() {
+//             String::from("nil")
+//         } else {
+//             String::from("(")
+//                 + &self
+//                     .parameter_list
+//                     .iter()
+//                     .map(|(key, value)| format!("{} {}", key, value))
+//                     .collect::<Vec<String>>()
+//                     .join(" ")
+//                 + ")"
+//         };
+//
+//         match &self.specific {
+//             SpecificFields::Basic { type_, subtype } => write!(
+//                 f,
+//                 "({} {} {} {} {} {} {})",
+//                 type_,
+//                 subtype,
+//                 param_list,
+//                 self.id,
+//                 self.description,
+//                 self.content_transfer_encoding,
+//                 self.size
+//             ),
+//             SpecificFields::MessageRfc822 {
+//                 envelope,
+//                 body_structure,
+//                 number_of_lines,
+//             } => write!(
+//                 f,
+//                 r#"("message" "rfc822" {} {} {} {} {} {} {} {})"#,
+//                 param_list,
+//                 self.id,
+//                 self.description,
+//                 self.content_transfer_encoding,
+//                 self.size,
+//                 envelope,
+//                 String::from_utf8(body_structure.serialize()).unwrap(),
+//                 number_of_lines
+//             ),
+//             SpecificFields::Text {
+//                 subtype,
+//                 number_of_lines,
+//             } => write!(
+//                 f,
+//                 r#"("text" {} {} {} {} {} {} {})"#,
+//                 subtype,
+//                 param_list,
+//                 self.id,
+//                 self.description,
+//                 self.content_transfer_encoding,
+//                 self.size,
+//                 number_of_lines
+//             ),
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpecificFields {
@@ -1592,7 +1624,11 @@ mod test {
                 b"* CAPABILITY IMAP4REV1\r\n",
             ),
             (
-                Data::List(vec![NameAttribute::Noselect], "aaa".into(), "bbb".into()),
+                Data::List {
+                    items: vec![FlagNameAttribute::Noselect],
+                    delimiter: "aaa".into(),
+                    name: "bbb".into(),
+                },
                 b"* LIST (\\Noselect) \"aaa\" bbb\r\n", // FIXME: data types may change, when to use " (dquote)?
             ),
             (Data::Search(vec![1, 2, 3, 42]), b"* SEARCH 1 2 3 42\r\n"),

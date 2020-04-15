@@ -1,11 +1,12 @@
+use crate::types::core::Atom;
 use serde::Deserialize;
 use std::fmt;
 
 pub mod command;
 pub mod core;
 pub mod data_items;
+pub mod flag;
 pub mod mailbox;
-pub mod message_attributes;
 pub mod response;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -18,6 +19,10 @@ pub enum Capability {
     Idle,           // RFC 2177
     Enable,         // RFC 5161
     LoginReferrals, // RFC 2221
+    // --- Other ---
+    // TODO: Is this a good idea?
+    // FIXME: mark this enum as non-exhaustive at least?
+    Other(Atom),
 }
 
 impl fmt::Display for Capability {
@@ -35,6 +40,7 @@ impl fmt::Display for Capability {
             Idle => write!(f, "IDLE"),
             Enable => write!(f, "ENABLE"),
             LoginReferrals => write!(f, "LOGIN-REFERRALS"),
+            Other(atom) => write!(f, "{}", atom),
         }
     }
 }
@@ -42,7 +48,7 @@ impl fmt::Display for Capability {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum AuthMechanism {
     Plain,
-    Other(String),
+    Other(Atom),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -1,6 +1,6 @@
 use crate::{
     parse::{crlf, dquote},
-    types::core::{AString, Atom, NString, Nil, String as IMAPString},
+    types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString},
 };
 use nom::{
     branch::alt,
@@ -8,11 +8,10 @@ use nom::{
     character::streaming::{digit1, one_of},
     combinator::{map, map_res, value},
     error::ErrorKind,
-    sequence::tuple,
+    sequence::{delimited, tuple},
     IResult,
 };
-use std::borrow::Cow;
-use std::str::from_utf8;
+use std::{borrow::Cow, str::from_utf8};
 
 // ----- number -----
 
@@ -87,17 +86,7 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    let mut quoted = Cow::Borrowed(quoted);
-
-    if quoted.contains("\\\\") {
-        quoted = Cow::Owned(quoted.replace("\\\\", "\\"))
-    }
-
-    if quoted.contains("\\\"") {
-        quoted = Cow::Owned(quoted.replace("\\\"", "\""))
-    }
-
-    Ok((remaining, quoted))
+    Ok((remaining, unescape_quoted(quoted)))
 }
 
 /// QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
@@ -112,7 +101,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
         ),
         map(
             tuple((
-                tag_no_case("\\"),
+                tag("\\"),
                 take_while_m_n(1, 1, |byte| is_quoted_specials(byte)),
             )),
             |(_, bytes): (_, &[u8])| {
@@ -139,9 +128,9 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
 pub fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = tuple((tag(b"{"), number, tag(b"}"), crlf));
+    let parser = tuple((delimited(tag(b"{"), number, tag(b"}")), crlf));
 
-    let (remaining, (_, number, _, _)) = parser(input)?;
+    let (remaining, (number, _)) = parser(input)?;
 
     let (remaining, data) = take(number)(remaining)?;
 
@@ -164,7 +153,7 @@ fn is_char8(i: u8) -> bool {
 pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
     let parser = alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
-            AString::Atom(Atom(String::from_utf8(bytes.to_vec()).unwrap()))
+            AString::Atom(String::from_utf8(bytes.to_vec()).unwrap())
         }),
         map(string, AString::String),
     ));
@@ -230,15 +219,8 @@ pub fn nil(input: &[u8]) -> IResult<&[u8], Nil> {
 // ----- text -----
 
 /// text = 1*TEXT-CHAR
-pub fn text(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = take_while1(is_text_char);
-
-    let (remaining, parsed_text) = parser(input)?;
-
-    Ok((
-        remaining,
-        String::from_utf8(parsed_text.to_owned()).unwrap(),
-    ))
+pub fn text(input: &[u8]) -> IResult<&[u8], &str> {
+    map_res(take_while1(is_text_char), from_utf8)(input)
 }
 
 /// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F

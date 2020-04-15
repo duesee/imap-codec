@@ -27,11 +27,11 @@
 
 use crate::{
     parse::core::{atom, is_astring_char, quoted},
-    types::core::Atom,
+    types::AuthMechanism,
 };
 use nom::{
     branch::alt,
-    bytes::streaming::tag as nom_tag,
+    bytes::streaming::tag,
     bytes::streaming::take_while1,
     character::streaming::line_ending,
     combinator::{map, map_res},
@@ -81,19 +81,27 @@ pub fn is_digit(byte: u8) -> bool {
 
 /// DQUOTE = %x22 ; " (Double Quote)
 pub fn dquote(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    nom_tag("\"")(input)
+    tag("\"")(input)
 }
 
 /// SP = %x20
 pub fn sp(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    nom_tag(" ")(input)
+    tag(" ")(input)
 }
 
 // ----- Unsorted IMAP parsers -----
 
 /// auth-type = atom ; Defined by [SASL]
-pub fn auth_type(input: &[u8]) -> IResult<&[u8], Atom> {
-    atom(input)
+pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
+    let (rem, raw_mechanism) = atom(input)?;
+
+    // FIXME: just take inner String?
+    let mechanism = match raw_mechanism.0.to_lowercase().as_ref() {
+        "plain" => AuthMechanism::Plain,
+        _ => AuthMechanism::Other(raw_mechanism),
+    };
+
+    return Ok((rem, mechanism));
 }
 
 /// charset = atom / quoted
@@ -110,10 +118,9 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
 }
 
 /// tag = 1*<any ASTRING-CHAR except "+">
-pub fn tag(input: &[u8]) -> IResult<&[u8], &str> {
-    let parser = map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8);
-
-    let (remaining, tag) = parser(input)?;
-
-    Ok((remaining, tag))
+/// FIXME: this function has the _imap suffix to avoid confusion with
+///        nom's "tag" parser. However, this function should be exposed
+///        as "tag" to users of this library.
+pub fn tag_imap(input: &[u8]) -> IResult<&[u8], &str> {
+    map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8)(input)
 }

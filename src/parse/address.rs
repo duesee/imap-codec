@@ -2,23 +2,21 @@ use crate::{
     parse::{core::nstring, sp},
     types::{core::NString, response::Address},
 };
-use nom::{bytes::streaming::tag, sequence::tuple, IResult};
+use nom::{
+    bytes::streaming::tag,
+    sequence::{delimited, tuple},
+    IResult,
+};
 
 /// address = "(" addr-name SP addr-adl SP addr-mailbox SP addr-host ")"
 pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
-    let parser = tuple((
+    let parser = delimited(
         tag(b"("),
-        addr_name,
-        sp,
-        addr_adl,
-        sp,
-        addr_mailbox,
-        sp,
-        addr_host,
+        tuple((addr_name, sp, addr_adl, sp, addr_mailbox, sp, addr_host)),
         tag(b")"),
-    ));
+    );
 
-    let (remaining, (_, name, _, adl, _, mailbox, _, host, _)) = parser(input)?;
+    let (remaining, (name, _, adl, _, mailbox, _, host)) = parser(input)?;
 
     Ok((remaining, Address::new(name, adl, mailbox, host)))
 }

@@ -1,7 +1,7 @@
 use crate::parse::{is_alpha, is_digit};
 use nom::{
     branch::alt,
-    bytes::streaming::{tag as nom_tag, take_while},
+    bytes::streaming::{tag, take_while},
     combinator::{map_res, opt, recognize},
     sequence::tuple,
     IResult,
@@ -13,7 +13,7 @@ pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
     let parser = map_res(
         recognize(tuple((
             take_while(is_base64_char),
-            opt(alt((nom_tag("=="), nom_tag("=")))),
+            opt(alt((tag("=="), tag("=")))),
         ))),
         from_utf8,
     );
