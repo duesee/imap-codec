@@ -20,7 +20,8 @@ I am not aware of a more complete implementation of the IMAP server side in Rust
 # Future of this Crate
 
 There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception as it
-implements mostly the server functionality. I will continue to work on this library, but 
+implements mostly the server functionality. I will continue to work on this library, but would also be happy if this
+could be merged with related IMAP crates to a complete IMAP library.
 
 ## Known issues
 
