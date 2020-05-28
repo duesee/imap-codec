@@ -11,6 +11,22 @@ pub enum MailboxWithWildcards {
     V2(IMAPString),
 }
 
+impl Codec for MailboxWithWildcards {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            MailboxWithWildcards::V1(str) => str.clone().into_bytes(),
+            MailboxWithWildcards::V2(imap_str) => imap_str.serialize(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), MailboxWithWildcards>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum Mailbox {
     Inbox,
