@@ -17,7 +17,7 @@ use crate::{
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
-    combinator::{map, opt, value},
+    combinator::{map, opt},
     multi::many0,
     sequence::{delimited, tuple},
     IResult,
@@ -57,44 +57,43 @@ fn is_list_wildcards(i: u8) -> bool {
 ///             ; semantic details of mailbox names.
 /// FIXME: this is only to keep in mind that there are several string types
 pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
-    let parser = alt((
-        value(Mailbox::Inbox, tag_no_case(b"INBOX")),
-        map(astring, |a_str| match a_str {
-            AString::Atom(str) => {
+    let (remaining, mailbox) = astring(input)?;
+
+    let mailbox = match mailbox {
+        AString::Atom(str) => {
+            if str.to_lowercase() == "inbox" {
+                Mailbox::Inbox
+            } else {
+                Mailbox::Other(AString::Atom(str))
+            }
+        }
+        AString::String(imap_str) => match imap_str {
+            IMAPString::Quoted(ref str) => {
                 if str.to_lowercase() == "inbox" {
                     Mailbox::Inbox
                 } else {
-                    Mailbox::Other(AString::Atom(str))
+                    Mailbox::Other(AString::String(imap_str))
                 }
             }
-            AString::String(imap_str) => match imap_str {
-                IMAPString::Quoted(ref str) => {
+            IMAPString::Literal(ref bytes) => {
+                // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
+                if let Ok(str) = String::from_utf8(bytes.clone()) {
+                    // After the conversion we ignore the case...
                     if str.to_lowercase() == "inbox" {
+                        // ...and return the Inbox variant.
                         Mailbox::Inbox
                     } else {
                         Mailbox::Other(AString::String(imap_str))
                     }
-                }
-                IMAPString::Literal(ref bytes) => {
-                    // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                    if let Ok(str) = String::from_utf8(bytes.clone()) {
-                        // After the conversion we ignore the case...
-                        if str.to_lowercase() == "inbox" {
-                            // ...and return the Inbox variant.
-                            return Mailbox::Inbox;
-                        }
-                    }
-
+                } else {
                     // ... If not, it must be something else.
                     Mailbox::Other(AString::String(imap_str))
                 }
-            },
-        }),
-    ));
+            }
+        },
+    };
 
-    let (remaining, parsed_mailbox) = parser(input)?;
-
-    Ok((remaining, parsed_mailbox))
+    Ok((remaining, mailbox))
 }
 
 /// mailbox-data = "FLAGS" SP flag-list /
@@ -175,7 +174,8 @@ mod test {
     fn test_mailbox() {
         assert!(mailbox(b"\"iNbOx\"").is_ok());
         assert!(mailbox(b"{3}\r\naaa\r\n").is_ok());
-        assert!(mailbox(b"inbox").is_ok());
+        assert!(mailbox(b"inbox ").is_ok());
+        assert!(mailbox(b"inbox.sent ").is_ok());
         assert!(mailbox(b"aaa").is_err());
     }
 }
