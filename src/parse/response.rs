@@ -206,8 +206,10 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "idle" => Capability::Idle,
                 // RFC 5161 The IMAP ENABLE Extension
                 "enable" => Capability::Enable,
+                // RFC 2193 IMAP4 Mailbox Referrals
+                "mailbox-referrals" => Capability::MailboxReferrals,
                 // RFC 2221 IMAP4 Login Referrals
-                "loginreferrals" => Capability::LoginReferrals,
+                "login-referrals" => Capability::LoginReferrals,
                 _ => Capability::Other(atom),
             }
         }),

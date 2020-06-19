@@ -16,9 +16,10 @@ pub enum Capability {
     LoginDisabled,
     StartTls,
     // ---
-    Idle,           // RFC 2177
-    Enable,         // RFC 5161
-    LoginReferrals, // RFC 2221
+    Idle,             // RFC 2177
+    Enable,           // RFC 5161
+    MailboxReferrals, // RFC 2193
+    LoginReferrals,   // RFC 2221
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
@@ -39,6 +40,7 @@ impl fmt::Display for Capability {
             StartTls => write!(f, "STARTTLS"),
             Idle => write!(f, "IDLE"),
             Enable => write!(f, "ENABLE"),
+            MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
             LoginReferrals => write!(f, "LOGIN-REFERRALS"),
             Other(atom) => write!(f, "{}", atom),
         }
