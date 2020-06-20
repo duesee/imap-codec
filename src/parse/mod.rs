@@ -98,6 +98,7 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     // FIXME: just take inner String?
     let mechanism = match raw_mechanism.0.to_lowercase().as_ref() {
         "plain" => AuthMechanism::Plain,
+        "login" => AuthMechanism::Login,
         _ => AuthMechanism::Other(raw_mechanism),
     };
 

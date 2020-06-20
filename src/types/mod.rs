@@ -34,6 +34,7 @@ impl fmt::Display for Capability {
             Imap4Rev1 => write!(f, "IMAP4REV1"),
             Auth(mechanism) => match mechanism {
                 AuthMechanism::Plain => write!(f, "AUTH=PLAIN"),
+                AuthMechanism::Login => write!(f, "AUTH=LOGIN"),
                 AuthMechanism::Other(mech) => write!(f, "AUTH={}", mech),
             },
             LoginDisabled => write!(f, "LOGINDISABLED"),
@@ -49,7 +50,13 @@ impl fmt::Display for Capability {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum AuthMechanism {
+    // RFC4616: The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
+    // AUTH=PLAIN
     Plain,
+    // TODO: where does it come from?
+    // * draft-murchison-sasl-login-00: The LOGIN SASL Mechanism (?)
+    // AUTH=LOGIN
+    Login,
     Other(Atom),
 }
 
