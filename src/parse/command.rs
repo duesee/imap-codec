@@ -26,7 +26,7 @@ use crate::{
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, map_opt, opt, value},
+    combinator::{map, map_opt, map_res, opt, value},
     multi::{many1, separated_list, separated_nonempty_list},
     sequence::{delimited, tuple},
     IResult,
@@ -229,8 +229,9 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = alt((
         login,
-        map(authenticate, |mechanism| {
-            CommandBody::Authenticate(mechanism)
+        map(authenticate, |(mechanism, ir)| CommandBody::Authenticate {
+            mechanism,
+            initial_response: ir.map(|i| i.to_owned()),
         }),
         value(CommandBody::StartTLS, tag_no_case(b"STARTTLS")),
     ));
@@ -260,14 +261,26 @@ fn password(input: &[u8]) -> IResult<&[u8], AString> {
 }
 
 /// authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)
-pub fn authenticate(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
-    let parser = tuple((tag_no_case(b"AUTHENTICATE"), sp, auth_type));
+///
+/// SASL-IR:
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] (CRLF base64)
+///                 ; redefine AUTHENTICATE from [RFC3501]
+pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
+    let parser = tuple((
+        tag_no_case(b"AUTHENTICATE"),
+        sp,
+        auth_type,
+        opt(map(
+            tuple((sp, alt((base64, map_res(tag("="), std::str::from_utf8))))),
+            |(_, maybe_ir)| maybe_ir,
+        )),
+    ));
 
-    let (remaining, (_, _, auth_type)) = parser(input)?;
+    let (remaining, (_, _, auth_type, ir)) = parser(input)?;
 
     // Server must send "+" at this point...
 
-    Ok((remaining, auth_type))
+    Ok((remaining, (auth_type, ir)))
 }
 
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {

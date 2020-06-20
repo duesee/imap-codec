@@ -204,12 +204,14 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "starttls" => Capability::StartTls,
                 // RFC 2177 IMAP4 IDLE command
                 "idle" => Capability::Idle,
-                // RFC 5161 The IMAP ENABLE Extension
-                "enable" => Capability::Enable,
                 // RFC 2193 IMAP4 Mailbox Referrals
                 "mailbox-referrals" => Capability::MailboxReferrals,
                 // RFC 2221 IMAP4 Login Referrals
                 "login-referrals" => Capability::LoginReferrals,
+                // RFC 4959 IMAP Extension for SASL Initial Client Response
+                "sasl-ir" => Capability::SaslIr,
+                // RFC 5161 The IMAP ENABLE Extension
+                "enable" => Capability::Enable,
                 _ => Capability::Other(atom),
             }
         }),

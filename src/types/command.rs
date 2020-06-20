@@ -307,7 +307,10 @@ pub enum CommandBody {
     ///    wkhbfa2QteAQAgAG1yYwE=
     /// S: A001 OK GSSAPI authentication successful
     /// ```
-    Authenticate(AuthMechanism),
+    Authenticate {
+        mechanism: AuthMechanism,
+        initial_response: Option<String>,
+    },
 
     /// ### 6.2.3.  LOGIN Command
     ///
@@ -1473,7 +1476,7 @@ impl CommandBody {
             Noop => "NOOP",
             Logout => "LOGOUT",
             StartTLS => "STARTTLS",
-            Authenticate(_) => "AUTHENTICATE",
+            Authenticate { .. } => "AUTHENTICATE",
             Login { .. } => "LOGIN",
             Select(_) => "SELECT",
             Examine(_) => "EXAMINE",
