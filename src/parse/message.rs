@@ -116,7 +116,7 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
             tuple((
                 tag_no_case(b"BODY"),
                 section,
-                opt(delimited(tag_no_case(b"<"), number, tag_no_case(b">"))),
+                opt(delimited(tag(b"<"), number, tag(b">"))),
                 sp,
                 nstring,
             )),

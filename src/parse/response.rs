@@ -337,7 +337,7 @@ pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
 /// response-fatal = "*" SP resp-cond-bye CRLF
 ///                    ; Server closes connection immediately
 pub fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
-    let parser = tuple((tag_no_case(b"*"), sp, resp_cond_bye, crlf));
+    let parser = tuple((tag(b"*"), sp, resp_cond_bye, crlf));
 
     let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
 

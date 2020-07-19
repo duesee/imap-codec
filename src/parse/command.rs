@@ -440,8 +440,8 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
         tuple((
             map(
                 opt(alt((
-                    value(StoreType::Add, tag_no_case(b"+")),
-                    value(StoreType::Remove, tag_no_case(b"-")),
+                    value(StoreType::Add, tag(b"+")),
+                    value(StoreType::Remove, tag(b"-")),
                 ))),
                 |type_| match type_ {
                     Some(type_) => type_,
