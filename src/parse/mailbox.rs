@@ -19,7 +19,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, opt},
     multi::many0,
-    sequence::{delimited, tuple},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
 
@@ -118,10 +118,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
             |_| unimplemented!(),
         ),
         map(
-            tuple((
-                tag_no_case(b"SEARCH"),
-                many0(map(tuple((sp, nz_number)), |(_, num)| num)),
-            )),
+            tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
         map(
@@ -154,7 +151,7 @@ pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], ()> {
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         sp,
         alt((
-            map(tuple((dquote, quoted_char, dquote)), |_| unimplemented!()),
+            delimited(dquote, quoted_char, dquote),
             map(nil, |_| unimplemented!()),
         )),
         sp,

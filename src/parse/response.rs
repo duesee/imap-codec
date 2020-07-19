@@ -20,7 +20,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, map_res, opt, value},
     multi::separated_nonempty_list,
-    sequence::{delimited, tuple},
+    sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
 use std::str::from_utf8;
@@ -73,9 +73,9 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> 
 /// resp-text = ["[" resp-text-code "]" SP] text
 pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((
-        opt(map(
-            tuple((delimited(tag(b"["), resp_text_code, tag(b"]")), sp)),
-            |(code, _)| code,
+        opt(terminated(
+            delimited(tag(b"["), resp_text_code, tag(b"]")),
+            sp,
         )),
         text,
     ));
@@ -104,12 +104,9 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         map(
             tuple((
                 tag_no_case(b"BADCHARSET"),
-                opt(map(
-                    tuple((
-                        sp,
-                        delimited(tag(b"("), separated_nonempty_list(sp, charset), tag(b")")),
-                    )),
-                    |(_, charsets)| charsets,
+                opt(preceded(
+                    sp,
+                    delimited(tag(b"("), separated_nonempty_list(sp, charset), tag(b")")),
                 )),
             )),
             |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or(Vec::new())),
@@ -148,15 +145,12 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         map(
             tuple((
                 atom,
-                opt(map(
-                    tuple((
-                        sp,
-                        map_res(
-                            take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                            from_utf8,
-                        ),
-                    )),
-                    |(_, params)| params,
+                opt(preceded(
+                    sp,
+                    map_res(
+                        take_while1(|byte| is_text_char(byte) && byte != b'"'),
+                        from_utf8,
+                    ),
                 )),
             )),
             |(atom, maybe_params)| Code::Other(atom, maybe_params.map(|inner| inner.to_owned())),

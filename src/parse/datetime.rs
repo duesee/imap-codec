@@ -4,7 +4,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
     character::streaming::char,
-    combinator::{map, map_res, recognize, value},
+    combinator::{map_res, recognize, value},
     sequence::{delimited, tuple},
     IResult,
 };
@@ -12,10 +12,7 @@ use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
 pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
-    let parser = alt((
-        date_text,
-        map(delimited(dquote, date_text, dquote), |date_text| date_text),
-    ));
+    let parser = alt((date_text, delimited(dquote, date_text, dquote)));
 
     let (remaining, parsed_date) = parser(input)?;
 

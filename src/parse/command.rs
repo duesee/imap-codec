@@ -28,7 +28,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, map_res, opt, value},
     multi::{many1, separated_list, separated_nonempty_list},
-    sequence::{delimited, tuple},
+    sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
 
@@ -95,8 +95,8 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
         tag_no_case(b"APPEND"),
         sp,
         mailbox,
-        opt(map(tuple((sp, flag_list)), |(_, flag_list)| flag_list)),
-        opt(map(tuple((sp, date_time)), |(_, date_time)| date_time)),
+        opt(preceded(sp, flag_list)),
+        opt(preceded(sp, date_time)),
         sp,
         literal,
     ));
@@ -270,9 +270,9 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>
         tag_no_case(b"AUTHENTICATE"),
         sp,
         auth_type,
-        opt(map(
-            tuple((sp, alt((base64, map_res(tag("="), std::str::from_utf8))))),
-            |(_, maybe_ir)| maybe_ir,
+        opt(preceded(
+            sp,
+            alt((base64, map_res(tag("="), std::str::from_utf8))),
         )),
     ));
 
@@ -284,7 +284,7 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>
 }
 
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = map(tuple((base64, crlf)), |(line, _)| line); // FIXME: many0 deleted
+    let parser = terminated(base64, crlf); // FIXME: many0 deleted
 
     let (remaining, parsed_authenticate_data) = parser(input)?;
 
@@ -514,7 +514,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
             tuple((sp, tag_no_case(b"CHARSET"), sp, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(map(tuple((sp, search_key)), |(_, search_key)| search_key)),
+        many1(preceded(sp, search_key)),
     ));
 
     let (remaining, (_, charset, criteria)) = parser(input)?;
