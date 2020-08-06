@@ -1,4 +1,4 @@
-use crate::parse::{dquote, is_digit, sp};
+use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use nom::{
     branch::alt,
@@ -12,7 +12,7 @@ use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
 pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
-    let parser = alt((date_text, delimited(dquote, date_text, dquote)));
+    let parser = alt((date_text, delimited(DQUOTE, date_text, DQUOTE)));
 
     let (remaining, parsed_date) = parser(input)?;
 
@@ -34,7 +34,7 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 /// date-day = 1*2DIGIT ; Day of month
 pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
-        map_res(take_while_m_n(1, 2, is_digit), from_utf8),
+        map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8),
         str::parse::<u8>,
     );
 
@@ -68,7 +68,7 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 /// date-year = 4DIGIT
 pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     let parser = map_res(
-        map_res(take_while_m_n(4, 4, is_digit), from_utf8),
+        map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8),
         str::parse::<u16>,
     );
 
@@ -81,17 +81,17 @@ pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
 pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let parser = tuple((
         map_res(
-            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
             str::parse::<u8>,
         ),
         tag(b":"),
         map_res(
-            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
             str::parse::<u8>,
         ),
         tag(b":"),
         map_res(
-            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
             str::parse::<u8>,
         ),
     ));
@@ -107,19 +107,19 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
 pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
     let parser = delimited(
-        dquote,
+        DQUOTE,
         tuple((
             date_day_fixed,
             tag(b"-"),
             date_month,
             tag(b"-"),
             date_year,
-            sp,
+            SP,
             time,
-            sp,
+            SP,
             zone,
         )),
-        dquote,
+        DQUOTE,
     );
 
     let (remaining, (d, _, m, _, y, _, time, _, zone)) = parser(input)?;
@@ -140,8 +140,8 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
         map_res(
             alt((
-                recognize(tuple((sp, take_while_m_n(1, 1, is_digit)))),
-                take_while_m_n(2, 2, is_digit),
+                recognize(tuple((SP, take_while_m_n(1, 1, is_DIGIT)))),
+                take_while_m_n(2, 2, is_DIGIT),
             )),
             |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()),
         ),
@@ -164,11 +164,11 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let parser = tuple((
         alt((char('+'), char('-'))),
         map_res(
-            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
             str::parse::<i32>,
         ),
         map_res(
-            map_res(take_while_m_n(2, 2, is_digit), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
             str::parse::<i32>,
         ),
     ));

@@ -1,7 +1,8 @@
 use crate::{
-    parse::{core::nstring, sp},
+    parse::core::nstring,
     types::{core::NString, response::Address},
 };
+use abnf_core::streaming::SP;
 use nom::{
     bytes::streaming::tag,
     sequence::{delimited, tuple},
@@ -12,7 +13,7 @@ use nom::{
 pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
     let parser = delimited(
         tag(b"("),
-        tuple((addr_name, sp, addr_adl, sp, addr_mailbox, sp, addr_host)),
+        tuple((addr_name, SP, addr_adl, SP, addr_mailbox, SP, addr_host)),
         tag(b")"),
     );
 

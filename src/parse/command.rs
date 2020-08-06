@@ -4,14 +4,12 @@ use crate::{
         base64::base64,
         charset,
         core::{astring, atom, literal, number, nz_number},
-        crlf,
         datetime::{date, date_time},
         flag::{flag, flag_list},
         header::header_fld_name,
         mailbox::{list_mailbox, mailbox},
         section::section,
         sequence::sequence_set,
-        sp,
         status::status_att,
         tag_imap,
     },
@@ -23,6 +21,7 @@ use crate::{
         AuthMechanism, StoreResponse, StoreType,
     },
 };
+use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -37,9 +36,9 @@ use nom::{
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     let parser = tuple((
         tag_imap,
-        sp,
+        SP,
         alt((command_any, command_auth, command_nonauth, command_select)),
-        crlf,
+        CRLF,
     ));
 
     let (remaining, (tag, _, command_body, _)) = parser(input)?;
@@ -93,11 +92,11 @@ pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"APPEND"),
-        sp,
+        SP,
         mailbox,
-        opt(preceded(sp, flag_list)),
-        opt(preceded(sp, date_time)),
-        sp,
+        opt(preceded(SP, flag_list)),
+        opt(preceded(SP, date_time)),
+        SP,
         literal,
     ));
 
@@ -118,7 +117,7 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// create = "CREATE" SP mailbox
 ///           ; Use of INBOX gives a NO error
 pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"CREATE"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"CREATE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -128,7 +127,7 @@ pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// delete = "DELETE" SP mailbox
 ///           ; Use of INBOX gives a NO error
 pub fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"DELETE"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"DELETE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -137,7 +136,7 @@ pub fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// examine = "EXAMINE" SP mailbox
 pub fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"EXAMINE"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"EXAMINE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -146,7 +145,7 @@ pub fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// list = "LIST" SP mailbox SP list-mailbox
 pub fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
+    let parser = tuple((tag_no_case(b"LIST"), SP, mailbox, SP, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox)) = parser(input)?;
 
@@ -155,7 +154,7 @@ pub fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// lsub = "LSUB" SP mailbox SP list-mailbox
 pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"LSUB"), sp, mailbox, sp, list_mailbox));
+    let parser = tuple((tag_no_case(b"LSUB"), SP, mailbox, SP, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox)) = parser(input)?;
 
@@ -165,7 +164,7 @@ pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// rename = "RENAME" SP mailbox SP mailbox
 ///           ; Use of INBOX as a destination gives a NO error
 pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"RENAME"), sp, mailbox, sp, mailbox));
+    let parser = tuple((tag_no_case(b"RENAME"), SP, mailbox, SP, mailbox));
 
     let (remaining, (_, _, old, _, new)) = parser(input)?;
 
@@ -174,7 +173,7 @@ pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// select = "SELECT" SP mailbox
 pub fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"SELECT"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"SELECT"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -185,10 +184,10 @@ pub fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"STATUS"),
-        sp,
+        SP,
         mailbox,
-        sp,
-        delimited(tag(b"("), separated_list(sp, status_att), tag(b")")),
+        SP,
+        delimited(tag(b"("), separated_list(SP, status_att), tag(b")")),
     ));
 
     let (remaining, (_, _, mailbox, _, items)) = parser(input)?;
@@ -198,7 +197,7 @@ pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// subscribe = "SUBSCRIBE" SP mailbox
 pub fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"SUBSCRIBE"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"SUBSCRIBE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -207,7 +206,7 @@ pub fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// unsubscribe = "UNSUBSCRIBE" SP mailbox
 pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"UNSUBSCRIBE"), sp, mailbox));
+    let parser = tuple((tag_no_case(b"UNSUBSCRIBE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
 
@@ -243,7 +242,7 @@ pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// login = "LOGIN" SP userid SP password
 pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"LOGIN"), sp, userid, sp, password));
+    let parser = tuple((tag_no_case(b"LOGIN"), SP, userid, SP, password));
 
     let (remaining, (_, _, username, _, password)) = parser(input)?;
 
@@ -268,10 +267,10 @@ fn password(input: &[u8]) -> IResult<&[u8], AString> {
 pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
     let parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
-        sp,
+        SP,
         auth_type,
         opt(preceded(
-            sp,
+            SP,
             alt((base64, map_res(tag("="), std::str::from_utf8))),
         )),
     ));
@@ -284,7 +283,7 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>
 }
 
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = terminated(base64, crlf); // FIXME: many0 deleted
+    let parser = terminated(base64, CRLF); // FIXME: many0 deleted
 
     let (remaining, parsed_authenticate_data) = parser(input)?;
 
@@ -314,7 +313,7 @@ pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// copy = "COPY" SP sequence-set SP mailbox
 pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"COPY"), sp, sequence_set, sp, mailbox));
+    let parser = tuple((tag_no_case(b"COPY"), SP, sequence_set, SP, mailbox));
 
     let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
 
@@ -331,9 +330,9 @@ pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"FETCH"),
-        sp,
+        SP,
         sequence_set,
-        sp,
+        SP,
         alt((
             value(MacroOrDataItems::Macro(Macro::All), tag_no_case(b"ALL")),
             value(MacroOrDataItems::Macro(Macro::Fast), tag_no_case(b"FAST")),
@@ -342,7 +341,7 @@ pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
                 MacroOrDataItems::DataItems(vec![fetch_att])
             }),
             map(
-                delimited(tag(b"("), separated_list(sp, fetch_att), tag(b")")),
+                delimited(tag(b"("), separated_list(SP, fetch_att), tag(b")")),
                 |fetch_attrs| MacroOrDataItems::DataItems(fetch_attrs),
             ),
         )),
@@ -419,7 +418,7 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
 
 /// store = "STORE" SP sequence-set SP store-att-flags
 pub fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, store_att_flags));
+    let parser = tuple((tag_no_case(b"STORE"), SP, sequence_set, SP, store_att_flags));
 
     let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
 
@@ -454,8 +453,8 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
                 None => StoreResponse::Answer,
             }),
         )),
-        sp,
-        alt((flag_list, separated_nonempty_list(sp, flag))),
+        SP,
+        alt((flag_list, separated_nonempty_list(SP, flag))),
     ));
 
     let (remaining, ((store_type, _, store_response), _, flag_list)) = parser(input)?;
@@ -467,7 +466,7 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
 ///        ; Unique identifiers used instead of message
 ///        ; sequence numbers
 pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = tuple((tag_no_case(b"UID"), sp, alt((copy, fetch, search, store))));
+    let parser = tuple((tag_no_case(b"UID"), SP, alt((copy, fetch, search, store))));
 
     let (remaining, (_, _, cmd)) = parser(input)?;
 
@@ -511,10 +510,10 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"SEARCH"),
         opt(map(
-            tuple((sp, tag_no_case(b"CHARSET"), sp, charset)),
+            tuple((SP, tag_no_case(b"CHARSET"), SP, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(sp, search_key)),
+        many1(preceded(SP, search_key)),
     ));
 
     let (remaining, (_, charset, criteria)) = parser(input)?;
@@ -571,51 +570,51 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
         alt((
             value(SearchKey::All, tag_no_case(b"ALL")),
             value(SearchKey::Answered, tag_no_case(b"ANSWERED")),
-            map(tuple((tag_no_case(b"BCC"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"BCC"), SP, astring)), |(_, _, val)| {
                 SearchKey::Bcc(val)
             }),
             map(
-                tuple((tag_no_case(b"BEFORE"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"BEFORE"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::Before(date),
             ),
-            map(tuple((tag_no_case(b"BODY"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"BODY"), SP, astring)), |(_, _, val)| {
                 SearchKey::Body(val)
             }),
-            map(tuple((tag_no_case(b"CC"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"CC"), SP, astring)), |(_, _, val)| {
                 SearchKey::Cc(val)
             }),
             value(SearchKey::Deleted, tag_no_case(b"DELETED")),
             value(SearchKey::Flagged, tag_no_case(b"FLAGGED")),
-            map(tuple((tag_no_case(b"FROM"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"FROM"), SP, astring)), |(_, _, val)| {
                 SearchKey::From(val)
             }),
             map(
                 // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
-                tuple((tag_no_case(b"KEYWORD"), sp, atom)),
+                tuple((tag_no_case(b"KEYWORD"), SP, atom)),
                 |(_, _, val)| SearchKey::Keyword(val),
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
             value(SearchKey::Old, tag_no_case(b"OLD")),
             map(
-                tuple((tag_no_case(b"ON"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"ON"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::On(date),
             ),
             value(SearchKey::Recent, tag_no_case(b"RECENT")),
             value(SearchKey::Seen, tag_no_case(b"SEEN")),
             map(
-                tuple((tag_no_case(b"SINCE"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SINCE"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::Since(date),
             ),
             map(
-                tuple((tag_no_case(b"SUBJECT"), sp, astring)),
+                tuple((tag_no_case(b"SUBJECT"), SP, astring)),
                 |(_, _, val)| SearchKey::Subject(val),
             ),
-            map(tuple((tag_no_case(b"TEXT"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"TEXT"), SP, astring)), |(_, _, val)| {
                 SearchKey::Text(val)
             }),
-            map(tuple((tag_no_case(b"TO"), sp, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"TO"), SP, astring)), |(_, _, val)| {
                 SearchKey::To(val)
             }),
         )),
@@ -627,45 +626,45 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
                 // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
-                tuple((tag_no_case(b"UNKEYWORD"), sp, atom)),
+                tuple((tag_no_case(b"UNKEYWORD"), SP, atom)),
                 |(_, _, val)| SearchKey::Unkeyword(val),
             ),
             value(SearchKey::Unseen, tag_no_case(b"UNSEEN")),
             value(SearchKey::Draft, tag_no_case(b"DRAFT")),
             map(
-                tuple((tag_no_case(b"HEADER"), sp, header_fld_name, sp, astring)),
+                tuple((tag_no_case(b"HEADER"), SP, header_fld_name, SP, astring)),
                 |(_, _, key, _, val)| SearchKey::Header(key, val),
             ),
             map(
-                tuple((tag_no_case(b"LARGER"), sp, number)),
+                tuple((tag_no_case(b"LARGER"), SP, number)),
                 |(_, _, val)| SearchKey::Larger(val),
             ),
             map(
-                tuple((tag_no_case(b"NOT"), sp, search_key)),
+                tuple((tag_no_case(b"NOT"), SP, search_key)),
                 |(_, _, val)| SearchKey::Not(Box::new(val)),
             ),
             map(
-                tuple((tag_no_case(b"OR"), sp, search_key, sp, search_key)),
+                tuple((tag_no_case(b"OR"), SP, search_key, SP, search_key)),
                 |(_, _, alt1, _, alt2)| SearchKey::Or(Box::new(alt1), Box::new(alt2)),
             ),
             map(
-                tuple((tag_no_case(b"SENTBEFORE"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTBEFORE"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentBefore(date),
             ),
             map(
-                tuple((tag_no_case(b"SENTON"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTON"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentOn(date),
             ),
             map(
-                tuple((tag_no_case(b"SENTSINCE"), sp, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTSINCE"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentSince(date),
             ),
             map(
-                tuple((tag_no_case(b"SMALLER"), sp, number)),
+                tuple((tag_no_case(b"SMALLER"), SP, number)),
                 |(_, _, val)| SearchKey::Smaller(val),
             ),
             map(
-                tuple((tag_no_case(b"UID"), sp, sequence_set)),
+                tuple((tag_no_case(b"UID"), SP, sequence_set)),
                 |(_, _, val)| SearchKey::Uid(val),
             ),
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
@@ -673,7 +672,7 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
             map(
                 delimited(
                     tag(b"("),
-                    separated_nonempty_list(sp, search_key),
+                    separated_nonempty_list(SP, search_key),
                     tag(b")"),
                 ),
                 |val| match val.len() {
@@ -692,7 +691,7 @@ pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
 
 // TODO: abnf definition from IDLE extension
 pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = value((), tuple((tag_no_case("DONE"), crlf)));
+    let parser = value((), tuple((tag_no_case("DONE"), CRLF)));
 
     let (remaining, parsed_idle_done) = parser(input)?;
 

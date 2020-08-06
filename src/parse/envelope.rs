@@ -1,12 +1,14 @@
-use crate::types::response::{Address, Envelope};
 use crate::{
     parse::{
         address::address,
         core::{nil, nstring},
-        sp,
     },
-    types::core::NString,
+    types::{
+        core::NString,
+        response::{Address, Envelope},
+    },
 };
+use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -33,23 +35,23 @@ pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
         tag(b"("),
         tuple((
             env_date,
-            sp,
+            SP,
             env_subject,
-            sp,
+            SP,
             env_from,
-            sp,
+            SP,
             env_sender,
-            sp,
+            SP,
             env_reply_to,
-            sp,
+            SP,
             env_to,
-            sp,
+            SP,
             env_cc,
-            sp,
+            SP,
             env_bcc,
-            sp,
+            SP,
             env_in_reply_to,
-            sp,
+            SP,
             env_message_id,
         )),
         tag(b")"),

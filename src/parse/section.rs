@@ -1,7 +1,8 @@
 use crate::{
-    parse::{core::nz_number, header::header_list, sp},
+    parse::{core::nz_number, header::header_list},
     types::data_items::{PartSpecifier, Section},
 };
+use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -60,11 +61,11 @@ pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
 pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         map(
-            tuple((tag_no_case(b"HEADER.FIELDS.NOT"), sp, header_list)),
+            tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
             |(_, _, header_list)| PartSpecifier::HeaderFieldsNot(header_list),
         ),
         map(
-            tuple((tag_no_case(b"HEADER.FIELDS"), sp, header_list)),
+            tuple((tag_no_case(b"HEADER.FIELDS"), SP, header_list)),
             |(_, _, header_list)| PartSpecifier::HeaderFields(header_list),
         ),
         value(PartSpecifier::Header, tag_no_case(b"HEADER")),

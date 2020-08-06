@@ -3,9 +3,7 @@ use crate::{
         core::{
             astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
         },
-        dquote,
         flag::{flag_list, mbx_list_flags},
-        sp,
         status::status_att_list,
     },
     types::{
@@ -14,6 +12,7 @@ use crate::{
         response::Data,
     },
 };
+use abnf_core::streaming::{DQUOTE, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
@@ -106,27 +105,27 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
 pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     alt((
         map(
-            tuple((tag_no_case(b"FLAGS"), sp, flag_list)),
+            tuple((tag_no_case(b"FLAGS"), SP, flag_list)),
             |(_, _, flags)| Data::Flags(flags),
         ),
         map(
-            tuple((tag_no_case(b"LIST"), sp, mailbox_list)),
+            tuple((tag_no_case(b"LIST"), SP, mailbox_list)),
             |_| unimplemented!(),
         ),
         map(
-            tuple((tag_no_case(b"LSUB"), sp, mailbox_list)),
+            tuple((tag_no_case(b"LSUB"), SP, mailbox_list)),
             |_| unimplemented!(),
         ),
         map(
-            tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
+            tuple((tag_no_case(b"SEARCH"), many0(preceded(SP, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
         map(
             tuple((
                 tag_no_case(b"STATUS"),
-                sp,
+                SP,
                 mailbox,
-                sp,
+                SP,
                 delimited(tag(b"("), opt(status_att_list), tag(b")")),
             )),
             |(_, _, name, _, items)| Data::Status {
@@ -135,11 +134,11 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
             },
         ),
         map(
-            tuple((number, sp, tag_no_case(b"EXISTS"))),
+            tuple((number, SP, tag_no_case(b"EXISTS"))),
             |(num, _, _)| Data::Exists(num),
         ),
         map(
-            tuple((number, sp, tag_no_case(b"RECENT"))),
+            tuple((number, SP, tag_no_case(b"RECENT"))),
             |(num, _, _)| Data::Recent(num),
         ),
     ))(input)
@@ -149,12 +148,12 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
-        sp,
+        SP,
         alt((
-            delimited(dquote, quoted_char, dquote),
+            delimited(DQUOTE, quoted_char, DQUOTE),
             map(nil, |_| unimplemented!()),
         )),
-        sp,
+        SP,
         mailbox,
     ));
 

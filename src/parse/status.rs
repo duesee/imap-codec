@@ -1,10 +1,8 @@
 use crate::{
-    parse::{
-        core::{number, nz_number},
-        sp,
-    },
+    parse::core::{number, nz_number},
     types::{command::StatusItem, response::StatusItemResponse},
 };
+use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,
@@ -28,7 +26,7 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusItem> {
 /// ; errata id: 261
 /// status-att-list = status-att-val *(SP status-att-val)
 pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> {
-    separated_nonempty_list(sp, status_att_val)(input)
+    separated_nonempty_list(SP, status_att_val)(input)
 }
 
 /// ; errata id: 261
@@ -40,23 +38,23 @@ pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> 
 pub fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusItemResponse> {
     alt((
         map(
-            tuple((tag_no_case(b"MESSAGES"), sp, number)),
+            tuple((tag_no_case(b"MESSAGES"), SP, number)),
             |(_, _, num)| StatusItemResponse::Messages(num),
         ),
         map(
-            tuple((tag_no_case(b"RECENT"), sp, number)),
+            tuple((tag_no_case(b"RECENT"), SP, number)),
             |(_, _, num)| StatusItemResponse::Recent(num),
         ),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
+            tuple((tag_no_case(b"UIDNEXT"), SP, nz_number)),
             |(_, _, next)| StatusItemResponse::UidNext(next),
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
+            tuple((tag_no_case(b"UIDVALIDITY"), SP, nz_number)),
             |(_, _, val)| StatusItemResponse::UidValidity(val),
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), sp, number)),
+            tuple((tag_no_case(b"UNSEEN"), SP, number)),
             |(_, _, num)| StatusItemResponse::Unseen(num),
         ),
     ))(input)

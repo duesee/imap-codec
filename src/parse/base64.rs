@@ -1,4 +1,4 @@
-use crate::parse::{is_alpha, is_digit};
+use abnf_core::streaming::{is_ALPHA, is_DIGIT};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, take_while},
@@ -25,7 +25,7 @@ pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
 
 /// base64-char = ALPHA / DIGIT / "+" / "/" ; Case-sensitive
 fn is_base64_char(i: u8) -> bool {
-    is_alpha(i) || is_digit(i) || i == b'+' || i == b'/'
+    is_ALPHA(i) || is_DIGIT(i) || i == b'+' || i == b'/'
 }
 
 // base64-terminal = (2base64-char "==") / (3base64-char "=")

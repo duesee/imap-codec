@@ -4,17 +4,17 @@ use crate::{
         base64::base64,
         charset,
         core::{atom, is_text_char, nz_number, text},
-        crlf,
         flag::flag_perm,
         mailbox::mailbox_data,
         message::message_data,
-        sp, tag_imap,
+        tag_imap,
     },
     types::{
         response::{Code, Continuation, Data, Response, Status},
         Capability,
     },
 };
+use abnf_core::streaming::{CRLF, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
@@ -31,7 +31,7 @@ use std::str::from_utf8;
 pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
     let parser = tuple((
         tag(b"*"),
-        sp,
+        SP,
         alt((
             map(
                 resp_cond_auth,
@@ -45,7 +45,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
                 Status::bye(maybe_code, comment)
             }),
         )),
-        crlf,
+        CRLF,
     ));
 
     let (remaining, (_, _, status, _)) = parser(input)?;
@@ -61,7 +61,7 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> 
             alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
             from_utf8,
         ),
-        sp,
+        SP,
         resp_text,
     ));
 
@@ -75,7 +75,7 @@ pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((
         opt(terminated(
             delimited(tag(b"["), resp_text_code, tag(b"]")),
-            sp,
+            SP,
         )),
         text,
     ));
@@ -105,8 +105,8 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
             tuple((
                 tag_no_case(b"BADCHARSET"),
                 opt(preceded(
-                    sp,
-                    delimited(tag(b"("), separated_nonempty_list(sp, charset), tag(b")")),
+                    SP,
+                    delimited(tag(b"("), separated_nonempty_list(SP, charset), tag(b")")),
                 )),
             )),
             |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or(Vec::new())),
@@ -116,10 +116,10 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         map(
             tuple((
                 tag_no_case(b"PERMANENTFLAGS"),
-                sp,
+                SP,
                 delimited(
                     tag(b"("),
-                    map(opt(separated_nonempty_list(sp, flag_perm)), |maybe_flags| {
+                    map(opt(separated_nonempty_list(SP, flag_perm)), |maybe_flags| {
                         maybe_flags.unwrap_or(Vec::new())
                     }),
                     tag(b")"),
@@ -131,22 +131,22 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         value(Code::ReadWrite, tag_no_case(b"READ-WRITE")),
         value(Code::TryCreate, tag_no_case(b"TRYCREATE")),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
+            tuple((tag_no_case(b"UIDNEXT"), SP, nz_number)),
             |(_, _, num)| Code::UidNext(num),
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
+            tuple((tag_no_case(b"UIDVALIDITY"), SP, nz_number)),
             |(_, _, num)| Code::UidValidity(num),
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), sp, nz_number)),
+            tuple((tag_no_case(b"UNSEEN"), SP, nz_number)),
             |(_, _, num)| Code::Unseen(num),
         ),
         map(
             tuple((
                 atom,
                 opt(preceded(
-                    sp,
+                    SP,
                     map_res(
                         take_while1(|byte| is_text_char(byte) && byte != b'"'),
                         from_utf8,
@@ -166,8 +166,8 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
 pub fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
     let parser = tuple((
         tag_no_case("CAPABILITY"),
-        sp,
-        separated_nonempty_list(sp, capability),
+        SP,
+        separated_nonempty_list(SP, capability),
     ));
 
     let (rem, (_, _, caps)) = parser(input)?;
@@ -214,7 +214,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
 
 /// resp-cond-bye = "BYE" SP resp-text
 pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
-    let parser = tuple((tag_no_case(b"BYE"), sp, resp_text));
+    let parser = tuple((tag_no_case(b"BYE"), SP, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
 
@@ -241,7 +241,7 @@ pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
 pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
     let parser = tuple((
         tag(b"+"),
-        sp,
+        SP,
         alt((
             map(resp_text, |(code, text)| Continuation::Basic {
                 code,
@@ -249,7 +249,7 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
             }),
             map(base64, |str| Continuation::Base64(str.to_owned())),
         )),
-        crlf,
+        CRLF,
     ));
 
     let (remaining, (_, _, continuation, _)) = parser(input)?;
@@ -267,7 +267,7 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
 pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
     let parser = tuple((
         tag(b"*"),
-        sp,
+        SP,
         alt((
             map(resp_cond_state, |(raw_status, code, text)| {
                 let status = match raw_status.to_lowercase().as_ref() {
@@ -288,7 +288,7 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
                 Response::Data(Data::Capability(caps))
             }),
         )),
-        crlf,
+        CRLF,
     ));
 
     let (remaining, (_, _, response, _)) = parser(input)?;
@@ -301,7 +301,7 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
 pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str)> {
     let parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
-        sp,
+        SP,
         resp_text,
     ));
 
@@ -320,7 +320,7 @@ pub fn response_done(input: &[u8]) -> IResult<&[u8], Status> {
 
 /// response-tagged = tag SP resp-cond-state CRLF
 pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
-    let parser = tuple((tag_imap, sp, resp_cond_state, crlf));
+    let parser = tuple((tag_imap, SP, resp_cond_state, CRLF));
 
     let (remaining, (tag, _, (raw_status, maybe_code, text), _)) = parser(input)?;
 
@@ -337,7 +337,7 @@ pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
 /// response-fatal = "*" SP resp-cond-bye CRLF
 ///                    ; Server closes connection immediately
 pub fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
-    let parser = tuple((tag(b"*"), sp, resp_cond_bye, crlf));
+    let parser = tuple((tag(b"*"), SP, resp_cond_bye, CRLF));
 
     let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
 

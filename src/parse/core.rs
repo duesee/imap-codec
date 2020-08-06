@@ -1,7 +1,5 @@
-use crate::{
-    parse::{crlf, dquote},
-    types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString},
-};
+use crate::types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString};
+use abnf_core::streaming::{CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while1, take_while_m_n},
@@ -72,7 +70,7 @@ pub fn string(input: &[u8]) -> IResult<&[u8], IMAPString> {
 /// quoted chars need to be replaced.
 pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
     let parser = tuple((
-        dquote,
+        DQUOTE,
         map_res(
             escaped(
                 take_while1(is_any_text_char_except_quoted_specials),
@@ -81,7 +79,7 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
             ),
             from_utf8,
         ),
-        dquote,
+        DQUOTE,
     ));
 
     let (remaining, (_, quoted, _)) = parser(input)?;
@@ -128,7 +126,7 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
 pub fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = tuple((delimited(tag(b"{"), number, tag(b"}")), crlf));
+    let parser = tuple((delimited(tag(b"{"), number, tag(b"}")), CRLF));
 
     let (remaining, (number, _)) = parser(input)?;
 

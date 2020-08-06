@@ -31,9 +31,7 @@ use crate::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::tag,
     bytes::streaming::take_while1,
-    character::streaming::line_ending,
     combinator::{map, map_res},
     IResult,
 };
@@ -54,40 +52,6 @@ pub mod response;
 pub mod section;
 pub mod sequence;
 pub mod status;
-
-// ----- Required ABNF Core Rules (RFC5234 B.1.) -----
-
-/// ALPHA = %x41-5A / %x61-7A ; A-Z / a-z
-pub fn is_alpha(i: u8) -> bool {
-    match i as char {
-        'a'..='z' | 'A'..='Z' => true,
-        _ => false,
-    }
-}
-
-/// CRLF = CR LF ; Internet standard newline
-/// TODO: Also accepts "\n" only (without "\r".)
-pub fn crlf(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    line_ending(input)
-}
-
-/// DIGIT = %x30-39 ; 0-9
-pub fn is_digit(byte: u8) -> bool {
-    match byte {
-        b'0'..=b'9' => true,
-        _ => false,
-    }
-}
-
-/// DQUOTE = %x22 ; " (Double Quote)
-pub fn dquote(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    tag("\"")(input)
-}
-
-/// SP = %x20
-pub fn sp(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    tag(" ")(input)
-}
 
 // ----- Unsorted IMAP parsers -----
 

@@ -1,10 +1,11 @@
 use crate::{
-    parse::{core::atom, sp},
+    parse::core::atom,
     types::{
         core::Atom,
         flag::{Flag, FlagNameAttribute},
     },
 };
+use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -51,7 +52,7 @@ pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
 
 /// flag-list = "(" [flag *(SP flag)] ")"
 pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
-    delimited(tag(b"("), separated_list(sp, flag), tag(b")"))(input)
+    delimited(tag(b"("), separated_list(SP, flag), tag(b")"))(input)
 }
 
 /// mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
@@ -62,7 +63,7 @@ pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
 /// We just parse any flag and check for multiple occurrences of sflag later.
 pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) =
-        separated_nonempty_list(sp, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
+        separated_nonempty_list(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
 
     if flags
         .iter()
