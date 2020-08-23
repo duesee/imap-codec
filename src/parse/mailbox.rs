@@ -8,7 +8,7 @@ use crate::{
     },
     types::{
         core::{AString, String as IMAPString},
-        mailbox::{Mailbox, MailboxWithWildcards},
+        mailbox::{ListMailbox, Mailbox},
         response::Data,
     },
 };
@@ -23,12 +23,12 @@ use nom::{
 };
 
 /// list-mailbox= 1*list-char / string
-pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], MailboxWithWildcards> {
+pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     let parser = alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
-            MailboxWithWildcards::V1(String::from_utf8(bytes.to_vec()).unwrap())
+            ListMailbox::Token(String::from_utf8(bytes.to_vec()).unwrap())
         }),
-        map(string, MailboxWithWildcards::V2),
+        map(string, ListMailbox::String),
     ));
 
     let (remaining, parsed_list_mailbox) = parser(input)?;

@@ -8,7 +8,7 @@ use crate::{
         core::{AString, Atom},
         data_items::MacroOrDataItems,
         flag::Flag,
-        mailbox::{Mailbox, MailboxWithWildcards},
+        mailbox::{ListMailbox, Mailbox},
         response::{Code, Status},
         AuthMechanism, Sequence, StoreResponse, StoreType,
     },
@@ -948,7 +948,7 @@ pub enum CommandBody {
     /// ```
     List {
         reference: Mailbox,
-        mailbox: MailboxWithWildcards,
+        mailbox: ListMailbox,
     },
 
     /// ### 6.3.9.  LSUB Command
@@ -992,7 +992,7 @@ pub enum CommandBody {
     /// ```
     Lsub {
         reference: Mailbox,
-        mailbox: MailboxWithWildcards,
+        mailbox: ListMailbox,
     },
 
     /// ### 6.3.10. STATUS Command
