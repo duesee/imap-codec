@@ -2,13 +2,16 @@
 //!
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
-use crate::types::{
-    core::{AString, Atom},
-    data_items::MacroOrDataItems,
-    flag::Flag,
-    mailbox::{Mailbox, MailboxWithWildcards},
-    response::{Code, Status},
-    AuthMechanism, Sequence, StoreResponse, StoreType,
+use crate::{
+    codec::Codec,
+    types::{
+        core::{AString, Atom},
+        data_items::MacroOrDataItems,
+        flag::Flag,
+        mailbox::{Mailbox, MailboxWithWildcards},
+        response::{Code, Status},
+        AuthMechanism, Sequence, StoreResponse, StoreType,
+    },
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
@@ -1467,6 +1470,23 @@ pub enum CommandBody {
     Idle,
 }
 
+impl Codec for Command {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = self.tag.as_bytes().to_vec();
+        out.push(b' ');
+        out.extend(self.body.serialize());
+        out.extend_from_slice(b"\r\n");
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 impl CommandBody {
     pub fn name(&self) -> &'static str {
         // TODO: consider the `strum` crate or use a macro?
@@ -1499,6 +1519,48 @@ impl CommandBody {
             Uid(_) => "UID",
             Idle => "IDLE",
         }
+    }
+}
+
+impl Codec for CommandBody {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            CommandBody::Capability => b"CAPABILITY".to_vec(),
+            CommandBody::Noop => b"NOOP".to_vec(),
+            CommandBody::Logout => b"LOGOUT".to_vec(),
+            CommandBody::StartTLS => b"STARTTLS".to_vec(),
+            CommandBody::Authenticate {
+                mechanism,
+                initial_response,
+            } => {
+                let mut out = b"AUTHENTICATE".to_vec();
+                out.push(b' ');
+                out.extend(mechanism.serialize());
+
+                if let Some(ir) = initial_response {
+                    out.push(b' ');
+                    out.extend_from_slice(ir.as_bytes());
+                };
+
+                out
+            }
+            CommandBody::Login { username, password } => {
+                let mut out = b"LOGIN".to_vec();
+                out.push(b' ');
+                out.extend(username.serialize());
+                out.push(b' ');
+                out.extend(password.serialize());
+                out
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }
 
