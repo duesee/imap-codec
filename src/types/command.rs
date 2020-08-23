@@ -12,6 +12,7 @@ use crate::{
         response::{Code, Status},
         AuthMechanism, Sequence, StoreResponse, StoreType,
     },
+    utils::gen_tag,
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
@@ -27,6 +28,42 @@ impl Command {
             tag: tag.into(),
             body: kind,
         }
+    }
+
+    pub fn capability() -> Command {
+        Command::new(&gen_tag(), CommandBody::Capability)
+    }
+
+    pub fn noop() -> Command {
+        Command::new(&gen_tag(), CommandBody::Noop)
+    }
+
+    pub fn logout() -> Command {
+        Command::new(&gen_tag(), CommandBody::Logout)
+    }
+
+    pub fn starttls() -> Command {
+        Command::new(&gen_tag(), CommandBody::StartTLS)
+    }
+
+    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&str>) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Authenticate {
+                mechanism,
+                initial_response: initial_response.map(|str| str.to_string()),
+            },
+        )
+    }
+
+    pub fn login<U: Into<AString>, P: Into<AString>>(username: U, password: P) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Login {
+                username: username.into(),
+                password: password.into(),
+            },
+        )
     }
 
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
@@ -1752,4 +1789,47 @@ pub enum SearchKey {
 
     /// Messages that do not have the \Seen flag set.
     Unseen,
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        codec::Codec,
+        types::{command::Command, core::AString, AuthMechanism},
+    };
+
+    #[test]
+    fn test_command_new() {
+        let cmds = &[
+            Command::capability(),
+            Command::noop(),
+            Command::logout(),
+            Command::starttls(),
+            Command::authenticate(AuthMechanism::Plain, None),
+            Command::authenticate(AuthMechanism::Login, None),
+            Command::authenticate(AuthMechanism::Plain, Some("XXXXXXXX")),
+            Command::authenticate(AuthMechanism::Login, Some("YYYYYYYY")),
+            Command::login("alice", "I_am_an_atom"),
+            Command::login("alice", "I am \\ \"quoted\""),
+            Command::login("alice", "I am a literal²"),
+            Command::login(
+                AString::Atom("alice".into()),
+                AString::String(crate::types::core::String::Literal(vec![0xff, 0xff, 0xff])),
+            ),
+        ];
+
+        for cmd in cmds {
+            println!("Test: {:?}", cmd);
+
+            let serialized = cmd.serialize();
+            let printable = String::from_utf8_lossy(&serialized);
+            print!("Serialized: {}", printable);
+
+            let (rem, parsed) = crate::parse::command::command(&serialized).unwrap();
+            assert_eq!(rem, b"");
+            assert_eq!(cmd, &parsed);
+
+            println!("Unserialized: {:?}\n", parsed);
+        }
+    }
 }
