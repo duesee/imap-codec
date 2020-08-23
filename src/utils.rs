@@ -1,3 +1,14 @@
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use std::iter;
+
+pub(crate) fn gen_tag() -> String {
+    let mut rng = thread_rng();
+    iter::repeat(())
+        .map(|()| rng.sample(Alphanumeric))
+        .take(8)
+        .collect()
+}
+
 pub fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
     elements
         .iter()
