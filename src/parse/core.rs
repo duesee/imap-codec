@@ -1,5 +1,8 @@
-use crate::types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString};
-use abnf_core::streaming::{CRLF_relaxed as CRLF, DQUOTE};
+use crate::{
+    parse::mailbox::is_list_wildcards,
+    types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString},
+};
+use abnf_core::streaming::{is_CHAR, is_CTL, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while1, take_while_m_n},
@@ -166,13 +169,19 @@ pub fn is_astring_char(i: u8) -> bool {
     is_atom_char(i) || is_resp_specials(i)
 }
 
-/// ATOM-CHAR = %x21 / %x23-24 / %x26-27 / %x2B-5B / %x5E-7A / %x7C-7E
-///               ; mod: was <any CHAR except atom-specials>
-///               ;
-///               ; atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials
-pub fn is_atom_char(i: u8) -> bool {
+/// ATOM-CHAR = <any CHAR except atom-specials>
+pub fn is_atom_char(b: u8) -> bool {
+    is_CHAR(b) && !is_atom_specials(b)
+}
+
+/// atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials
+pub fn is_atom_specials(i: u8) -> bool {
     match i {
-        0x21 | 0x23 | 0x24 | 0x26 | 0x27 | 0x2b..=0x5b | 0x5e..=0x7a | 0x7c..=0x7e => true,
+        b'(' | b')' | b'{' | b' ' => true,
+        c if is_CTL(c) => true,
+        c if is_list_wildcards(c) => true,
+        c if is_quoted_specials(c) => true,
+        c if is_resp_specials(c) => true,
         _ => false,
     }
 }
