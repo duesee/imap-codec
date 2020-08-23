@@ -37,12 +37,12 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], MailboxWithWildcards> {
 }
 
 /// list-char = ATOM-CHAR / list-wildcards / resp-specials
-fn is_list_char(i: u8) -> bool {
+pub fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
 /// list-wildcards = "%" / "*"
-fn is_list_wildcards(i: u8) -> bool {
+pub fn is_list_wildcards(i: u8) -> bool {
     i == b'%' || i == b'*'
 }
 
