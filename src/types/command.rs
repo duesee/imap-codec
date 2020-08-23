@@ -66,6 +66,14 @@ impl Command {
         )
     }
 
+    pub fn select(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Select { mailbox_name })
+    }
+
+    pub fn examine(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Examine { mailbox_name })
+    }
+
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
     }
@@ -1592,6 +1600,18 @@ impl Codec for CommandBody {
                 out.extend(password.serialize());
                 out
             }
+            CommandBody::Select { mailbox_name } => {
+                let mut out = b"SELECT".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
+            CommandBody::Examine { mailbox_name } => {
+                let mut out = b"EXAMINE".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -1798,7 +1818,7 @@ pub enum SearchKey {
 mod test {
     use crate::{
         codec::Codec,
-        types::{command::Command, core::AString, AuthMechanism},
+        types::{command::Command, core::AString, mailbox::Mailbox, AuthMechanism},
     };
 
     #[test]
@@ -1819,6 +1839,16 @@ mod test {
                 AString::Atom("alice".into()),
                 AString::String(crate::types::core::String::Literal(vec![0xff, 0xff, 0xff])),
             ),
+            Command::select(Mailbox::Inbox),
+            Command::select(Mailbox::Other("atom".into())),
+            Command::select(Mailbox::Other("C:\\".into())),
+            Command::select(Mailbox::Other("²".into())),
+            Command::select(Mailbox::Other("Trash".into())),
+            Command::examine(Mailbox::Inbox),
+            Command::examine(Mailbox::Other("atom".into())),
+            Command::examine(Mailbox::Other("C:\\".into())),
+            Command::examine(Mailbox::Other("²".into())),
+            Command::examine(Mailbox::Other("Trash".into())),
         ];
 
         for cmd in cmds {
