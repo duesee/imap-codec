@@ -74,6 +74,24 @@ impl Command {
         Command::new(&gen_tag(), CommandBody::Examine { mailbox_name })
     }
 
+    pub fn create(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Create { mailbox_name })
+    }
+
+    pub fn delete(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Delete { mailbox_name })
+    }
+
+    pub fn rename(existing_mailbox_name: Mailbox, new_mailbox_name: Mailbox) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Rename {
+                existing_mailbox_name,
+                new_mailbox_name,
+            },
+        )
+    }
+
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
     }
@@ -1612,6 +1630,30 @@ impl Codec for CommandBody {
                 out.extend(mailbox_name.serialize());
                 out
             }
+            CommandBody::Create { mailbox_name } => {
+                let mut out = b"CREATE".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
+            CommandBody::Delete { mailbox_name } => {
+                let mut out = b"DELETE".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
+            CommandBody::Rename {
+                existing_mailbox_name,
+                new_mailbox_name,
+            } => {
+                let mut out = b"RENAME".to_vec();
+                out.push(b' ');
+                out.extend(existing_mailbox_name.serialize());
+                out.push(b' ');
+                out.extend(new_mailbox_name.serialize());
+                out
+            }
+
             _ => unimplemented!(),
         }
     }
@@ -1849,6 +1891,9 @@ mod test {
             Command::examine(Mailbox::Other("C:\\".into())),
             Command::examine(Mailbox::Other("²".into())),
             Command::examine(Mailbox::Other("Trash".into())),
+            Command::create(Mailbox::Inbox),
+            Command::delete(Mailbox::Inbox),
+            Command::rename(Mailbox::Inbox, Mailbox::Inbox),
         ];
 
         for cmd in cmds {
