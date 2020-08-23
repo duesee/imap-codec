@@ -92,6 +92,14 @@ impl Command {
         )
     }
 
+    pub fn subscribe(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Subscribe { mailbox_name })
+    }
+
+    pub fn unsubscribe(mailbox_name: Mailbox) -> Command {
+        Command::new(&gen_tag(), CommandBody::Unsubscribe { mailbox_name })
+    }
+
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
     }
@@ -1653,7 +1661,18 @@ impl Codec for CommandBody {
                 out.extend(new_mailbox_name.serialize());
                 out
             }
-
+            CommandBody::Subscribe { mailbox_name } => {
+                let mut out = b"SUBSCRIBE".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
+            CommandBody::Unsubscribe { mailbox_name } => {
+                let mut out = b"UNSUBSCRIBE".to_vec();
+                out.push(b' ');
+                out.extend(mailbox_name.serialize());
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -1894,6 +1913,8 @@ mod test {
             Command::create(Mailbox::Inbox),
             Command::delete(Mailbox::Inbox),
             Command::rename(Mailbox::Inbox, Mailbox::Inbox),
+            Command::subscribe(Mailbox::Inbox),
+            Command::unsubscribe(Mailbox::Inbox),
         ];
 
         for cmd in cmds {
