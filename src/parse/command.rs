@@ -119,9 +119,9 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"CREATE"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Create(mailbox)))
+    Ok((remaining, CommandBody::Create { mailbox_name }))
 }
 
 /// delete = "DELETE" SP mailbox
@@ -129,18 +129,18 @@ pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"DELETE"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Delete(mailbox)))
+    Ok((remaining, CommandBody::Delete { mailbox_name }))
 }
 
 /// examine = "EXAMINE" SP mailbox
 pub fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"EXAMINE"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Examine(mailbox)))
+    Ok((remaining, CommandBody::Examine { mailbox_name }))
 }
 
 /// list = "LIST" SP mailbox SP list-mailbox
@@ -166,18 +166,24 @@ pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"RENAME"), SP, mailbox, SP, mailbox));
 
-    let (remaining, (_, _, old, _, new)) = parser(input)?;
+    let (remaining, (_, _, existing_mailbox_name, _, new_mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Rename { old, new }))
+    Ok((
+        remaining,
+        CommandBody::Rename {
+            existing_mailbox_name,
+            new_mailbox_name,
+        },
+    ))
 }
 
 /// select = "SELECT" SP mailbox
 pub fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"SELECT"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Select(mailbox)))
+    Ok((remaining, CommandBody::Select { mailbox_name }))
 }
 
 /// status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"
@@ -199,18 +205,18 @@ pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"SUBSCRIBE"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Subscribe(mailbox)))
+    Ok((remaining, CommandBody::Subscribe { mailbox_name }))
 }
 
 /// unsubscribe = "UNSUBSCRIBE" SP mailbox
 pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"UNSUBSCRIBE"), SP, mailbox));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, (_, _, mailbox_name)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Unsubscribe(mailbox)))
+    Ok((remaining, CommandBody::Unsubscribe { mailbox_name }))
 }
 
 pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {

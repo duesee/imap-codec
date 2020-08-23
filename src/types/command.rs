@@ -488,7 +488,7 @@ pub enum CommandBody {
     ///  S: * OK [PERMANENTFLAGS (\Deleted \Seen \*)] Limited
     ///  S: A142 OK [READ-WRITE] SELECT completed
     /// ```
-    Select(Mailbox),
+    Select { mailbox_name: Mailbox },
 
     /// 6.3.2.  EXAMINE Command
     ///
@@ -519,7 +519,7 @@ pub enum CommandBody {
     ///                S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
     ///                S: * OK [PERMANENTFLAGS ()] No permanent flags permitted
     ///                S: A932 OK [READ-ONLY] EXAMINE completed
-    Examine(Mailbox),
+    Examine { mailbox_name: Mailbox },
 
     /// ### 6.3.3.  CREATE Command
     ///
@@ -571,7 +571,7 @@ pub enum CommandBody {
     ///   named "owatagusiam" with a member called "blurdybloop" is
     ///   created.  Otherwise, two mailboxes at the same hierarchy
     ///   level are created.
-    Create(Mailbox),
+    Create { mailbox_name: Mailbox },
 
     /// 6.3.4.  DELETE Command
     ///
@@ -639,7 +639,7 @@ pub enum CommandBody {
     /// S: * LIST (\Noselect) "." foo
     /// S: A86 OK LIST completed
     /// ```
-    Delete(Mailbox),
+    Delete { mailbox_name: Mailbox },
 
     /// 6.3.5.  RENAME Command
     ///
@@ -710,7 +710,10 @@ pub enum CommandBody {
     /// S: * LIST () "." old-mail
     /// S: Z434 OK LIST completed
     /// ```
-    Rename { old: Mailbox, new: Mailbox },
+    Rename {
+        existing_mailbox_name: Mailbox,
+        new_mailbox_name: Mailbox,
+    },
 
     /// ### 6.3.6.  SUBSCRIBE Command
     ///
@@ -741,7 +744,7 @@ pub enum CommandBody {
     /// C: A002 SUBSCRIBE #news.comp.mail.mime
     /// S: A002 OK SUBSCRIBE completed
     /// ```
-    Subscribe(Mailbox),
+    Subscribe { mailbox_name: Mailbox },
 
     /// 6.3.7.  UNSUBSCRIBE Command
     ///
@@ -760,7 +763,7 @@ pub enum CommandBody {
     /// C: A002 UNSUBSCRIBE #news.comp.mail.mime
     /// S: A002 OK UNSUBSCRIBE completed
     /// ```
-    Unsubscribe(Mailbox),
+    Unsubscribe { mailbox_name: Mailbox },
 
     /// ### 6.3.8.  LIST Command
     ///
@@ -1535,13 +1538,13 @@ impl CommandBody {
             StartTLS => "STARTTLS",
             Authenticate { .. } => "AUTHENTICATE",
             Login { .. } => "LOGIN",
-            Select(_) => "SELECT",
-            Examine(_) => "EXAMINE",
-            Create(_) => "CREATE",
-            Delete(_) => "DELETE",
+            Select { .. } => "SELECT",
+            Examine { .. } => "EXAMINE",
+            Create { .. } => "CREATE",
+            Delete { .. } => "DELETE",
             Rename { .. } => "RENAME",
-            Subscribe(_) => "SUBSCRIBE",
-            Unsubscribe(_) => "UNSUBSCRIBE",
+            Subscribe { .. } => "SUBSCRIBE",
+            Unsubscribe { .. } => "UNSUBSCRIBE",
             List { .. } => "LIST",
             Lsub { .. } => "LSUB",
             Status { .. } => "STATUS",
