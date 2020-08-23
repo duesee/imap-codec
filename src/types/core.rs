@@ -6,7 +6,10 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
-use crate::codec::Codec;
+use crate::{
+    codec::Codec,
+    parse::core::{is_astring_char, is_text_char},
+};
 use serde::Deserialize;
 use std::{borrow::Cow, fmt};
 
@@ -162,6 +165,26 @@ impl From<&'static str> for NString {
 pub enum AString {
     Atom(std::string::String),
     String(String),
+}
+
+impl From<&str> for AString {
+    fn from(s: &str) -> Self {
+        s.to_string().into()
+    }
+}
+
+impl From<std::string::String> for AString {
+    fn from(s: std::string::String) -> Self {
+        if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
+            return AString::Atom(s);
+        }
+
+        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            return AString::String(String::Quoted(s));
+        }
+
+        return AString::String(String::Literal(s.into_bytes()));
+    }
 }
 
 impl Codec for AString {
