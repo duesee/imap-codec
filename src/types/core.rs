@@ -78,12 +78,12 @@ pub enum String {
 pub fn escape_quoted<'a>(unescaped: &'a str) -> Cow<'a, str> {
     let mut escaped = Cow::Borrowed(unescaped);
 
-    if unescaped.contains("\\") {
-        escaped = Cow::Owned(unescaped.replace("\\", "\\\\"));
+    if escaped.contains("\\") {
+        escaped = Cow::Owned(escaped.replace("\\", "\\\\"));
     }
 
-    if unescaped.contains("\"") {
-        escaped = Cow::Owned(unescaped.replace("\"", "\\\""));
+    if escaped.contains("\"") {
+        escaped = Cow::Owned(escaped.replace("\"", "\\\""));
     }
 
     escaped
@@ -220,3 +220,24 @@ impl Codec for AString {
 ///  atom.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Nil;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_escape_quoted() {
+        assert_eq!(escape_quoted("alice"), "alice");
+        assert_eq!(escape_quoted("\\alice\\"), "\\\\alice\\\\");
+        assert_eq!(escape_quoted("alice\""), "alice\\\"");
+        assert_eq!(escape_quoted(r#"\alice\ ""#), r#"\\alice\\ \""#);
+    }
+
+    #[test]
+    fn test_unescape_quoted() {
+        assert_eq!(unescape_quoted("alice"), "alice");
+        assert_eq!(unescape_quoted("\\\\alice\\\\"), "\\alice\\");
+        assert_eq!(unescape_quoted("alice\\\""), "alice\"");
+        assert_eq!(unescape_quoted(r#"\\alice\\ \""#), r#"\alice\ ""#);
+    }
+}
