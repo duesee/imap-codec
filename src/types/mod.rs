@@ -86,10 +86,44 @@ pub enum SeqNo {
     Unlimited,
 }
 
+impl Codec for SeqNo {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            SeqNo::Value(number) => number.to_string().into_bytes(),
+            SeqNo::Unlimited => b"*".to_vec(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sequence {
     Single(SeqNo),
     Range(SeqNo, SeqNo),
+}
+
+impl Codec for Sequence {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            Sequence::Single(seq_no) => seq_no.serialize(),
+            Sequence::Range(from, to) => {
+                [&from.serialize(), b":".as_ref(), &to.serialize()].concat()
+            }
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -103,4 +137,27 @@ pub enum StoreType {
 pub enum StoreResponse {
     Answer,
     Silent,
+}
+
+#[cfg(test)]
+mod test {
+    use super::{SeqNo, Sequence};
+    use crate::codec::Codec;
+
+    #[test]
+    fn test_sequence_serialize() {
+        let tests = [
+            (b"1".as_ref(), Sequence::Single(SeqNo::Value(1))),
+            (b"*".as_ref(), Sequence::Single(SeqNo::Unlimited)), // TODO: is this a valid sequence?
+            (
+                b"1:*".as_ref(),
+                Sequence::Range(SeqNo::Value(1), SeqNo::Unlimited),
+            ),
+        ];
+
+        for (expected, test) in tests.iter() {
+            let got = test.serialize();
+            assert_eq!(*expected, got);
+        }
+    }
 }
