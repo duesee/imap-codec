@@ -100,6 +100,26 @@ impl Command {
         Command::new(&gen_tag(), CommandBody::Unsubscribe { mailbox_name })
     }
 
+    pub fn list<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::List {
+                reference: reference.into(),
+                mailbox: mailbox.into(),
+            },
+        )
+    }
+
+    pub fn lsub<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Lsub {
+                reference: reference.into(),
+                mailbox: mailbox.into(),
+            },
+        )
+    }
+
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
     }
@@ -1673,6 +1693,22 @@ impl Codec for CommandBody {
                 out.extend(mailbox_name.serialize());
                 out
             }
+            CommandBody::List { reference, mailbox } => {
+                let mut out = b"LIST".to_vec();
+                out.push(b' ');
+                out.extend(reference.serialize());
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out
+            }
+            CommandBody::Lsub { reference, mailbox } => {
+                let mut out = b"LSUB".to_vec();
+                out.push(b' ');
+                out.extend(reference.serialize());
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -1879,7 +1915,12 @@ pub enum SearchKey {
 mod test {
     use crate::{
         codec::Codec,
-        types::{command::Command, core::AString, mailbox::Mailbox, AuthMechanism},
+        types::{
+            command::Command,
+            core::{AString, String as IMAPString},
+            mailbox::{ListMailbox, Mailbox},
+            AuthMechanism,
+        },
     };
 
     #[test]
@@ -1915,6 +1956,17 @@ mod test {
             Command::rename(Mailbox::Inbox, Mailbox::Inbox),
             Command::subscribe(Mailbox::Inbox),
             Command::unsubscribe(Mailbox::Inbox),
+            Command::list(Mailbox::Inbox, "test"),
+            Command::list(Mailbox::Inbox, ListMailbox::Token("test".into())),
+            Command::lsub(
+                Mailbox::Inbox,
+                ListMailbox::String(IMAPString::Quoted("\x7f".into())),
+            ),
+            Command::list("inBoX", ListMailbox::Token("test".into())),
+            Command::lsub(
+                "INBOX",
+                ListMailbox::String(IMAPString::Quoted("\x7f".into())),
+            ),
         ];
 
         for cmd in cmds {
