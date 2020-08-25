@@ -1786,6 +1786,25 @@ pub enum StatusItem {
     Unseen,
 }
 
+impl Codec for StatusItem {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            StatusItem::Messages => b"MESSAGES".to_vec(),
+            StatusItem::Recent => b"RECENT".to_vec(),
+            StatusItem::UidNext => b"UIDNEXT".to_vec(),
+            StatusItem::UidValidity => b"UIDVALIDITY".to_vec(),
+            StatusItem::Unseen => b"UNSEEN".to_vec(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], StatusItem), StatusItem>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 /// The defined search keys.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SearchKey {
