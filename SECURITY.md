@@ -1,0 +1,45 @@
+# Security Policy
+
+## Supported Versions
+
+None, really :-)
+
+## Reporting a Vulnerability
+
+If you found a security issue, feel free to just open a public issue here.
+
+If, for whatever reason, you prefer to not make it public, please write an email to poddebniak@fh-muenster.de.
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQENBF5tBSYBCACcWO2rDOpMFGuWDr8IuiykUbyjxdawslemBmlsCTy0uwgVaC3I
+BiegojqxZYBIq5Slb2C5ENqOaLTOQRoEKfVAIA78mijTjUpT70k42VgkCJ88Qh5l
+RxHpmacaP5+mzE6pITLeexKsuhYbsLGTQ5fKOEqg8nU1Rabd03AVaJZ8fVN1bk3+
+IrXbmvxbKIYnG35LU5LaspxNsoDsavcaZyMwVdnzgYHBcvTTHJEadls3Oz78OP4q
+EUwGbDM2FxaF62LxCSrH3uNb1PDZdPf0V/OLHIfzogeq57tqUEWwSZMq0UnL8xjK
+Y4DmuEIVJSj7aL1MTN2mgw9cLFK8QjWBygoZABEBAAG0LURhbWlhbiBQb2RkZWJu
+aWFrIDxwb2RkZWJuaWFrQGZoLW11ZW5zdGVyLmRlPokBVAQTAQgAPhYhBAWpP4ZX
+yXIH6435/kPz8RBIcUiOBQJebQUmAhsDBQkDwmcABQsJCAcCBhUKCQgLAgQWAgMB
+Ah4BAheAAAoJEEPz8RBIcUiOcA4H/isbb1OPHa6WyhLcVXEoS7kElDqVqE7k9XVG
+JqJ0ylR/IZA9c3dvOm9jSAUUH52R4uDF3frBGCMiIvTsllAceP1TtSDnaUssTWg4
+M7wfKLczg9xI9DtBtqrNNOOBbl7I2vuiamRbAmRt82g7/Dpt0hUJoF0LOwa2ai/F
+DlXeMqfDSMxe3fiuCl28vc+f2SiFJc5+BFb/XBLavOkUNnDL9Etvi8FCy1SPZAja
+R9XV3iq9wzh3/snfWeKoabgaDZ31uOH3tPrnG8ZdkKHRCyCex9re5gWqu7XXikSm
+aEH4nbDEDAMjpM4QuOF0dMZ1xSoWypdPDHPPLANlotnteAJ8JMu5AQ0EXm0FJgEI
+ALVi6mpGWhtNJ61Rea1d1py5ypDY/81Y+ugeJqZeK3FtizRC4bq1krUFtMI0DB9K
+gQ7HWg7tx2v6Y8aHZz3hKJnQ7YHgk01gUkOgV9MsVAI3B3ukPJM96tZ4s2Of4RNQ
+cy8IW54hxbYNPPLnUc6W02KR5BIMShjqvHrKbyQiL8Z7yNxhKkDFc/bhNtgA9y5q
+W8mhjkuWvkJyfy+kb9yaSrSr8I2V2FHlGmBla8wHFDO65e29XgYDUnN0RbEL38eM
+2skiB5kVPnVUrHwW37r38E9VjF+ZvWPutwE39tGzKbUF+0yEinNfLRDAWZ8y6SWj
+SegXytQ2lEFuut2aAL5Xn2UAEQEAAYkBPAQYAQgAJhYhBAWpP4ZXyXIH6435/kPz
+8RBIcUiOBQJebQUmAhsMBQkDwmcAAAoJEEPz8RBIcUiOX9wH/j8cD//RX+bFoPie
++QVBLWPcxNoLDvz/LwR0O75oaW0r5biJLlwZOE/PCuKh3yw13B/d4pTCJLIZ7dWv
+XglIYvDvUeeAUegawXHRwscrITN1Vv8qsTj2c1vTPDw+jHEUBg/W/bkPJDeM7GIn
+p/fFJnO7pInnK9QW6I2xaL3u7suqcznfI9gs0HzOJgwdbhDLYjmd7X6X94gGl54/
+8tM7Bp/TnQ6Mc6lcRgKeH+ymj7OAX86h/HDqTAhVP+D8nj8wIPn9ZEFa0VfQHlT/
+YGGrYrTgNCgVrluZSU9+OH4ESthyrKhUiV1S3wRjwx3PExDnEKuAN1HsbiguOYRw
+voTeyuA=
+=7YyB
+-----END PGP PUBLIC KEY BLOCK-----
+```
