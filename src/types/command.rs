@@ -1354,6 +1354,7 @@ pub enum CommandBody {
     Search {
         charset: Option<String>,
         criteria: SearchKey,
+        uid: bool,
     },
 
     /// ### 6.4.5.  FETCH Command
@@ -1395,6 +1396,7 @@ pub enum CommandBody {
     Fetch {
         sequence_set: Vec<Sequence>,
         items: MacroOrDataItems,
+        uid: bool,
     },
 
     /// ### 6.4.6.  STORE Command
@@ -1460,6 +1462,7 @@ pub enum CommandBody {
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag>,
+        uid: bool,
     },
 
     /// 6.4.7.  COPY Command
@@ -1496,8 +1499,12 @@ pub enum CommandBody {
     Copy {
         sequence_set: Vec<Sequence>,
         mailbox: Mailbox,
+        uid: bool,
     },
 
+    /// The UID mechanism was inlined into copy, fetch, store, and search.
+    /// as an additional parameter.
+    ///
     /// ### 6.4.8.  UID Command
     ///
     /// * Arguments:
@@ -1567,7 +1574,6 @@ pub enum CommandBody {
     /// S: * 25 FETCH (FLAGS (\Seen) UID 4828442)
     /// S: A999 OK UID FETCH completed
     /// ```
-    Uid(CommandBodyUid),
 
     // ----- Experimental/Expansion (https://tools.ietf.org/html/rfc3501#section-6.5) -----
 
@@ -1651,7 +1657,6 @@ impl CommandBody {
             Fetch { .. } => "FETCH",
             Store { .. } => "STORE",
             Copy { .. } => "COPY",
-            Uid(_) => "UID",
             Idle => "IDLE",
         }
     }
@@ -1760,28 +1765,6 @@ impl Codec for CommandBody {
     {
         unimplemented!()
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum CommandBodyUid {
-    Copy {
-        sequence_set: Vec<Sequence>,
-        mailbox: Mailbox,
-    },
-    Fetch {
-        sequence_set: Vec<Sequence>,
-        items: MacroOrDataItems,
-    },
-    Search {
-        charset: Option<String>,
-        criteria: SearchKey,
-    },
-    Store {
-        sequence_set: Vec<Sequence>,
-        kind: StoreType,
-        response: StoreResponse,
-        flags: Vec<Flag>,
-    },
 }
 
 /// The currently defined status data items that can be requested.

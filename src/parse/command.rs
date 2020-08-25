@@ -14,7 +14,7 @@ use crate::{
         tag_imap,
     },
     types::{
-        command::{Command, CommandBody, CommandBodyUid, SearchKey},
+        command::{Command, CommandBody, SearchKey},
         core::AString,
         data_items::{DataItem, Macro, MacroOrDataItems},
         flag::Flag,
@@ -328,6 +328,7 @@ pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
         CommandBody::Copy {
             sequence_set,
             mailbox,
+            uid: false,
         },
     ))
 }
@@ -360,6 +361,7 @@ pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
         CommandBody::Fetch {
             sequence_set,
             items,
+            uid: false,
         },
     ))
 }
@@ -435,6 +437,7 @@ pub fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
             kind,
             response,
             flags,
+            uid: false,
         },
     ))
 }
@@ -474,39 +477,17 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
 pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"UID"), SP, alt((copy, fetch, search, store))));
 
-    let (remaining, (_, _, cmd)) = parser(input)?;
+    let (remaining, (_, _, mut cmd)) = parser(input)?;
 
-    let uid_body = match cmd {
-        CommandBody::Copy {
-            sequence_set,
-            mailbox,
-        } => CommandBodyUid::Copy {
-            sequence_set,
-            mailbox,
-        },
-        CommandBody::Fetch {
-            sequence_set,
-            items,
-        } => CommandBodyUid::Fetch {
-            sequence_set,
-            items,
-        },
-        CommandBody::Search { charset, criteria } => CommandBodyUid::Search { charset, criteria },
-        CommandBody::Store {
-            sequence_set,
-            kind,
-            response,
-            flags,
-        } => CommandBodyUid::Store {
-            sequence_set,
-            kind,
-            response,
-            flags,
-        },
+    match cmd {
+        CommandBody::Copy { ref mut uid, .. }
+        | CommandBody::Fetch { ref mut uid, .. }
+        | CommandBody::Search { ref mut uid, .. }
+        | CommandBody::Store { ref mut uid, .. } => *uid = true,
         _ => unreachable!(),
-    };
+    }
 
-    Ok((remaining, CommandBody::Uid(uid_body)))
+    Ok((remaining, cmd))
 }
 
 /// ; errata id: 261
@@ -530,7 +511,14 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
         _ => SearchKey::And(criteria),
     };
 
-    Ok((remaining, CommandBody::Search { charset, criteria }))
+    Ok((
+        remaining,
+        CommandBody::Search {
+            charset,
+            criteria,
+            uid: false,
+        },
+    ))
 }
 
 /// search-key = "ALL" /
@@ -728,7 +716,8 @@ mod test {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: Uid(vec![Single(Value(5))])
+                criteria: Uid(vec![Single(Value(5))]),
+                uid: false,
             }
         );
 
@@ -746,6 +735,7 @@ mod test {
                 ),
                 Not(Box::new(Uid(vec![Single(Value(5))]))),
             ]),
+            uid: false,
         };
         assert_eq!(val, expected);
     }
