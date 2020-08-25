@@ -12,7 +12,7 @@ use crate::{
         response::{Code, Status},
         AuthMechanism, Sequence, StoreResponse, StoreType,
     },
-    utils::gen_tag,
+    utils::{gen_tag, join_bytes},
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
@@ -2018,6 +2018,103 @@ pub enum SearchKey {
 
     /// Messages that do not have the \Seen flag set.
     Unseen,
+}
+
+impl Codec for SearchKey {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            SearchKey::All => b"ALL".to_vec(),
+            SearchKey::Answered => b"ANSWERED".to_vec(),
+            SearchKey::Bcc(astring) => [b"BCC ".as_ref(), &astring.serialize()].concat(),
+            //SearchKey::Before(date) => [b"BEFORE ".as_bytes(), &date.serialize()].concat(),
+            SearchKey::Body(astring) => [b"BODY ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Cc(astring) => [b"CC ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Deleted => b"DELETED".to_vec(),
+            SearchKey::Flagged => b"FLAGGED".to_vec(),
+            SearchKey::From(astring) => [b"FROM ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Keyword(flag_keyword) => {
+                [b"KEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+            }
+            SearchKey::New => b"NEW".to_vec(),
+            SearchKey::Old => b"OLD".to_vec(),
+            SearchKey::On(date) => [b"ON ".as_ref(), &date.serialize()].concat(),
+            SearchKey::Recent => b"RECENT".to_vec(),
+            SearchKey::Seen => b"SEEN".to_vec(),
+            SearchKey::Since(date) => [b"SINCE ".as_ref(), &date.serialize()].concat(),
+            SearchKey::Subject(astring) => [b"SUBJECT ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Text(astring) => [b"TEXT ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::To(astring) => [b"TO ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Unanswered => b"UNANSWERED".to_vec(),
+            SearchKey::Undeleted => b"UNDELETED".to_vec(),
+            SearchKey::Unflagged => b"UNFLAGGED".to_vec(),
+            SearchKey::Unkeyword(flag_keyword) => {
+                [b"UNKEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+            }
+            SearchKey::Unseen => b"UNSEEN".to_vec(),
+            SearchKey::Draft => b"DRAFT".to_vec(),
+            SearchKey::Header(header_fld_name, astring) => [
+                b"HEADER ".as_ref(),
+                &header_fld_name.serialize(),
+                b" ".as_ref(),
+                &astring.serialize(),
+            ]
+            .concat(),
+            SearchKey::Larger(number) => format!("LARGER {}", number).into_bytes(),
+            SearchKey::Not(search_key) => [b"NOT ".as_ref(), &search_key.serialize()].concat(),
+            SearchKey::Or(search_key_a, search_key_b) => [
+                b"OR ".as_ref(),
+                &search_key_a.serialize(),
+                b" ".as_ref(),
+                &search_key_b.serialize(),
+            ]
+            .concat(),
+            SearchKey::SentBefore(date) => [b"SENTBEFORE ".as_ref(), &date.serialize()].concat(),
+            SearchKey::SentOn(date) => [b"SENTON ".as_ref(), &date.serialize()].concat(),
+            SearchKey::SentSince(date) => [b"SENTSINCE ".as_ref(), &date.serialize()].concat(),
+            SearchKey::Smaller(number) => format!("SMALLER {}", number).into_bytes(),
+            SearchKey::Uid(sequence_set) => [
+                b"UID ".as_ref(),
+                join_bytes(
+                    sequence_set
+                        .iter()
+                        .map(Codec::serialize)
+                        .collect::<Vec<Vec<u8>>>(),
+                    b" ",
+                )
+                .as_ref(),
+            ]
+            .concat(),
+            SearchKey::Undraft => b"UNDRAFT".to_vec(),
+            SearchKey::SequenceSet(sequence_set) => join_bytes(
+                sequence_set
+                    .iter()
+                    .map(Codec::serialize)
+                    .collect::<Vec<Vec<u8>>>(),
+                b" ",
+            ),
+            SearchKey::And(search_keys) => {
+                let mut out = Vec::new();
+                if let Some((last, elements)) = search_keys.split_last() {
+                    for element in elements {
+                        out.extend(element.serialize());
+                        out.push(b' ')
+                    }
+                    out.extend(last.serialize());
+                    out
+                } else {
+                    panic!("This should not happen.")
+                }
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
