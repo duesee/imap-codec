@@ -1,5 +1,6 @@
 use crate::{
     codec::Codec,
+    parse::mailbox::is_list_char,
     types::core::{AString, String as IMAPString},
 };
 use serde::Deserialize;
@@ -100,6 +101,42 @@ impl FromStr for Mailbox {
             Ok(Mailbox::Other(AString::String(IMAPString::Quoted(
                 s.to_string(),
             ))))
+        }
+    }
+}
+
+impl From<&str> for Mailbox {
+    fn from(s: &str) -> Self {
+        s.to_string().into()
+    }
+}
+
+impl From<std::string::String> for Mailbox {
+    fn from(s: std::string::String) -> Self {
+        if s.to_lowercase() == "inbox" {
+            Mailbox::Inbox
+        } else {
+            Mailbox::Other(s.into())
+        }
+    }
+}
+
+impl From<&str> for ListMailbox {
+    fn from(s: &str) -> Self {
+        s.to_string().into()
+    }
+}
+
+impl From<std::string::String> for ListMailbox {
+    fn from(s: std::string::String) -> Self {
+        if s.len() == 0 {
+            ListMailbox::String(IMAPString::Quoted(s))
+        } else {
+            if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
+                ListMailbox::Token(s)
+            } else {
+                ListMailbox::String(s.into())
+            }
         }
     }
 }

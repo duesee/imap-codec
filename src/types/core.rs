@@ -78,6 +78,22 @@ pub enum String {
     Quoted(std::string::String),
 }
 
+impl From<&str> for String {
+    fn from(s: &str) -> Self {
+        s.to_string().into()
+    }
+}
+
+impl From<std::string::String> for String {
+    fn from(s: std::string::String) -> Self {
+        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            return String::Quoted(s);
+        }
+
+        return String::Literal(s.into_bytes());
+    }
+}
+
 pub fn escape_quoted<'a>(unescaped: &'a str) -> Cow<'a, str> {
     let mut escaped = Cow::Borrowed(unescaped);
 
@@ -176,14 +192,10 @@ impl From<&str> for AString {
 impl From<std::string::String> for AString {
     fn from(s: std::string::String) -> Self {
         if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
-            return AString::Atom(s);
+            AString::Atom(s)
+        } else {
+            AString::String(s.into())
         }
-
-        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            return AString::String(String::Quoted(s));
-        }
-
-        return AString::String(String::Literal(s.into_bytes()));
     }
 }
 
