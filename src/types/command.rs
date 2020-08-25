@@ -159,8 +159,15 @@ impl Command {
         Command::new(&gen_tag(), CommandBody::Expunge)
     }
 
-    pub fn search() -> Command {
-        unimplemented!();
+    pub fn search(charset: Option<String>, criteria: SearchKey, uid: bool) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Search {
+                charset,
+                criteria,
+                uid,
+            },
+        )
     }
 
     pub fn fetch() -> Command {
@@ -1821,6 +1828,24 @@ impl Codec for CommandBody {
             CommandBody::Check => b"CHECK".to_vec(),
             CommandBody::Close => b"CLOSE".to_vec(),
             CommandBody::Expunge => b"EXPUNGE".to_vec(),
+            CommandBody::Search {
+                charset,
+                criteria,
+                uid,
+            } => {
+                let mut out = if *uid {
+                    b"UID SEARCH".to_vec()
+                } else {
+                    b"SEARCH".to_vec()
+                };
+                if let Some(charset) = charset {
+                    out.push(b' ');
+                    out.extend(format!("\"CHARSET\" {}", charset).into_bytes());
+                }
+                out.push(b' ');
+                out.extend(criteria.serialize());
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -2122,11 +2147,11 @@ mod test {
     use crate::{
         codec::Codec,
         types::{
-            command::{Command, StatusItem},
+            command::{Command, SearchKey, StatusItem},
             core::{AString, Atom, String as IMAPString},
             flag::Flag,
             mailbox::{ListMailbox, Mailbox},
-            AuthMechanism,
+            AuthMechanism, SeqNo, Sequence,
         },
     };
     use chrono::{SubsecRound, Utc};
@@ -2191,6 +2216,27 @@ mod test {
             Command::check(),
             Command::close(),
             Command::expunge(),
+            Command::search(
+                None,
+                SearchKey::And(vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]),
+                false,
+            ),
+            Command::search(
+                None,
+                SearchKey::And(vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]),
+                true,
+            ),
+            //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
+            Command::search(
+                None,
+                SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))]),
+                true,
+            ),
+            Command::search(
+                None,
+                SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Unlimited)]),
+                true,
+            ),
         ];
 
         for cmd in cmds {
