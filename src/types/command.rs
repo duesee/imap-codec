@@ -148,15 +148,15 @@ impl Command {
     }
 
     pub fn check() -> Command {
-        unimplemented!();
+        Command::new(&gen_tag(), CommandBody::Check)
     }
 
     pub fn close() -> Command {
-        unimplemented!();
+        Command::new(&gen_tag(), CommandBody::Close)
     }
 
     pub fn expunge() -> Command {
-        unimplemented!();
+        Command::new(&gen_tag(), CommandBody::Expunge)
     }
 
     pub fn search() -> Command {
@@ -1818,6 +1818,9 @@ impl Codec for CommandBody {
                 out.extend(message);
                 out
             }
+            CommandBody::Check => b"CHECK".to_vec(),
+            CommandBody::Close => b"CLOSE".to_vec(),
+            CommandBody::Expunge => b"EXPUNGE".to_vec(),
             _ => unimplemented!(),
         }
     }
@@ -2088,6 +2091,9 @@ mod test {
                 Some(Utc::now().trunc_subsecs(0).into()),
                 vec![0xff, 0xff, 0xff],
             ),
+            Command::check(),
+            Command::close(),
+            Command::expunge(),
         ];
 
         for cmd in cmds {
