@@ -120,8 +120,14 @@ impl Command {
         )
     }
 
-    pub fn status() -> Command {
-        unimplemented!();
+    pub fn status<M: Into<Mailbox>>(mailbox: M, items: Vec<StatusItem>) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Status {
+                mailbox: mailbox.into(),
+                items,
+            },
+        )
     }
 
     pub fn append() -> Command {
@@ -1755,6 +1761,22 @@ impl Codec for CommandBody {
                 out.extend(mailbox.serialize());
                 out
             }
+            CommandBody::Status { mailbox, items } => {
+                let mut out = b"STATUS".to_vec();
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out.push(b' ');
+                out.push(b'(');
+                if let Some((last, elements)) = items.split_last() {
+                    for element in elements {
+                        out.extend(element.serialize());
+                        out.push(b' ');
+                    }
+                    out.extend(last.serialize());
+                }
+                out.push(b')');
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -1959,7 +1981,7 @@ mod test {
     use crate::{
         codec::Codec,
         types::{
-            command::Command,
+            command::{Command, StatusItem},
             core::{AString, String as IMAPString},
             mailbox::{ListMailbox, Mailbox},
             AuthMechanism,
@@ -2010,6 +2032,7 @@ mod test {
                 "INBOX",
                 ListMailbox::String(IMAPString::Quoted("\x7f".into())),
             ),
+            Command::status("inbox", vec![StatusItem::Messages]),
         ];
 
         for cmd in cmds {
