@@ -10,7 +10,7 @@ This library provides
   * semi-complete parsing of responses
   * construction/serialization of some commands
 
-A goal of this library is to provide an API which makes it hard (or impossible) to construct invalid messages.
+A goal of this library is to provide a misuse resistent API which makes it hard (or impossible) to construct invalid messages.
 
 If you are working on an IMAP *client*, consider using https://github.com/djc/tokio-imap (imap-proto) first,
 as it seems to have better support for responses and received more review.
@@ -19,9 +19,8 @@ I am not aware of a more complete implementation of the IMAP server side in Rust
 
 # Future of this Crate
 
-There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception as it
-implements mostly the server functionality. I will continue to work on this library, but would also be happy if this
-could be merged with related IMAP crates to a complete IMAP library.
+There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception.
+I will continue to work on this library, but would also be happy if this could be merged with related IMAP crates to a complete IMAP library.
 
 ## Known issues
 
@@ -30,11 +29,7 @@ This library emerged from the need for an IMAP testing tool and some work must b
 * [ ] remove remaining prototype artifacts like `unwrap()`s and `unimplemented()`s
 * [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser).
 * [ ] settle on "core types", i.e. decide when to use `&[u8]` or `&str` and when to wrap primitive types in `Atom` or `IMAPString`?
-
-# Documentation
-
-Initially, I started with a huge lib.rs with the whole IMAP RFC in it. This helped me in understanding the protocol.
-However, a lot of comments are irrelevant for parsing and should be removed. The IMAP RFC is also not cited in an appropriate way.
+* [ ] Many comments are irrelevant for parsing and should be removed. The IMAP RFC is also not cited in an appropriate way.
 
 # Usage notes
 
@@ -306,7 +301,6 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 * [x] list-mailbox
 * [x] list-char
 * [x] list-wildcards
-
 * [x] mailbox
 * [ ] mailbox-data
 * [ ] mailbox-list
