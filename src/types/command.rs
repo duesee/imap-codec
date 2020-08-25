@@ -1197,7 +1197,7 @@ pub enum CommandBody {
     ///   envelope information.
     Append {
         mailbox: Mailbox,
-        flags: Option<Vec<Flag>>,
+        flags: Vec<Flag>,
         date: Option<DateTime<FixedOffset>>,
         message: Vec<u8>,
     },

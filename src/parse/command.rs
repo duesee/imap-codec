@@ -107,7 +107,7 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
         // FIXME: do not use unwrap()
         CommandBody::Append {
             mailbox,
-            flags,
+            flags: flags.unwrap_or(vec![]),
             date: date_time.map(|maybe_date| maybe_date.unwrap()),
             message: literal.to_vec(),
         },
