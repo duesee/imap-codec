@@ -130,8 +130,21 @@ impl Command {
         )
     }
 
-    pub fn append() -> Command {
-        unimplemented!();
+    pub fn append<M: Into<Mailbox>>(
+        mailbox: M,
+        flags: Vec<Flag>,
+        date: Option<DateTime<FixedOffset>>,
+        message: Vec<u8>,
+    ) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Append {
+                mailbox: mailbox.into(),
+                flags,
+                date,
+                message,
+            },
+        )
     }
 
     pub fn check() -> Command {
@@ -1777,6 +1790,34 @@ impl Codec for CommandBody {
                 out.push(b')');
                 out
             }
+            CommandBody::Append {
+                mailbox,
+                flags,
+                date,
+                message,
+            } => {
+                let mut out = b"APPEND".to_vec();
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                if let Some((last, elements)) = flags.split_last() {
+                    out.push(b' ');
+                    out.push(b'(');
+                    for element in elements {
+                        out.extend(element.serialize());
+                        out.push(b' ');
+                    }
+                    out.extend(last.serialize());
+                    out.push(b')');
+                }
+                if let Some(date) = date {
+                    out.push(b' ');
+                    out.extend(date.serialize());
+                }
+                out.push(b' ');
+                out.extend(format!("{{{}}}\r\n", message.len()).into_bytes());
+                out.extend(message);
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -1982,11 +2023,13 @@ mod test {
         codec::Codec,
         types::{
             command::{Command, StatusItem},
-            core::{AString, String as IMAPString},
+            core::{AString, Atom, String as IMAPString},
+            flag::Flag,
             mailbox::{ListMailbox, Mailbox},
             AuthMechanism,
         },
     };
+    use chrono::{SubsecRound, Utc};
 
     #[test]
     fn test_command_new() {
@@ -2033,6 +2076,18 @@ mod test {
                 ListMailbox::String(IMAPString::Quoted("\x7f".into())),
             ),
             Command::status("inbox", vec![StatusItem::Messages]),
+            Command::append(
+                "inbox",
+                vec![],
+                Some(Utc::now().trunc_subsecs(0).into()),
+                vec![0xff, 0xff, 0xff],
+            ),
+            Command::append(
+                "inbox",
+                vec![Flag::Keyword(Atom("test".into()))], // FIXME
+                Some(Utc::now().trunc_subsecs(0).into()),
+                vec![0xff, 0xff, 0xff],
+            ),
         ];
 
         for cmd in cmds {
