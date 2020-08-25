@@ -120,6 +120,47 @@ impl Command {
         )
     }
 
+    pub fn status() -> Command {
+        unimplemented!();
+    }
+
+    pub fn append() -> Command {
+        unimplemented!();
+    }
+
+    pub fn check() -> Command {
+        unimplemented!();
+    }
+
+    pub fn close() -> Command {
+        unimplemented!();
+    }
+
+    pub fn expunge() -> Command {
+        unimplemented!();
+    }
+
+    pub fn search() -> Command {
+        unimplemented!();
+    }
+
+    pub fn fetch() -> Command {
+        unimplemented!();
+    }
+
+    pub fn store() -> Command {
+        unimplemented!();
+    }
+
+    pub fn copy() -> Command {
+        unimplemented!();
+    }
+
+    // TODO: add uid parameter to other commands?
+    //pub fn uid() -> Command {
+    //    unimplemented!();
+    //}
+
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
     }
