@@ -80,6 +80,18 @@ impl Codec for MacroOrDataItems {
     }
 }
 
+impl From<Macro> for MacroOrDataItems {
+    fn from(m: Macro) -> Self {
+        MacroOrDataItems::Macro(m)
+    }
+}
+
+impl From<Vec<DataItem>> for MacroOrDataItems {
+    fn from(items: Vec<DataItem>) -> Self {
+        MacroOrDataItems::DataItems(items)
+    }
+}
+
 /// The currently defined data items that can be fetched are:
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataItem {
