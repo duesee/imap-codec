@@ -204,14 +204,20 @@ impl Command {
         )
     }
 
-    pub fn copy() -> Command {
-        unimplemented!();
+    pub fn copy<M: Into<Mailbox>>(sequence_set: Vec<Sequence>, mailbox: M, uid: bool) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Copy {
+                sequence_set,
+                mailbox: mailbox.into(),
+                uid,
+            },
+        )
     }
 
-    // TODO: add uid parameter to other commands?
-    //pub fn uid() -> Command {
-    //    unimplemented!();
-    //}
+    pub fn idle() -> Command {
+        Command::new(&gen_tag(), CommandBody::Idle)
+    }
 
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
         Status::ok(Some(&self.tag), None, comment)
@@ -1931,7 +1937,22 @@ impl Codec for CommandBody {
 
                 out
             }
-            _ => unimplemented!(),
+            CommandBody::Copy {
+                sequence_set,
+                mailbox,
+                uid,
+            } => {
+                let mut out = if *uid {
+                    b"UID COPY ".to_vec()
+                } else {
+                    b"COPY ".to_vec()
+                };
+                out.extend(join_serializable(sequence_set, b","));
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out
+            }
+            CommandBody::Idle => b"IDLE".to_vec(),
         }
     }
 
@@ -2351,6 +2372,9 @@ mod test {
                 vec![Flag::Keyword(Atom("TEST".into()))],
                 true,
             ),
+            Command::copy(vec![Sequence::Single(SeqNo::Value(1))], "inbox", false),
+            Command::copy(vec![Sequence::Single(SeqNo::Value(1337))], "archive", true),
+            Command::idle(),
         ];
 
         for cmd in cmds {
