@@ -1,3 +1,4 @@
+use crate::codec::Codec;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::iter;
 
@@ -21,6 +22,14 @@ pub fn join_bytes(elements: Vec<Vec<u8>>, sep: &[u8]) -> Vec<u8> {
     elements
         .iter()
         .map(|x| x.to_vec())
+        .collect::<Vec<Vec<u8>>>()
+        .join(sep)
+}
+
+pub fn join_serializable<I: Codec>(elements: &[I], sep: &[u8]) -> Vec<u8> {
+    elements
+        .iter()
+        .map(|x| x.serialize())
         .collect::<Vec<Vec<u8>>>()
         .join(sep)
 }
