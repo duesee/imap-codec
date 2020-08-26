@@ -695,7 +695,7 @@ pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::types::{SeqNo, Sequence};
+    use crate::types::sequence::{SeqNo, Sequence};
 
     #[test]
     fn test_fetch() {

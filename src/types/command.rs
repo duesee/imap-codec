@@ -10,7 +10,8 @@ use crate::{
         flag::Flag,
         mailbox::{ListMailbox, Mailbox},
         response::{Code, Status},
-        AuthMechanism, Sequence, StoreResponse, StoreType,
+        sequence::Sequence,
+        AuthMechanism, StoreResponse, StoreType,
     },
     utils::{gen_tag, join_bytes, join_serializable},
 };
@@ -2259,7 +2260,8 @@ mod test {
             data_items::{DataItem, Part, Section},
             flag::Flag,
             mailbox::{ListMailbox, Mailbox},
-            AuthMechanism, SeqNo, Sequence, StoreResponse, StoreType,
+            sequence::{SeqNo, Sequence},
+            AuthMechanism, StoreResponse, StoreType,
         },
     };
     use chrono::{SubsecRound, Utc};

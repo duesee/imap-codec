@@ -1,6 +1,6 @@
 use crate::{
     parse::core::nz_number,
-    types::{SeqNo, Sequence},
+    types::sequence::{SeqNo, Sequence},
 };
 use nom::{
     branch::alt, bytes::streaming::tag, combinator::map, combinator::value,

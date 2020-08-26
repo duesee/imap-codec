@@ -9,6 +9,7 @@ pub mod datetime;
 pub mod flag;
 pub mod mailbox;
 pub mod response;
+pub mod sequence;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum Capability {
@@ -80,52 +81,6 @@ impl Codec for AuthMechanism {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Sequence {
-    Single(SeqNo),
-    Range(SeqNo, SeqNo),
-}
-
-impl Codec for Sequence {
-    fn serialize(&self) -> Vec<u8> {
-        match self {
-            Sequence::Single(seq_no) => seq_no.serialize(),
-            Sequence::Range(from, to) => {
-                [&from.serialize(), b":".as_ref(), &to.serialize()].concat()
-            }
-        }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SeqNo {
-    Value(u32),
-    Unlimited,
-}
-
-impl Codec for SeqNo {
-    fn serialize(&self) -> Vec<u8> {
-        match self {
-            SeqNo::Value(number) => number.to_string().into_bytes(),
-            SeqNo::Unlimited => b"*".to_vec(),
-        }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum StoreType {
     Replace,
@@ -141,7 +96,7 @@ pub enum StoreResponse {
 
 #[cfg(test)]
 mod test {
-    use super::{SeqNo, Sequence};
+    use super::sequence::{SeqNo, Sequence};
     use crate::codec::Codec;
 
     #[test]
