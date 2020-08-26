@@ -219,4 +219,5 @@ pub enum Section {
     Mime(Part),
 }
 
-pub type Part = Vec<u32>;
+#[derive(Debug, Clone, PartialEq)]
+pub struct Part(pub Vec<u32>);

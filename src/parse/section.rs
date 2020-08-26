@@ -1,6 +1,6 @@
 use crate::{
     parse::{core::nz_number, header::header_list},
-    types::data_items::{PartSpecifier, Section},
+    types::data_items::{Part, PartSpecifier, Section},
 };
 use abnf_core::streaming::SP;
 use nom::{
@@ -34,18 +34,18 @@ pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
                 if let Some((_, part_specifier)) = maybe_part_specifier {
                     match part_specifier {
                         PartSpecifier::PartNumber(_) => unreachable!(),
-                        PartSpecifier::Header => Section::Header(Some(part_number)),
+                        PartSpecifier::Header => Section::Header(Some(Part(part_number))),
                         PartSpecifier::HeaderFields(fields) => {
-                            Section::HeaderFields(Some(part_number), fields)
+                            Section::HeaderFields(Some(Part(part_number)), fields)
                         }
                         PartSpecifier::HeaderFieldsNot(fields) => {
-                            Section::HeaderFieldsNot(Some(part_number), fields)
+                            Section::HeaderFieldsNot(Some(Part(part_number)), fields)
                         }
-                        PartSpecifier::Text => Section::Text(Some(part_number)),
-                        PartSpecifier::Mime => Section::Mime(part_number),
+                        PartSpecifier::Text => Section::Text(Some(Part(part_number))),
+                        PartSpecifier::Mime => Section::Mime(Part(part_number)),
                     }
                 } else {
-                    Section::Part(part_number)
+                    Section::Part(Part(part_number))
                 }
             },
         ),
