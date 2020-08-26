@@ -12,7 +12,7 @@ use crate::{
         response::{Code, Status},
         AuthMechanism, Sequence, StoreResponse, StoreType,
     },
-    utils::{gen_tag, join_bytes},
+    utils::{gen_tag, join_bytes, join_serializable},
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
@@ -185,8 +185,23 @@ impl Command {
         )
     }
 
-    pub fn store() -> Command {
-        unimplemented!();
+    pub fn store(
+        sequence_set: Vec<Sequence>,
+        kind: StoreType,
+        response: StoreResponse,
+        flags: Vec<Flag>,
+        uid: bool,
+    ) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Store {
+                sequence_set,
+                kind,
+                response,
+                flags,
+                uid,
+            },
+        )
     }
 
     pub fn copy() -> Command {
@@ -1881,6 +1896,41 @@ impl Codec for CommandBody {
                 out.extend(items.serialize());
                 out
             }
+            CommandBody::Store {
+                sequence_set,
+                kind,
+                response,
+                flags,
+                uid,
+            } => {
+                let mut out = if *uid {
+                    b"UID STORE ".to_vec()
+                } else {
+                    b"STORE ".to_vec()
+                };
+
+                out.extend(join_serializable(sequence_set, b","));
+                out.push(b' ');
+
+                match kind {
+                    StoreType::Add => out.push(b'+'),
+                    StoreType::Remove => out.push(b'-'),
+                    StoreType::Replace => {}
+                }
+
+                out.extend_from_slice(b"FLAGS");
+
+                match response {
+                    StoreResponse::Answer => {}
+                    StoreResponse::Silent => out.extend_from_slice(b".SILENT"),
+                }
+
+                out.extend_from_slice(b" (");
+                out.extend(join_serializable(flags, b" "));
+                out.push(b')');
+
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -2188,7 +2238,7 @@ mod test {
             data_items::{DataItem, Part, Section},
             flag::Flag,
             mailbox::{ListMailbox, Mailbox},
-            AuthMechanism, SeqNo, Sequence,
+            AuthMechanism, SeqNo, Sequence, StoreResponse, StoreType,
         },
     };
     use chrono::{SubsecRound, Utc};
@@ -2284,6 +2334,23 @@ mod test {
                 false,
             ),
             Command::fetch(vec![Sequence::Single(SeqNo::Value(1))], Macro::Full, true),
+            Command::store(
+                vec![Sequence::Single(SeqNo::Value(1))],
+                StoreType::Remove,
+                StoreResponse::Answer,
+                vec![Flag::Seen, Flag::Draft],
+                false,
+            ),
+            Command::store(
+                vec![
+                    Sequence::Single(SeqNo::Value(1)),
+                    Sequence::Single(SeqNo::Value(5)),
+                ],
+                StoreType::Add,
+                StoreResponse::Answer,
+                vec![Flag::Keyword(Atom("TEST".into()))],
+                true,
+            ),
         ];
 
         for cmd in cmds {
