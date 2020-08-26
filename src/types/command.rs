@@ -10,7 +10,7 @@ use crate::{
         flag::Flag,
         mailbox::{ListMailbox, Mailbox},
         response::{Code, Status},
-        sequence::Sequence,
+        sequence::{Sequence, ToSequence},
         AuthMechanism, StoreResponse, StoreType,
     },
     utils::{gen_tag, join_bytes, join_serializable},
@@ -171,29 +171,36 @@ impl Command {
         )
     }
 
-    pub fn fetch<I: Into<MacroOrDataItems>>(
-        sequence_set: Vec<Sequence>,
-        items: I,
-        uid: bool,
-    ) -> Command {
-        Command::new(
+    pub fn fetch<S, I>(sequence_set: S, items: I, uid: bool) -> Result<Command, ()>
+    where
+        S: ToSequence,
+        I: Into<MacroOrDataItems>,
+    {
+        let sequence_set = sequence_set.to_sequence()?;
+
+        Ok(Command::new(
             &gen_tag(),
             CommandBody::Fetch {
                 sequence_set,
                 items: items.into(),
                 uid,
             },
-        )
+        ))
     }
 
-    pub fn store(
-        sequence_set: Vec<Sequence>,
+    pub fn store<S>(
+        sequence_set: S,
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag>,
         uid: bool,
-    ) -> Command {
-        Command::new(
+    ) -> Result<Command, ()>
+    where
+        S: ToSequence,
+    {
+        let sequence_set = sequence_set.to_sequence()?;
+
+        Ok(Command::new(
             &gen_tag(),
             CommandBody::Store {
                 sequence_set,
@@ -202,18 +209,24 @@ impl Command {
                 flags,
                 uid,
             },
-        )
+        ))
     }
 
-    pub fn copy<M: Into<Mailbox>>(sequence_set: Vec<Sequence>, mailbox: M, uid: bool) -> Command {
-        Command::new(
+    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, ()>
+    where
+        S: ToSequence,
+        M: Into<Mailbox>,
+    {
+        let sequence_set = sequence_set.to_sequence()?;
+
+        Ok(Command::new(
             &gen_tag(),
             CommandBody::Copy {
                 sequence_set,
                 mailbox: mailbox.into(),
                 uid,
             },
-        )
+        ))
     }
 
     pub fn idle() -> Command {
@@ -2260,7 +2273,7 @@ mod test {
             data_items::{DataItem, Part, Section},
             flag::Flag,
             mailbox::{ListMailbox, Mailbox},
-            sequence::{SeqNo, Sequence},
+            sequence::ToSequence,
             AuthMechanism, StoreResponse, StoreType,
         },
     };
@@ -2339,43 +2352,43 @@ mod test {
             //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
             Command::search(
                 None,
-                SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))]),
+                SearchKey::SequenceSet("42".to_sequence().unwrap()),
                 true,
             ),
             Command::search(
                 None,
-                SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Unlimited)]),
+                SearchKey::SequenceSet("*".to_sequence().unwrap()),
                 true,
             ),
             Command::fetch(
-                vec![Sequence::Single(SeqNo::Value(1))],
+                "1",
                 vec![DataItem::BodyExt {
                     partial: None,
                     section: Some(Section::Part(Part(vec![1, 1]))), // TODO: Part must be non-zero.
                     peek: true,
                 }],
                 false,
-            ),
-            Command::fetch(vec![Sequence::Single(SeqNo::Value(1))], Macro::Full, true),
+            )
+            .unwrap(),
+            Command::fetch("1:*,2,3", Macro::Full, true).unwrap(),
             Command::store(
-                vec![Sequence::Single(SeqNo::Value(1))],
+                "1,2:*",
                 StoreType::Remove,
                 StoreResponse::Answer,
                 vec![Flag::Seen, Flag::Draft],
                 false,
-            ),
+            )
+            .unwrap(),
             Command::store(
-                vec![
-                    Sequence::Single(SeqNo::Value(1)),
-                    Sequence::Single(SeqNo::Value(5)),
-                ],
+                "1:5",
                 StoreType::Add,
                 StoreResponse::Answer,
                 vec![Flag::Keyword(Atom("TEST".into()))],
                 true,
-            ),
-            Command::copy(vec![Sequence::Single(SeqNo::Value(1))], "inbox", false),
-            Command::copy(vec![Sequence::Single(SeqNo::Value(1337))], "archive", true),
+            )
+            .unwrap(),
+            Command::copy("1", "inbox", false).unwrap(),
+            Command::copy("1337", "archive", true).unwrap(),
             Command::idle(),
         ];
 
