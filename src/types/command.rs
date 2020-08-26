@@ -170,8 +170,19 @@ impl Command {
         )
     }
 
-    pub fn fetch() -> Command {
-        unimplemented!();
+    pub fn fetch<I: Into<MacroOrDataItems>>(
+        sequence_set: Vec<Sequence>,
+        items: I,
+        uid: bool,
+    ) -> Command {
+        Command::new(
+            &gen_tag(),
+            CommandBody::Fetch {
+                sequence_set,
+                items: items.into(),
+                uid,
+            },
+        )
     }
 
     pub fn store() -> Command {
@@ -1846,6 +1857,30 @@ impl Codec for CommandBody {
                 out.extend(criteria.serialize());
                 out
             }
+            CommandBody::Fetch {
+                sequence_set,
+                items,
+                uid,
+            } => {
+                let mut out = if *uid {
+                    b"UID FETCH".to_vec()
+                } else {
+                    b"FETCH".to_vec()
+                };
+                out.push(b' ');
+
+                let seq = join_bytes(
+                    sequence_set
+                        .iter()
+                        .map(Codec::serialize)
+                        .collect::<Vec<Vec<u8>>>(),
+                    b",",
+                );
+                out.extend(seq);
+                out.push(b' ');
+                out.extend(items.serialize());
+                out
+            }
             _ => unimplemented!(),
         }
     }
@@ -2149,6 +2184,8 @@ mod test {
         types::{
             command::{Command, SearchKey, StatusItem},
             core::{AString, Atom, String as IMAPString},
+            data_items::Macro,
+            data_items::{DataItem, Part, Section},
             flag::Flag,
             mailbox::{ListMailbox, Mailbox},
             AuthMechanism, SeqNo, Sequence,
@@ -2237,6 +2274,16 @@ mod test {
                 SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Unlimited)]),
                 true,
             ),
+            Command::fetch(
+                vec![Sequence::Single(SeqNo::Value(1))],
+                vec![DataItem::BodyExt {
+                    partial: None,
+                    section: Some(Section::Part(Part(vec![1, 1]))), // TODO: Part must be non-zero.
+                    peek: true,
+                }],
+                false,
+            ),
+            Command::fetch(vec![Sequence::Single(SeqNo::Value(1))], Macro::Full, true),
         ];
 
         for cmd in cmds {
