@@ -130,7 +130,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
             )),
             |(_, _, name, _, items)| Data::Status {
                 name,
-                items: items.unwrap_or(Vec::new()),
+                items: items.unwrap_or_default(),
             },
         ),
         map(

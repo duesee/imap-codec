@@ -45,10 +45,7 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
 
 /// digit-nz = %x31-39 ; 1-9
 pub fn is_digit_nz(byte: u8) -> bool {
-    match byte {
-        b'1'..=b'9' => true,
-        _ => false,
-    }
+    matches!(byte, b'1'..=b'9')
 }
 
 // ----- string -----
@@ -101,10 +98,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
             },
         ),
         map(
-            tuple((
-                tag("\\"),
-                take_while_m_n(1, 1, |byte| is_quoted_specials(byte)),
-            )),
+            tuple((tag("\\"), take_while_m_n(1, 1, is_quoted_specials))),
             |(_, bytes): (_, &[u8])| {
                 assert_eq!(bytes.len(), 1);
                 bytes[0] as char
@@ -233,10 +227,7 @@ pub fn text(input: &[u8]) -> IResult<&[u8], &str> {
 /// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F
 ///               ; mod: was <any CHAR except CR and LF>
 pub fn is_text_char(c: u8) -> bool {
-    match c {
-        0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f => true,
-        _ => false,
-    }
+    matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f)
 }
 
 #[cfg(test)]

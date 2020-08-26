@@ -107,7 +107,7 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
         // FIXME: do not use unwrap()
         CommandBody::Append {
             mailbox,
-            flags: flags.unwrap_or(vec![]),
+            flags: flags.unwrap_or_default(),
             date: date_time.map(|maybe_date| maybe_date.unwrap()),
             message: literal.to_vec(),
         },
@@ -349,7 +349,7 @@ pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
             }),
             map(
                 delimited(tag(b"("), separated_list(SP, fetch_att), tag(b")")),
-                |fetch_attrs| MacroOrDataItems::DataItems(fetch_attrs),
+                MacroOrDataItems::DataItems,
             ),
         )),
     ));

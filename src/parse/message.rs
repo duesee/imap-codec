@@ -61,7 +61,7 @@ pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
 
     Ok((
         remaining,
-        DataItemResponse::Flags(flags.unwrap_or(Vec::new())),
+        DataItemResponse::Flags(flags.unwrap_or_default()),
     ))
 }
 

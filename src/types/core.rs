@@ -27,7 +27,7 @@ impl fmt::Display for Atom {
 
 impl Codec for Atom {
     fn serialize(&self) -> Vec<u8> {
-        format!("{}", self.0).into_bytes()
+        self.0.to_string().into_bytes()
     }
 
     fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Atom>
@@ -87,28 +87,28 @@ impl From<&str> for String {
 impl From<std::string::String> for String {
     fn from(s: std::string::String) -> Self {
         if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            return String::Quoted(s);
+            String::Quoted(s)
+        } else {
+            String::Literal(s.into_bytes())
         }
-
-        return String::Literal(s.into_bytes());
     }
 }
 
-pub fn escape_quoted<'a>(unescaped: &'a str) -> Cow<'a, str> {
+pub fn escape_quoted(unescaped: &str) -> Cow<str> {
     let mut escaped = Cow::Borrowed(unescaped);
 
-    if escaped.contains("\\") {
+    if escaped.contains('\\') {
         escaped = Cow::Owned(escaped.replace("\\", "\\\\"));
     }
 
-    if escaped.contains("\"") {
+    if escaped.contains('\"') {
         escaped = Cow::Owned(escaped.replace("\"", "\\\""));
     }
 
     escaped
 }
 
-pub fn unescape_quoted<'a>(escaped: &'a str) -> Cow<'a, str> {
+pub fn unescape_quoted(escaped: &str) -> Cow<str> {
     let mut unescaped = Cow::Borrowed(escaped);
 
     if unescaped.contains("\\\\") {

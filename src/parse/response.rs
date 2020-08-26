@@ -109,9 +109,9 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     delimited(tag(b"("), separated_nonempty_list(SP, charset), tag(b")")),
                 )),
             )),
-            |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or(Vec::new())),
+            |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or_default()),
         ),
-        map(capability_data, |caps| Code::Capability(caps)),
+        map(capability_data, Code::Capability),
         value(Code::Parse, tag_no_case(b"PARSE")),
         map(
             tuple((
@@ -120,7 +120,7 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                 delimited(
                     tag(b"("),
                     map(opt(separated_nonempty_list(SP, flag_perm)), |maybe_flags| {
-                        maybe_flags.unwrap_or(Vec::new())
+                        maybe_flags.unwrap_or_default()
                     }),
                     tag(b")"),
                 ),

@@ -66,7 +66,7 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
         _ => AuthMechanism::Other(raw_mechanism),
     };
 
-    return Ok((rem, mechanism));
+    Ok((rem, mechanism))
 }
 
 /// charset = atom / quoted

@@ -129,14 +129,12 @@ impl From<&str> for ListMailbox {
 
 impl From<std::string::String> for ListMailbox {
     fn from(s: std::string::String) -> Self {
-        if s.len() == 0 {
+        if s.is_empty() {
             ListMailbox::String(IMAPString::Quoted(s))
+        } else if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
+            ListMailbox::Token(s)
         } else {
-            if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
-                ListMailbox::Token(s)
-            } else {
-                ListMailbox::String(s.into())
-            }
+            ListMailbox::String(s.into())
         }
     }
 }
