@@ -1,4 +1,8 @@
-use crate::types::core::AString;
+use crate::{
+    codec::Codec,
+    types::core::AString,
+    utils::{join_bytes, join_serializable},
+};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
@@ -27,11 +31,53 @@ impl Macro {
     }
 }
 
+impl Codec for Macro {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            Macro::All => b"ALL".to_vec(),
+            Macro::Fast => b"FAST".to_vec(),
+            Macro::Full => b"FULL".to_vec(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MacroOrDataItems {
     Macro(Macro),
     DataItems(Vec<DataItem>),
+}
+
+impl Codec for MacroOrDataItems {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            MacroOrDataItems::Macro(m) => m.serialize(),
+            MacroOrDataItems::DataItems(items) => {
+                if items.len() == 1 {
+                    items[0].serialize()
+                } else {
+                    let mut out = b"(".to_vec();
+                    out.extend(join_serializable(items.as_slice(), b" "));
+                    out.push(b')');
+                    out
+                }
+            }
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 /// The currently defined data items that can be fetched are:
@@ -144,6 +190,49 @@ pub enum DataItem {
     Uid,
 }
 
+impl Codec for DataItem {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            DataItem::Body => b"BODY".to_vec(),
+            DataItem::BodyExt {
+                section,
+                partial,
+                peek,
+            } => {
+                let mut out = if *peek {
+                    b"BODY.PEEK[".to_vec()
+                } else {
+                    b"BODY[".to_vec()
+                };
+                if let Some(section) = section {
+                    out.extend(section.serialize());
+                }
+                out.push(b']');
+                if let Some((a, b)) = partial {
+                    out.extend(format!("<{}.{}>", a, b).into_bytes());
+                }
+                out
+            }
+            DataItem::BodyStructure => b"BODYSTRUCTURE".to_vec(),
+            DataItem::Envelope => b"ENVELOPE".to_vec(),
+            DataItem::Flags => b"FLAGS".to_vec(),
+            DataItem::InternalDate => b"INTERNALDATE".to_vec(),
+            DataItem::Rfc822 => b"RFC822".to_vec(),
+            DataItem::Rfc822Header => b"RFC822.HEADER".to_vec(),
+            DataItem::Rfc822Size => b"RFC822.SIZE".to_vec(),
+            DataItem::Rfc822Text => b"RFC822.TEXT".to_vec(),
+            DataItem::Uid => b"UID".to_vec(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 /// A part specifier is either a part number or one of the following:
 /// `HEADER`, `HEADER.FIELDS`, `HEADER.FIELDS.NOT`, `MIME`, and `TEXT`.
 ///
@@ -219,5 +308,86 @@ pub enum Section {
     Mime(Part),
 }
 
+impl Codec for Section {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            Section::Part(part) => part.serialize(),
+            Section::Header(maybe_part) => match maybe_part {
+                Some(part) => {
+                    let mut out = part.serialize();
+                    out.extend_from_slice(b".HEADER");
+                    out
+                }
+                None => b"HEADER".to_vec(),
+            },
+            Section::HeaderFields(maybe_part, header_list) => {
+                let mut out = match maybe_part {
+                    Some(part) => {
+                        let mut out = part.serialize();
+                        out.extend_from_slice(b".HEADER.FIELDS (");
+                        out
+                    }
+                    None => b"HEADER.FIElDS (".to_vec(),
+                };
+                out.extend(join_serializable(header_list, b" "));
+                out.push(b')');
+                out
+            }
+            Section::HeaderFieldsNot(maybe_part, header_list) => {
+                let mut out = match maybe_part {
+                    Some(part) => {
+                        let mut out = part.serialize();
+                        out.extend_from_slice(b".HEADER.FIELDS.NOT (");
+                        out
+                    }
+                    None => b"HEADER.FIElDS.NOT (".to_vec(),
+                };
+                out.extend(join_serializable(header_list, b" "));
+                out.push(b')');
+                out
+            }
+            Section::Text(maybe_part) => match maybe_part {
+                Some(part) => {
+                    let mut out = part.serialize();
+                    out.extend_from_slice(b".TEXT");
+                    out
+                }
+                None => b"TEXT".to_vec(),
+            },
+            Section::Mime(part) => {
+                let mut out = part.serialize();
+                out.extend_from_slice(b".TEXT");
+                out
+            }
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part(pub Vec<u32>);
+
+impl Codec for Part {
+    fn serialize(&self) -> Vec<u8> {
+        join_bytes(
+            self.0
+                .iter()
+                .map(|num| format!("{}", num).into_bytes())
+                .collect::<Vec<Vec<u8>>>(),
+            b".",
+        )
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
