@@ -500,7 +500,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
             tuple((SP, tag_no_case(b"CHARSET"), SP, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(SP, search_key)),
+        many1(preceded(SP, search_key(8))),
     ));
 
     let (remaining, (_, charset, criteria)) = parser(input)?;
@@ -519,6 +519,12 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
             uid: false,
         },
     ))
+}
+
+/// This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed. (8 should suffice).
+pub fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], SearchKey> {
+    move |input: &[u8]| search_key_limited(input, remaining_recursions)
 }
 
 /// search-key = "ALL" /
@@ -559,7 +565,20 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///              "UNDRAFT" /
 ///              sequence-set /
 ///              "(" search-key *(SP search-key) ")"
-pub fn search_key(input: &[u8]) -> IResult<&[u8], SearchKey> {
+fn search_key_limited<'a>(
+    input: &'a [u8],
+    remaining_recursion: usize,
+) -> IResult<&'a [u8], SearchKey> {
+    if remaining_recursion == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
+    let search_key =
+        move |input: &'a [u8]| search_key_limited(input, remaining_recursion.saturating_sub(1));
+
     let parser = alt((
         alt((
             value(SearchKey::All, tag_no_case(b"ALL")),
@@ -738,5 +757,13 @@ mod test {
             uid: false,
         };
         assert_eq!(val, expected);
+    }
+
+    #[test]
+    fn test_search_key() {
+        assert!(search_key(1)(b"1:5|").is_ok());
+        assert!(search_key(1)(b"(1:5)|").is_err());
+        assert!(search_key(2)(b"(1:5)|").is_ok());
+        assert!(search_key(2)(b"((1:5))|").is_err());
     }
 }

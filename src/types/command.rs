@@ -2360,6 +2360,11 @@ mod test {
                 SearchKey::SequenceSet("*".to_sequence().unwrap()),
                 true,
             ),
+            Command::search(
+                None,
+                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                true,
+            ),
             Command::fetch(
                 "1",
                 vec![DataItem::BodyExt {
