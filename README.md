@@ -1,14 +1,8 @@
 # IMAP Protocol (Parser and Types)
 
 This library provides
-
-* Server-side IMAP
-  * complete parsing of IMAP commands
-  * construction/serialization of many responses
-
-* Client-side IMAP
-  * semi-complete parsing of responses
-  * construction/serialization of some commands
+  * Complete parsing and serialization of IMAP commands
+  * Semi-complete parsing and serialization of IMAP responses
 
 A goal of this library is to provide a misuse resistent API which makes it hard (or impossible) to construct invalid messages.
 
@@ -27,9 +21,10 @@ I will continue to work on this library, but would also be happy if this could b
 This library emerged from the need for an IMAP testing tool and some work must be done to further improve the quality of the implementation.
 
 * [ ] remove remaining prototype artifacts like `unwrap()`s and `unimplemented()`s
-* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser).
 * [ ] settle on "core types", i.e. decide when to use `&[u8]` or `&str` and when to wrap primitive types in `Atom` or `IMAPString`?
-* [ ] Many comments are irrelevant for parsing and should be removed. The IMAP RFC is also not cited in an appropriate way.
+* [ ] exchange `Codec` with something more efficient
+* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser).
+* [ ] remove irrelevant comments and cite IMAP RFC is an appropriate way.
 
 # Usage notes
 
