@@ -9,7 +9,7 @@ use crate::{
         mailbox::Mailbox,
         Capability,
     },
-    utils::{join, join_bytes},
+    utils::{join, join_bytes, join_serializable},
 };
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
@@ -366,9 +366,9 @@ pub enum Data {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
         /// Hierarchy delimiter
-        delimiter: String,
+        delimiter: Option<char>,
         /// Name
-        name: String, // TODO: `String` or `Mailbox`?
+        mailbox: Mailbox,
     },
 
     /// ### 7.2.3. LSUB Response
@@ -575,14 +575,21 @@ impl Codec for Data {
             Data::List {
                 items,
                 delimiter,
-                name,
-            } => format!(
-                "* LIST ({}) \"{}\" {}\r\n",
-                join(items, " "),
-                delimiter,
-                name
-            )
-            .into_bytes(),
+                mailbox,
+            } => {
+                let mut out = b"* LIST (".to_vec();
+                out.extend(join_serializable(items, b" "));
+                out.extend_from_slice(b") ");
+                if let Some(delimiter) = delimiter {
+                    out.extend(format!("\"{}\"", delimiter).as_bytes());
+                } else {
+                    out.extend_from_slice(b"nil");
+                }
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out.extend_from_slice(b"\r\n");
+                out
+            }
             Data::Lsub {
                 items,
                 delimiter,
@@ -1626,10 +1633,10 @@ mod test {
             (
                 Data::List {
                     items: vec![FlagNameAttribute::Noselect],
-                    delimiter: "aaa".into(),
-                    name: "bbb".into(),
+                    delimiter: Some('/'),
+                    mailbox: "bbb".into(),
                 },
-                b"* LIST (\\Noselect) \"aaa\" bbb\r\n", // FIXME: data types may change, when to use " (dquote)?
+                b"* LIST (\\Noselect) \"/\" bbb\r\n",
             ),
             (Data::Search(vec![1, 2, 3, 42]), b"* SEARCH 1 2 3 42\r\n"),
             (Data::Exists(42), b"* 42 EXISTS\r\n"),
