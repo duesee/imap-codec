@@ -338,7 +338,7 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 # Section
 
 * [x] section
-* [ ] section-spec
+* [x] section-spec
 * [x] section-msgtext
 * [x] section-part
 * [x] section-text
@@ -358,7 +358,7 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 ## Unsorted
 
 * [x] auth-type
-* [ ] charset
+* [x] charset
 * [x] tag
 
 # License

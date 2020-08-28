@@ -73,8 +73,8 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 /// errata id: 261
 pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
     let parser = alt((
-        map(atom, |val| val.0), // FIXME: just take String from Atom?
-        map(quoted, |cow_str| cow_str.to_owned().to_string()), // TODO: is this correct?
+        map(atom, |val| val.0),
+        map(quoted, |cow_str| cow_str.to_owned().to_string()),
     ));
 
     let (remaining, charset) = parser(input)?;
