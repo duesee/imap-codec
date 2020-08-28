@@ -2171,7 +2171,7 @@ impl Codec for SearchKey {
             SearchKey::All => b"ALL".to_vec(),
             SearchKey::Answered => b"ANSWERED".to_vec(),
             SearchKey::Bcc(astring) => [b"BCC ".as_ref(), &astring.serialize()].concat(),
-            //SearchKey::Before(date) => [b"BEFORE ".as_bytes(), &date.serialize()].concat(),
+            SearchKey::Before(date) => [b"BEFORE ".as_ref(), &date.serialize()].concat(),
             SearchKey::Body(astring) => [b"BODY ".as_ref(), &astring.serialize()].concat(),
             SearchKey::Cc(astring) => [b"CC ".as_ref(), &astring.serialize()].concat(),
             SearchKey::Deleted => b"DELETED".to_vec(),
@@ -2250,7 +2250,6 @@ impl Codec for SearchKey {
                     panic!("This should not happen.")
                 }
             }
-            _ => unimplemented!(),
         }
     }
 
