@@ -16,7 +16,7 @@ use abnf_core::streaming::{DQUOTE, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
-    combinator::{map, opt},
+    combinator::{map, opt, value},
     multi::many0,
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -110,11 +110,11 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
         ),
         map(
             tuple((tag_no_case(b"LIST"), SP, mailbox_list)),
-            |_| unimplemented!(),
+            |(_, _, data)| data,
         ),
         map(
             tuple((tag_no_case(b"LSUB"), SP, mailbox_list)),
-            |_| unimplemented!(),
+            |(_, _, data)| data,
         ),
         map(
             tuple((tag_no_case(b"SEARCH"), many0(preceded(SP, nz_number)))),
@@ -145,21 +145,28 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 }
 
 /// mailbox-list = "(" [mbx-list-flags] ")" SP (DQUOTE QUOTED-CHAR DQUOTE / nil) SP mailbox
-pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], ()> {
+pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], Data> {
     let parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         SP,
         alt((
-            delimited(DQUOTE, quoted_char, DQUOTE),
-            map(nil, |_| unimplemented!()),
+            map(delimited(DQUOTE, quoted_char, DQUOTE), Option::Some),
+            value(None, nil),
         )),
         SP,
         mailbox,
     ));
 
-    let (_remaining, _parsed_mailbox_list) = parser(input)?;
+    let (remaining, (mbx_list_flags, _, maybe_delimiter, _, mailbox)) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        Data::List {
+            items: mbx_list_flags.unwrap_or_default(),
+            delimiter: maybe_delimiter,
+            mailbox,
+        },
+    ))
 }
 
 #[cfg(test)]

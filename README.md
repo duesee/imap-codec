@@ -297,8 +297,8 @@ Note that a whole category may still be useful (e.g. base64) even when not every
 * [x] list-char
 * [x] list-wildcards
 * [x] mailbox
-* [ ] mailbox-data
-* [ ] mailbox-list
+* [x] mailbox-data
+* [x] mailbox-list
 * [x] mbx-list-flags
 * [x] mbx-list-oflag
 * [x] mbx-list-sflag
