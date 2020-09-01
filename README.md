@@ -1,40 +1,100 @@
-# IMAP Protocol (Parser and Types)
+# IMAP Protocol
 
-This library provides
-  * Complete parsing and serialization of IMAP commands
-  * Semi-complete parsing and serialization of IMAP responses
+This library provides complete and *detailed* parsing of all IMAP4rev1 commands and responses.
+Every command (and most responses) can be constructed and serialized.
+
+Every parser works in streaming mode, i.e. all parsers will return `Incomplete` when there is not enough data to make a final decision and no command or response will ever be truncated.
+
+The two entry points are `command(input: &[u8])` and `response(input: &[u8])`.
+Both parsers are regularily tested against [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz) (libFuzzer) and, as of now, did not reveal a single crash/panic/stack overflow. Although, the fuzzing process helped to find serialization mistakes.
 
 A goal of this library is to provide a misuse resistent API which makes it hard (or impossible) to construct invalid messages.
+Thus, the newtype pattern is used often. However, it should be easy to construct types using `From<&str>`, and, in case not every string reflects the constraints of the type, `TryFrom<&str>`.
 
-If you are working on an IMAP *client*, consider using https://github.com/djc/tokio-imap (imap-proto) first,
-as it seems to have better support for responses and received more review.
+# Alternatives
 
-I am not aware of a more complete implementation of the IMAP server side in Rust. (Please tell me if there is one!)
+If you are working on an IMAP *client*, you should also consider https://github.com/djc/tokio-imap (imap-proto), as it received more review.
+
+I am not aware of a more complete implementation of IMAP in Rust. (Please tell me if there is one!)
 
 # Future of this Crate
 
 There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception.
 I will continue to work on this library, but would also be happy if this could be merged with related IMAP crates to a complete IMAP library.
 
-## Known issues
+## Known issues and TODOs
 
 This library emerged from the need for an IMAP testing tool and some work must be done to further improve the quality of the implementation.
 
-* [ ] remove remaining prototype artifacts like `unwrap()`s and `unimplemented()`s
-* [ ] settle on "core types", i.e. decide when to use `&[u8]` or `&str` and when to wrap primitive types in `Atom` or `IMAPString`?
-* [ ] exchange `Codec` with something more efficient
-* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser).
-* [ ] remove irrelevant comments and cite IMAP RFC is an appropriate way.
+* [ ] implement missing serialization of `Body`
+* [ ] decide when `&[u8]` or `&str` is sufficient and when e.g. `Atom` or `IString` are beneficial
+* [ ] provide "owned" and "referenced" variants of types (work in progress)
+* [ ] switch from naive `Codec` to something more efficient/standard
+* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser)
+* [ ] remove irrelevant comments and cite IMAP RFC is an appropriate way
 
 # Usage notes
 
 Have a look at the `parse_*` examples. You can run it with...
 
 ```text
-cargo run --example=parse_*
+$ cargo run --example=parse_*
 ```
 
 Type any valid IMAP4REV1 command and see if you are happy with what you get.
+
+# Example
+
+```sh
+$ cargo run --example=parse_command
+```
+```rust
+Enter IMAP4REV1 command (or "exit"): ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>) 
+Command {
+    tag: "ABCD",
+    body: Fetch {
+        sequence_set: [
+            Single(
+                Value(
+                    1,
+                ),
+            ),
+            Range(
+                Value(
+                    2,
+                ),
+                Unlimited,
+            ),
+        ],
+        items: DataItems(
+            [
+                BodyExt {
+                    section: Some(
+                        Mime(
+                            Part(
+                                [
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                ],
+                            ),
+                        ),
+                    ),
+                    partial: Some(
+                        (
+                            42,
+                            1337,
+                        ),
+                    ),
+                    peek: true,
+                },
+            ],
+        ),
+        uid: true,
+    },
+}
+```
 
 # Example (trace from the IMAP RFC)
 
@@ -109,14 +169,12 @@ Status(Ok { tag: Some("a006"), code: None, text: "LOGOUT completed" })
 
 ## IMAP literals
 
-The way that IMAP specified literals makes it really hard to separate the parsing logic from the application logic.
+The way that IMAP specified literals makes it difficult to separate the parsing logic from the application logic.
 When a parsers recognizes a literal (e.g. "{42}"), which can pretty much be used anywhere, a continuation response ("+ ...") must be send.
 Otherwise, the client or server won't send any more data and a parser would always return `Incomplete(42)`.
 
-However, we do not want to pass sockets to the parser nor clutter every parser with an `NeedsContinuation` error... (or should we?)
-A possible solution right now is to implement a framing codec first, which takes care of sending continuation responses and framing commands and responses.
-
-This strategy is motivated by the IMAP4REV1 RFC:
+However, we do not want to pass sockets to the parser nor clutter every parser with an `NeedsContinuation` error...
+A possible solution is to implement a "framing codec" first. This strategy is motivated by the IMAP4REV1 RFC:
 
 ```
 The protocol receiver of an IMAP4rev1 client or server is either reading a line,
@@ -134,232 +192,9 @@ loop {
 }
 ```
 
-...ignoring the fact, that it *may* be possible for other element to contain a pattern like "{...}\r\n".
-
-Caveat: it is. But apparently only in the `text` parser.
-
-Example:
-
-```
-1 OK {5}\r\n
-YOLO?\r\n
-```
-
-# Status -- which parsers are implemented?
-
-Note that a whole category may still be useful (e.g. base64) even when not every parser is implemented.
-
-## Address
-
-* [x] address
-* [x] addr-name
-* [x] addr-adl
-* [x] addr-mailbox
-* [x] addr-host
-
-## Base64
-
-* [x] base64
-* [x] base64-char
-* [x] base64-terminal (not required)
-
-## Body
-
-* [ ] body
-* [ ] body-type-1part
-* [ ] body-type-basic
-* [ ] body-type-msg
-* [ ] body-type-text
-* [ ] media-basic
-* [ ] media-subtype
-* [ ] body-fields
-* [ ] body-fld-param
-* [ ] body-fld-id
-* [ ] body-fld-desc
-* [ ] body-fld-enc
-* [ ] body-fld-octets
-* [ ] body-fld-lines
-* [ ] body-ext-1part
-* [ ] body-fld-md5
-* [ ] body-fld-dsp
-* [ ] body-fld-lang
-* [ ] body-fld-loc
-* [ ] body-extension
-* [ ] body-type-mpart
-* [ ] body-ext-mpart
-* [ ] media-message
-* [ ] media-text
-
-# Command
-
-* [x] command
-* [x] command-any
-* [x] command-auth
-* [x] append
-* [x] create
-* [x] delete
-* [x] examine
-* [x] list
-* [x] lsub
-* [x] rename
-* [x] select
-* [x] status
-* [x] subscribe
-* [x] unsubscribe
-* [x] command-nonauth
-* [x] login
-* [x] userid
-* [x] password
-* [x] authenticate
-* [x] command-select
-* [x] copy
-* [x] fetch
-* [x] fetch-att
-* [x] store
-* [x] store-att-flags
-* [x] uid
-* [x] search
-* [x] search-key
-
-# Data Format
-
-## number
-
-* [x] number
-* [x] nz-number
-* [x] digit-nz
-
-## string
-
-* [x] string
-* [x] quoted
-* [x] QUOTED-CHAR
-* [x] quoted-specials
-* [x] literal
-* [x] CHAR8
-
-## astring
-
-* [x] astring
-* [x] ASTRING-CHAR
-* [x] ATOM-CHAR
-* [x] resp-specials
-* [x] atom
-
-## nstring
-
-* [x] nstring
-* [x] nil
-
-# Datetime
-
-* [x] date
-* [x] date-text
-* [x] date-day
-* [x] date-month
-* [x] date-year
-* [x] time
-* [x] date-time
-* [x] date-day-fixed
-* [x] zone
-
-# Envelope
-
-* [x] envelope
-* [x] env-date
-* [x] env-subject
-* [x] env-from
-* [x] env-sender
-* [x] env-reply-to
-* [x] env-to
-* [x] env-cc
-* [x] env-bcc
-* [x] env-in-reply-to
-* [x] env-message-id
-
-# Flag
-
-* [x] flag
-* [x] flag-keyword
-* [x] flag-extension
-* [x] flag-fetch
-* [x] flag-list
-* [x] flag-perm
-
-# Header
-
-* [x] header-list
-* [x] header-fld-name
-
-# Mailbox
-
-* [x] list-mailbox
-* [x] list-char
-* [x] list-wildcards
-* [x] mailbox
-* [x] mailbox-data
-* [x] mailbox-list
-* [x] mbx-list-flags
-* [x] mbx-list-oflag
-* [x] mbx-list-sflag
-
-# Message
-
-* [x] message-data
-* [x] msg-att
-* [x] msg-att-dynamic
-* [ ] msg-att-static
-* [x] uniqueid
-
-# Response
-
-## greeting
-
-* [x] greeting
-* [x] resp-cond-auth
-* [x] resp-text
-* [x] text
-* [x] TEXT-CHAR
-* [x] resp-text-code
-* [x] capability-data
-* [x] capability
-* [x] resp-cond-bye
-
-## response
-
-* [x] response
-* [x] continue-req
-* [x] response-data
-* [x] resp-cond-state
-* [x] response-done
-* [x] response-tagged
-* [x] response-fatal
-
-# Section
-
-* [x] section
-* [x] section-spec
-* [x] section-msgtext
-* [x] section-part
-* [x] section-text
-
-# Sequence
-
-* [x] sequence-set
-* [x] seq-range
-* [x] seq-number
-
 # Status
 
-* [x] status-att
-* [x] status-att-list
-* [x] status-att-val
-
-## Unsorted
-
-* [x] auth-type
-* [x] charset
-* [x] tag
+The complete [formal syntax](https://tools.ietf.org/html/rfc3501#section-9) of IMPA4rev1 is implemented.
 
 # License
 
