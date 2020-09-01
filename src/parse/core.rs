@@ -16,9 +16,9 @@ use std::{borrow::Cow, str::from_utf8};
 
 // ----- number -----
 
+/// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
+///
 /// number = 1*DIGIT
-///           ; Unsigned 32-bit integer
-///           ; (0 <= n < 4,294,967,296)
 pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
     let parser = map_res(map_res(digit1, from_utf8), str::parse::<u32>);
 
@@ -27,9 +27,9 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
     Ok((remaining, number))
 }
 
+/// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
+///
 /// nz-number = digit-nz *DIGIT
-///              ; Non-zero unsigned 32-bit integer
-///              ; (0 < n < 4,294,967,296)
 pub fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
     let (remaining, number) = number(input)?;
 
