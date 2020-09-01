@@ -2,12 +2,12 @@ use crate::{
     parse::mailbox::is_list_wildcards,
     types::core::{unescape_quoted, AString, Atom, NString, String as IMAPString},
 };
-use abnf_core::streaming::{is_CHAR, is_CTL, CRLF_relaxed as CRLF, DQUOTE};
+use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
     branch::alt,
-    bytes::streaming::{escaped, tag, tag_no_case, take, take_while1, take_while_m_n},
+    bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
     character::streaming::{digit1, one_of},
-    combinator::{map, map_res, value},
+    combinator::{map, map_res, opt, recognize, value},
     error::ErrorKind,
     sequence::{delimited, tuple},
     IResult,
@@ -228,6 +228,30 @@ pub fn text(input: &[u8]) -> IResult<&[u8], &str> {
 pub fn is_text_char(c: u8) -> bool {
     matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f)
 }
+
+// ----- base64 -----
+
+/// base64 = *(4base64-char) [base64-terminal]
+pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
+    let parser = map_res(
+        recognize(tuple((
+            take_while(is_base64_char),
+            opt(alt((tag("=="), tag("=")))),
+        ))),
+        from_utf8,
+    );
+
+    let (remaining, base64) = parser(input)?;
+
+    Ok((remaining, base64))
+}
+
+/// base64-char = ALPHA / DIGIT / "+" / "/" ; Case-sensitive
+fn is_base64_char(i: u8) -> bool {
+    is_ALPHA(i) || is_DIGIT(i) || i == b'+' || i == b'/'
+}
+
+// base64-terminal = (2base64-char "==") / (3base64-char "=")
 
 #[cfg(test)]
 mod test {

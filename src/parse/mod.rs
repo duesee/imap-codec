@@ -38,7 +38,6 @@ use nom::{
 use std::str::from_utf8;
 
 pub mod address;
-pub mod base64;
 pub mod body;
 pub mod command;
 pub mod core;

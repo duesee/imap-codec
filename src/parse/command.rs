@@ -1,9 +1,7 @@
 use crate::{
     parse::{
-        auth_type,
-        base64::base64,
-        charset,
-        core::{astring, atom, literal, number, nz_number},
+        auth_type, charset,
+        core::{astring, atom, base64, literal, number, nz_number},
         datetime::{date, date_time},
         flag::{flag, flag_list},
         header::header_fld_name,
