@@ -910,7 +910,7 @@ pub enum DataItemResponse {
     /// `BODY`
     ///
     /// A form of BODYSTRUCTURE without extension data.
-    Body,
+    Body(BodyStructure),
 
     /// `BODY[<section>]<<origin octet>>`
     ///
@@ -1011,7 +1011,7 @@ pub enum DataItemResponse {
 impl Codec for DataItemResponse {
     fn serialize(&self) -> Vec<u8> {
         match self {
-            DataItemResponse::Body => unimplemented!(),
+            DataItemResponse::Body(_structure) => unimplemented!(),
             DataItemResponse::BodyExt {
                 section: _,
                 origin: _,

@@ -3,64 +3,67 @@ use crate::{
         core::{nil, nstring, number, string},
         envelope::envelope,
     },
-    types::core::{NString, String as IMAPString},
+    types::{
+        body::{
+            BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
+            SpecificFields,
+        },
+        core::{NString, String as IMAPString},
+    },
 };
-use abnf_core::streaming::{DQUOTE, SP};
+use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt},
+    combinator::{map, opt, recognize, value},
     multi::{many0, many1, separated_nonempty_list},
-    sequence::{delimited, tuple},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
 
 /// body = "(" (body-type-1part / body-type-mpart) ")"
-pub fn body(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = delimited(
+pub(crate) fn body(input: &[u8]) -> IResult<&[u8], BodyStructure> {
+    delimited(
         tag(b"("),
-        alt((
-            map(body_type_1part, |_| unimplemented!()),
-            map(body_type_mpart, |_| unimplemented!()),
-        )),
+        alt((body_type_1part, body_type_mpart)),
         tag(b")"),
-    );
-
-    let (_remaining, _parsed_body) = parser(input)?;
-
-    unimplemented!();
+    )(input)
 }
 
-// --
-
 /// body-type-1part = (body-type-basic / body-type-msg / body-type-text) [SP body-ext-1part]
-pub fn body_type_1part(input: &[u8]) -> IResult<&[u8], ()> {
+fn body_type_1part(input: &[u8]) -> IResult<&[u8], BodyStructure> {
     let parser = tuple((
-        alt((
-            map(body_type_basic, |_| unimplemented!()),
-            map(body_type_msg, |_| unimplemented!()),
-            map(body_type_text, |_| unimplemented!()),
-        )),
-        opt(tuple((SP, body_ext_1part))),
+        alt((body_type_basic, body_type_msg, body_type_text)),
+        opt(preceded(SP, body_ext_1part)),
     ));
 
-    let (_remaining, _parsed_body_type_1part) = parser(input)?;
+    let (remaining, ((basic, specific), maybe_extension)) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        BodyStructure::Single {
+            body: Body {
+                basic,
+                specific,
+                extension: maybe_extension,
+            },
+        },
+    ))
 }
 
 /// body-type-basic = media-basic SP body-fields
-///                     ; MESSAGE subtype MUST NOT be "RFC822"
-pub fn body_type_basic(input: &[u8]) -> IResult<&[u8], ()> {
+///
+/// MESSAGE subtype MUST NOT be "RFC822"
+fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
     let parser = tuple((media_basic, SP, body_fields));
 
-    let (_remaining, _parsed_body_type_basic) = parser(input)?;
+    let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, (basic, SpecificFields::Basic { type_, subtype })))
 }
 
-/// body-type-msg   = media-message SP body-fields SP envelope SP body SP body-fld-lines
-pub fn body_type_msg(input: &[u8]) -> IResult<&[u8], ()> {
+/// body-type-msg = media-message SP body-fields SP envelope SP body SP body-fld-lines
+fn body_type_msg(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
     let parser = tuple((
         media_message,
         SP,
@@ -73,62 +76,44 @@ pub fn body_type_msg(input: &[u8]) -> IResult<&[u8], ()> {
         body_fld_lines,
     ));
 
-    let (_remaining, _parsed_body_type_msg) = parser(input)?;
+    let (remaining, (_, _, basic, _, envelope, _, body_structure, _, number_of_lines)) =
+        parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        (
+            basic,
+            SpecificFields::Message {
+                envelope,
+                body_structure: Box::new(body_structure),
+                number_of_lines,
+            },
+        ),
+    ))
 }
 
-/// body-type-text  = media-text SP body-fields SP body-fld-lines
-pub fn body_type_text(input: &[u8]) -> IResult<&[u8], ()> {
+/// body-type-text = media-text SP body-fields SP body-fld-lines
+fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
     let parser = tuple((media_text, SP, body_fields, SP, body_fld_lines));
 
-    let (_remaining, _parsed_body_type_text) = parser(input)?;
+    let (remaining, (subtype, _, basic, _, number_of_lines)) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        (
+            basic,
+            SpecificFields::Text {
+                subtype,
+                number_of_lines,
+            },
+        ),
+    ))
 }
 
-// ---
-
-/// media-basic = ((DQUOTE ("APPLICATION" / "AUDIO" / "IMAGE" / "MESSAGE" / "VIDEO") DQUOTE) / string) SP media-subtype
-///                 ; Defined in [MIME-IMT]
-pub fn media_basic(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        alt((
-            map(
-                delimited(
-                    DQUOTE,
-                    alt((
-                        map(tag_no_case(b"APPLICATION"), |_| unimplemented!()),
-                        map(tag_no_case(b"AUDIO"), |_| unimplemented!()),
-                        map(tag_no_case(b"IMAGE"), |_| unimplemented!()),
-                        map(tag_no_case(b"MESSAGE"), |_| unimplemented!()),
-                        map(tag_no_case(b"VIDEO"), |_| unimplemented!()),
-                    )),
-                    DQUOTE,
-                ),
-                |_| unimplemented!(),
-            ),
-            map(string, |_| unimplemented!()),
-        )),
-        SP,
-        media_subtype,
-    ));
-
-    let (_remaining, _parsed_media_basic) = parser(input)?;
-
-    unimplemented!();
-}
-
-/// media-subtype = string
-///                   ; Defined in [MIME-IMT]
-pub fn media_subtype(input: &[u8]) -> IResult<&[u8], IMAPString> {
-    string(input)
-}
-
-// ---
-
-/// body-fields = body-fld-param SP body-fld-id SP body-fld-desc SP body-fld-enc SP body-fld-octets
-pub fn body_fields(input: &[u8]) -> IResult<&[u8], ()> {
+/// body-fields = body-fld-param SP body-fld-id SP
+///               body-fld-desc SP body-fld-enc SP
+///               body-fld-octets
+fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     let parser = tuple((
         body_fld_param,
         SP,
@@ -141,256 +126,403 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], ()> {
         body_fld_octets,
     ));
 
-    let (_remaining, _parsed_body_fields) = parser(input)?;
+    let (remaining, (parameter_list, _, id, _, description, _, content_transfer_encoding, _, size)) =
+        parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        BasicFields {
+            parameter_list,
+            id,
+            description,
+            content_transfer_encoding,
+            size,
+        },
+    ))
 }
 
-/// body-fld-param = "("
-///                  string SP string *(SP string SP string)
-///                  ")" /
-///                  nil
-pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], ()> {
+/// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
+fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IMAPString, IMAPString)>> {
     let parser = alt((
-        map(
-            delimited(
-                tag(b"("),
-                separated_nonempty_list(SP, tuple((string, SP, string))),
-                tag(b")"),
+        delimited(
+            tag(b"("),
+            separated_nonempty_list(
+                SP,
+                map(tuple((string, SP, string)), |(key, _, value)| (key, value)),
             ),
-            |_| unimplemented!(),
+            tag(b")"),
         ),
-        map(nil, |_| unimplemented!()),
+        value(Vec::new(), nil),
     ));
 
-    let (_remaining, _parsed_body_fld_param) = parser(input)?;
+    let (remaining, parsed_body_fld_param) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, parsed_body_fld_param))
 }
 
 /// body-fld-id = nstring
-pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_id(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 /// body-fld-desc = nstring
-pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 /// body-fld-enc = (DQUOTE ("7BIT" / "8BIT" / "BINARY" / "BASE64"/ "QUOTED-PRINTABLE") DQUOTE) / string
-pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = alt((
-        map(
-            delimited(
-                DQUOTE,
-                alt((
-                    map(tag_no_case(b"7BIT"), |_| unimplemented!()),
-                    map(tag_no_case(b"8BIT"), |_| unimplemented!()),
-                    map(tag_no_case(b"BINARY"), |_| unimplemented!()),
-                    map(tag_no_case(b"BASE64"), |_| unimplemented!()),
-                    map(tag_no_case(b"QUOTED-PRINTABLE"), |_| unimplemented!()),
-                )),
-                DQUOTE,
-            ),
-            |_| unimplemented!(),
-        ),
-        map(string, |_| unimplemented!()),
-    ));
-
-    let (_remaining, _parsed_body_fld_enc) = parser(input)?;
-
-    unimplemented!();
+///
+/// Simplified...
+///
+/// body-fld-enc = string
+///
+/// TODO: why the special case?
+fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IMAPString> {
+    string(input)
 }
 
 /// body-fld-octets = number
-pub fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
+fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
-
-// ---
-
-// envelope
-
-// body
 
 /// body-fld-lines = number
-pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
+fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
 
-// ---
+/// body-ext-1part = body-fld-md5
+///                  [SP body-fld-dsp
+///                    [SP body-fld-lang
+///                      [SP body-fld-loc *(SP body-extension)]
+///                    ]
+///                  ]
+///
+/// MUST NOT be returned on non-extensible "BODY" fetch
+fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
+    let mut rem;
+    let md5;
+    let mut dsp = None;
+    let mut lang = None;
+    let mut loc = None;
+    let mut ext = Vec::new();
 
-/// body-ext-1part = body-fld-md5 [SP body-fld-dsp [SP body-fld-lang [SP body-fld-loc *(SP body-extension)]]]
-///                    ; MUST NOT be returned on non-extensible
-///                    ; "BODY" fetch
-pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        body_fld_md5,
-        opt(tuple((
-            SP,
-            body_fld_dsp,
-            opt(tuple((
-                SP,
-                body_fld_lang,
-                opt(tuple((
-                    SP,
-                    body_fld_loc,
-                    many0(tuple((SP, body_extension))),
-                ))),
-            ))),
-        ))),
-    ));
+    let (rem_, md5_) = body_fld_md5(input)?;
+    rem = rem_;
+    md5 = md5_;
 
-    let (_remaining, _parsed_body_ext_1part) = parser(input)?;
+    let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
+    if let Some(dsp_) = dsp_ {
+        rem = rem_;
+        dsp = Some(dsp_);
 
-    unimplemented!();
+        let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
+        if let Some(lang_) = lang_ {
+            rem = rem_;
+            lang = Some(lang_);
+
+            let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
+            if let Some(loc_) = loc_ {
+                rem = rem_;
+                loc = Some(loc_);
+
+                let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
+                rem = rem_;
+                ext = ext_.to_vec();
+            }
+        }
+    }
+
+    Ok((
+        rem,
+        SinglePartExtensionData {
+            md5,
+            disposition: dsp,
+            language: lang,
+            location: loc,
+            extension: ext,
+        },
+    ))
 }
 
-// ---
-
 /// body-fld-md5 = nstring
-pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
-pub fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], ()> {
+fn body_fld_dsp(
+    input: &[u8],
+) -> IResult<&[u8], Option<(IMAPString, Vec<(IMAPString, IMAPString)>)>> {
     let parser = alt((
-        map(
-            delimited(tag(b"("), tuple((string, SP, body_fld_param)), tag(b")")),
-            |_| unimplemented!(),
+        delimited(
+            tag(b"("),
+            map(
+                tuple((string, SP, body_fld_param)),
+                |(string, _, body_fld_param)| Some((string, body_fld_param)),
+            ),
+            tag(b")"),
         ),
-        map(nil, |_| unimplemented!()),
+        value(None, nil),
     ));
 
-    let (_remaining, _parsed_body_fld_dsp) = parser(input)?;
+    let (remaining, parsed_body_fld_dsp) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, parsed_body_fld_dsp))
 }
 
 /// body-fld-lang = nstring / "(" string *(SP string) ")"
-pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], ()> {
+fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IMAPString>> {
     let parser = alt((
-        map(nstring, |_| unimplemented!()),
-        map(
-            delimited(tag(b"("), separated_nonempty_list(SP, string), tag(b")")),
-            |_| unimplemented!(),
-        ),
+        map(nstring, |nstring| match nstring.0 {
+            Some(item) => vec![item],
+            None => vec![],
+        }),
+        delimited(tag(b"("), separated_nonempty_list(SP, string), tag(b")")),
     ));
 
-    let (_remaining, _parsed_body_fld_lang) = parser(input)?;
+    let (remaining, parsed_body_fld_lang) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, parsed_body_fld_lang))
 }
 
 /// body-fld-loc = nstring
-pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
-// ---
-
+/// Future expansion.
+///
+/// Client implementations MUST accept body-extension fields.
+/// Server implementations MUST NOT generate body-extension fields except as defined by
+/// future standard or standards-track revisions of this specification.
+///
 /// body-extension = nstring / number / "(" body-extension *(SP body-extension) ")"
-///                    ; Future expansion.  Client implementations
-///                    ; MUST accept body-extension fields.  Server
-///                    ; implementations MUST NOT generate
-///                    ; body-extension fields except as defined by
-///                    ; future standard or standards-track
-///                    ; revisions of this specification.
-pub fn body_extension(input: &[u8]) -> IResult<&[u8], ()> {
+///
+/// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed. (8 should suffice).
+///
+/// TODO: This recognizes extension data and returns &[u8].
+fn body_extension(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
+    move |input: &[u8]| body_extension_limited(input, remaining_recursions)
+}
+
+fn body_extension_limited<'a>(
+    input: &'a [u8],
+    remaining_recursion: usize,
+) -> IResult<&'a [u8], &[u8]> {
+    if remaining_recursion == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
+    let body_extension =
+        move |input: &'a [u8]| body_extension_limited(input, remaining_recursion.saturating_sub(1));
+
     let parser = alt((
-        map(nstring, |_| unimplemented!()),
-        map(number, |_| unimplemented!()),
-        map(
-            delimited(
-                tag(b"("),
-                separated_nonempty_list(SP, body_extension),
-                tag(b")"),
-            ),
-            |_| unimplemented!(),
-        ),
+        recognize(nstring),
+        recognize(number),
+        recognize(delimited(
+            tag(b"("),
+            separated_nonempty_list(SP, body_extension),
+            tag(b")"),
+        )),
     ));
 
-    let (_remaining, _parsed_body_extension) = parser(input)?;
+    let (remaining, recognized_body_extension) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, recognized_body_extension))
 }
 
 // ---
 
 /// body-type-mpart = 1*body SP media-subtype [SP body-ext-mpart]
-pub fn body_type_mpart(input: &[u8]) -> IResult<&[u8], ()> {
+fn body_type_mpart(input: &[u8]) -> IResult<&[u8], BodyStructure> {
     let parser = tuple((
         many1(body),
         SP,
         media_subtype,
-        opt(tuple((SP, body_ext_mpart))),
+        opt(preceded(SP, body_ext_mpart)),
     ));
 
-    let (_remaining, _parsed_body_type_mpart) = parser(input)?;
+    let (remaining, (bodies, _, subtype, maybe_extension_data)) = parser(input)?;
 
-    unimplemented!();
+    Ok((
+        remaining,
+        BodyStructure::Multi {
+            bodies,
+            subtype,
+            extension_data: maybe_extension_data,
+        },
+    ))
 }
 
-/// body-ext-mpart = body-fld-param [SP body-fld-dsp [SP body-fld-lang [SP body-fld-loc *(SP body-extension)]]]
-///                    ; MUST NOT be returned on non-extensible
-///                    ; "BODY" fetch
-pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        body_fld_param,
-        opt(tuple((
-            SP,
-            body_fld_dsp,
-            opt(tuple((
-                SP,
-                body_fld_lang,
-                opt(tuple((
-                    SP,
-                    body_fld_loc,
-                    many0(tuple((SP, body_extension))),
-                ))),
-            ))),
-        ))),
-    ));
+/// body-ext-mpart = body-fld-param
+///                  [SP body-fld-dsp
+///                    [SP body-fld-lang
+///                      [SP body-fld-loc *(SP body-extension)]
+///                    ]
+///                  ]
+///
+/// MUST NOT be returned on non-extensible "BODY" fetch
+fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
+    let mut rem;
+    let param;
+    let mut dsp = None;
+    let mut lang = None;
+    let mut loc = None;
+    let mut ext = Vec::new();
 
-    let (_remaining, _parsed_body_ext_mpart) = parser(input)?;
+    let (rem_, param_) = body_fld_param(input)?;
+    rem = rem_;
+    param = param_;
 
-    unimplemented!();
+    let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
+    if let Some(dsp_) = dsp_ {
+        rem = rem_;
+        dsp = Some(dsp_);
+
+        let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
+        if let Some(lang_) = lang_ {
+            rem = rem_;
+            lang = Some(lang_);
+
+            let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
+            if let Some(loc_) = loc_ {
+                rem = rem_;
+                loc = Some(loc_);
+
+                let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
+                rem = rem_;
+                ext = ext_.to_vec();
+            }
+        }
+    }
+
+    Ok((
+        rem,
+        MultiPartExtensionData {
+            parameter_list: param,
+            disposition: dsp,
+            language: lang,
+            location: loc,
+            extension: ext,
+        },
+    ))
 }
 
-// "message" "rfc822" basic specific-for-message-rfc822 extension
+// ---
+
+/// media-basic = ((DQUOTE ("APPLICATION" / "AUDIO" / "IMAGE" / "MESSAGE" / "VIDEO") DQUOTE) / string) SP media-subtype
+///
+/// Simplified...
+///
+/// media-basic = string SP media-subtype
+///
+/// TODO: Why the special case?
+///
+/// Defined in [MIME-IMT]
+fn media_basic(input: &[u8]) -> IResult<&[u8], (IMAPString, IMAPString)> {
+    let parser = tuple((string, SP, media_subtype));
+
+    let (remaining, (type_, _, subtype)) = parser(input)?;
+
+    Ok((remaining, (type_, subtype)))
+}
+
+/// media-subtype = string
+///
+/// Defined in [MIME-IMT]
+fn media_subtype(input: &[u8]) -> IResult<&[u8], IMAPString> {
+    string(input)
+}
 
 /// media-message = DQUOTE "MESSAGE" DQUOTE SP DQUOTE "RFC822" DQUOTE
-///                   ; Defined in [MIME-IMT]
-pub fn media_message(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        DQUOTE,
-        tag_no_case(b"MESSAGE"),
-        DQUOTE,
-        SP,
-        DQUOTE,
-        tag_no_case(b"RFC822"),
-        DQUOTE,
-    ));
-
-    let (_remaining, _parsed_media_message) = parser(input)?;
-
-    unimplemented!();
+///
+/// Defined in [MIME-IMT]
+///
+/// "message" "rfc822" basic specific-for-message-rfc822 extension
+fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
+    tag_no_case(b"\"MESSAGE\" \"RFC822\"")(input)
 }
 
-// "text" "?????" basic specific-for-text extension
-
 /// media-text = DQUOTE "TEXT" DQUOTE SP media-subtype
-///                ; Defined in [MIME-IMT]
-pub fn media_text(input: &[u8]) -> IResult<&[u8], ()> {
-    let parser = tuple((
-        delimited(DQUOTE, tag_no_case(b"TEXT"), DQUOTE),
-        SP,
-        media_subtype,
-    ));
+///
+/// Defined in [MIME-IMT]
+///
+/// "text" "?????" basic specific-for-text extension
+fn media_text(input: &[u8]) -> IResult<&[u8], IMAPString> {
+    let parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
-    let (_remaining, (_text, _, _media_subtype)) = parser(input)?;
+    let (remaining, media_subtype) = parser(input)?;
 
-    unimplemented!();
+    Ok((remaining, media_subtype))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_media_basic() {
+        media_basic(b"\"application\" \"xxx\"").unwrap();
+        media_basic(b"\"unknown\" \"test\"").unwrap();
+        media_basic(b"\"x\" \"xxx\"").unwrap();
+    }
+
+    #[test]
+    fn test_media_message() {
+        media_message(b"\"message\" \"rfc822\"").unwrap();
+    }
+
+    #[test]
+    fn test_media_text() {
+        media_text(b"\"text\" \"html\"").unwrap();
+    }
+
+    #[test]
+    fn test_body_ext_1part() {
+        for test in [
+            b"nil|xxx".as_ref(),
+            b"\"md5\"|xxx".as_ref(),
+            b"\"md5\" nil|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" nil)|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) nil|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) \"swedish\"|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\")|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") nil|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\"|xxx".as_ref(),
+            b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" (1 \"2\" (nil 4))|xxx".as_ref(),
+        ]
+        .iter()
+        {
+            let (rem, out) = body_ext_1part(test).unwrap();
+            println!("{:?}", out);
+            assert_eq!(rem, b"|xxx");
+        }
+    }
+
+    #[test]
+    fn test_body_ext_mpart() {
+        for test in [
+            b"nil|xxx".as_ref(),
+            b"(\"key\" \"value\")|xxx".as_ref(),
+            b"(\"key\" \"value\") nil|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" nil)|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) nil|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) \"swedish\"|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\")|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") nil|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\"|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" (1 \"2\" (nil 4))|xxx".as_ref(),
+        ]
+            .iter()
+        {
+            let (rem, out) = body_ext_mpart(test).unwrap();
+            println!("{:?}", out);
+            assert_eq!(rem, b"|xxx");
+        }
+    }
 }
