@@ -104,12 +104,13 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
         ),
         alt((
             map(
-                tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body)),
+                tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body(8))),
                 |(_, _, body)| DataItemResponse::BodyStructure(body),
             ),
-            map(tuple((tag_no_case(b"BODY"), SP, body)), |(_, _, body)| {
-                DataItemResponse::Body(body)
-            }),
+            map(
+                tuple((tag_no_case(b"BODY"), SP, body(8))),
+                |(_, _, body)| DataItemResponse::Body(body),
+            ),
         )),
         map(
             tuple((

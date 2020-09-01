@@ -22,7 +22,31 @@ use nom::{
 };
 
 /// body = "(" (body-type-1part / body-type-mpart) ")"
-pub(crate) fn body(input: &[u8]) -> IResult<&[u8], BodyStructure> {
+///
+/// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed. (8 should suffice).
+pub(crate) fn body(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], BodyStructure> {
+    move |input: &[u8]| body_limited(input, remaining_recursions)
+}
+
+fn body_limited<'a>(
+    input: &'a [u8],
+    remaining_recursions: usize,
+) -> IResult<&'a [u8], BodyStructure> {
+    if remaining_recursions == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
+    let body_type_1part = move |input: &'a [u8]| {
+        body_type_1part_limited(input, remaining_recursions.saturating_sub(1))
+    };
+    let body_type_mpart = move |input: &'a [u8]| {
+        body_type_mpart_limited(input, remaining_recursions.saturating_sub(1))
+    };
+
     delimited(
         tag(b"("),
         alt((body_type_1part, body_type_mpart)),
@@ -31,7 +55,23 @@ pub(crate) fn body(input: &[u8]) -> IResult<&[u8], BodyStructure> {
 }
 
 /// body-type-1part = (body-type-basic / body-type-msg / body-type-text) [SP body-ext-1part]
-fn body_type_1part(input: &[u8]) -> IResult<&[u8], BodyStructure> {
+///
+/// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed.
+fn body_type_1part_limited<'a>(
+    input: &'a [u8],
+    remaining_recursions: usize,
+) -> IResult<&'a [u8], BodyStructure> {
+    if remaining_recursions == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
+    let body_type_msg =
+        move |input: &'a [u8]| body_type_msg_limited(input, remaining_recursions.saturating_sub(1));
+
     let parser = tuple((
         alt((body_type_basic, body_type_msg, body_type_text)),
         opt(preceded(SP, body_ext_1part)),
@@ -63,7 +103,22 @@ fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)
 }
 
 /// body-type-msg = media-message SP body-fields SP envelope SP body SP body-fld-lines
-fn body_type_msg(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
+///
+/// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed. (8 should suffice).
+fn body_type_msg_limited<'a>(
+    input: &'a [u8],
+    remaining_recursions: usize,
+) -> IResult<&'a [u8], (BasicFields, SpecificFields)> {
+    if remaining_recursions == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
+    let body = move |input: &'a [u8]| body_limited(input, remaining_recursions.saturating_sub(1));
+
     let parser = tuple((
         media_message,
         SP,
@@ -339,9 +394,22 @@ fn body_extension_limited<'a>(
 // ---
 
 /// body-type-mpart = 1*body SP media-subtype [SP body-ext-mpart]
-fn body_type_mpart(input: &[u8]) -> IResult<&[u8], BodyStructure> {
+///
+/// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
+/// it is needed to limit how may recursions are allowed.
+fn body_type_mpart_limited(
+    input: &[u8],
+    remaining_recursion: usize,
+) -> IResult<&[u8], BodyStructure> {
+    if remaining_recursion == 0 {
+        return Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::TooLarge,
+        )));
+    }
+
     let parser = tuple((
-        many1(body),
+        many1(body(remaining_recursion)),
         SP,
         media_subtype,
         opt(preceded(SP, body_ext_mpart)),
@@ -502,6 +570,11 @@ mod test {
             println!("{:?}", out);
             assert_eq!(rem, b"|xxx");
         }
+    }
+
+    #[test]
+    fn test_body_rec() {
+        let _ = body(8)(str::repeat("(", 1_000_000).as_bytes());
     }
 
     #[test]
