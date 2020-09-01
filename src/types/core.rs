@@ -153,18 +153,14 @@ impl Codec for String {
     }
 }
 
-// TODO: use `Option<String>` instead?
 #[derive(Debug, Clone, PartialEq)]
-pub enum NString {
-    Nil,
-    String(String),
-}
+pub struct NString(pub Option<String>);
 
 impl Codec for NString {
     fn serialize(&self) -> Vec<u8> {
-        match self {
-            NString::Nil => b"NIL".to_vec(),
-            NString::String(imap_str) => imap_str.serialize(),
+        match &self.0 {
+            Some(imap_str) => imap_str.serialize(),
+            None => b"NIL".to_vec(),
         }
     }
 
@@ -173,18 +169,6 @@ impl Codec for NString {
         Self: Sized,
     {
         unimplemented!()
-    }
-}
-
-impl From<std::string::String> for NString {
-    fn from(val: std::string::String) -> Self {
-        NString::String(String::Quoted(val))
-    }
-}
-
-impl From<&'static str> for NString {
-    fn from(val: &'static str) -> Self {
-        NString::String(String::Quoted(val.to_owned()))
     }
 }
 
@@ -264,8 +248,6 @@ impl Codec for AString {
 ///  a non-existent personal name, because addr-name uses
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Nil;
 
 #[cfg(test)]
 mod test {

@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{unescape_quoted, AString, Atom, NString, Nil, String as IMAPString},
+    types::core::{unescape_quoted, AString, Atom, NString, String as IMAPString},
 };
 use abnf_core::streaming::{is_CHAR, is_CTL, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -201,7 +201,10 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
 
 /// nstring = string / nil
 pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
-    let parser = alt((map(string, NString::String), map(nil, |_| NString::Nil)));
+    let parser = alt((
+        map(string, |item| NString(Some(item))),
+        map(nil, |_| NString(None)),
+    ));
 
     let (remaining, parsed_nstring) = parser(input)?;
 
@@ -209,12 +212,8 @@ pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
 }
 
 /// nil = "NIL"
-pub fn nil(input: &[u8]) -> IResult<&[u8], Nil> {
-    let parser = value(Nil, tag_no_case(b"NIL"));
-
-    let (remaining, parsed_nil) = parser(input)?;
-
-    Ok((remaining, parsed_nil))
+pub fn nil(input: &[u8]) -> IResult<&[u8], ()> {
+    value((), tag_no_case(b"NIL"))(input)
 }
 
 // ----- text -----
@@ -324,8 +323,7 @@ mod test {
         assert!(nil(b" nil").is_err());
         assert!(nil(b"null").is_err());
 
-        let (rem, val) = nil(b"nilxxx").unwrap();
+        let (rem, _) = nil(b"nilxxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, Nil);
     }
 }

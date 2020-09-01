@@ -64,10 +64,10 @@ mod test {
         assert_eq!(
             val,
             Address::new(
-                NString::Nil,
-                NString::String(IMAPString::Literal(b"xxx".to_vec())),
-                NString::String(IMAPString::Quoted(String::from("xxx"))),
-                NString::Nil
+                NString(None),
+                NString(Some(IMAPString::Literal(b"xxx".to_vec()))),
+                NString(Some(IMAPString::Quoted(String::from("xxx")))),
+                NString(None),
             )
         );
         assert_eq!(rem, b"");
