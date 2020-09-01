@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::fmt;
 
 pub mod address;
+pub mod body;
 pub mod command;
 pub mod core;
 pub mod data_items;
