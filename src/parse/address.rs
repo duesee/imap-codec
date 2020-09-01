@@ -1,6 +1,6 @@
 use crate::{
     parse::core::nstring,
-    types::{core::NString, response::Address},
+    types::{address::Address, core::NString},
 };
 use abnf_core::streaming::SP;
 use nom::{

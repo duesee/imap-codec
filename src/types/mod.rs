@@ -2,10 +2,12 @@ use crate::{codec::Codec, types::core::Atom};
 use serde::Deserialize;
 use std::fmt;
 
+pub mod address;
 pub mod command;
 pub mod core;
 pub mod data_items;
 pub mod datetime;
+pub mod envelope;
 pub mod flag;
 pub mod mailbox;
 pub mod response;

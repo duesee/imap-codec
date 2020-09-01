@@ -3,10 +3,7 @@ use crate::{
         address::address,
         core::{nil, nstring},
     },
-    types::{
-        core::NString,
-        response::{Address, Envelope},
-    },
+    types::{address::Address, core::NString, envelope::Envelope},
 };
 use abnf_core::streaming::SP;
 use nom::{
