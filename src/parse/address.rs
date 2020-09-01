@@ -56,7 +56,7 @@ pub fn addr_host(input: &[u8]) -> IResult<&[u8], NString> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::types::core::String as IMAPString;
+    use crate::types::core::IString;
 
     #[test]
     fn test_address() {
@@ -65,8 +65,8 @@ mod test {
             val,
             Address::new(
                 NString(None),
-                NString(Some(IMAPString::Literal(b"xxx".to_vec()))),
-                NString(Some(IMAPString::Quoted(String::from("xxx")))),
+                NString(Some(IString::Literal(b"xxx".to_vec()))),
+                NString(Some(IString::Quoted(String::from("xxx")))),
                 NString(None),
             )
         );

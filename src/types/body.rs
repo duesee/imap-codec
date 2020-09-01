@@ -1,5 +1,5 @@
 use crate::types::{
-    core::{NString, Number, String as IMAPString},
+    core::{IString, NString, Number},
     envelope::Envelope,
 };
 
@@ -86,7 +86,7 @@ pub struct Body {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BasicFields {
     /// List of attribute/value pairs ([MIME-IMB].)
-    pub parameter_list: Vec<(IMAPString, IMAPString)>,
+    pub parameter_list: Vec<(IString, IString)>,
 
     /// Content id ([MIME-IMB].)
     pub id: NString,
@@ -95,7 +95,7 @@ pub struct BasicFields {
     pub description: NString,
 
     /// Content transfer encoding ([MIME-IMB].)
-    pub content_transfer_encoding: IMAPString,
+    pub content_transfer_encoding: IString,
 
     /// Size of the body in octets.
     ///
@@ -130,10 +130,10 @@ pub enum SpecificFields {
     /// ```
     Basic {
         /// A string giving the content media type name as defined in [MIME-IMB].
-        type_: IMAPString,
+        type_: IString,
 
         /// A string giving the content subtype name as defined in [MIME-IMB].
-        subtype: IMAPString,
+        subtype: IString,
     },
 
     /// # Example (not in RFC)
@@ -214,7 +214,7 @@ pub enum SpecificFields {
     ///
     /// A body type of type TEXT contains, immediately after the basic fields,
     Text {
-        subtype: IMAPString,
+        subtype: IString,
         /// the size of the body in text lines.
         number_of_lines: Number,
     },
@@ -228,11 +228,11 @@ pub struct SinglePartExtensionData {
 
     /// A parenthesized list with the same content and function as
     /// the body disposition for a multipart body part.
-    pub disposition: Option<Option<(IMAPString, Vec<(IMAPString, IMAPString)>)>>,
+    pub disposition: Option<Option<(IString, Vec<(IString, IString)>)>>,
 
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IMAPString>>,
+    pub language: Option<Vec<IString>>,
 
     /// A string list giving the body content URI as defined in [LOCATION].
     pub location: Option<NString>,
@@ -261,20 +261,20 @@ pub struct MultiPartExtensionData {
     /// A parenthesized list of attribute/value pairs [e.g., ("foo"
     /// "bar" "baz" "rag") where "bar" is the value of "foo", and
     /// "rag" is the value of "baz"] as defined in [MIME-IMB].
-    pub parameter_list: Vec<(IMAPString, IMAPString)>,
+    pub parameter_list: Vec<(IString, IString)>,
 
     /// `body disposition`
     ///
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
     /// attribute/value pairs as defined in [DISPOSITION].
-    pub disposition: Option<Option<(IMAPString, Vec<(IMAPString, IMAPString)>)>>,
+    pub disposition: Option<Option<(IString, Vec<(IString, IString)>)>>,
 
     /// `body language`
     ///
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IMAPString>>,
+    pub language: Option<Vec<IString>>,
 
     /// `body location`
     ///
@@ -344,7 +344,7 @@ pub enum BodyStructure {
     /// ```
     Multi {
         bodies: Vec<BodyStructure>,
-        subtype: IMAPString,
+        subtype: IString,
         extension_data: Option<MultiPartExtensionData>,
     },
 }

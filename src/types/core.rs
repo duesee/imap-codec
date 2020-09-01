@@ -17,7 +17,7 @@ use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 
 /// An atom consists of one or more non-special characters.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct Atom(pub std::string::String);
+pub struct Atom(pub String);
 
 impl fmt::Display for Atom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -53,7 +53,7 @@ pub type Number = u32;
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub enum String {
+pub enum IString {
     /// A literal is a sequence of zero or more octets (including CR and
     /// LF), prefix-quoted with an octet count in the form of an open
     /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
@@ -74,33 +74,33 @@ pub enum String {
     /// A quoted string is a sequence of zero or more 7-bit characters,
     /// excluding CR and LF, with double quote (<">) characters at each end.
     ///
-    /// FIXME: not every std::string::String (UTF-8) is a valid "quoted IMAP string"
-    Quoted(std::string::String),
+    /// FIXME: not every String (UTF-8) is a valid "quoted IMAP string"
+    Quoted(String),
 }
 
-impl TryFrom<String> for std::string::String {
+impl TryFrom<IString> for String {
     type Error = FromUtf8Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+    fn try_from(value: IString) -> Result<Self, Self::Error> {
         match value {
-            String::Quoted(utf8) => Ok(utf8),
-            String::Literal(bytes) => std::string::String::from_utf8(bytes),
+            IString::Quoted(utf8) => Ok(utf8),
+            IString::Literal(bytes) => String::from_utf8(bytes),
         }
     }
 }
 
-impl From<&str> for String {
+impl From<&str> for IString {
     fn from(s: &str) -> Self {
         s.to_string().into()
     }
 }
 
-impl From<std::string::String> for String {
-    fn from(s: std::string::String) -> Self {
+impl From<String> for IString {
+    fn from(s: String) -> Self {
         if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            String::Quoted(s)
+            IString::Quoted(s)
         } else {
-            String::Literal(s.into_bytes())
+            IString::Literal(s.into_bytes())
         }
     }
 }
@@ -133,7 +133,7 @@ pub fn unescape_quoted(escaped: &str) -> Cow<str> {
     unescaped
 }
 
-impl Codec for String {
+impl Codec for IString {
     fn serialize(&self) -> Vec<u8> {
         match self {
             Self::Literal(val) => {
@@ -145,7 +145,7 @@ impl Codec for String {
         }
     }
 
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), String>
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), IString>
     where
         Self: Sized,
     {
@@ -154,7 +154,7 @@ impl Codec for String {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct NString(pub Option<String>);
+pub struct NString(pub Option<IString>);
 
 impl Codec for NString {
     fn serialize(&self) -> Vec<u8> {
@@ -174,8 +174,8 @@ impl Codec for NString {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum AString {
-    Atom(std::string::String),
-    String(String),
+    Atom(String),
+    String(IString),
 }
 
 impl From<&str> for AString {
@@ -184,8 +184,8 @@ impl From<&str> for AString {
     }
 }
 
-impl From<std::string::String> for AString {
-    fn from(s: std::string::String) -> Self {
+impl From<String> for AString {
+    fn from(s: String) -> Self {
         if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
             AString::Atom(s)
         } else {
@@ -271,12 +271,15 @@ mod test {
 
     #[test]
     fn test_conversion() {
-        assert_eq!(String::from("AAA"), String::Quoted("AAA".into()).into());
-        assert_eq!(String::from("\"AAA"), String::Quoted("\"AAA".into()).into());
+        assert_eq!(IString::from("AAA"), IString::Quoted("AAA".into()).into());
+        assert_eq!(
+            IString::from("\"AAA"),
+            IString::Quoted("\"AAA".into()).into()
+        );
 
         assert_ne!(
-            String::from("\"AAA"),
-            String::Quoted("\\\"AAA".into()).into()
+            IString::from("\"AAA"),
+            IString::Quoted("\\\"AAA".into()).into()
         );
     }
 }

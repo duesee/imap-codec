@@ -7,7 +7,7 @@ use crate::{
         status::status_att_list,
     },
     types::{
-        core::{AString, String as IMAPString},
+        core::{AString, IString},
         mailbox::{ListMailbox, Mailbox},
         response::Data,
     },
@@ -67,14 +67,14 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
             }
         }
         AString::String(imap_str) => match imap_str {
-            IMAPString::Quoted(ref str) => {
+            IString::Quoted(ref str) => {
                 if str.to_lowercase() == "inbox" {
                     Mailbox::Inbox
                 } else {
                     Mailbox::Other(AString::String(imap_str))
                 }
             }
-            IMAPString::Literal(ref bytes) => {
+            IString::Literal(ref bytes) => {
                 // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
                 if let Ok(str) = String::from_utf8(bytes.clone()) {
                     // After the conversion we ignore the case...

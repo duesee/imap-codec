@@ -8,7 +8,7 @@ use crate::{
             BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
             SpecificFields,
         },
-        core::{NString, String as IMAPString},
+        core::{IString, NString},
     },
 };
 use abnf_core::streaming::SP;
@@ -197,7 +197,7 @@ fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
 }
 
 /// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
-fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IMAPString, IMAPString)>> {
+fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IString, IString)>> {
     let parser = alt((
         delimited(
             tag(b"("),
@@ -232,7 +232,7 @@ fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
 /// body-fld-enc = string
 ///
 /// TODO: why the special case?
-fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IMAPString> {
+fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IString> {
     string(input)
 }
 
@@ -306,9 +306,7 @@ fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
 }
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
-fn body_fld_dsp(
-    input: &[u8],
-) -> IResult<&[u8], Option<(IMAPString, Vec<(IMAPString, IMAPString)>)>> {
+fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
     let parser = alt((
         delimited(
             tag(b"("),
@@ -327,7 +325,7 @@ fn body_fld_dsp(
 }
 
 /// body-fld-lang = nstring / "(" string *(SP string) ")"
-fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IMAPString>> {
+fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IString>> {
     let parser = alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -492,7 +490,7 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-fn media_basic(input: &[u8]) -> IResult<&[u8], (IMAPString, IMAPString)> {
+fn media_basic(input: &[u8]) -> IResult<&[u8], (IString, IString)> {
     let parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -503,7 +501,7 @@ fn media_basic(input: &[u8]) -> IResult<&[u8], (IMAPString, IMAPString)> {
 /// media-subtype = string
 ///
 /// Defined in [MIME-IMT]
-fn media_subtype(input: &[u8]) -> IResult<&[u8], IMAPString> {
+fn media_subtype(input: &[u8]) -> IResult<&[u8], IString> {
     string(input)
 }
 
@@ -521,7 +519,7 @@ fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-fn media_text(input: &[u8]) -> IResult<&[u8], IMAPString> {
+fn media_text(input: &[u8]) -> IResult<&[u8], IString> {
     let parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;

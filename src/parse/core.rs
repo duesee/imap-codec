@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{unescape_quoted, AString, Atom, NString, String as IMAPString},
+    types::core::{unescape_quoted, AString, Atom, IString, NString},
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -51,12 +51,12 @@ pub fn is_digit_nz(byte: u8) -> bool {
 // ----- string -----
 
 /// string = quoted / literal
-pub fn string(input: &[u8]) -> IResult<&[u8], IMAPString> {
+pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
     let parser = alt((
         map(quoted, |cow_str| {
-            IMAPString::Quoted(cow_str.to_owned().to_string())
+            IString::Quoted(cow_str.to_owned().to_string())
         }), // TODO: is this correct?
-        map(literal, |bytes| IMAPString::Literal(bytes.to_owned())),
+        map(literal, |bytes| IString::Literal(bytes.to_owned())),
     ));
 
     let (remaining, parsed_string) = parser(input)?;

@@ -2267,7 +2267,7 @@ mod test {
         codec::Codec,
         types::{
             command::{Command, SearchKey, StatusItem},
-            core::{AString, Atom, String as IMAPString},
+            core::{AString, Atom, IString},
             data_items::Macro,
             data_items::{DataItem, Part, Section},
             flag::Flag,
@@ -2294,7 +2294,7 @@ mod test {
             Command::login("alice", "I am a literal²"),
             Command::login(
                 AString::Atom("alice".into()),
-                AString::String(crate::types::core::String::Literal(vec![0xff, 0xff, 0xff])),
+                AString::String(crate::types::core::IString::Literal(vec![0xff, 0xff, 0xff])),
             ),
             Command::select(Mailbox::Inbox),
             Command::select(Mailbox::Other("atom".into())),
@@ -2315,13 +2315,10 @@ mod test {
             Command::list(Mailbox::Inbox, ListMailbox::Token("test".into())),
             Command::lsub(
                 Mailbox::Inbox,
-                ListMailbox::String(IMAPString::Quoted("\x7f".into())),
+                ListMailbox::String(IString::Quoted("\x7f".into())),
             ),
             Command::list("inBoX", ListMailbox::Token("test".into())),
-            Command::lsub(
-                "INBOX",
-                ListMailbox::String(IMAPString::Quoted("\x7f".into())),
-            ),
+            Command::lsub("INBOX", ListMailbox::String(IString::Quoted("\x7f".into()))),
             Command::status("inbox", vec![StatusItem::Messages]),
             Command::append(
                 "inbox",

@@ -1,7 +1,7 @@
 use crate::{
     codec::Codec,
     parse::mailbox::is_list_char,
-    types::core::{AString, String as IMAPString},
+    types::core::{AString, IString},
 };
 use serde::Deserialize;
 use std::str::FromStr;
@@ -9,7 +9,7 @@ use std::str::FromStr;
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListMailbox {
     Token(String),
-    String(IMAPString),
+    String(IString),
 }
 
 impl Codec for ListMailbox {
@@ -98,7 +98,7 @@ impl FromStr for Mailbox {
         if s.to_lowercase() == "inbox" {
             Ok(Mailbox::Inbox)
         } else {
-            Ok(Mailbox::Other(AString::String(IMAPString::Quoted(
+            Ok(Mailbox::Other(AString::String(IString::Quoted(
                 s.to_string(),
             ))))
         }
@@ -111,8 +111,8 @@ impl From<&str> for Mailbox {
     }
 }
 
-impl From<std::string::String> for Mailbox {
-    fn from(s: std::string::String) -> Self {
+impl From<String> for Mailbox {
+    fn from(s: String) -> Self {
         if s.to_lowercase() == "inbox" {
             Mailbox::Inbox
         } else {
@@ -127,10 +127,10 @@ impl From<&str> for ListMailbox {
     }
 }
 
-impl From<std::string::String> for ListMailbox {
-    fn from(s: std::string::String) -> Self {
+impl From<String> for ListMailbox {
+    fn from(s: String) -> Self {
         if s.is_empty() {
-            ListMailbox::String(IMAPString::Quoted(s))
+            ListMailbox::String(IString::Quoted(s))
         } else if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
             ListMailbox::Token(s)
         } else {
