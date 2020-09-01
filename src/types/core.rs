@@ -19,6 +19,17 @@ use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Atom(pub String);
 
+/// An atom consists of one or more non-special characters.
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct atm<'a>(pub &'a str);
+
+impl<'a> atm<'a> {
+    pub fn to_owned(&self) -> Atom {
+        Atom(self.0.to_string())
+    }
+}
+
 impl fmt::Display for Atom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.0)
@@ -46,6 +57,22 @@ impl Codec for Atom {
 pub type Number = u32;
 
 // ## 4.3. String
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub enum istr<'a> {
+    Literal(&'a [u8]),
+    Quoted(Cow<'a, str>),
+}
+
+impl<'a> istr<'a> {
+    pub fn to_owned(&self) -> IString {
+        match self {
+            istr::Literal(bytes) => IString::Literal(bytes.to_vec()),
+            istr::Quoted(cowstr) => IString::Quoted(cowstr.to_string()),
+        }
+    }
+}
 
 /// A string is in one of two forms: either literal or quoted string.
 ///
@@ -153,6 +180,22 @@ impl Codec for IString {
     }
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub struct nstr<'a>(pub Option<istr<'a>>);
+
+impl<'a> nstr<'a> {
+    pub fn to_owned(&self) -> NString {
+        NString(self.0.as_ref().map(|inner| inner.to_owned()))
+    }
+}
+
+//impl<'a> std::borrow::Borrow<nstr<'a>> for NString {
+//    fn borrow(&self) -> &nstr<'a> {
+//        &nstr(self.0.map(|inner| *inner.borrow()))
+//    }
+//}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct NString(pub Option<IString>);
 
@@ -169,6 +212,22 @@ impl Codec for NString {
         Self: Sized,
     {
         unimplemented!()
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub enum astr<'a> {
+    Atom(&'a str),
+    String(istr<'a>),
+}
+
+impl<'a> astr<'a> {
+    pub fn to_owned(&self) -> AString {
+        match self {
+            astr::Atom(str) => AString::Atom(str.to_string()),
+            astr::String(istr) => AString::String(istr.to_owned()),
+        }
     }
 }
 

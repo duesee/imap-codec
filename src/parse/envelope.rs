@@ -3,7 +3,7 @@ use crate::{
         address::address,
         core::{nil, nstring},
     },
-    types::{address::Address, core::NString, envelope::Envelope},
+    types::{address::Address, core::nstr, envelope::Envelope},
 };
 use abnf_core::streaming::SP;
 use nom::{
@@ -82,27 +82,27 @@ pub(crate) fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     Ok((
         remaining,
         Envelope {
-            date,
-            subject,
+            date: date.to_owned(),
+            subject: subject.to_owned(),
             from,
             sender,
             reply_to,
             to,
             cc,
             bcc,
-            in_reply_to,
-            message_id,
+            in_reply_to: in_reply_to.to_owned(),
+            message_id: message_id.to_owned(),
         },
     ))
 }
 
 /// env-date = nstring
-fn env_date(input: &[u8]) -> IResult<&[u8], NString> {
+fn env_date(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// env-subject = nstring
-fn env_subject(input: &[u8]) -> IResult<&[u8], NString> {
+fn env_subject(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
@@ -155,11 +155,11 @@ fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
 }
 
 /// env-in-reply-to = nstring
-fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], NString> {
+fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// env-message-id = nstring
-fn env_message_id(input: &[u8]) -> IResult<&[u8], NString> {
+fn env_message_id(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }

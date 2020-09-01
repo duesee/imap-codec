@@ -1,7 +1,7 @@
 use crate::{
     parse::core::atom,
     types::{
-        core::Atom,
+        core::atm,
         flag::{Flag, FlagNameAttribute},
     },
 };
@@ -31,7 +31,7 @@ pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
         value(Flag::Seen, tag_no_case(b"\\Seen")),
         value(Flag::Draft, tag_no_case(b"\\Draft")),
         flag_keyword,
-        map(flag_extension, Flag::Extension),
+        map(flag_extension, |a| Flag::Extension(a.to_owned())),
     ))(input)
 }
 
@@ -47,7 +47,7 @@ pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
 
 /// flag-keyword = atom
 pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
-    map(atom, Flag::Keyword)(input)
+    map(atom, |a| Flag::Keyword(a.to_owned()))(input)
 }
 
 /// flag-list = "(" [flag *(SP flag)] ")"
@@ -96,7 +96,9 @@ pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
             FlagNameAttribute::Noinferiors,
             tag_no_case(b"\\Noinferiors"),
         ),
-        map(flag_extension, FlagNameAttribute::Extension),
+        map(flag_extension, |a| {
+            FlagNameAttribute::Extension(a.to_owned())
+        }),
     ))(input)
 }
 
@@ -119,6 +121,6 @@ pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
 ///                   ; flag-extension flags except as defined by
 ///                   ; future standard or standards-track
 ///                   ; revisions of this specification.
-pub fn flag_extension(input: &[u8]) -> IResult<&[u8], Atom> {
+pub fn flag_extension(input: &[u8]) -> IResult<&[u8], atm> {
     preceded(tag(b"\\"), atom)(input)
 }

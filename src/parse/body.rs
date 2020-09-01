@@ -8,14 +8,14 @@ use crate::{
             BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
             SpecificFields,
         },
-        core::{IString, NString},
+        core::{istr, nstr},
     },
 };
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt, recognize, value},
+    combinator::{map, opt, recognize},
     multi::{many0, many1, separated_nonempty_list},
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -99,7 +99,16 @@ fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
-    Ok((remaining, (basic, SpecificFields::Basic { type_, subtype })))
+    Ok((
+        remaining,
+        (
+            basic,
+            SpecificFields::Basic {
+                type_: type_.to_owned(),
+                subtype: subtype.to_owned(),
+            },
+        ),
+    ))
 }
 
 /// body-type-msg = media-message SP body-fields SP envelope SP body SP body-fld-lines
@@ -158,7 +167,7 @@ fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)>
         (
             basic,
             SpecificFields::Text {
-                subtype,
+                subtype: subtype.to_owned(),
                 number_of_lines,
             },
         ),
@@ -187,17 +196,20 @@ fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     Ok((
         remaining,
         BasicFields {
-            parameter_list,
-            id,
-            description,
-            content_transfer_encoding,
+            parameter_list: parameter_list
+                .iter()
+                .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                .collect(),
+            id: id.to_owned(),
+            description: description.to_owned(),
+            content_transfer_encoding: content_transfer_encoding.to_owned(),
             size,
         },
     ))
 }
 
 /// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
-fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IString, IString)>> {
+fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(istr, istr)>> {
     let parser = alt((
         delimited(
             tag(b"("),
@@ -207,7 +219,7 @@ fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IString, IString)>> {
             ),
             tag(b")"),
         ),
-        value(Vec::new(), nil),
+        map(nil, |_| vec![]),
     ));
 
     let (remaining, parsed_body_fld_param) = parser(input)?;
@@ -216,12 +228,12 @@ fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IString, IString)>> {
 }
 
 /// body-fld-id = nstring
-fn body_fld_id(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_id(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// body-fld-desc = nstring
-fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_desc(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
@@ -232,7 +244,7 @@ fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
 /// body-fld-enc = string
 ///
 /// TODO: why the special case?
-fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IString> {
+fn body_fld_enc(input: &[u8]) -> IResult<&[u8], istr> {
     string(input)
 }
 
@@ -291,22 +303,31 @@ fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     Ok((
         rem,
         SinglePartExtensionData {
-            md5,
-            disposition: dsp,
-            language: lang,
-            location: loc,
+            md5: md5.to_owned(),
+            disposition: dsp.map(|inner| {
+                inner.map(|(a, b)| {
+                    (
+                        a.to_owned(),
+                        b.iter()
+                            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                            .collect(),
+                    )
+                })
+            }),
+            language: lang.map(|inner| inner.iter().map(|item| item.to_owned()).collect()),
+            location: loc.map(|inner| inner.to_owned()),
             extension: ext,
         },
     ))
 }
 
 /// body-fld-md5 = nstring
-fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_md5(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
-fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
+fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(istr, Vec<(istr, istr)>)>> {
     let parser = alt((
         delimited(
             tag(b"("),
@@ -316,7 +337,7 @@ fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, I
             ),
             tag(b")"),
         ),
-        value(None, nil),
+        map(nil, |_| None),
     ));
 
     let (remaining, parsed_body_fld_dsp) = parser(input)?;
@@ -325,7 +346,7 @@ fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, I
 }
 
 /// body-fld-lang = nstring / "(" string *(SP string) ")"
-fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IString>> {
+fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
     let parser = alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -340,7 +361,7 @@ fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IString>> {
 }
 
 /// body-fld-loc = nstring
-fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
+fn body_fld_loc(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
@@ -419,7 +440,7 @@ fn body_type_mpart_limited(
         remaining,
         BodyStructure::Multi {
             bodies,
-            subtype,
+            subtype: subtype.to_owned(),
             extension_data: maybe_extension_data,
         },
     ))
@@ -470,10 +491,22 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     Ok((
         rem,
         MultiPartExtensionData {
-            parameter_list: param,
-            disposition: dsp,
-            language: lang,
-            location: loc,
+            parameter_list: param
+                .iter()
+                .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                .collect(),
+            disposition: dsp.map(|inner| {
+                inner.map(|(a, b)| {
+                    (
+                        a.to_owned(),
+                        b.iter()
+                            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                            .collect(),
+                    )
+                })
+            }),
+            language: lang.map(|inner| inner.iter().map(|item| item.to_owned()).collect()),
+            location: loc.map(|inner| inner.to_owned()),
             extension: ext,
         },
     ))
@@ -490,7 +523,7 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-fn media_basic(input: &[u8]) -> IResult<&[u8], (IString, IString)> {
+fn media_basic(input: &[u8]) -> IResult<&[u8], (istr, istr)> {
     let parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -501,7 +534,7 @@ fn media_basic(input: &[u8]) -> IResult<&[u8], (IString, IString)> {
 /// media-subtype = string
 ///
 /// Defined in [MIME-IMT]
-fn media_subtype(input: &[u8]) -> IResult<&[u8], IString> {
+fn media_subtype(input: &[u8]) -> IResult<&[u8], istr> {
     string(input)
 }
 
@@ -519,7 +552,7 @@ fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-fn media_text(input: &[u8]) -> IResult<&[u8], IString> {
+fn media_text(input: &[u8]) -> IResult<&[u8], istr> {
     let parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;

@@ -62,17 +62,18 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let mechanism = match raw_mechanism.0.to_lowercase().as_ref() {
         "plain" => AuthMechanism::Plain,
         "login" => AuthMechanism::Login,
-        _ => AuthMechanism::Other(raw_mechanism),
+        _ => AuthMechanism::Other(raw_mechanism.to_owned()),
     };
 
     Ok((rem, mechanism))
 }
 
+/// FIXME: escape?
 /// charset = atom / quoted
 /// errata id: 261
 pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
     let parser = alt((
-        map(atom, |val| val.0),
+        map(atom, |val| val.to_owned().0),
         map(quoted, |cow_str| cow_str.to_owned().to_string()),
     ));
 

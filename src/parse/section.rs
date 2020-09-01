@@ -62,11 +62,19 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
-            |(_, _, header_list)| PartSpecifier::HeaderFieldsNot(header_list),
+            |(_, _, header_list)| {
+                PartSpecifier::HeaderFieldsNot(
+                    header_list.iter().map(|item| item.to_owned()).collect(),
+                )
+            },
         ),
         map(
             tuple((tag_no_case(b"HEADER.FIELDS"), SP, header_list)),
-            |(_, _, header_list)| PartSpecifier::HeaderFields(header_list),
+            |(_, _, header_list)| {
+                PartSpecifier::HeaderFields(
+                    header_list.iter().map(|item| item.to_owned()).collect(),
+                )
+            },
         ),
         value(PartSpecifier::Header, tag_no_case(b"HEADER")),
         value(PartSpecifier::Text, tag_no_case(b"TEXT")),

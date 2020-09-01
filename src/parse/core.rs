@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{unescape_quoted, AString, Atom, IString, NString},
+    types::core::{astr, atm, istr, nstr, unescape_quoted},
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -51,12 +51,10 @@ pub fn is_digit_nz(byte: u8) -> bool {
 // ----- string -----
 
 /// string = quoted / literal
-pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
+pub fn string(input: &[u8]) -> IResult<&[u8], istr> {
     let parser = alt((
-        map(quoted, |cow_str| {
-            IString::Quoted(cow_str.to_owned().to_string())
-        }), // TODO: is this correct?
-        map(literal, |bytes| IString::Literal(bytes.to_owned())),
+        map(quoted, istr::Quoted), // TODO: is this correct?
+        map(literal, istr::Literal),
     ));
 
     let (remaining, parsed_string) = parser(input)?;
@@ -145,12 +143,12 @@ fn is_char8(i: u8) -> bool {
 // ----- astring ----- atom (roughly) or string
 
 /// astring = 1*ASTRING-CHAR / string
-pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
+pub fn astring(input: &[u8]) -> IResult<&[u8], astr> {
     let parser = alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
-            AString::Atom(String::from_utf8(bytes.to_vec()).unwrap())
+            astr::Atom(std::str::from_utf8(bytes).unwrap())
         }),
-        map(string, AString::String),
+        map(string, astr::String),
     ));
 
     let (remaining, parsed_astring) = parser(input)?;
@@ -186,24 +184,21 @@ pub fn is_resp_specials(i: u8) -> bool {
 }
 
 /// atom = 1*ATOM-CHAR
-pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
+pub fn atom(input: &[u8]) -> IResult<&[u8], atm> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    Ok((
-        remaining,
-        Atom(String::from_utf8(parsed_atom.to_vec()).unwrap()),
-    ))
+    Ok((remaining, atm(std::str::from_utf8(parsed_atom).unwrap())))
 }
 
 // ----- nstring ----- nil or string
 
 /// nstring = string / nil
-pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
+pub fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
     let parser = alt((
-        map(string, |item| NString(Some(item))),
-        map(nil, |_| NString(None)),
+        map(string, |item| nstr(Some(item))),
+        map(nil, |_| nstr(None)),
     ));
 
     let (remaining, parsed_nstring) = parser(input)?;
@@ -264,11 +259,11 @@ mod test {
         assert!(atom(b"").is_err());
 
         let (rem, val) = atom(b"a(").unwrap();
-        assert_eq!(val, Atom("a".into()));
+        assert_eq!(val, atm("a"));
         assert_eq!(rem, b"(");
 
         let (rem, val) = atom(b"xxx yyy").unwrap();
-        assert_eq!(val, Atom("xxx".into()));
+        assert_eq!(val, atm("xxx"));
         assert_eq!(rem, b" yyy");
     }
 

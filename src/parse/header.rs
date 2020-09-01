@@ -1,9 +1,9 @@
-use crate::{parse::core::astring, types::core::AString};
+use crate::{parse::core::astring, types::core::astr};
 use abnf_core::streaming::SP;
 use nom::{bytes::streaming::tag, multi::separated_nonempty_list, sequence::delimited, IResult};
 
 /// header-list = "(" header-fld-name *(SP header-fld-name) ")"
-pub fn header_list(input: &[u8]) -> IResult<&[u8], Vec<AString>> {
+pub fn header_list(input: &[u8]) -> IResult<&[u8], Vec<astr>> {
     delimited(
         tag(b"("),
         separated_nonempty_list(SP, header_fld_name),
@@ -12,6 +12,6 @@ pub fn header_list(input: &[u8]) -> IResult<&[u8], Vec<AString>> {
 }
 
 /// header-fld-name = astring
-pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], AString> {
+pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], astr> {
     astring(input)
 }

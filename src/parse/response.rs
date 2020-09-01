@@ -151,7 +151,9 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     ),
                 )),
             )),
-            |(atom, maybe_params)| Code::Other(atom, maybe_params.map(|inner| inner.to_owned())),
+            |(atom, maybe_params)| {
+                Code::Other(atom.to_owned(), maybe_params.map(|inner| inner.to_owned()))
+            },
         ),
     ))(input)
 }
@@ -204,7 +206,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "sasl-ir" => Capability::SaslIr,
                 // RFC 5161 The IMAP ENABLE Extension
                 "enable" => Capability::Enable,
-                _ => Capability::Other(atom),
+                _ => Capability::Other(atom.to_owned()),
             }
         }),
     ))(input)

@@ -7,7 +7,7 @@ use crate::{
         status::status_att_list,
     },
     types::{
-        core::{AString, IString},
+        core::{astr, istr},
         mailbox::{ListMailbox, Mailbox},
         response::Data,
     },
@@ -28,7 +28,7 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
         map(take_while1(is_list_char), |bytes: &[u8]| {
             ListMailbox::Token(String::from_utf8(bytes.to_vec()).unwrap())
         }),
-        map(string, ListMailbox::String),
+        map(string, |istr| ListMailbox::String(istr.to_owned())),
     ));
 
     let (remaining, parsed_list_mailbox) = parser(input)?;
@@ -59,34 +59,34 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     let (remaining, mailbox) = astring(input)?;
 
     let mailbox = match mailbox {
-        AString::Atom(str) => {
+        astr::Atom(str) => {
             if str.to_lowercase() == "inbox" {
                 Mailbox::Inbox
             } else {
-                Mailbox::Other(AString::Atom(str))
+                Mailbox::Other(mailbox.to_owned())
             }
         }
-        AString::String(imap_str) => match imap_str {
-            IString::Quoted(ref str) => {
+        astr::String(ref imap_str) => match imap_str {
+            istr::Quoted(ref str) => {
                 if str.to_lowercase() == "inbox" {
                     Mailbox::Inbox
                 } else {
-                    Mailbox::Other(AString::String(imap_str))
+                    Mailbox::Other(mailbox.to_owned())
                 }
             }
-            IString::Literal(ref bytes) => {
+            istr::Literal(bytes) => {
                 // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                if let Ok(str) = String::from_utf8(bytes.clone()) {
+                if let Ok(str) = std::str::from_utf8(bytes) {
                     // After the conversion we ignore the case...
                     if str.to_lowercase() == "inbox" {
                         // ...and return the Inbox variant.
                         Mailbox::Inbox
                     } else {
-                        Mailbox::Other(AString::String(imap_str))
+                        Mailbox::Other(mailbox.to_owned())
                     }
                 } else {
                     // ... If not, it must be something else.
-                    Mailbox::Other(AString::String(imap_str))
+                    Mailbox::Other(mailbox.to_owned())
                 }
             }
         },
