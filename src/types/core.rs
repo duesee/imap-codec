@@ -11,7 +11,7 @@ use crate::{
     parse::core::{is_astring_char, is_text_char},
 };
 use serde::Deserialize;
-use std::{borrow::Cow, fmt};
+use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 
 // ## 4.1. Atom
 
@@ -76,6 +76,17 @@ pub enum String {
     ///
     /// FIXME: not every std::string::String (UTF-8) is a valid "quoted IMAP string"
     Quoted(std::string::String),
+}
+
+impl TryFrom<String> for std::string::String {
+    type Error = FromUtf8Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value {
+            String::Quoted(utf8) => Ok(utf8),
+            String::Literal(bytes) => std::string::String::from_utf8(bytes),
+        }
+    }
 }
 
 impl From<&str> for String {
@@ -274,5 +285,16 @@ mod test {
         assert_eq!(unescape_quoted("\\\\alice\\\\"), "\\alice\\");
         assert_eq!(unescape_quoted("alice\\\""), "alice\"");
         assert_eq!(unescape_quoted(r#"\\alice\\ \""#), r#"\alice\ ""#);
+    }
+
+    #[test]
+    fn test_conversion() {
+        assert_eq!(String::from("AAA"), String::Quoted("AAA".into()).into());
+        assert_eq!(String::from("\"AAA"), String::Quoted("\"AAA".into()).into());
+
+        assert_ne!(
+            String::from("\"AAA"),
+            String::Quoted("\\\"AAA".into()).into()
+        );
     }
 }
