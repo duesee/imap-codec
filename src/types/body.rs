@@ -246,9 +246,9 @@ pub struct SinglePartExtensionData {
 ///
 /// ```text
 /// (
-///	  ("text" "html"  ("charset" "us-ascii") NIL NIL "7bit" 28 0 NIL NIL NIL NIL)
-///	  ("text" "plain" ("charset" "us-ascii") NIL NIL "7bit" 11 0 NIL NIL NIL NIL)
-///	  "mixed" ("boundary" "xxx") NIL NIL NIL
+///   ("text" "html"  ("charset" "us-ascii") NIL NIL "7bit" 28 0 NIL NIL NIL NIL)
+///   ("text" "plain" ("charset" "us-ascii") NIL NIL "7bit" 11 0 NIL NIL NIL NIL)
+///   "mixed" ("boundary" "xxx") NIL NIL NIL
 ///           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ///           |
 ///           | extension multipart data
