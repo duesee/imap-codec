@@ -848,9 +848,6 @@ pub enum Code {
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
     /// SHOULD ignore response codes that they do not recognize.
-    X,
-
-    /// TODO: allowed by resp_text_code
     Other(Atom, Option<String>),
 
     /// IMAP4 Login Referrals (RFC 2221)
@@ -883,7 +880,6 @@ impl std::fmt::Display for Code {
             Code::UidNext(next) => write!(f, "UIDNEXT {}", next),
             Code::UidValidity(validity) => write!(f, "UIDVALIDITY {}", validity),
             Code::Unseen(seq) => write!(f, "UNSEEN {}", seq),
-            Code::X => unimplemented!(),
             Code::Other(_atom, _params) => unimplemented!(),
             // RFC 2221
             Code::Referral(url) => write!(f, "REFERRAL {}", url),
