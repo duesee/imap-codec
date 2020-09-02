@@ -52,10 +52,7 @@ pub fn is_digit_nz(byte: u8) -> bool {
 
 /// string = quoted / literal
 pub fn string(input: &[u8]) -> IResult<&[u8], istr> {
-    let parser = alt((
-        map(quoted, istr::Quoted), // TODO: is this correct?
-        map(literal, istr::Literal),
-    ));
+    let parser = alt((map(quoted, istr::Quoted), map(literal, istr::Literal)));
 
     let (remaining, parsed_string) = parser(input)?;
 
