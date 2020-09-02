@@ -1,10 +1,10 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use imap_proto_server::{codec::Codec, parse::command::command};
+use imap_proto_server::{codec::Codec, parse::response::greeting};
 
 fuzz_target!(|data: &[u8]| {
-    if let Ok((rem, parsed1)) = command(data) {
+    if let Ok((rem, parsed1)) = greeting(data) {
         let input = &data[..data.len() - rem.len()];
 
         //println!("libFuzzer:  {}", String::from_utf8_lossy(input).trim());
@@ -12,7 +12,7 @@ fuzz_target!(|data: &[u8]| {
 
         let input = parsed1.serialize();
         //println!("serialized: {}", String::from_utf8_lossy(&input).trim());
-        let (rem, parsed2) = command(&input).unwrap();
+        let (rem, parsed2) = greeting(&input).unwrap();
         //println!("parsed:     {:?}", parsed2);
         assert!(rem.is_empty());
 

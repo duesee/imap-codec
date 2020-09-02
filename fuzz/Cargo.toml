@@ -20,6 +20,12 @@ path = ".."
 members = ["."]
 
 [[bin]]
+name = "greeting"
+path = "fuzz_targets/greeting.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "command"
 path = "fuzz_targets/command.rs"
 test = false
