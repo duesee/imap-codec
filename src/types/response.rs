@@ -865,22 +865,25 @@ impl std::fmt::Display for Code {
         match self {
             Code::Alert => write!(f, "ALERT"),
             Code::BadCharset(charsets) => {
-                write!(f, "BADCHARSET")?;
-                for charset in charsets {
-                    write!(f, " {}", charset)?;
+                if charsets.is_empty() {
+                    write!(f, "BADCHARSET")
+                } else {
+                    write!(f, "BADCHARSET ({})", &join(charsets, " "))
                 }
-                Ok(())
             }
             Code::Capability(caps) => write!(f, "CAPABILITY {}", join(caps, " ")),
             Code::Parse => write!(f, "PARSE"),
             Code::PermanentFlags(flags) => write!(f, "PERMANENTFLAGS ({})", join(flags, " ")),
             Code::ReadOnly => write!(f, "READ-ONLY"),
             Code::ReadWrite => write!(f, "READ-WRITE"),
-            Code::TryCreate => unimplemented!(),
+            Code::TryCreate => write!(f, "TRYCREATE"),
             Code::UidNext(next) => write!(f, "UIDNEXT {}", next),
             Code::UidValidity(validity) => write!(f, "UIDVALIDITY {}", validity),
             Code::Unseen(seq) => write!(f, "UNSEEN {}", seq),
-            Code::Other(_atom, _params) => unimplemented!(),
+            Code::Other(atom, params) => match params {
+                Some(params) => write!(f, "{} {}", atom, params),
+                None => write!(f, "{}", atom),
+            },
             // RFC 2221
             Code::Referral(url) => write!(f, "REFERRAL {}", url),
         }
@@ -889,7 +892,7 @@ impl std::fmt::Display for Code {
 
 impl Codec for Code {
     fn serialize(&self) -> Vec<u8> {
-        format!("{}", self).into_bytes()
+        self.to_string().into_bytes()
     }
 
     fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
