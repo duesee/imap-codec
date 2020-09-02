@@ -4,7 +4,7 @@ use crate::{
     codec::Codec,
     types::{
         body::BodyStructure,
-        core::{Atom, NString},
+        core::{Atom, Charset, NString},
         data_items::Section,
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
@@ -773,7 +773,7 @@ pub enum Code {
     /// this implementation.  If the optional list of charsets is
     /// given, this lists the charsets that are supported by this
     /// implementation.
-    BadCharset(Vec<String>),
+    BadCharset(Vec<Charset>),
 
     /// `CAPABILITY`
     ///

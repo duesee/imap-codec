@@ -8,7 +8,7 @@
 
 use crate::{
     codec::Codec,
-    parse::core::{is_astring_char, is_text_char},
+    parse::core::{is_astring_char, is_atom_char, is_text_char},
 };
 use serde::Deserialize;
 use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
@@ -308,6 +308,58 @@ impl Codec for AString {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct Charset(pub(crate) String);
+
+impl TryFrom<&str> for Charset {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Charset::try_from(value.to_string())
+    }
+}
+
+impl TryFrom<String> for Charset {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            Ok(Charset(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl std::fmt::Display for Charset {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.0.is_empty() {
+            write!(f, "\"\"")
+        } else if self
+            .0
+            .chars()
+            .all(|c| c.is_ascii() && is_atom_char(c as u8))
+        {
+            write!(f, "{}", self.0)
+        } else {
+            write!(f, "\"{}\"", &escape_quoted(&self.0))
+        }
+    }
+}
+
+impl Codec for Charset {
+    fn serialize(&self) -> Vec<u8> {
+        self.to_string().into_bytes()
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -340,5 +392,28 @@ mod test {
             IString::from("\"AAA"),
             IString::Quoted("\\\"AAA".into()).into()
         );
+    }
+
+    #[test]
+    fn test_charset() {
+        let tests = [
+            ("bengali", "bengali"),
+            ("\"simple\" english", r#""\"simple\" english""#),
+            ("", "\"\""),
+            ("\"", "\"\\\"\""),
+            ("\\", "\"\\\\\""),
+        ];
+
+        for (from, expected) in tests.iter() {
+            let cs = Charset::try_from(*from).unwrap();
+            println!("{}", cs);
+            assert_eq!(String::from_utf8(cs.serialize()).unwrap(), *expected);
+        }
+
+        assert!(Charset::try_from("\r").is_err());
+        assert!(Charset::try_from("\n").is_err());
+        assert!(Charset::try_from("¹").is_err());
+        assert!(Charset::try_from("²").is_err());
+        assert!(Charset::try_from("\x00").is_err());
     }
 }

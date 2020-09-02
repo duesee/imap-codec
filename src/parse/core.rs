@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, unescape_quoted},
+    types::core::{astr, atm, istr, nstr, unescape_quoted, Charset},
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -244,6 +244,21 @@ fn is_base64_char(i: u8) -> bool {
 }
 
 // base64-terminal = (2base64-char "==") / (3base64-char "=")
+
+// ----- charset -----
+
+/// charset = atom / quoted
+/// errata id: 261
+pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
+    let parser = alt((
+        map(atom, |val| Charset(val.0.to_string())),
+        map(quoted, |cow| Charset(cow.to_string())),
+    ));
+
+    let (remaining, charset) = parser(input)?;
+
+    Ok((remaining, charset))
+}
 
 #[cfg(test)]
 mod test {

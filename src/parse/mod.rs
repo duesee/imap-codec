@@ -26,15 +26,10 @@
 //! time.
 
 use crate::{
-    parse::core::{atom, is_astring_char, quoted},
+    parse::core::{atom, is_astring_char},
     types::AuthMechanism,
 };
-use nom::{
-    branch::alt,
-    bytes::streaming::take_while1,
-    combinator::{map, map_res},
-    IResult,
-};
+use nom::{bytes::streaming::take_while1, combinator::map_res, IResult};
 use std::str::from_utf8;
 
 pub mod address;
@@ -66,20 +61,6 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     };
 
     Ok((rem, mechanism))
-}
-
-/// FIXME: escape?
-/// charset = atom / quoted
-/// errata id: 261
-pub fn charset(input: &[u8]) -> IResult<&[u8], String> {
-    let parser = alt((
-        map(atom, |val| val.to_owned().0),
-        map(quoted, |cow_str| cow_str.to_owned().to_string()),
-    ));
-
-    let (remaining, charset) = parser(input)?;
-
-    Ok((remaining, charset))
 }
 
 /// tag = 1*<any ASTRING-CHAR except "+">

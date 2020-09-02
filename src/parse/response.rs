@@ -1,7 +1,7 @@
 use crate::{
     parse::{
-        auth_type, charset,
-        core::{atom, base64, is_text_char, nz_number, text},
+        auth_type,
+        core::{atom, base64, charset, is_text_char, nz_number, text},
         flag::flag_perm,
         mailbox::mailbox_data,
         message::message_data,

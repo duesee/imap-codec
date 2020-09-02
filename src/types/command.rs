@@ -5,7 +5,7 @@
 use crate::{
     codec::Codec,
     types::{
-        core::{AString, Atom},
+        core::{AString, Atom, Charset},
         data_items::MacroOrDataItems,
         flag::Flag,
         mailbox::{ListMailbox, Mailbox},
@@ -164,7 +164,7 @@ impl Command {
         Command::new(
             &gen_tag(),
             CommandBody::Search {
-                charset,
+                charset: charset.map(Charset),
                 criteria,
                 uid,
             },
@@ -1424,7 +1424,7 @@ pub enum CommandBody {
     /// "XXXXXX" is a placeholder for what would be 6 octets of
     /// 8-bit data in an actual transaction.
     Search {
-        charset: Option<String>,
+        charset: Option<Charset>,
         criteria: SearchKey,
         uid: bool,
     },
@@ -1886,7 +1886,7 @@ impl Codec for CommandBody {
                 };
                 if let Some(charset) = charset {
                     out.push(b' ');
-                    out.extend(format!("\"CHARSET\" {}", charset).into_bytes());
+                    out.extend(format!("\"CHARSET\" {}", charset.0).into_bytes());
                 }
                 out.push(b' ');
                 out.extend(criteria.serialize());
