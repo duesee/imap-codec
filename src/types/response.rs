@@ -754,7 +754,7 @@ impl Codec for Continuation {
                 Some(ref code) => format!("+ [{}] {}\r\n", code, text).into_bytes(),
                 None => format!("+ {}\r\n", text).into_bytes(),
             },
-            Continuation::Base64(_data) => unimplemented!(),
+            Continuation::Base64(data) => format!("+ {}\r\n", data).into_bytes(),
         }
     }
 
