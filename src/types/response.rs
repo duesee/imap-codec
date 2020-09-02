@@ -35,6 +35,23 @@ pub enum Response {
     Continuation(Continuation),
 }
 
+impl Codec for Response {
+    fn serialize(&self) -> Vec<u8> {
+        match self {
+            Response::Status(status) => status.serialize(),
+            Response::Data(data) => data.serialize(),
+            Response::Continuation(continuation) => continuation.serialize(),
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 // FIXME: IMAP tags != UTF-8 String
 pub type Tag = String;
 
