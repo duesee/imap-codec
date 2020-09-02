@@ -1889,7 +1889,11 @@ impl Codec for CommandBody {
                     out.extend(format!("CHARSET {}", charset).into_bytes());
                 }
                 out.push(b' ');
-                out.extend(criteria.serialize());
+                if let SearchKey::And(search_keys) = criteria {
+                    out.extend(join_serializable(search_keys, b" "));
+                } else {
+                    out.extend(criteria.serialize());
+                }
                 out
             }
             CommandBody::Fetch {
