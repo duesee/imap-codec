@@ -2224,7 +2224,7 @@ impl Codec for SearchKey {
                         .iter()
                         .map(Codec::serialize)
                         .collect::<Vec<Vec<u8>>>(),
-                    b" ",
+                    b",",
                 )
                 .as_ref(),
             ]
@@ -2235,16 +2235,17 @@ impl Codec for SearchKey {
                     .iter()
                     .map(Codec::serialize)
                     .collect::<Vec<Vec<u8>>>(),
-                b" ",
+                b",",
             ),
             SearchKey::And(search_keys) => {
-                let mut out = Vec::new();
+                let mut out = b"(".to_vec();
                 if let Some((last, elements)) = search_keys.split_last() {
                     for element in elements {
                         out.extend(element.serialize());
                         out.push(b' ')
                     }
                     out.extend(last.serialize());
+                    out.push(b')');
                     out
                 } else {
                     panic!("This should not happen.")
