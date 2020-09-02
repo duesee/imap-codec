@@ -1886,7 +1886,7 @@ impl Codec for CommandBody {
                 };
                 if let Some(charset) = charset {
                     out.push(b' ');
-                    out.extend(format!("\"CHARSET\" {}", charset.0).into_bytes());
+                    out.extend(format!("CHARSET {}", charset).into_bytes());
                 }
                 out.push(b' ');
                 out.extend(criteria.serialize());
