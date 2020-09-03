@@ -406,9 +406,9 @@ pub enum Data {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
         /// Hierarchy delimiter
-        delimiter: String,
+        delimiter: Option<char>,
         /// Name
-        name: String, // TODO: `String` or `Mailbox`?
+        mailbox: Mailbox,
     },
 
     /// ### 7.2.4 STATUS Response
@@ -612,14 +612,21 @@ impl Codec for Data {
             Data::Lsub {
                 items,
                 delimiter,
-                name,
-            } => format!(
-                "* LSUB ({}) \"{}\" {}\r\n",
-                join(items, " "),
-                delimiter,
-                name
-            )
-            .into_bytes(),
+                mailbox,
+            } => {
+                let mut out = b"* LSUB (".to_vec();
+                out.extend(join_serializable(items, b" "));
+                out.extend_from_slice(b") ");
+                if let Some(delimiter) = delimiter {
+                    out.extend(format!("\"{}\"", delimiter).as_bytes());
+                } else {
+                    out.extend_from_slice(b"nil");
+                }
+                out.push(b' ');
+                out.extend(mailbox.serialize());
+                out.extend_from_slice(b"\r\n");
+                out
+            }
             Data::Status { name, items } => [
                 b"* STATUS ".as_ref(),
                 name.serialize().as_ref(),

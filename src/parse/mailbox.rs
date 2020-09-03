@@ -8,6 +8,7 @@ use crate::{
     },
     types::{
         core::{astr, istr},
+        flag::FlagNameAttribute,
         mailbox::{ListMailbox, Mailbox},
         response::Data,
     },
@@ -110,11 +111,19 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
         ),
         map(
             tuple((tag_no_case(b"LIST"), SP, mailbox_list)),
-            |(_, _, data)| data,
+            |(_, _, (items, delimiter, mailbox))| Data::List {
+                items: items.unwrap_or_default(),
+                mailbox,
+                delimiter,
+            },
         ),
         map(
             tuple((tag_no_case(b"LSUB"), SP, mailbox_list)),
-            |(_, _, data)| data,
+            |(_, _, (items, delimiter, mailbox))| Data::Lsub {
+                items: items.unwrap_or_default(),
+                mailbox,
+                delimiter,
+            },
         ),
         map(
             tuple((tag_no_case(b"SEARCH"), many0(preceded(SP, nz_number)))),
@@ -145,7 +154,9 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 }
 
 /// mailbox-list = "(" [mbx-list-flags] ")" SP (DQUOTE QUOTED-CHAR DQUOTE / nil) SP mailbox
-pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], Data> {
+pub fn mailbox_list(
+    input: &[u8],
+) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<char>, Mailbox)> {
     let parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         SP,
@@ -159,14 +170,7 @@ pub fn mailbox_list(input: &[u8]) -> IResult<&[u8], Data> {
 
     let (remaining, (mbx_list_flags, _, maybe_delimiter, _, mailbox)) = parser(input)?;
 
-    Ok((
-        remaining,
-        Data::List {
-            items: mbx_list_flags.unwrap_or_default(),
-            delimiter: maybe_delimiter,
-            mailbox,
-        },
-    ))
+    Ok((remaining, (mbx_list_flags, maybe_delimiter, mailbox)))
 }
 
 #[cfg(test)]
