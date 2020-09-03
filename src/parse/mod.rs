@@ -64,9 +64,6 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 }
 
 /// tag = 1*<any ASTRING-CHAR except "+">
-/// FIXME: this function has the _imap suffix to avoid confusion with
-///        nom's "tag" parser. However, this function should be exposed
-///        as "tag" to users of this library.
-pub fn tag_imap(input: &[u8]) -> IResult<&[u8], &str> {
+pub fn tag(input: &[u8]) -> IResult<&[u8], &str> {
     map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8)(input)
 }

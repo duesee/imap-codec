@@ -9,7 +9,7 @@ use crate::{
         section::section,
         sequence::sequence_set,
         status::status_att,
-        tag_imap,
+        tag as tag_imap,
     },
     types::{
         command::{Command, CommandBody, SearchKey},

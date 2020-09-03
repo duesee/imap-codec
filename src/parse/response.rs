@@ -5,7 +5,7 @@ use crate::{
         flag::flag_perm,
         mailbox::mailbox_data,
         message::message_data,
-        tag_imap,
+        tag as tag_imap,
     },
     types::{
         response::{Code, Continuation, Data, Response, Status},
