@@ -9,7 +9,10 @@ use nom::{
     IResult,
 };
 
-/// address = "(" addr-name SP addr-adl SP addr-mailbox SP addr-host ")"
+/// address = "(" addr-name SP
+///               addr-adl SP
+///               addr-mailbox SP
+///               addr-host ")"
 pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
     let parser = delimited(
         tag(b"("),
@@ -31,32 +34,33 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 }
 
 /// addr-name = nstring
-///               ; If non-NIL, holds phrase from [RFC-2822]
-///               ; mailbox after removing [RFC-2822] quoting
+///
+/// If non-NIL, holds phrase from [RFC-2822]
+/// mailbox after removing [RFC-2822] quoting
 pub fn addr_name(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// addr-adl = nstring
-///              ; Holds route from [RFC-2822] route-addr if
-///              ; non-NIL
+///
+/// Holds route from [RFC-2822] route-addr if non-NIL
 pub fn addr_adl(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// addr-mailbox = nstring
-///                  ; NIL indicates end of [RFC-2822] group; if
-///                  ; non-NIL and addr-host is NIL, holds
-///                  ; [RFC-2822] group name.
-///                  ; Otherwise, holds [RFC-2822] local-part
-///                  ; after removing [RFC-2822] quoting
+///
+/// NIL indicates end of [RFC-2822] group;
+/// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
+/// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
 pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// addr-host = nstring
-///               ; NIL indicates [RFC-2822] group syntax.
-///               ; Otherwise, holds [RFC-2822] domain name
+///
+/// NIL indicates [RFC-2822] group syntax.
+/// Otherwise, holds [RFC-2822] domain name
 pub fn addr_host(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }

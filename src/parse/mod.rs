@@ -49,7 +49,9 @@ pub mod status;
 
 // ----- Unsorted IMAP parsers -----
 
-/// auth-type = atom ; Defined by [SASL]
+/// auth-type = atom
+///
+/// Note: Defined by [SASL]
 pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let (rem, raw_mechanism) = atom(input)?;
 

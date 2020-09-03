@@ -29,8 +29,10 @@ use nom::{
     IResult,
 };
 
-/// command = tag SP (command-any / command-auth / command-nonauth / command-select) CRLF
-///            ; Modal based on state
+/// command = tag SP (command-any /
+///                   command-auth /
+///                   command-nonauth /
+///                   command-select) CRLF
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     let parser = tuple((
         tag_imap,
@@ -47,7 +49,8 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
 /// # Command Any
 
 /// command-any = "CAPABILITY" / "LOGOUT" / "NOOP" / x-command
-///                ; Valid in all states
+///
+/// Note: Valid in all states
 pub fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = alt((
         value(CommandBody::Capability, tag_no_case(b"CAPABILITY")),
@@ -64,7 +67,8 @@ pub fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// # Command Auth
 
 /// command-auth = append / create / delete / examine / list / lsub / rename / select / status / subscribe / unsubscribe
-///                 ; Valid only in Authenticated or Selected state
+///
+/// Note: Valid only in Authenticated or Selected state
 pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = alt((
         append,
@@ -113,7 +117,8 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 }
 
 /// create = "CREATE" SP mailbox
-///           ; Use of INBOX gives a NO error
+///
+/// Note: Use of INBOX gives a NO error
 pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"CREATE"), SP, mailbox));
 
@@ -123,7 +128,8 @@ pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
 }
 
 /// delete = "DELETE" SP mailbox
-///           ; Use of INBOX gives a NO error
+///
+/// Note: Use of INBOX gives a NO error
 pub fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"DELETE"), SP, mailbox));
 
@@ -160,7 +166,8 @@ pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
 }
 
 /// rename = "RENAME" SP mailbox SP mailbox
-///           ; Use of INBOX as a destination gives a NO error
+///
+/// Note: Use of INBOX as a destination gives a NO error
 pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"RENAME"), SP, mailbox, SP, mailbox));
 
@@ -228,7 +235,8 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// # Command NonAuth
 
 /// command-nonauth = login / authenticate / "STARTTLS"
-///                    ; Valid only when in Not Authenticated state
+///
+/// Note: Valid only when in Not Authenticated state
 pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = alt((
         login,
@@ -303,7 +311,8 @@ pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
 /// # Command Select
 
 /// command-select = "CHECK" / "CLOSE" / "EXPUNGE" / copy / fetch / store / uid / search
-///                   ; Valid only when in Selected state
+///
+/// Note: Valid only when in Selected state
 pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
@@ -337,7 +346,10 @@ pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// fetch = "FETCH" SP sequence-set SP ("ALL" / "FULL" / "FAST" / fetch-att / "(" fetch-att *(SP fetch-att) ")")
+/// fetch = "FETCH" SP sequence-set SP ("ALL" /
+///                                     "FULL" /
+///                                     "FAST" /
+///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
 pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"FETCH"),
@@ -476,8 +488,8 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
 }
 
 /// uid = "UID" SP (copy / fetch / search / store)
-///        ; Unique identifiers used instead of message
-///        ; sequence numbers
+///
+/// Note: Unique identifiers used instead of message sequence numbers
 pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((tag_no_case(b"UID"), SP, alt((copy, fetch, search, store))));
 
@@ -494,9 +506,11 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, cmd))
 }
 
-/// ; errata id: 261
 /// search = "SEARCH" [SP "CHARSET" SP charset] 1*(SP search-key)
-///           ; CHARSET argument to MUST be registered with IANA
+///
+/// Note: CHARSET argument to MUST be registered with IANA
+///
+/// errata id: 261
 pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = tuple((
         tag_no_case(b"SEARCH"),

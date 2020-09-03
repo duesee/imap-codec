@@ -932,13 +932,11 @@ impl Codec for Code {
 /// The current data items are:
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataItemResponse {
-    /// `BODY`
-    ///
     /// A form of BODYSTRUCTURE without extension data.
+    ///
+    /// `BODY`
     Body(BodyStructure),
 
-    /// `BODY[<section>]<<origin octet>>`
-    ///
     /// A string expressing the body contents of the specified section.
     /// The string SHOULD be interpreted by the client according to the
     /// content transfer encoding, body type, and subtype.
@@ -967,69 +965,67 @@ pub enum DataItemResponse {
     /// into a textual form, such as BASE64, prior to being sent to the
     /// client.  To derive the original binary data, the client MUST
     /// decode the transfer encoded string.
+    ///
+    /// `BODY[<section>]<<origin octet>>`
     BodyExt {
         section: Option<Section>,
         origin: Option<u32>,
         data: NString,
     },
 
-    /// `BODYSTRUCTURE`
-    ///
     /// A parenthesized list that describes the [MIME-IMB] body
     /// structure of a message.  This is computed by the server by
     /// parsing the [MIME-IMB] header fields, defaulting various fields
     /// as necessary.
     ///
-    /// See [BodyStructure](struct.BodyStructure.html).
+    /// `BODYSTRUCTURE`
     BodyStructure(BodyStructure),
 
-    /// `ENVELOPE`
-    ///
     /// A parenthesized list that describes the envelope structure of a
     /// message.  This is computed by the server by parsing the
     /// [RFC-2822] header into the component parts, defaulting various
     /// fields as necessary.
     ///
-    /// See [Envelope](struct.Envelope.html).
+    /// `ENVELOPE`
     Envelope(Envelope),
 
-    /// `FLAGS`
-    ///
     /// A parenthesized list of flags that are set for this message.
+    ///
+    /// `FLAGS`
     Flags(Vec<Flag>),
 
-    /// `INTERNALDATE`
-    ///
     /// A string representing the internal date of the message.
+    ///
+    /// `INTERNALDATE`
     InternalDate(DateTime<FixedOffset>),
 
-    /// `RFC822`
-    ///
     /// Equivalent to BODY[].
+    ///
+    /// `RFC822`
     Rfc822(NString),
 
-    /// `RFC822.HEADER`
-    ///
     /// Equivalent to BODY[HEADER].  Note that this did not result in
     /// \Seen being set, because RFC822.HEADER response data occurs as
     /// a result of a FETCH of RFC822.HEADER.  BODY[HEADER] response
     /// data occurs as a result of a FETCH of BODY[HEADER] (which sets
     /// \Seen) or BODY.PEEK[HEADER] (which does not set \Seen).
+    ///
+    /// `RFC822.HEADER`
     Rfc822Header(NString),
 
-    /// `RFC822.SIZE`
-    ///
     /// A number expressing the [RFC-2822] size of the message.
+    ///
+    /// `RFC822.SIZE`
     Rfc822Size(u32),
 
-    /// `RFC822.TEXT`
-    ///
     /// Equivalent to BODY[TEXT].
+    ///
+    /// `RFC822.TEXT`
     Rfc822Text(NString),
 
-    /// `UID`
-    ///
     /// A number expressing the unique identifier of the message.
+    ///
+    /// `UID`
     Uid(u32),
 }
 
