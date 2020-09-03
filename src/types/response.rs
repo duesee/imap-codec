@@ -4,7 +4,7 @@ use crate::{
     codec::Codec,
     types::{
         body::BodyStructure,
-        core::{Atom, Charset, NString},
+        core::{escape_quoted, Atom, Charset, NString},
         data_items::Section,
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
@@ -600,7 +600,8 @@ impl Codec for Data {
                 out.extend(join_serializable(items, b" "));
                 out.extend_from_slice(b") ");
                 if let Some(delimiter) = delimiter {
-                    out.extend(format!("\"{}\"", delimiter).as_bytes());
+                    // TODO: newtype Delimiter?
+                    out.extend(format!("\"{}\"", escape_quoted(&delimiter.to_string())).as_bytes());
                 } else {
                     out.extend_from_slice(b"nil");
                 }
@@ -618,7 +619,8 @@ impl Codec for Data {
                 out.extend(join_serializable(items, b" "));
                 out.extend_from_slice(b") ");
                 if let Some(delimiter) = delimiter {
-                    out.extend(format!("\"{}\"", delimiter).as_bytes());
+                    // TODO: newtype Delimiter?
+                    out.extend(format!("\"{}\"", escape_quoted(&delimiter.to_string())).as_bytes());
                 } else {
                     out.extend_from_slice(b"nil");
                 }
