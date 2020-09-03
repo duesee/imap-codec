@@ -1044,7 +1044,7 @@ impl Codec for DataItemResponse {
             } => unimplemented!(),
             DataItemResponse::BodyStructure(_structure) => unimplemented!(),
             DataItemResponse::Envelope(_envelope) => unimplemented!(),
-            DataItemResponse::Flags(flags) => format!("({})", join(flags, " ")).into_bytes(),
+            DataItemResponse::Flags(flags) => format!("FLAGS ({})", join(flags, " ")).into_bytes(),
             DataItemResponse::InternalDate(_datetime) => unimplemented!(),
             DataItemResponse::Rfc822(nstring) => {
                 [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat()
