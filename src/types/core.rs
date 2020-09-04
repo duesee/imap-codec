@@ -245,7 +245,9 @@ impl From<&str> for AString {
 
 impl From<String> for AString {
     fn from(s: String) -> Self {
-        if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
+        if s.is_empty() {
+            AString::String("".into())
+        } else if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
             AString::Atom(s)
         } else {
             AString::String(s.into())
