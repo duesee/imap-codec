@@ -255,6 +255,17 @@ impl From<String> for AString {
     }
 }
 
+impl TryFrom<AString> for String {
+    type Error = std::string::FromUtf8Error;
+
+    fn try_from(value: AString) -> Result<Self, Self::Error> {
+        match value {
+            AString::Atom(string) => Ok(string),
+            AString::String(istring) => String::try_from(istring),
+        }
+    }
+}
+
 impl Codec for AString {
     fn serialize(&self) -> Vec<u8> {
         match self {

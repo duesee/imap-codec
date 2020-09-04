@@ -4,6 +4,7 @@ use crate::{
     types::core::{AString, IString},
 };
 use serde::Deserialize;
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListMailbox {
@@ -41,6 +42,28 @@ impl From<String> for ListMailbox {
             ListMailbox::Token(s)
         } else {
             ListMailbox::String(s.into())
+        }
+    }
+}
+
+impl TryFrom<Mailbox> for String {
+    type Error = std::string::FromUtf8Error;
+
+    fn try_from(value: Mailbox) -> Result<Self, Self::Error> {
+        match value {
+            Mailbox::Inbox => Ok("INBOX".to_string()),
+            Mailbox::Other(astring) => String::try_from(astring),
+        }
+    }
+}
+
+impl TryFrom<ListMailbox> for String {
+    type Error = std::string::FromUtf8Error;
+
+    fn try_from(value: ListMailbox) -> Result<Self, Self::Error> {
+        match value {
+            ListMailbox::Token(string) => Ok(string),
+            ListMailbox::String(istring) => String::try_from(istring),
         }
     }
 }
