@@ -127,7 +127,7 @@ impl From<String> for IString {
         if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
             IString::Quoted(s)
         } else {
-            IString::Literal(s.into_bytes())
+            IString::Literal(s.into_bytes()) // FIXME: \x00 not allowed, but may be present in UTF8-String
         }
     }
 }
