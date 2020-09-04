@@ -4,7 +4,6 @@ use crate::{
     types::core::{AString, IString},
 };
 use serde::Deserialize;
-use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListMailbox {
@@ -88,20 +87,6 @@ impl Codec for Mailbox {
         Self: Sized,
     {
         unimplemented!()
-    }
-}
-
-impl FromStr for Mailbox {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.to_lowercase() == "inbox" {
-            Ok(Mailbox::Inbox)
-        } else {
-            Ok(Mailbox::Other(AString::String(IString::Quoted(
-                s.to_string(),
-            ))))
-        }
     }
 }
 
