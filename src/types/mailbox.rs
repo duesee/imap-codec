@@ -27,6 +27,24 @@ impl Codec for ListMailbox {
     }
 }
 
+impl From<&str> for ListMailbox {
+    fn from(s: &str) -> Self {
+        s.to_string().into()
+    }
+}
+
+impl From<String> for ListMailbox {
+    fn from(s: String) -> Self {
+        if s.is_empty() {
+            ListMailbox::String(IString::Quoted(s))
+        } else if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
+            ListMailbox::Token(s)
+        } else {
+            ListMailbox::String(s.into())
+        }
+    }
+}
+
 /// 5.1. Mailbox Naming
 ///
 /// Mailbox names are 7-bit.  Client implementations MUST NOT attempt to
@@ -102,24 +120,6 @@ impl From<String> for Mailbox {
             Mailbox::Inbox
         } else {
             Mailbox::Other(s.into())
-        }
-    }
-}
-
-impl From<&str> for ListMailbox {
-    fn from(s: &str) -> Self {
-        s.to_string().into()
-    }
-}
-
-impl From<String> for ListMailbox {
-    fn from(s: String) -> Self {
-        if s.is_empty() {
-            ListMailbox::String(IString::Quoted(s))
-        } else if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
-            ListMailbox::Token(s)
-        } else {
-            ListMailbox::String(s.into())
         }
     }
 }
