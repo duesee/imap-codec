@@ -249,6 +249,7 @@ fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///                    |
 ///                    applied as separate parser (CRLF is not consumed through the command
 ///                                                parser and must be consumed here)
+/// TODO: just interpret as command?
 pub fn idle_done(input: &[u8]) -> IResult<&[u8], &[u8]> {
     tag_no_case("DONE\r\n")(input)
 }
@@ -298,11 +299,13 @@ fn password(input: &[u8]) -> IResult<&[u8], astr> {
     astring(input)
 }
 
-/// authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)
-///
-/// SASL-IR:
-/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] (CRLF base64)
-///                 ; redefine AUTHENTICATE from [RFC3501]
+///                Interpreted as Command (CRLF is parsed by upper command parser)
+///                |
+///                vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64)
+///                                            ^^^^^^^^^^^^^^^^^^^
+///                                            |
+///                                            Added by SASL-IR (RFC RFC 4959)
 fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
     let parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
@@ -316,7 +319,7 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
 
     let (remaining, (_, _, auth_type, ir)) = parser(input)?;
 
-    // Server must send "+" at this point...
+    // Server must send continuation ("+ ") at this point...
 
     Ok((remaining, (auth_type, ir)))
 }

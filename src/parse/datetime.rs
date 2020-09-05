@@ -31,7 +31,9 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     ))
 }
 
-/// date-day = 1*2DIGIT ; Day of month
+/// Day of month
+///
+/// date-day = 1*2DIGIT
 pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
         map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8),
@@ -43,7 +45,9 @@ pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     Ok((remaining, date_day))
 }
 
-/// date-month = "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" / "Jul" / "Aug" / "Sep" / "Oct" / "Nov" / "Dec"
+/// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
+///              "May" / "Jun" / "Jul" / "Aug" /
+///              "Sep" / "Oct" / "Nov" / "Dec"
 pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = alt((
         value(1, tag_no_case(b"Jan")),
@@ -77,7 +81,9 @@ pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     Ok((remaining, year))
 }
 
-/// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; Hours minutes seconds
+/// Hours minutes seconds
+///
+/// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let parser = tuple((
         map_res(
@@ -135,7 +141,9 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> 
     }
 }
 
-/// date-day-fixed = (SP DIGIT) / 2DIGIT ; Fixed-format version of date-day
+/// Fixed-format version of date-day
+///
+/// date-day-fixed = (SP DIGIT) / 2DIGIT
 pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
         map_res(
@@ -153,13 +161,14 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     Ok((remaining, parsed_date_day_fixed))
 }
 
+/// Signed four-digit value of hhmm representing
+/// hours and minutes east of Greenwich (that is,
+/// the amount that the given time differs from
+/// Universal Time).  Subtracting the timezone
+/// from the given time will give the UT form.
+/// The Universal Time zone is "+0000".
+///
 /// zone = ("+" / "-") 4DIGIT
-///          ; Signed four-digit value of hhmm representing
-///          ; hours and minutes east of Greenwich (that is,
-///          ; the amount that the given time differs from
-///          ; Universal Time).  Subtracting the timezone
-///          ; from the given time will give the UT form.
-///          ; The Universal Time zone is "+0000".
 pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let parser = tuple((
         alt((char('+'), char('-'))),

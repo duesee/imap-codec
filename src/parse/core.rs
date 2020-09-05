@@ -33,6 +33,7 @@ pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
 pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
     let (remaining, number) = number(input)?;
 
+    // This changes the grammar slightly, but I belief it is not important
     if number == 0 {
         return Err(nom::Err::Error(nom::error::make_error(
             input,
@@ -43,7 +44,9 @@ pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
     Ok((remaining, number))
 }
 
-/// digit-nz = %x31-39 ; 1-9
+// 1-9
+//
+// digit-nz = %x31-39
 pub fn is_digit_nz(byte: u8) -> bool {
     matches!(byte, b'1'..=b'9')
 }
@@ -132,7 +135,9 @@ pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
     Ok((remaining, data))
 }
 
-/// CHAR8 = %x01-ff ; any OCTET except NUL, %x00
+/// Any OCTET except NUL, %x00
+///
+/// CHAR8 = %x01-ff
 fn is_char8(i: u8) -> bool {
     i != 0
 }

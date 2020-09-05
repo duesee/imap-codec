@@ -56,8 +56,9 @@ pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
     Ok((remaining, parsed_section_spec))
 }
 
+/// Top-level or MESSAGE/RFC822 part
+///
 /// section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"
-///                    ; top-level or MESSAGE/RFC822 part
 pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         map(
@@ -85,8 +86,9 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     Ok((remaining, parsed_section_msgtext))
 }
 
+/// Body part nesting
+///
 /// section-part = nz-number *("." nz-number)
-///                  ; body part nesting
 pub fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
     let parser = separated_nonempty_list(tag(b"."), nz_number);
 
@@ -95,8 +97,9 @@ pub fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
     Ok((remaining, parsed_section_part))
 }
 
+/// Text other than actual body part (headers, etc.)
+///
 /// section-text = section-msgtext / "MIME"
-///                  ; text other than actual body part (headers, etc.)
 pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         section_msgtext,

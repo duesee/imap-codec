@@ -23,7 +23,7 @@ use nom::{
     IResult,
 };
 
-/// list-mailbox= 1*list-char / string
+/// list-mailbox = 1*list-char / string
 pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     let parser = alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
@@ -47,15 +47,15 @@ pub fn is_list_wildcards(i: u8) -> bool {
     i == b'%' || i == b'*'
 }
 
+/// INBOX is case-insensitive. All case variants of INBOX (e.g., "iNbOx")
+/// MUST be interpreted as INBOX not as an astring.
+/// 
+/// An astring which consists of the case-insensitive sequence
+/// "I" "N" "B" "O" "X" is considered to be INBOX and not an astring.
+/// 
+/// Refer to section 5.1 for further semantic details of mailbox names.
+/// 
 /// mailbox = "INBOX" / astring
-///             ; INBOX is case-insensitive.  All case variants of
-///             ; INBOX (e.g., "iNbOx") MUST be interpreted as INBOX
-///             ; not as an astring.  An astring which consists of
-///             ; the case-insensitive sequence "I" "N" "B" "O" "X"
-///             ; is considered to be INBOX and not an astring.
-///             ;  Refer to section 5.1 for further
-///             ; semantic details of mailbox names.
-/// FIXME: this is only to keep in mind that there are several string types
 pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     let (remaining, mailbox) = astring(input)?;
 
@@ -153,7 +153,9 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     ))(input)
 }
 
-/// mailbox-list = "(" [mbx-list-flags] ")" SP (DQUOTE QUOTED-CHAR DQUOTE / nil) SP mailbox
+/// mailbox-list = "(" [mbx-list-flags] ")" SP
+///                (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
+///                mailbox
 pub fn mailbox_list(
     input: &[u8],
 ) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<char>, Mailbox)> {

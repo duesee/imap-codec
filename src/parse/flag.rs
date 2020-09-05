@@ -15,14 +15,11 @@ use nom::{
     IResult,
 };
 
-/// flag = "\Answered" /
-///        "\Flagged" /
-///        "\Deleted" /
-///        "\Seen" /
-///        "\Draft" /
+/// flag = "\Answered" / "\Flagged" / "\Deleted" / "\Seen" / "\Draft" /
 ///        flag-keyword /
 ///        flag-extension
-///          ; Does not include "\Recent"
+///
+/// Note: Does not include "\Recent"
 pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((
         value(Flag::Answered, tag_no_case(b"\\Answered")),
@@ -58,9 +55,8 @@ pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
 /// mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
 ///                                       mbx-list-oflag *(SP mbx-list-oflag)
 ///
-/// Note:
-/// ABNF is so weird, because it enforces that sflag is only used once (or not at all).
-/// We just parse any flag and check for multiple occurrences of sflag later.
+/// Note: ABNF enforces that sflag is not used more than once.
+///       We parse any flag and check for multiple occurrences of sflag later.
 pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) =
         separated_nonempty_list(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
@@ -87,9 +83,9 @@ pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     Ok((remaining, flags))
 }
 
-/// mbx-list-oflag = "\Noinferiors" /
-///                  flag-extension
-///                    ; Other flags; multiple possible per LIST response
+/// Other flags; multiple possible per LIST response
+///
+/// mbx-list-oflag = "\Noinferiors" / flag-extension
 pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     alt((
         value(
@@ -102,10 +98,9 @@ pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     ))(input)
 }
 
-/// mbx-list-sflag = "\Noselect" /
-///                  "\Marked" /
-///                  "\Unmarked"
-///                    ; Selectability flags; only one per LIST response
+/// Selectability flags; only one per LIST response
+///
+/// mbx-list-sflag = "\Noselect" / "\Marked" / "\Unmarked"
 pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     alt((
         value(FlagNameAttribute::Noselect, tag_no_case(b"\\Noselect")),
@@ -114,13 +109,13 @@ pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     ))(input)
 }
 
+/// Future expansion.
+///
+/// Client implementations MUST accept flag-extension flags.
+/// Server implementations MUST NOT generate flag-extension flags
+/// except as defined by future standard or standards-track revisions of this specification.
+///
 /// flag-extension = "\" atom
-///                   ; Future expansion.  Client implementations
-///                   ; MUST accept flag-extension flags.  Server
-///                   ; implementations MUST NOT generate
-///                   ; flag-extension flags except as defined by
-///                   ; future standard or standards-track
-///                   ; revisions of this specification.
 pub fn flag_extension(input: &[u8]) -> IResult<&[u8], atm> {
     preceded(tag(b"\\"), atom)(input)
 }

@@ -44,8 +44,8 @@ pub fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
 }
 
 /// msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"
-///                     ; MAY change for a message
 ///
+/// Note: MAY change for a message
 pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     let parser = tuple((
         tag_no_case(b"FLAGS"),
@@ -72,7 +72,8 @@ pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
 ///                  "BODY" ["STRUCTURE"] SP body /
 ///                  "BODY" section ["<" number ">"] SP nstring /
 ///                  "UID" SP uniqueid
-///                    ; MUST NOT change for a message
+///
+/// Note: MUST NOT change for a message
 pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     alt((
         map(
@@ -132,7 +133,9 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     ))(input)
 }
 
-/// uniqueid = nz-number ; Strictly ascending
+/// uniqueid = nz-number
+///
+/// Note: Strictly ascending
 pub fn uniqueid(input: &[u8]) -> IResult<&[u8], u32> {
     nz_number(input)
 }
