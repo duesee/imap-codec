@@ -43,9 +43,9 @@ pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
 // 1-9
 //
 // digit-nz = %x31-39
-pub fn is_digit_nz(byte: u8) -> bool {
-    matches!(byte, b'1'..=b'9')
-}
+// fn is_digit_nz(byte: u8) -> bool {
+//     matches!(byte, b'1'..=b'9')
+// }
 
 // ----- string -----
 
