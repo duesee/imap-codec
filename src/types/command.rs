@@ -5,7 +5,7 @@
 use crate::{
     codec::Codec,
     types::{
-        core::{AString, Atom, Charset},
+        core::{AString, Atom, Charset, Tag},
         data_items::MacroOrDataItems,
         flag::Flag,
         mailbox::{ListMailbox, Mailbox},
@@ -19,37 +19,34 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 
 #[derive(Debug, PartialEq)]
 pub struct Command {
-    pub tag: String, // FIXME: not every UTF-8 String allowed in tag
+    pub tag: Tag,
     pub body: CommandBody,
 }
 
 impl Command {
-    pub fn new(tag: &str, kind: CommandBody) -> Self {
-        Self {
-            tag: tag.into(),
-            body: kind,
-        }
+    pub fn new(tag: Tag, kind: CommandBody) -> Self {
+        Self { tag, body: kind }
     }
 
     pub fn capability() -> Command {
-        Command::new(&gen_tag(), CommandBody::Capability)
+        Command::new(gen_tag(), CommandBody::Capability)
     }
 
     pub fn noop() -> Command {
-        Command::new(&gen_tag(), CommandBody::Noop)
+        Command::new(gen_tag(), CommandBody::Noop)
     }
 
     pub fn logout() -> Command {
-        Command::new(&gen_tag(), CommandBody::Logout)
+        Command::new(gen_tag(), CommandBody::Logout)
     }
 
     pub fn starttls() -> Command {
-        Command::new(&gen_tag(), CommandBody::StartTLS)
+        Command::new(gen_tag(), CommandBody::StartTLS)
     }
 
     pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&str>) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Authenticate {
                 mechanism,
                 initial_response: initial_response.map(|str| str.to_string()),
@@ -59,7 +56,7 @@ impl Command {
 
     pub fn login<U: Into<AString>, P: Into<AString>>(username: U, password: P) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Login {
                 username: username.into(),
                 password: password.into(),
@@ -68,24 +65,24 @@ impl Command {
     }
 
     pub fn select(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Select { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Select { mailbox_name })
     }
 
     pub fn examine(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Examine { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Examine { mailbox_name })
     }
 
     pub fn create(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Create { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Create { mailbox_name })
     }
 
     pub fn delete(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Delete { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Delete { mailbox_name })
     }
 
     pub fn rename(existing_mailbox_name: Mailbox, new_mailbox_name: Mailbox) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Rename {
                 existing_mailbox_name,
                 new_mailbox_name,
@@ -94,16 +91,16 @@ impl Command {
     }
 
     pub fn subscribe(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Subscribe { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Subscribe { mailbox_name })
     }
 
     pub fn unsubscribe(mailbox_name: Mailbox) -> Command {
-        Command::new(&gen_tag(), CommandBody::Unsubscribe { mailbox_name })
+        Command::new(gen_tag(), CommandBody::Unsubscribe { mailbox_name })
     }
 
     pub fn list<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::List {
                 reference: reference.into(),
                 mailbox: mailbox.into(),
@@ -113,7 +110,7 @@ impl Command {
 
     pub fn lsub<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Lsub {
                 reference: reference.into(),
                 mailbox: mailbox.into(),
@@ -123,7 +120,7 @@ impl Command {
 
     pub fn status<M: Into<Mailbox>>(mailbox: M, items: Vec<StatusItem>) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Status {
                 mailbox: mailbox.into(),
                 items,
@@ -138,7 +135,7 @@ impl Command {
         message: Vec<u8>,
     ) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Append {
                 mailbox: mailbox.into(),
                 flags,
@@ -149,20 +146,20 @@ impl Command {
     }
 
     pub fn check() -> Command {
-        Command::new(&gen_tag(), CommandBody::Check)
+        Command::new(gen_tag(), CommandBody::Check)
     }
 
     pub fn close() -> Command {
-        Command::new(&gen_tag(), CommandBody::Close)
+        Command::new(gen_tag(), CommandBody::Close)
     }
 
     pub fn expunge() -> Command {
-        Command::new(&gen_tag(), CommandBody::Expunge)
+        Command::new(gen_tag(), CommandBody::Expunge)
     }
 
     pub fn search(charset: Option<String>, criteria: SearchKey, uid: bool) -> Command {
         Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Search {
                 charset: charset.map(Charset),
                 criteria,
@@ -179,7 +176,7 @@ impl Command {
         let sequence_set = sequence_set.to_sequence()?;
 
         Ok(Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Fetch {
                 sequence_set,
                 items: items.into(),
@@ -201,7 +198,7 @@ impl Command {
         let sequence_set = sequence_set.to_sequence()?;
 
         Ok(Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Store {
                 sequence_set,
                 kind,
@@ -220,7 +217,7 @@ impl Command {
         let sequence_set = sequence_set.to_sequence()?;
 
         Ok(Command::new(
-            &gen_tag(),
+            gen_tag(),
             CommandBody::Copy {
                 sequence_set,
                 mailbox: mailbox.into(),
@@ -230,7 +227,7 @@ impl Command {
     }
 
     pub fn idle() -> Command {
-        Command::new(&gen_tag(), CommandBody::Idle)
+        Command::new(gen_tag(), CommandBody::Idle)
     }
 
     pub fn into_ok(self, _code: Code, comment: &str) -> Status {
@@ -1685,7 +1682,7 @@ pub enum CommandBody {
 
 impl Codec for Command {
     fn serialize(&self) -> Vec<u8> {
-        let mut out = self.tag.as_bytes().to_vec();
+        let mut out = self.tag.0.as_bytes().to_vec();
         out.push(b' ');
         out.extend(self.body.serialize());
         out.extend_from_slice(b"\r\n");

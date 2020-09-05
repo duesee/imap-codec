@@ -4,7 +4,7 @@ use crate::{
     codec::Codec,
     types::{
         body::BodyStructure,
-        core::{escape_quoted, Atom, Charset, NString},
+        core::{escape_quoted, Atom, Charset, NString, Tag},
         data_items::Section,
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
@@ -51,9 +51,6 @@ impl Codec for Response {
         unimplemented!()
     }
 }
-
-// FIXME: IMAP tags != UTF-8 String
-pub type Tag = String;
 
 // FIXME: IMAP text != UTF-8 String, must not be empty
 pub type Text = String;
@@ -223,25 +220,25 @@ impl Status {
         }
     }
 
-    pub fn ok(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+    pub fn ok(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
         Status::Ok {
-            tag: tag.map(str::to_owned),
+            tag,
             code,
             text: text.to_owned(),
         }
     }
 
-    pub fn no(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+    pub fn no(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
         Status::No {
-            tag: tag.map(str::to_owned),
+            tag,
             code,
             text: text.to_owned(),
         }
     }
 
-    pub fn bad(tag: Option<&str>, code: Option<Code>, text: &str) -> Self {
+    pub fn bad(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
         Status::Bad {
-            tag: tag.map(str::to_owned),
+            tag,
             code,
             text: text.to_owned(),
         }
@@ -265,12 +262,15 @@ impl Status {
 impl Codec for Status {
     fn serialize(&self) -> Vec<u8> {
         fn format_status(
-            tag: &Option<String>,
+            tag: &Option<Tag>,
             status: &str,
             code: &Option<Code>,
             comment: &str,
         ) -> String {
-            let tag = tag.as_deref().unwrap_or("*");
+            let tag = match tag {
+                Some(tag) => tag.to_string(),
+                None => "*".to_string(),
+            };
 
             match code {
                 Some(code) => format!("{} {} [{}] {}\r\n", tag, status, code, comment),
@@ -1067,27 +1067,48 @@ impl Codec for DataItemResponse {
 #[cfg(test)]
 mod test {
     use super::*;
-    // use std::convert::TryFrom;
+    use std::convert::TryFrom;
 
     #[test]
     fn test_status() {
         let tests: Vec<(_, &[u8])> = vec![
             // tagged; Ok, No, Bad
             (
-                Status::ok(Some("A1"), Some(Code::Alert), "hello"),
+                Status::ok(
+                    Some(Tag::try_from("A1").unwrap()),
+                    Some(Code::Alert),
+                    "hello",
+                ),
                 b"A1 OK [ALERT] hello\r\n",
             ),
             (
-                Status::no(Some("A1"), Some(Code::Alert), "hello"),
+                Status::no(
+                    Some(Tag::try_from("A1").unwrap()),
+                    Some(Code::Alert),
+                    "hello",
+                ),
                 b"A1 NO [ALERT] hello\r\n",
             ),
             (
-                Status::bad(Some("A1"), Some(Code::Alert), "hello"),
+                Status::bad(
+                    Some(Tag::try_from("A1").unwrap()),
+                    Some(Code::Alert),
+                    "hello",
+                ),
                 b"A1 BAD [ALERT] hello\r\n",
             ),
-            (Status::ok(Some("A1"), None, "hello"), b"A1 OK hello\r\n"),
-            (Status::no(Some("A1"), None, "hello"), b"A1 NO hello\r\n"),
-            (Status::bad(Some("A1"), None, "hello"), b"A1 BAD hello\r\n"),
+            (
+                Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                b"A1 OK hello\r\n",
+            ),
+            (
+                Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                b"A1 NO hello\r\n",
+            ),
+            (
+                Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                b"A1 BAD hello\r\n",
+            ),
             // untagged; Ok, No, Bad
             (
                 Status::ok(None, Some(Code::Alert), "hello"),

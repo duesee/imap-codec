@@ -27,9 +27,13 @@
 
 use crate::{
     parse::core::{atom, is_astring_char},
-    types::AuthMechanism,
+    types::{core::Tag, AuthMechanism},
 };
-use nom::{bytes::streaming::take_while1, combinator::map_res, IResult};
+use nom::{
+    bytes::streaming::take_while1,
+    combinator::{map, map_res},
+    IResult,
+};
 use std::str::from_utf8;
 
 pub mod address;
@@ -66,6 +70,9 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 }
 
 /// tag = 1*<any ASTRING-CHAR except "+">
-pub fn tag(input: &[u8]) -> IResult<&[u8], &str> {
-    map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8)(input)
+pub fn tag(input: &[u8]) -> IResult<&[u8], Tag> {
+    map(
+        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8),
+        |s| Tag(s.to_string()),
+    )(input)
 }

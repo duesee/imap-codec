@@ -13,6 +13,35 @@ use crate::{
 use serde::Deserialize;
 use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 
+#[derive(Debug, PartialEq, Clone, Deserialize)]
+pub struct Tag(pub String);
+
+impl TryFrom<&str> for Tag {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Tag::try_from(value.to_string())
+    }
+}
+
+impl TryFrom<String> for Tag {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.bytes().all(|c| is_astring_char(c) && c != b'+') {
+            Ok(Tag(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl std::fmt::Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.

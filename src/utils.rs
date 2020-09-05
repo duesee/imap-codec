@@ -1,13 +1,13 @@
-use crate::codec::Codec;
+use crate::{codec::Codec, types::core::Tag};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::iter;
 
-pub(crate) fn gen_tag() -> String {
+pub(crate) fn gen_tag() -> Tag {
     let mut rng = thread_rng();
-    iter::repeat(())
+    Tag(iter::repeat(())
         .map(|()| rng.sample(Alphanumeric))
         .take(8)
-        .collect()
+        .collect())
 }
 
 pub fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
