@@ -9,7 +9,6 @@ use crate::{
         data_items::MacroOrDataItems,
         flag::Flag,
         mailbox::{ListMailbox, Mailbox},
-        response::{Code, Status},
         sequence::{Sequence, ToSequence},
         AuthMechanism, StoreResponse, StoreType,
     },
@@ -228,14 +227,6 @@ impl Command {
 
     pub fn idle() -> Command {
         Command::new(gen_tag(), CommandBody::Idle)
-    }
-
-    pub fn into_ok(self, _code: Code, comment: &str) -> Status {
-        Status::ok(Some(&self.tag), None, comment)
-    }
-
-    pub fn into_ok_empty(self) -> Status {
-        Status::ok(Some(&self.tag), None, "fake command done.")
     }
 
     pub fn name(&self) -> &'static str {
