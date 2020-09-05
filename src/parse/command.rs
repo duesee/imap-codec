@@ -241,6 +241,18 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, parsed_idle))
 }
 
+/// This parser must be executed *instead* of the command parser
+/// when the server is in the IDLE state.
+///
+/// idle = "IDLE" CRLF "DONE"
+///                    ^^^^^^
+///                    |
+///                    applied as separate parser (CRLF is not consumed through the command
+///                                                parser and must be consumed here)
+pub fn idle_done(input: &[u8]) -> IResult<&[u8], &[u8]> {
+    tag_no_case("DONE\r\n")(input)
+}
+
 /// # Command NonAuth
 
 /// command-nonauth = login / authenticate / "STARTTLS"
@@ -737,18 +749,6 @@ fn search_key_limited<'a>(
     let (remaining, parsed_search_key) = parser(input)?;
 
     Ok((remaining, parsed_search_key))
-}
-
-/// This parser must be executed *instead* of the command parser
-/// when the server is in the IDLE state.
-///
-/// idle = "IDLE" CRLF "DONE"
-///                    ^^^^^^
-///                    |
-///                    applied as separate parser (CRLF is not consumed through the command
-///                                                parser and must be consumed here)
-pub fn idle_done(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    tag_no_case("DONE\r\n")(input)
 }
 
 #[cfg(test)]
