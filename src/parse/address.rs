@@ -13,7 +13,7 @@ use nom::{
 ///               addr-adl SP
 ///               addr-mailbox SP
 ///               addr-host ")"
-pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
+pub(crate) fn address(input: &[u8]) -> IResult<&[u8], Address> {
     let parser = delimited(
         tag(b"("),
         tuple((addr_name, SP, addr_adl, SP, addr_mailbox, SP, addr_host)),
@@ -37,14 +37,14 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 ///
 /// If non-NIL, holds phrase from [RFC-2822]
 /// mailbox after removing [RFC-2822] quoting
-pub fn addr_name(input: &[u8]) -> IResult<&[u8], nstr> {
+fn addr_name(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
 /// addr-adl = nstring
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
-pub fn addr_adl(input: &[u8]) -> IResult<&[u8], nstr> {
+fn addr_adl(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
@@ -53,7 +53,7 @@ pub fn addr_adl(input: &[u8]) -> IResult<&[u8], nstr> {
 /// NIL indicates end of [RFC-2822] group;
 /// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
 /// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
-pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], nstr> {
+fn addr_mailbox(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
@@ -61,7 +61,7 @@ pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], nstr> {
 ///
 /// NIL indicates [RFC-2822] group syntax.
 /// Otherwise, holds [RFC-2822] domain name
-pub fn addr_host(input: &[u8]) -> IResult<&[u8], nstr> {
+fn addr_host(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 

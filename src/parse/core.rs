@@ -19,7 +19,7 @@ use std::{borrow::Cow, str::from_utf8};
 /// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
 ///
 /// number = 1*DIGIT
-pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
+pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
     let parser = map_res(map_res(digit1, from_utf8), str::parse::<u32>);
 
     let (remaining, number) = parser(input)?;
@@ -30,7 +30,7 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
 ///
 /// nz-number = digit-nz *DIGIT
-pub fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
+pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
     let (remaining, number) = number(input)?;
 
     if number == 0 {
@@ -51,7 +51,7 @@ pub fn is_digit_nz(byte: u8) -> bool {
 // ----- string -----
 
 /// string = quoted / literal
-pub fn string(input: &[u8]) -> IResult<&[u8], istr> {
+pub(crate) fn string(input: &[u8]) -> IResult<&[u8], istr> {
     let parser = alt((map(quoted, istr::Quoted), map(literal, istr::Literal)));
 
     let (remaining, parsed_string) = parser(input)?;
@@ -63,7 +63,7 @@ pub fn string(input: &[u8]) -> IResult<&[u8], istr> {
 ///
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
-pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
+fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
     let parser = tuple((
         DQUOTE,
         map_res(
@@ -83,7 +83,7 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
 }
 
 /// QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
-pub fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
+pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
     let parser = alt((
         map(
             take_while_m_n(1, 1, is_any_text_char_except_quoted_specials),
@@ -111,13 +111,13 @@ fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
 }
 
 /// quoted-specials = DQUOTE / "\"
-pub fn is_quoted_specials(byte: u8) -> bool {
+fn is_quoted_specials(byte: u8) -> bool {
     byte == b'"' || byte == b'\\'
 }
 
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
-pub fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
+pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
     let parser = tuple((delimited(tag(b"{"), number, tag(b"}")), CRLF));
 
     let (remaining, (number, _)) = parser(input)?;
@@ -140,7 +140,7 @@ fn is_char8(i: u8) -> bool {
 // ----- astring ----- atom (roughly) or string
 
 /// astring = 1*ASTRING-CHAR / string
-pub fn astring(input: &[u8]) -> IResult<&[u8], astr> {
+pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
     let parser = alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             astr::Atom(std::str::from_utf8(bytes).unwrap())
@@ -154,17 +154,17 @@ pub fn astring(input: &[u8]) -> IResult<&[u8], astr> {
 }
 
 /// ASTRING-CHAR = ATOM-CHAR / resp-specials
-pub fn is_astring_char(i: u8) -> bool {
+pub(crate) fn is_astring_char(i: u8) -> bool {
     is_atom_char(i) || is_resp_specials(i)
 }
 
 /// ATOM-CHAR = <any CHAR except atom-specials>
-pub fn is_atom_char(b: u8) -> bool {
+pub(crate) fn is_atom_char(b: u8) -> bool {
     is_CHAR(b) && !is_atom_specials(b)
 }
 
 /// atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials
-pub fn is_atom_specials(i: u8) -> bool {
+fn is_atom_specials(i: u8) -> bool {
     match i {
         b'(' | b')' | b'{' | b' ' => true,
         c if is_CTL(c) => true,
@@ -176,12 +176,12 @@ pub fn is_atom_specials(i: u8) -> bool {
 }
 
 /// resp-specials = "]"
-pub fn is_resp_specials(i: u8) -> bool {
+pub(crate) fn is_resp_specials(i: u8) -> bool {
     i == b']'
 }
 
 /// atom = 1*ATOM-CHAR
-pub fn atom(input: &[u8]) -> IResult<&[u8], atm> {
+pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
@@ -192,7 +192,7 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 // ----- nstring ----- nil or string
 
 /// nstring = string / nil
-pub fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
+pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
     let parser = alt((
         map(string, |item| nstr(Some(item))),
         map(nil, |_| nstr(None)),
@@ -204,27 +204,27 @@ pub fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
 }
 
 /// nil = "NIL"
-pub fn nil(input: &[u8]) -> IResult<&[u8], ()> {
+pub(crate) fn nil(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag_no_case(b"NIL"))(input)
 }
 
 // ----- text -----
 
 /// text = 1*TEXT-CHAR
-pub fn text(input: &[u8]) -> IResult<&[u8], &str> {
+pub(crate) fn text(input: &[u8]) -> IResult<&[u8], &str> {
     map_res(take_while1(is_text_char), from_utf8)(input)
 }
 
 /// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F
 ///               ; mod: was <any CHAR except CR and LF>
-pub fn is_text_char(c: u8) -> bool {
+pub(crate) fn is_text_char(c: u8) -> bool {
     matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f)
 }
 
 // ----- base64 -----
 
 /// base64 = *(4base64-char) [base64-terminal]
-pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
+pub(crate) fn base64(input: &[u8]) -> IResult<&[u8], &str> {
     let parser = map_res(
         recognize(tuple((
             take_while(is_base64_char),
@@ -249,7 +249,7 @@ fn is_base64_char(i: u8) -> bool {
 
 /// charset = atom / quoted
 /// errata id: 261
-pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
+pub(crate) fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
     let parser = alt((
         map(atom, |val| Charset(val.0.to_string())),
         map(quoted, |cow| Charset(cow.to_string())),

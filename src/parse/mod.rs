@@ -21,7 +21,7 @@ pub mod status;
 /// auth-type = atom
 ///
 /// Note: Defined by [SASL]
-pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
+pub(crate) fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let (rem, raw_mechanism) = atom(input)?;
 
     // FIXME: just take inner String?
