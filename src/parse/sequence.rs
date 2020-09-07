@@ -64,7 +64,7 @@ fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
 fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
     alt((
         map(nz_number, SeqNo::Value),
-        value(SeqNo::Unlimited, tag(b"*")),
+        value(SeqNo::Largest, tag(b"*")),
     ))(input)
 }
 
@@ -103,11 +103,11 @@ mod test {
             seq_range(b"1:2?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Value(1), SeqNo::Unlimited),
+            (SeqNo::Value(1), SeqNo::Largest),
             seq_range(b"1:*?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Unlimited, SeqNo::Value(10)),
+            (SeqNo::Largest, SeqNo::Value(10)),
             seq_range(b"*:10?").unwrap().1
         );
     }

@@ -27,14 +27,14 @@ impl Codec for Sequence {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeqNo {
     Value(u32),
-    Unlimited,
+    Largest,
 }
 
 impl Codec for SeqNo {
     fn serialize(&self) -> Vec<u8> {
         match self {
             SeqNo::Value(number) => number.to_string().into_bytes(),
-            SeqNo::Unlimited => b"*".to_vec(),
+            SeqNo::Largest => b"*".to_vec(),
         }
     }
 
@@ -91,7 +91,7 @@ mod test {
                     Sequence::Single(SeqNo::Value(3)),
                 ],
             ),
-            ("*", vec![Sequence::Single(SeqNo::Unlimited)]),
+            ("*", vec![Sequence::Single(SeqNo::Largest)]),
             (
                 "1:2",
                 vec![Sequence::Range(SeqNo::Value(1), SeqNo::Value(2))],
@@ -108,7 +108,7 @@ mod test {
                 vec![
                     Sequence::Range(SeqNo::Value(1), SeqNo::Value(2)),
                     Sequence::Single(SeqNo::Value(3)),
-                    Sequence::Single(SeqNo::Unlimited),
+                    Sequence::Single(SeqNo::Largest),
                 ],
             ),
         ];

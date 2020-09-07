@@ -107,10 +107,10 @@ mod test {
     fn test_sequence_serialize() {
         let tests = [
             (b"1".as_ref(), Sequence::Single(SeqNo::Value(1))),
-            (b"*".as_ref(), Sequence::Single(SeqNo::Unlimited)), // TODO: is this a valid sequence?
+            (b"*".as_ref(), Sequence::Single(SeqNo::Largest)), // TODO: is this a valid sequence?
             (
                 b"1:*".as_ref(),
-                Sequence::Range(SeqNo::Value(1), SeqNo::Unlimited),
+                Sequence::Range(SeqNo::Value(1), SeqNo::Largest),
             ),
         ];
 
