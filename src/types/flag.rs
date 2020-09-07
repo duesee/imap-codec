@@ -148,3 +148,16 @@ impl Codec for FlagNameAttribute {
         unimplemented!()
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum StoreType {
+    Replace,
+    Add,
+    Remove,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum StoreResponse {
+    Answer,
+    Silent,
+}

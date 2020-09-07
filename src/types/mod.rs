@@ -85,19 +85,6 @@ impl Codec for AuthMechanism {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum StoreType {
-    Replace,
-    Add,
-    Remove,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum StoreResponse {
-    Answer,
-    Silent,
-}
-
 #[cfg(test)]
 mod test {
     use super::sequence::{SeqNo, Sequence};

@@ -14,8 +14,8 @@ use crate::{
         command::{Command, CommandBody, SearchKey},
         core::astr,
         data_items::{DataItem, Macro, MacroOrDataItems},
-        flag::Flag,
-        AuthMechanism, StoreResponse, StoreType,
+        flag::{Flag, StoreResponse, StoreType},
+        AuthMechanism,
     },
 };
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};

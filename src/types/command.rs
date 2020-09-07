@@ -7,10 +7,10 @@ use crate::{
     types::{
         core::{AString, Atom, Charset, Tag},
         data_items::MacroOrDataItems,
-        flag::Flag,
+        flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
         sequence::{Sequence, ToSequence},
-        AuthMechanism, StoreResponse, StoreType,
+        AuthMechanism,
     },
     utils::{gen_tag, join_bytes, join_serializable},
 };
@@ -2263,10 +2263,10 @@ mod test {
             core::{AString, IString},
             data_items::Macro,
             data_items::{DataItem, Part, Section},
-            flag::Flag,
+            flag::{Flag, StoreResponse, StoreType},
             mailbox::{ListMailbox, Mailbox},
             sequence::ToSequence,
-            AuthMechanism, StoreResponse, StoreType,
+            AuthMechanism,
         },
     };
     use chrono::{SubsecRound, Utc};
