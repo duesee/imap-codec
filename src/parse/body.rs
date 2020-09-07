@@ -271,6 +271,8 @@ fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
 ///                  ]
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
+///
+/// TODO: this is insane... define macro?
 fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     let mut rem;
     let md5;
@@ -449,6 +451,8 @@ fn body_type_mpart_limited(
 ///                  ]
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
+///
+/// TODO: this is insane, too... define macro?
 fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     let mut rem;
     let param;
@@ -536,6 +540,10 @@ fn media_subtype(input: &[u8]) -> IResult<&[u8], istr> {
 
 #[inline]
 /// media-message = DQUOTE "MESSAGE" DQUOTE SP DQUOTE "RFC822" DQUOTE
+///
+/// Simplified:
+///
+/// media-message = "\"MESSAGE\" \"RFC822\""
 ///
 /// Defined in [MIME-IMT]
 ///

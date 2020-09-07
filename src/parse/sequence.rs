@@ -21,6 +21,12 @@ use nom::{
 ///
 /// ; errata id: 261
 /// sequence-set = (seq-number / seq-range) ["," sequence-set]
+///
+/// Simplified:
+///
+/// sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))
+///
+/// TODO: Why the errata?
 pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
     separated_nonempty_list(
         tag(b","),

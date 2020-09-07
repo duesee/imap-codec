@@ -185,6 +185,8 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
+    // TODO: from_utf8_unchecked could be used. However, I do not want
+    //       to introduce an unsafe block right now.
     Ok((remaining, atm(std::str::from_utf8(parsed_atom).unwrap())))
 }
 

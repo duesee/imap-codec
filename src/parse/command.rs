@@ -328,6 +328,7 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
 
 /// Use this parser instead of command when doing authentication.
 ///
+/// ```text
 ///                                                                Parsed here (because this is not parsed through command,
 ///                                                                             CRLF must be parsed additionally)
 ///                                                                |
@@ -336,6 +337,7 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
 ///                                            ^^^^^^^^^^^^^^^^^^^
 ///                                            |
 ///                                            Added by SASL-IR (RFC RFC 4959)
+/// ```
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
     let parser = terminated(base64, CRLF); // FIXME: many0 deleted
 
