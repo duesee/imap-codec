@@ -1,4 +1,4 @@
-use crate::types::core::NString;
+use crate::{codec::Codec, types::core::NString};
 
 /// An address structure is a parenthesized list that describes an
 /// electronic mail address.  The fields of an address structure
@@ -23,6 +23,28 @@ impl Address {
             mailbox,
             host,
         }
+    }
+}
+
+impl Codec for Address {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = b"(".to_vec();
+        out.extend(self.name.serialize());
+        out.push(b' ');
+        out.extend(self.adl.serialize());
+        out.push(b' ');
+        out.extend(self.mailbox.serialize());
+        out.push(b' ');
+        out.extend(self.host.serialize());
+        out.push(b')');
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }
 
