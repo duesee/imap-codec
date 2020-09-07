@@ -1,7 +1,7 @@
 use crate::{
     parse::{
         auth_type,
-        core::{astring, atom, base64, charset, literal, number, nz_number},
+        core::{astring, atom, base64, charset, literal, number, nz_number, tag_imap},
         datetime::{date, date_time},
         flag::{flag, flag_list},
         header::header_fld_name,
@@ -9,7 +9,6 @@ use crate::{
         section::section,
         sequence::sequence_set,
         status::status_att,
-        tag as tag_imap,
     },
     types::{
         command::{Command, CommandBody, SearchKey},

@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, unescape_quoted, Charset},
+    types::core::{astr, atm, istr, nstr, unescape_quoted, Charset, Tag},
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -258,6 +258,16 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
     let (remaining, charset) = parser(input)?;
 
     Ok((remaining, charset))
+}
+
+// ----- tag -----
+
+/// tag = 1*<any ASTRING-CHAR except "+">
+pub(crate) fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
+    map(
+        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8),
+        |s| Tag(s.to_string()),
+    )(input)
 }
 
 #[cfg(test)]

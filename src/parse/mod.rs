@@ -25,16 +25,8 @@
 //! * (3) The ASCII NUL character, %x00, MUST NOT be used at any
 //! time.
 
-use crate::{
-    parse::core::{atom, is_astring_char},
-    types::{core::Tag, AuthMechanism},
-};
-use nom::{
-    bytes::streaming::take_while1,
-    combinator::{map, map_res},
-    IResult,
-};
-use std::str::from_utf8;
+use crate::{parse::core::atom, types::AuthMechanism};
+use nom::IResult;
 
 pub mod address;
 pub mod body;
@@ -67,12 +59,4 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     };
 
     Ok((rem, mechanism))
-}
-
-/// tag = 1*<any ASTRING-CHAR except "+">
-pub fn tag(input: &[u8]) -> IResult<&[u8], Tag> {
-    map(
-        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8),
-        |s| Tag(s.to_string()),
-    )(input)
 }

@@ -1,11 +1,10 @@
 use crate::{
     parse::{
         auth_type,
-        core::{atom, base64, charset, is_text_char, nz_number, text},
+        core::{atom, base64, charset, is_text_char, nz_number, tag_imap, text},
         flag::flag_perm,
         mailbox::mailbox_data,
         message::message_data,
-        tag as tag_imap,
     },
     types::{
         response::{Code, Continuation, Data, Response, Status},
