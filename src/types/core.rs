@@ -46,7 +46,30 @@ impl std::fmt::Display for Tag {
 
 /// An atom consists of one or more non-special characters.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct Atom(pub String);
+pub struct Atom(String);
+
+impl TryFrom<&str> for Atom {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Atom::try_from(value.to_string())
+    }
+}
+
+impl TryFrom<String> for Atom {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        // TODO: use `atom` parser directly?
+        if value.is_empty() {
+            Err(())
+        } else if value.bytes().all(is_atom_char) {
+            Ok(Atom(value))
+        } else {
+            Err(())
+        }
+    }
+}
 
 /// An atom consists of one or more non-special characters.
 #[allow(non_camel_case_types)]

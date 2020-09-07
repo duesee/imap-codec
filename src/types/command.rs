@@ -2260,7 +2260,7 @@ mod test {
         codec::Codec,
         types::{
             command::{Command, SearchKey, StatusItem},
-            core::{AString, Atom, IString},
+            core::{AString, IString},
             data_items::Macro,
             data_items::{DataItem, Part, Section},
             flag::Flag,
@@ -2270,6 +2270,7 @@ mod test {
         },
     };
     use chrono::{SubsecRound, Utc};
+    use std::convert::TryInto;
 
     #[test]
     fn test_command_new() {
@@ -2321,7 +2322,7 @@ mod test {
             ),
             Command::append(
                 "inbox",
-                vec![Flag::Keyword(Atom("test".into()))], // FIXME
+                vec![Flag::Keyword("test".try_into().unwrap())],
                 Some(Utc::now().trunc_subsecs(0).into()),
                 vec![0xff, 0xff, 0xff],
             ),
@@ -2377,7 +2378,7 @@ mod test {
                 "1:5",
                 StoreType::Add,
                 StoreResponse::Answer,
-                vec![Flag::Keyword(Atom("TEST".into()))],
+                vec![Flag::Keyword("TEST".try_into().unwrap())],
                 true,
             )
             .unwrap(),
