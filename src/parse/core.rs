@@ -7,7 +7,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
     character::streaming::{digit1, one_of},
-    combinator::{map, map_res, opt, recognize, value},
+    combinator::{map, map_res, opt, recognize},
     error::ErrorKind,
     sequence::{delimited, terminated, tuple},
     IResult,
@@ -192,8 +192,8 @@ pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
 
 #[inline]
 /// nil = "NIL"
-pub(crate) fn nil(input: &[u8]) -> IResult<&[u8], ()> {
-    value((), tag_no_case(b"NIL"))(input)
+pub(crate) fn nil(input: &[u8]) -> IResult<&[u8], &[u8]> {
+    tag_no_case(b"NIL")(input)
 }
 
 // ----- text -----
