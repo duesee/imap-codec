@@ -33,3 +33,34 @@ pub(crate) fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 
     Ok((rem, mechanism))
 }
+
+#[cfg(test)]
+mod test {
+    use super::auth_type;
+    use crate::types::AuthMechanism;
+    use std::convert::TryInto;
+
+    #[test]
+    fn test_auth_type() {
+        let tests = [
+            (b"plain ".as_ref(), AuthMechanism::Plain),
+            (b"pLaiN ".as_ref(), AuthMechanism::Plain),
+            (b"lOgiN ".as_ref(), AuthMechanism::Login),
+            (b"login ".as_ref(), AuthMechanism::Login),
+            (
+                b"loginX ".as_ref(),
+                AuthMechanism::Other("loginX".try_into().unwrap()),
+            ),
+            (
+                b"Xplain ".as_ref(),
+                AuthMechanism::Other("Xplain".try_into().unwrap()),
+            ),
+        ];
+
+        for (test, expected) in tests.iter() {
+            let (rem, got) = auth_type(test).unwrap();
+            assert_eq!(*expected, got);
+            assert_eq!(rem, b" ");
+        }
+    }
+}
