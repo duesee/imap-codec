@@ -133,6 +133,7 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     ))(input)
 }
 
+#[inline]
 /// uniqueid = nz-number
 ///
 /// Note: Strictly ascending

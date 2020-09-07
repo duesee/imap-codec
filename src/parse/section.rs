@@ -86,6 +86,7 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     Ok((remaining, parsed_section_msgtext))
 }
 
+#[inline]
 /// Body part nesting
 ///
 /// section-part = nz-number *("." nz-number)

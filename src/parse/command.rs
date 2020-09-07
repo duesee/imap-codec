@@ -289,11 +289,13 @@ fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
+#[inline]
 /// userid = astring
 fn userid(input: &[u8]) -> IResult<&[u8], astr> {
     astring(input)
 }
 
+#[inline]
 /// password = astring
 fn password(input: &[u8]) -> IResult<&[u8], astr> {
     astring(input)

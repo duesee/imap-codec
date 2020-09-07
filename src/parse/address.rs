@@ -33,6 +33,7 @@ pub(crate) fn address(input: &[u8]) -> IResult<&[u8], Address> {
     ))
 }
 
+#[inline]
 /// addr-name = nstring
 ///
 /// If non-NIL, holds phrase from [RFC-2822]
@@ -41,6 +42,7 @@ fn addr_name(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// addr-adl = nstring
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
@@ -48,6 +50,7 @@ fn addr_adl(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// addr-mailbox = nstring
 ///
 /// NIL indicates end of [RFC-2822] group;
@@ -57,6 +60,7 @@ fn addr_mailbox(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// addr-host = nstring
 ///
 /// NIL indicates [RFC-2822] group syntax.

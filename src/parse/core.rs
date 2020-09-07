@@ -135,6 +135,7 @@ pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
     Ok((remaining, data))
 }
 
+#[inline]
 /// Any OCTET except NUL, %x00
 ///
 /// CHAR8 = %x01-ff
@@ -180,6 +181,7 @@ fn is_atom_specials(i: u8) -> bool {
     }
 }
 
+#[inline]
 /// resp-specials = "]"
 pub(crate) fn is_resp_specials(i: u8) -> bool {
     i == b']'
@@ -208,6 +210,7 @@ pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
     Ok((remaining, parsed_nstring))
 }
 
+#[inline]
 /// nil = "NIL"
 pub(crate) fn nil(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag_no_case(b"NIL"))(input)

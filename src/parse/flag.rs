@@ -42,6 +42,7 @@ pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((flag, value(Flag::Permanent, tag(b"\\*"))))(input)
 }
 
+#[inline]
 /// flag-keyword = atom
 pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
     map(atom, |a| Flag::Keyword(a.to_owned()))(input)

@@ -11,6 +11,7 @@ pub fn header_list(input: &[u8]) -> IResult<&[u8], Vec<astr>> {
     )(input)
 }
 
+#[inline]
 /// header-fld-name = astring
 pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], astr> {
     astring(input)

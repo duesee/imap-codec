@@ -227,16 +227,19 @@ fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(istr, istr)>> {
     Ok((remaining, parsed_body_fld_param))
 }
 
+#[inline]
 /// body-fld-id = nstring
 fn body_fld_id(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// body-fld-desc = nstring
 fn body_fld_desc(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// body-fld-enc = (DQUOTE ("7BIT" / "8BIT" / "BINARY" / "BASE64"/ "QUOTED-PRINTABLE") DQUOTE) / string
 ///
 /// Simplified...
@@ -248,11 +251,13 @@ fn body_fld_enc(input: &[u8]) -> IResult<&[u8], istr> {
     string(input)
 }
 
+#[inline]
 /// body-fld-octets = number
 fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
 
+#[inline]
 /// body-fld-lines = number
 fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
@@ -321,6 +326,7 @@ fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     ))
 }
 
+#[inline]
 /// body-fld-md5 = nstring
 fn body_fld_md5(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
@@ -360,6 +366,7 @@ fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
     Ok((remaining, parsed_body_fld_lang))
 }
 
+#[inline]
 /// body-fld-loc = nstring
 fn body_fld_loc(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
@@ -531,6 +538,7 @@ fn media_basic(input: &[u8]) -> IResult<&[u8], (istr, istr)> {
     Ok((remaining, (type_, subtype)))
 }
 
+#[inline]
 /// media-subtype = string
 ///
 /// Defined in [MIME-IMT]
@@ -538,6 +546,7 @@ fn media_subtype(input: &[u8]) -> IResult<&[u8], istr> {
     string(input)
 }
 
+#[inline]
 /// media-message = DQUOTE "MESSAGE" DQUOTE SP DQUOTE "RFC822" DQUOTE
 ///
 /// Defined in [MIME-IMT]

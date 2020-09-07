@@ -96,11 +96,13 @@ pub(crate) fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     ))
 }
 
+#[inline]
 /// env-date = nstring
 fn env_date(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// env-subject = nstring
 fn env_subject(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
@@ -154,11 +156,13 @@ fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     ))(input)
 }
 
+#[inline]
 /// env-in-reply-to = nstring
 fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
 }
 
+#[inline]
 /// env-message-id = nstring
 fn env_message_id(input: &[u8]) -> IResult<&[u8], nstr> {
     nstring(input)
