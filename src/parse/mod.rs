@@ -1,30 +1,3 @@
-//! # 9. Formal Syntax
-//!
-//! The following syntax specification uses the Augmented Backus-Naur
-//! Form (ABNF) notation as specified in [ABNF].
-//!
-//! In the case of alternative or optional rules in which a later rule
-//! overlaps an earlier rule, the rule which is listed earlier MUST take
-//! priority.  For example, "\Seen" when parsed as a flag is the \Seen
-//! flag name and not a flag-extension, even though "\Seen" can be parsed
-//! as a flag-extension.  Some, but not all, instances of this rule are
-//! noted below.
-//!
-//! ### Note
-//!
-//! [ABNF] rules MUST be followed strictly; in particular:
-//!
-//! * (1) Except as noted otherwise, all alphabetic characters
-//! are case-insensitive.  The use of upper or lower case
-//! characters to define token strings is for editorial clarity
-//! only.  Implementations MUST accept these strings in a
-//! case-insensitive fashion.
-//! * (2) In all cases, SP refers to exactly one space.  It is
-//! NOT permitted to substitute TAB, insert additional spaces,
-//! or otherwise treat SP as being equivalent to LWSP.
-//! * (3) The ASCII NUL character, %x00, MUST NOT be used at any
-//! time.
-
 use crate::{parse::core::atom, types::AuthMechanism};
 use nom::IResult;
 

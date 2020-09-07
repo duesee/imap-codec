@@ -65,7 +65,11 @@ pub fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 /// # Command Auth
 
-/// command-auth = append / create / delete / examine / list / lsub / rename / select / status / subscribe / unsubscribe
+/// command-auth = append / create / delete /
+///                examine / list / lsub /
+///                rename / select / status /
+///                subscribe / unsubscribe /
+///                idle ; RFC 2177
 ///
 /// Note: Valid only in Authenticated or Selected state
 pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
@@ -223,6 +227,12 @@ pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Unsubscribe { mailbox_name }))
 }
 
+/// idle = "IDLE" CRLF "DONE"
+///        ^^^^^^^^^^^
+///        |
+///        parsed as command (CRLF is consumed in upper command parser)
+///
+/// Valid only in Authenticated or Selected state
 pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let parser = value(CommandBody::Idle, tag_no_case("IDLE"));
 
@@ -299,6 +309,16 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>
     Ok((remaining, (auth_type, ir)))
 }
 
+/// Use this parser instead of command when doing authentication.
+///
+///                                                                Parsed here (because this is not parsed through command,
+///                                                                             CRLF must be parsed additionally)
+///                                                                |
+///                                                                vvvvvvvvvvvvvv
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64) // TODO: why the "="?
+///                                            ^^^^^^^^^^^^^^^^^^^
+///                                            |
+///                                            Added by SASL-IR (RFC RFC 4959)
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
     let parser = terminated(base64, CRLF); // FIXME: many0 deleted
 
@@ -719,7 +739,14 @@ fn search_key_limited<'a>(
     Ok((remaining, parsed_search_key))
 }
 
-// TODO: abnf definition from IDLE extension
+/// This parser must be executed *instead* of the command parser
+/// when the server is in the IDLE state.
+///
+/// idle = "IDLE" CRLF "DONE"
+///                    ^^^^^^
+///                    |
+///                    applied as separate parser (CRLF is not consumed through the command
+///                                                parser and must be consumed here)
 pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
     let parser = value((), tuple((tag_no_case("DONE"), CRLF)));
 
