@@ -271,21 +271,6 @@ pub enum CommandBody {
     /// See the section entitled "Client Commands -
     /// Experimental/Expansion" for information about the form of site or
     /// implementation-specific capabilities.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: abcd CAPABILITY
-    /// S: * CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI
-    /// LOGINDISABLED
-    /// S: abcd OK CAPABILITY completed
-    /// C: efgh STARTTLS
-    /// S: efgh OK STARTLS completed
-    /// <TLS negotiation, further commands are under [TLS] layer>
-    /// C: ijkl CAPABILITY
-    /// S: * CAPABILITY IMAP4rev1 AUTH=GSSAPI AUTH=PLAIN
-    /// S: ijkl OK CAPABILITY completed
-    /// ```
     Capability,
 
     /// ### 6.1.2.  NOOP Command
@@ -303,20 +288,6 @@ pub enum CommandBody {
     /// message status updates during a period of inactivity (this is the
     /// preferred method to do this).  The NOOP command can also be used
     /// to reset any inactivity autologout timer on the server.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: a002 NOOP
-    /// S: a002 OK NOOP completed
-    ///    . . .
-    /// C: a047 NOOP
-    /// S: * 22 EXPUNGE
-    /// S: * 23 EXISTS
-    /// S: * 3 RECENT
-    /// S: * 14 FETCH (FLAGS (\Seen \Deleted))
-    /// S: a047 OK NOOP completed
-    /// ```
     Noop,
 
     /// ### 6.1.3.  LOGOUT Command
@@ -331,15 +302,6 @@ pub enum CommandBody {
     /// the connection.  The server MUST send a BYE untagged response
     /// before the (tagged) OK response, and then close the network
     /// connection.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: A023 LOGOUT
-    /// S: * BYE IMAP4rev1 Server logging out
-    /// S: A023 OK LOGOUT completed
-    /// (Server and client then close the connection)
-    /// ```
     Logout,
 
     // ----- Not Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.2) -----
@@ -368,20 +330,6 @@ pub enum CommandBody {
     /// the-middle attacks which alter the capabilities list prior to
     /// STARTTLS.  The server MAY advertise different capabilities after
     /// STARTTLS.
-    ///
-    /// ```text
-    /// C: a001 CAPABILITY
-    /// S: * CAPABILITY IMAP4rev1 STARTTLS LOGINDISABLED
-    /// S: a001 OK CAPABILITY completed
-    /// C: a002 STARTTLS
-    /// S: a002 OK Begin TLS negotiation now
-    /// <TLS negotiation, further commands are under [TLS] layer>
-    /// C: a003 CAPABILITY
-    /// S: * CAPABILITY IMAP4rev1 AUTH=PLAIN
-    /// S: a003 OK CAPABILITY completed
-    /// C: a004 LOGIN joe password
-    /// S: a004 OK LOGIN completed
-    /// ```
     StartTLS,
 
     /// ### 6.2.2.  AUTHENTICATE Command
@@ -473,35 +421,6 @@ pub enum CommandBody {
     /// The authorization identity passed from the client to the server
     /// during the authentication exchange is interpreted by the server as
     /// the user name whose privileges the client is requesting.
-    ///
-    /// ```text
-    /// S: * OK IMAP4rev1 Server
-    /// C: A001 AUTHENTICATE GSSAPI
-    /// S: +
-    /// C: YIIB+wYJKoZIhvcSAQICAQBuggHqMIIB5qADAgEFoQMCAQ6iBw
-    ///    MFACAAAACjggEmYYIBIjCCAR6gAwIBBaESGxB1Lndhc2hpbmd0
-    ///    b24uZWR1oi0wK6ADAgEDoSQwIhsEaW1hcBsac2hpdmFtcy5jYW
-    ///    Mud2FzaGluZ3Rvbi5lZHWjgdMwgdCgAwIBAaEDAgEDooHDBIHA
-    ///    cS1GSa5b+fXnPZNmXB9SjL8Ollj2SKyb+3S0iXMljen/jNkpJX
-    ///    AleKTz6BQPzj8duz8EtoOuNfKgweViyn/9B9bccy1uuAE2HI0y
-    ///    C/PHXNNU9ZrBziJ8Lm0tTNc98kUpjXnHZhsMcz5Mx2GR6dGknb
-    ///    I0iaGcRerMUsWOuBmKKKRmVMMdR9T3EZdpqsBd7jZCNMWotjhi
-    ///    vd5zovQlFqQ2Wjc2+y46vKP/iXxWIuQJuDiisyXF0Y8+5GTpAL
-    ///    pHDc1/pIGmMIGjoAMCAQGigZsEgZg2on5mSuxoDHEA1w9bcW9n
-    ///    FdFxDKpdrQhVGVRDIzcCMCTzvUboqb5KjY1NJKJsfjRQiBYBdE
-    ///    NKfzK+g5DlV8nrw81uOcP8NOQCLR5XkoMHC0Dr/80ziQzbNqhx
-    ///    O6652Npft0LQwJvenwDI13YxpwOdMXzkWZN/XrEqOWp6GCgXTB
-    ///    vCyLWLlWnbaUkZdEYbKHBPjd8t/1x5Yg==
-    /// S: + YGgGCSqGSIb3EgECAgIAb1kwV6ADAgEFoQMCAQ+iSzBJoAMC
-    ///    AQGiQgRAtHTEuOP2BXb9sBYFR4SJlDZxmg39IxmRBOhXRKdDA0
-    ///    uHTCOT9Bq3OsUTXUlk0CsFLoa8j+gvGDlgHuqzWHPSQg==
-    /// C:
-    /// S: + YDMGCSqGSIb3EgECAgIBAAD/////6jcyG4GE3KkTzBeBiVHe
-    ///    ceP2CWY0SR0fAQAgAAQEBAQ=
-    /// C: YDMGCSqGSIb3EgECAgIBAAD/////3LQBHXTpFfZgrejpLlLImP
-    ///    wkhbfa2QteAQAgAG1yYwE=
-    /// S: A001 OK GSSAPI authentication successful
-    /// ```
     Authenticate {
         mechanism: AuthMechanism,
         initial_response: Option<String>,
@@ -526,11 +445,6 @@ pub enum CommandBody {
     /// capabilities automatically.  It is unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes these
     /// automatic capabilities.
-    ///
-    /// ```text
-    /// C: a001 LOGIN SMITH SESAME
-    /// S: a001 OK LOGIN completed
-    /// ```
     ///
     ///   Note: Use of the LOGIN command over an insecure network
     ///   (such as the Internet) is a security risk, because anyone
@@ -629,20 +543,6 @@ pub enum CommandBody {
     /// per-user (as opposed to global) basis.  Netnews messages marked in
     /// a server-based .newsrc file are an example of such per-user
     /// permanent state that can be modified with read-only mailboxes.
-    ///
-    /// # Example
-    ///
-    /// ```text
-    ///  C: A142 SELECT INBOX
-    ///  S: * 172 EXISTS
-    ///  S: * 1 RECENT
-    ///  S: * OK [UNSEEN 12] Message 12 is first unseen
-    ///  S: * OK [UIDVALIDITY 3857529045] UIDs valid
-    ///  S: * OK [UIDNEXT 4392] Predicted next UID
-    ///  S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
-    ///  S: * OK [PERMANENTFLAGS (\Deleted \Seen \*)] Limited
-    ///  S: A142 OK [READ-WRITE] SELECT completed
-    /// ```
     Select { mailbox_name: Mailbox },
 
     /// 6.3.2.  EXAMINE Command
@@ -664,16 +564,6 @@ pub enum CommandBody {
     ///
     /// The text of the tagged OK response to the EXAMINE command MUST
     /// begin with the "[READ-ONLY]" response code.
-    ///
-    ///    Example:    C: A932 EXAMINE blurdybloop
-    ///                S: * 17 EXISTS
-    ///                S: * 2 RECENT
-    ///                S: * OK [UNSEEN 8] Message 8 is first unseen
-    ///                S: * OK [UIDVALIDITY 3857529045] UIDs valid
-    ///                S: * OK [UIDNEXT 4392] Predicted next UID
-    ///                S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
-    ///                S: * OK [PERMANENTFLAGS ()] No permanent flags permitted
-    ///                S: A932 OK [READ-ONLY] EXAMINE completed
     Examine { mailbox_name: Mailbox },
 
     /// ### 6.3.3.  CREATE Command
@@ -712,13 +602,6 @@ pub enum CommandBody {
     /// UNLESS the new incarnation has a different unique identifier
     /// validity value.  See the description of the UID command for more
     /// detail.
-    ///
-    /// ```text
-    /// C: A003 CREATE owatagusiam/
-    /// S: A003 OK CREATE completed
-    /// C: A004 CREATE owatagusiam/blurdybloop
-    /// S: A004 OK CREATE completed
-    /// ```
     ///
     ///   Note: The interpretation of this example depends on whether
     ///   "/" was returned as the hierarchy separator from LIST.  If
@@ -760,40 +643,6 @@ pub enum CommandBody {
     /// incarnation, UNLESS the new incarnation has a different unique
     /// identifier validity value.  See the description of the UID command
     /// for more detail.
-    ///
-    /// ```text
-    /// C: A682 LIST "" *
-    /// S: * LIST () "/" blurdybloop
-    /// S: * LIST (\Noselect) "/" foo
-    /// S: * LIST () "/" foo/bar
-    /// S: A682 OK LIST completed
-    /// C: A683 DELETE blurdybloop
-    /// S: A683 OK DELETE completed
-    /// C: A684 DELETE foo
-    /// S: A684 NO Name "foo" has inferior hierarchical names
-    /// C: A685 DELETE foo/bar
-    /// S: A685 OK DELETE Completed
-    /// C: A686 LIST "" *
-    /// S: * LIST (\Noselect) "/" foo
-    /// S: A686 OK LIST completed
-    /// C: A687 DELETE foo
-    /// S: A687 OK DELETE Completed
-    /// C: A82 LIST "" *
-    /// S: * LIST () "." blurdybloop
-    /// S: * LIST () "." foo
-    /// S: * LIST () "." foo.bar
-    /// S: A82 OK LIST completed
-    /// C: A83 DELETE blurdybloop
-    /// S: A83 OK DELETE completed
-    /// C: A84 DELETE foo
-    /// S: A84 OK DELETE Completed
-    /// C: A85 LIST "" *
-    /// S: * LIST () "." foo.bar
-    /// S: A85 OK LIST completed
-    /// C: A86 LIST "" %
-    /// S: * LIST (\Noselect) "." foo
-    /// S: A86 OK LIST completed
-    /// ```
     Delete { mailbox_name: Mailbox },
 
     /// 6.3.5.  RENAME Command
@@ -836,35 +685,6 @@ pub enum CommandBody {
     /// leaving INBOX empty.  If the server implementation supports
     /// inferior hierarchical names of INBOX, these are unaffected by a
     /// rename of INBOX.
-    ///
-    /// ```text
-    /// C: A682 LIST "" *
-    /// S: * LIST () "/" blurdybloop
-    /// S: * LIST (\Noselect) "/" foo
-    /// S: * LIST () "/" foo/bar
-    /// S: A682 OK LIST completed
-    /// C: A683 RENAME blurdybloop sarasoop
-    /// S: A683 OK RENAME completed
-    /// C: A684 RENAME foo zowie
-    /// S: A684 OK RENAME Completed
-    /// C: A685 LIST "" *
-    /// S: * LIST () "/" sarasoop
-    /// S: * LIST (\Noselect) "/" zowie
-    /// S: * LIST () "/" zowie/bar
-    /// S: A685 OK LIST completed
-    ///
-    /// C: Z432 LIST "" *
-    /// S: * LIST () "." INBOX
-    /// S: * LIST () "." INBOX.bar
-    /// S: Z432 OK LIST completed
-    /// C: Z433 RENAME INBOX old-mail
-    /// S: Z433 OK RENAME completed
-    /// C: Z434 LIST "" *
-    /// S: * LIST () "." INBOX
-    /// S: * LIST () "." INBOX.bar
-    /// S: * LIST () "." old-mail
-    /// S: Z434 OK LIST completed
-    /// ```
     Rename {
         existing_mailbox_name: Mailbox,
         new_mailbox_name: Mailbox,
@@ -894,11 +714,6 @@ pub enum CommandBody {
     ///   name (e.g., "system-alerts") after its contents expire,
     ///   with the intention of recreating it when new contents
     ///   are appropriate.
-    ///
-    /// ```text
-    /// C: A002 SUBSCRIBE #news.comp.mail.mime
-    /// S: A002 OK SUBSCRIBE completed
-    /// ```
     Subscribe { mailbox_name: Mailbox },
 
     /// 6.3.7.  UNSUBSCRIBE Command
@@ -913,11 +728,6 @@ pub enum CommandBody {
     /// the server's set of "active" or "subscribed" mailboxes as returned
     /// by the LSUB command.  This command returns a tagged OK response
     /// only if the unsubscription is successful.
-    ///
-    /// ```text
-    /// C: A002 UNSUBSCRIBE #news.comp.mail.mime
-    /// S: A002 OK UNSUBSCRIBE completed
-    /// ```
     Unsubscribe { mailbox_name: Mailbox },
 
     /// ### 6.3.8.  LIST Command
@@ -1051,22 +861,6 @@ pub enum CommandBody {
     /// criteria for omitting INBOX is whether SELECT INBOX will return
     /// failure; it is not relevant whether the user's real INBOX resides
     /// on this or some other server.
-    ///
-    /// ```text
-    /// C: A101 LIST "" ""
-    /// S: * LIST (\Noselect) "/" ""
-    /// S: A101 OK LIST Completed
-    /// C: A102 LIST #news.comp.mail.misc ""
-    /// S: * LIST (\Noselect) "." #news.
-    /// S: A102 OK LIST Completed
-    /// C: A103 LIST /usr/staff/jones ""
-    /// S: * LIST (\Noselect) "/" /
-    /// S: A103 OK LIST Completed
-    /// C: A202 LIST ~/Mail/ %
-    /// S: * LIST (\Noselect) "/" ~/Mail/foo
-    /// S: * LIST () "/" ~/Mail/meetings
-    /// S: A202 OK LIST completed
-    /// ```
     List {
         reference: Mailbox,
         mailbox: ListMailbox,
@@ -1101,16 +895,6 @@ pub enum CommandBody {
     /// The server MUST NOT unilaterally remove an existing mailbox name
     /// from the subscription list even if a mailbox by that name no
     /// longer exists.
-    ///
-    /// ```text
-    /// C: A002 LSUB "#news." "comp.mail.*"
-    /// S: * LSUB () "." #news.comp.mail.mime
-    /// S: * LSUB () "." #news.comp.mail.misc
-    /// S: A002 OK LSUB completed
-    /// C: A003 LSUB "#news." "comp.%"
-    /// S: * LSUB (\NoSelect) "." #news.comp.mail
-    /// S: A003 OK LSUB completed
-    /// ```
     Lsub {
         reference: Mailbox,
         mailbox: ListMailbox,
@@ -1164,14 +948,6 @@ pub enum CommandBody {
     ///   reasonable performance.
     ///
     /// See [StatusDataItem](StatusDataItem).
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: A042 STATUS blurdybloop (UIDNEXT MESSAGES)
-    /// S: * STATUS blurdybloop (MESSAGES 231 UIDNEXT 44292)
-    /// S: A042 OK STATUS completed
-    /// ```
     Status {
         mailbox: Mailbox,
         items: Vec<StatusItem>,
@@ -1230,22 +1006,6 @@ pub enum CommandBody {
     /// does not do so, the client MAY issue a NOOP command (or failing
     /// that, a CHECK command) after one or more APPEND commands.
     ///
-    /// ```text
-    /// C: A003 APPEND saved-messages (\Seen) {310}
-    /// S: + Ready for literal data
-    /// C: Date: Mon, 7 Feb 1994 21:52:25 -0800 (PST)
-    /// C: From: Fred Foobar <foobar@Blurdybloop.COM>
-    /// C: Subject: afternoon meeting
-    /// C: To: mooch@owatagu.siam.edu
-    /// C: Message-Id: <B27397-0100000@Blurdybloop.COM>
-    /// C: MIME-Version: 1.0
-    /// C: Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-    /// C:
-    /// C: Hello Joe, do you think we can meet at 3:30 tomorrow?
-    /// C:
-    /// S: A003 OK APPEND completed
-    /// ```
-    ///
     ///   Note: The APPEND command is not used for message delivery,
     ///   because it does not provide a mechanism to transfer [SMTP]
     ///   envelope information.
@@ -1277,12 +1037,6 @@ pub enum CommandBody {
     /// There is no guarantee that an EXISTS untagged response will happen
     /// as a result of CHECK.  NOOP, not CHECK, SHOULD be used for new
     /// message polling.
-    ///
-    /// # Example
-    /// ```text
-    /// C: FXXZ CHECK
-    /// S: FXXZ OK CHECK Completed
-    /// ```
     Check,
 
     /// ### 6.4.2.  CLOSE Command
@@ -1309,11 +1063,6 @@ pub enum CommandBody {
     ///       sequence is considerably faster than an EXPUNGE-LOGOUT or
     ///       EXPUNGE-SELECT because no untagged EXPUNGE responses (which the
     ///       client would probably ignore) are sent.
-    ///
-    /// ```text
-    /// Example:    C: A341 CLOSE
-    ///             S: A341 OK CLOSE completed
-    /// ```
     Close,
 
     /// 6.4.3.  EXPUNGE Command
@@ -1329,15 +1078,6 @@ pub enum CommandBody {
     /// \Deleted flag set from the currently selected mailbox.  Before
     /// returning an OK to the client, an untagged EXPUNGE response is
     /// sent for each message that is removed.
-    ///
-    /// ```text
-    /// C: A202 EXPUNGE
-    /// S: * 3 EXPUNGE
-    /// S: * 3 EXPUNGE
-    /// S: * 5 EXPUNGE
-    /// S: * 8 EXPUNGE
-    /// S: A202 OK EXPUNGE completed
-    /// ```
     ///
     ///   Note: In this example, messages 3, 4, 7, and 11 had the
     ///   \Deleted flag set.  See the description of the EXPUNGE
@@ -1392,21 +1132,6 @@ pub enum CommandBody {
     ///
     /// See [SearchKey] enum.
     ///
-    /// # Example
-    ///
-    /// ```text
-    /// C: A282 SEARCH FLAGGED SINCE 1-Feb-1994 NOT FROM "Smith"
-    /// S: * SEARCH 2 84 882
-    /// S: A282 OK SEARCH completed
-    /// C: A283 SEARCH TEXT "string not in mailbox"
-    /// S: * SEARCH
-    /// S: A283 OK SEARCH completed
-    /// C: A284 SEARCH CHARSET UTF-8 TEXT {6}
-    /// C: XXXXXX
-    /// S: * SEARCH 43
-    /// S: A284 OK SEARCH completed
-    /// ```
-    ///
     /// Note: Since this document is restricted to 7-bit ASCII
     /// text, it is not possible to show actual UTF-8 data.  The
     /// "XXXXXX" is a placeholder for what would be 6 octets of
@@ -1443,16 +1168,6 @@ pub enum CommandBody {
     ///   safely ignore the newly transmitted envelope.
     ///
     /// See [DataItem](../data_items/index.html) for more information.
-    ///
-    /// # Example
-    ///
-    /// ```text
-    /// C: A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
-    /// S: * 2 FETCH ....
-    /// S: * 3 FETCH ....
-    /// S: * 4 FETCH ....
-    /// S: A654 OK FETCH completed
-    /// ```
     Fetch {
         sequence_set: Vec<Sequence>,
         items: MacroOrDataItems,
@@ -1509,14 +1224,6 @@ pub enum CommandBody {
     ///
     /// -FLAGS.SILENT <flag list>
     ///    Equivalent to -FLAGS, but without returning a new value.
-    ///
-    /// ```text
-    /// C: A003 STORE 2:4 +FLAGS (\Deleted)
-    /// S: * 2 FETCH (FLAGS (\Deleted \Seen))
-    /// S: * 3 FETCH (FLAGS (\Deleted))
-    /// S: * 4 FETCH (FLAGS (\Deleted \Flagged \Seen))
-    /// S: A003 OK STORE completed
-    /// ```
     Store {
         sequence_set: Vec<Sequence>,
         kind: StoreType,
@@ -1551,11 +1258,6 @@ pub enum CommandBody {
     /// If the COPY command is unsuccessful for any reason, server
     /// implementations MUST restore the destination mailbox to its state
     /// before the COPY attempt.
-    ///
-    /// ```text
-    /// C: A003 COPY 2:4 MEETING
-    /// S: A003 OK COPY completed
-    /// ```
     Copy {
         sequence_set: Vec<Sequence>,
         mailbox: Mailbox,
@@ -1626,14 +1328,6 @@ pub enum CommandBody {
     ///   include UID as a message data item.  Although it is unlikely that
     ///   the other UID commands will cause an untagged FETCH, this rule
     ///   applies to these commands as well.
-    ///
-    /// ```text
-    /// C: A999 UID FETCH 4827313:4828442 FLAGS
-    /// S: * 23 FETCH (FLAGS (\Seen) UID 4827313)
-    /// S: * 24 FETCH (FLAGS (\Seen) UID 4827943)
-    /// S: * 25 FETCH (FLAGS (\Seen) UID 4828442)
-    /// S: A999 OK UID FETCH completed
-    /// ```
 
     // ----- Experimental/Expansion (https://tools.ietf.org/html/rfc3501#section-6.5) -----
 
@@ -1655,17 +1349,6 @@ pub enum CommandBody {
     // MUST also be prefixed with an X.  Server implementations MUST NOT
     // send any such untagged responses, unless the client requested it
     // by issuing the associated experimental command.
-    //
-    // # Trace
-    //
-    // ```text
-    // C: a441 CAPABILITY
-    // S: * CAPABILITY IMAP4rev1 XPIG-LATIN
-    // S: a441 OK CAPABILITY completed
-    // C: A442 XPIG-LATIN
-    // S: * XPIG-LATIN ow-nay eaking-spay ig-pay atin-lay
-    // S: A442 OK XPIG-LATIN ompleted-cay
-    // ```
     //X,
     /// ----- Idle Extension (https://tools.ietf.org/html/rfc2177) -----
     Idle,
