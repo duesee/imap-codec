@@ -115,6 +115,17 @@ pub enum FlagNameAttribute {
     Extension(Atom),
 }
 
+impl FlagNameAttribute {
+    pub fn is_selectability(&self) -> bool {
+        match self {
+            FlagNameAttribute::Noselect
+            | FlagNameAttribute::Marked
+            | FlagNameAttribute::Unmarked => true,
+            _ => false,
+        }
+    }
+}
+
 impl std::fmt::Display for FlagNameAttribute {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {

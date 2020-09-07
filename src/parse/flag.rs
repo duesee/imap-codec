@@ -62,19 +62,12 @@ pub(crate) fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribu
     let (remaining, flags) =
         separated_nonempty_list(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
 
-    if flags
+    let sflag_count = flags
         .iter()
-        .filter(|&flag| {
-            [
-                FlagNameAttribute::Noselect,
-                FlagNameAttribute::Marked,
-                FlagNameAttribute::Unmarked,
-            ]
-            .contains(flag)
-        })
-        .count()
-        > 1
-    {
+        .filter(|&flag| FlagNameAttribute::is_selectability(flag))
+        .count();
+
+    if sflag_count > 1 {
         return Err(nom::Err::Error(nom::error::make_error(
             input,
             nom::error::ErrorKind::Verify,
