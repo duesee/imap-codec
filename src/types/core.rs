@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 
 #[derive(Debug, PartialEq, Clone, Deserialize)]
-pub struct Tag(pub String);
+pub struct Tag(pub(crate) String);
 
 impl TryFrom<&str> for Tag {
     type Error = ();
@@ -74,7 +74,7 @@ impl TryFrom<String> for Atom {
 /// An atom consists of one or more non-special characters.
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct atm<'a>(pub &'a str);
+pub(crate) struct atm<'a>(pub(crate) &'a str);
 
 impl<'a> atm<'a> {
     pub fn to_owned(&self) -> Atom {
@@ -112,7 +112,7 @@ pub type Number = u32;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq)]
-pub enum istr<'a> {
+pub(crate) enum istr<'a> {
     Literal(&'a [u8]),
     Quoted(Cow<'a, str>),
 }
@@ -234,7 +234,7 @@ impl Codec for IString {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq)]
-pub struct nstr<'a>(pub Option<istr<'a>>);
+pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
 
 impl<'a> nstr<'a> {
     pub fn to_owned(&self) -> NString {
@@ -269,7 +269,7 @@ impl Codec for NString {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq)]
-pub enum astr<'a> {
+pub(crate) enum astr<'a> {
     Atom(&'a str),
     String(istr<'a>),
 }
