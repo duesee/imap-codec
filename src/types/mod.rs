@@ -84,26 +84,3 @@ impl Codec for AuthMechanism {
         unimplemented!()
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::sequence::{SeqNo, Sequence};
-    use crate::codec::Codec;
-
-    #[test]
-    fn test_sequence_serialize() {
-        let tests = [
-            (b"1".as_ref(), Sequence::Single(SeqNo::Value(1))),
-            (b"*".as_ref(), Sequence::Single(SeqNo::Largest)), // TODO: is this a valid sequence?
-            (
-                b"1:*".as_ref(),
-                Sequence::Range(SeqNo::Value(1), SeqNo::Largest),
-            ),
-        ];
-
-        for (expected, test) in tests.iter() {
-            let got = test.serialize();
-            assert_eq!(*expected, got);
-        }
-    }
-}
