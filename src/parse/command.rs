@@ -238,8 +238,12 @@ fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///                    applied as separate parser (CRLF is not consumed through the command
 ///                                                parser and must be consumed here)
 /// TODO: just interpret as command?
-pub fn idle_done(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    tag_no_case("DONE\r\n")(input)
+pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
+    let parser = value((), tuple((tag_no_case("DONE"), CRLF)));
+
+    let (remaining, parsed_idle_done) = parser(input)?;
+
+    Ok((remaining, parsed_idle_done))
 }
 
 /// # Command NonAuth
