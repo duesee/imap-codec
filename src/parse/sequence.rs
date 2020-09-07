@@ -21,7 +21,7 @@ use nom::{
 ///
 /// ; errata id: 261
 /// sequence-set = (seq-number / seq-range) ["," sequence-set]
-pub fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
+pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
     separated_nonempty_list(
         tag(b","),
         alt((
@@ -40,7 +40,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
 ///          of the last message in the mailbox, even if that value is less than 3291.
 ///
 /// seq-range = seq-number ":" seq-number
-pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
+fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
     let parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
@@ -61,7 +61,7 @@ pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
 /// This includes "*" if the selected mailbox is empty.
 ///
 /// seq-number = nz-number / "*"
-pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
+fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
     alt((
         map(nz_number, SeqNo::Value),
         value(SeqNo::Unlimited, tag(b"*")),

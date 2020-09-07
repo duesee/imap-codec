@@ -13,12 +13,12 @@ use nom::{
 };
 
 /// section = "[" [section-spec] "]"
-pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
+pub(crate) fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
     delimited(tag(b"["), opt(section_spec), tag(b"]"))(input)
 }
 
 /// section-spec = section-msgtext / (section-part ["." section-text])
-pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
+fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
     let parser = alt((
         map(section_msgtext, |part_specifier| match part_specifier {
             PartSpecifier::PartNumber(_) => unreachable!(),
@@ -59,7 +59,7 @@ pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
 /// Top-level or MESSAGE/RFC822 part
 ///
 /// section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"
-pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
+fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
@@ -90,7 +90,7 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 /// Body part nesting
 ///
 /// section-part = nz-number *("." nz-number)
-pub fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
+fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
     let parser = separated_nonempty_list(tag(b"."), nz_number);
 
     let (remaining, parsed_section_part) = parser(input)?;
@@ -101,7 +101,7 @@ pub fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
 /// Text other than actual body part (headers, etc.)
 ///
 /// section-text = section-msgtext / "MIME"
-pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
+fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     let parser = alt((
         section_msgtext,
         value(PartSpecifier::Mime, tag_no_case(b"MIME")),

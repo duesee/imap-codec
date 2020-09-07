@@ -11,12 +11,12 @@ use nom::{
 use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
-pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
 /// date-text = date-day "-" date-month "-" date-year
-pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     let parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
@@ -30,7 +30,7 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 /// Day of month
 ///
 /// date-day = 1*2DIGIT
-pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
+fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
         map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8),
         str::parse::<u8>,
@@ -44,7 +44,7 @@ pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
 /// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
 ///              "May" / "Jun" / "Jul" / "Aug" /
 ///              "Sep" / "Oct" / "Nov" / "Dec"
-pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
+fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
         value(1, tag_no_case(b"Jan")),
         value(2, tag_no_case(b"Feb")),
@@ -62,7 +62,7 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 }
 
 /// date-year = 4DIGIT
-pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
+fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     map_res(
         map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8),
         str::parse::<u16>,
@@ -72,7 +72,7 @@ pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
 /// Hours minutes seconds
 ///
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
-pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
+fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let parser = tuple((
         map_res(
             map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
@@ -99,7 +99,7 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 }
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
-pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
+pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
     let parser = delimited(
         DQUOTE,
         tuple((
@@ -132,7 +132,7 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> 
 /// Fixed-format version of date-day
 ///
 /// date-day-fixed = (SP DIGIT) / 2DIGIT
-pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
+fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     let parser = map_res(
         map_res(
             alt((
@@ -157,7 +157,7 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
 /// The Universal Time zone is "+0000".
 ///
 /// zone = ("+" / "-") 4DIGIT
-pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
+fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let parser = tuple((
         alt((char('+'), char('-'))),
         map_res(

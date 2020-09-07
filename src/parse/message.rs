@@ -20,7 +20,7 @@ use nom::{
 };
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
-pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
     let (remaining, (msg, _)) = tuple((nz_number, SP))(input)?;
 
     alt((
@@ -35,7 +35,7 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 /// msg-att = "("
 ///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///           ")"
-pub fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
+fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
     delimited(
         tag(b"("),
         separated_nonempty_list(SP, alt((msg_att_dynamic, msg_att_static))),
@@ -46,7 +46,7 @@ pub fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
 /// msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"
 ///
 /// Note: MAY change for a message
-pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
+fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     let parser = tuple((
         tag_no_case(b"FLAGS"),
         SP,
@@ -74,7 +74,7 @@ pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
 ///                  "UID" SP uniqueid
 ///
 /// Note: MUST NOT change for a message
-pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
+fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), SP, envelope)),
@@ -137,6 +137,6 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
 /// uniqueid = nz-number
 ///
 /// Note: Strictly ascending
-pub fn uniqueid(input: &[u8]) -> IResult<&[u8], u32> {
+fn uniqueid(input: &[u8]) -> IResult<&[u8], u32> {
     nz_number(input)
 }

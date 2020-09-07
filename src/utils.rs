@@ -10,7 +10,7 @@ pub(crate) fn gen_tag() -> Tag {
         .collect())
 }
 
-pub fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
+pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
     elements
         .iter()
         .map(|x| format!("{}", x))
@@ -18,7 +18,7 @@ pub fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
         .join(sep)
 }
 
-pub fn join_bytes(elements: Vec<Vec<u8>>, sep: &[u8]) -> Vec<u8> {
+pub(crate) fn join_bytes(elements: Vec<Vec<u8>>, sep: &[u8]) -> Vec<u8> {
     elements
         .iter()
         .map(|x| x.to_vec())
@@ -26,7 +26,7 @@ pub fn join_bytes(elements: Vec<Vec<u8>>, sep: &[u8]) -> Vec<u8> {
         .join(sep)
 }
 
-pub fn join_serializable<I: Codec>(elements: &[I], sep: &[u8]) -> Vec<u8> {
+pub(crate) fn join_serializable<I: Codec>(elements: &[I], sep: &[u8]) -> Vec<u8> {
     elements
         .iter()
         .map(|x| x.serialize())

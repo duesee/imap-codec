@@ -24,7 +24,7 @@ use nom::{
 };
 
 /// list-mailbox = 1*list-char / string
-pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
+pub(crate) fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     let parser = alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
             ListMailbox::Token(String::from_utf8(bytes.to_vec()).unwrap())
@@ -38,25 +38,25 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
 }
 
 /// list-char = ATOM-CHAR / list-wildcards / resp-specials
-pub fn is_list_char(i: u8) -> bool {
+pub(crate) fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
 /// list-wildcards = "%" / "*"
-pub fn is_list_wildcards(i: u8) -> bool {
+pub(crate) fn is_list_wildcards(i: u8) -> bool {
     i == b'%' || i == b'*'
 }
 
 /// INBOX is case-insensitive. All case variants of INBOX (e.g., "iNbOx")
 /// MUST be interpreted as INBOX not as an astring.
-/// 
+///
 /// An astring which consists of the case-insensitive sequence
 /// "I" "N" "B" "O" "X" is considered to be INBOX and not an astring.
-/// 
+///
 /// Refer to section 5.1 for further semantic details of mailbox names.
-/// 
+///
 /// mailbox = "INBOX" / astring
-pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
+pub(crate) fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     let (remaining, mailbox) = astring(input)?;
 
     let mailbox = match mailbox {
@@ -103,7 +103,7 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
 ///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                number SP "EXISTS" /
 ///                number SP "RECENT"
-pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     alt((
         map(
             tuple((tag_no_case(b"FLAGS"), SP, flag_list)),
@@ -156,7 +156,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 /// mailbox-list = "(" [mbx-list-flags] ")" SP
 ///                (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
 ///                mailbox
-pub fn mailbox_list(
+fn mailbox_list(
     input: &[u8],
 ) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<char>, Mailbox)> {
     let parser = tuple((

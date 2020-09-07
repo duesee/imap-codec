@@ -13,7 +13,7 @@ use nom::{
 };
 
 /// status-att = "MESSAGES" / "RECENT" / "UIDNEXT" / "UIDVALIDITY" / "UNSEEN"
-pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusItem> {
+pub(crate) fn status_att(input: &[u8]) -> IResult<&[u8], StatusItem> {
     alt((
         value(StatusItem::Messages, tag_no_case(b"MESSAGES")),
         value(StatusItem::Recent, tag_no_case(b"RECENT")),
@@ -25,7 +25,7 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusItem> {
 
 /// ; errata id: 261
 /// status-att-list = status-att-val *(SP status-att-val)
-pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> {
+pub(crate) fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> {
     separated_nonempty_list(SP, status_att_val)(input)
 }
 
@@ -35,7 +35,7 @@ pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> 
 ///                   ("UIDNEXT" SP nz-number) /
 ///                   ("UIDVALIDITY" SP nz-number) /
 ///                   ("UNSEEN" SP number)
-pub fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusItemResponse> {
+fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusItemResponse> {
     alt((
         map(
             tuple((tag_no_case(b"MESSAGES"), SP, number)),

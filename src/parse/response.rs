@@ -51,7 +51,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
 }
 
 /// Authentication condition
-/// 
+///
 /// resp-cond-auth = ("OK" / "PREAUTH") SP resp-text
 fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> {
     let parser = tuple((
@@ -69,7 +69,7 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> 
 }
 
 /// resp-text = ["[" resp-text-code "]" SP] text
-pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
+fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((
         opt(terminated(
             delimited(tag(b"["), resp_text_code, tag(b"]")),
@@ -159,10 +159,10 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
 }
 
 /// capability-data = "CAPABILITY" *(SP capability) SP "IMAP4rev1" *(SP capability)
-/// 
+///
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
-pub fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
+fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
     let parser = tuple((
         tag_no_case("CAPABILITY"),
         SP,
@@ -182,7 +182,7 @@ pub fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
 }
 
 /// capability = ("AUTH=" auth-type) / atom
-pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
+fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
     alt((
         map(
             tuple((tag_no_case(b"AUTH="), auth_type)),
@@ -209,7 +209,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
 }
 
 /// resp-cond-bye = "BYE" SP resp-text
-pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
+fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
     let parser = tuple((tag_no_case(b"BYE"), SP, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
@@ -234,7 +234,7 @@ pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
 }
 
 /// continue-req = "+" SP (resp-text / base64) CRLF
-pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
+fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
     let parser = tuple((
         tag(b"+"),
         SP,
@@ -260,7 +260,7 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
 ///                 message-data /
 ///                 capability-data
 ///                 ) CRLF
-pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
+fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
     let parser = tuple((
         tag(b"*"),
         SP,
@@ -293,9 +293,9 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
 }
 
 /// Status condition
-/// 
+///
 /// resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text
-pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str)> {
+fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str)> {
     let parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
         SP,
@@ -311,12 +311,12 @@ pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str
 }
 
 /// response-done = response-tagged / response-fatal
-pub fn response_done(input: &[u8]) -> IResult<&[u8], Status> {
+fn response_done(input: &[u8]) -> IResult<&[u8], Status> {
     alt((response_tagged, response_fatal))(input)
 }
 
 /// response-tagged = tag SP resp-cond-state CRLF
-pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
+fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
     let parser = tuple((tag_imap, SP, resp_cond_state, CRLF));
 
     let (remaining, (tag, _, (raw_status, maybe_code, text), _)) = parser(input)?;
@@ -332,9 +332,9 @@ pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
 }
 
 /// Server closes connection immediately
-/// 
+///
 /// response-fatal = "*" SP resp-cond-bye CRLF
-pub fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
+fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
     let parser = tuple((tag(b"*"), SP, resp_cond_bye, CRLF));
 
     let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
