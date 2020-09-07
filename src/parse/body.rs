@@ -334,7 +334,7 @@ fn body_fld_md5(input: &[u8]) -> IResult<&[u8], nstr> {
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
 fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(istr, Vec<(istr, istr)>)>> {
-    let parser = alt((
+    alt((
         delimited(
             tag(b"("),
             map(
@@ -344,26 +344,18 @@ fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(istr, Vec<(istr, istr)>)
             tag(b")"),
         ),
         map(nil, |_| None),
-    ));
-
-    let (remaining, parsed_body_fld_dsp) = parser(input)?;
-
-    Ok((remaining, parsed_body_fld_dsp))
+    ))(input)
 }
 
 /// body-fld-lang = nstring / "(" string *(SP string) ")"
 fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
-    let parser = alt((
+    alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
             None => vec![],
         }),
         delimited(tag(b"("), separated_nonempty_list(SP, string), tag(b")")),
-    ));
-
-    let (remaining, parsed_body_fld_lang) = parser(input)?;
-
-    Ok((remaining, parsed_body_fld_lang))
+    ))(input)
 }
 
 #[inline]
@@ -402,7 +394,7 @@ fn body_extension_limited<'a>(
     let body_extension =
         move |input: &'a [u8]| body_extension_limited(input, remaining_recursion.saturating_sub(1));
 
-    let parser = alt((
+    alt((
         recognize(nstring),
         recognize(number),
         recognize(delimited(
@@ -410,11 +402,7 @@ fn body_extension_limited<'a>(
             separated_nonempty_list(SP, body_extension),
             tag(b")"),
         )),
-    ));
-
-    let (remaining, recognized_body_extension) = parser(input)?;
-
-    Ok((remaining, recognized_body_extension))
+    ))(input)
 }
 
 // ---

@@ -12,11 +12,7 @@ use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
 pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
-    let parser = alt((date_text, delimited(DQUOTE, date_text, DQUOTE)));
-
-    let (remaining, parsed_date) = parser(input)?;
-
-    Ok((remaining, parsed_date))
+    alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
 /// date-text = date-day "-" date-month "-" date-year
@@ -49,7 +45,7 @@ pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
 ///              "May" / "Jun" / "Jul" / "Aug" /
 ///              "Sep" / "Oct" / "Nov" / "Dec"
 pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = alt((
+    alt((
         value(1, tag_no_case(b"Jan")),
         value(2, tag_no_case(b"Feb")),
         value(3, tag_no_case(b"Mar")),
@@ -62,23 +58,15 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
         value(10, tag_no_case(b"Oct")),
         value(11, tag_no_case(b"Nov")),
         value(12, tag_no_case(b"Dec")),
-    ));
-
-    let (remaining, parsed_date_month) = parser(input)?;
-
-    Ok((remaining, parsed_date_month))
+    ))(input)
 }
 
 /// date-year = 4DIGIT
 pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
-    let parser = map_res(
+    map_res(
         map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8),
         str::parse::<u16>,
-    );
-
-    let (remaining, year) = parser(input)?;
-
-    Ok((remaining, year))
+    )(input)
 }
 
 /// Hours minutes seconds

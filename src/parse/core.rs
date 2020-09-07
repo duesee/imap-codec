@@ -20,11 +20,7 @@ use std::{borrow::Cow, str::from_utf8};
 ///
 /// number = 1*DIGIT
 pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
-    let parser = map_res(map_res(digit1, from_utf8), str::parse::<u32>);
-
-    let (remaining, number) = parser(input)?;
-
-    Ok((remaining, number))
+    map_res(map_res(digit1, from_utf8), str::parse::<u32>)(input)
 }
 
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
@@ -55,11 +51,7 @@ pub fn is_digit_nz(byte: u8) -> bool {
 
 /// string = quoted / literal
 pub(crate) fn string(input: &[u8]) -> IResult<&[u8], istr> {
-    let parser = alt((map(quoted, istr::Quoted), map(literal, istr::Literal)));
-
-    let (remaining, parsed_string) = parser(input)?;
-
-    Ok((remaining, parsed_string))
+    alt((map(quoted, istr::Quoted), map(literal, istr::Literal)))(input)
 }
 
 /// quoted = DQUOTE *QUOTED-CHAR DQUOTE
