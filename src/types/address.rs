@@ -47,13 +47,3 @@ impl Codec for Address {
         unimplemented!()
     }
 }
-
-// impl std::fmt::Display for Address {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-//         write!(
-//             f,
-//             "({} {} {} {})",
-//             self.name, self.adl, self.mailbox, self.host
-//         )
-//     }
-// }
