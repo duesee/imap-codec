@@ -31,14 +31,10 @@ fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 ///
 /// date-day = 1*2DIGIT
 fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = map_res(
+    map_res(
         map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8),
         str::parse::<u8>,
-    );
-
-    let (remaining, date_day) = parser(input)?;
-
-    Ok((remaining, date_day))
+    )(input)
 }
 
 /// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
@@ -133,7 +129,7 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOff
 ///
 /// date-day-fixed = (SP DIGIT) / 2DIGIT
 fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
-    let parser = map_res(
+    map_res(
         map_res(
             alt((
                 recognize(tuple((SP, take_while_m_n(1, 1, is_DIGIT)))),
@@ -142,11 +138,7 @@ fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
             |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()),
         ),
         str::parse::<u8>,
-    );
-
-    let (remaining, parsed_date_day_fixed) = parser(input)?;
-
-    Ok((remaining, parsed_date_day_fixed))
+    )(input)
 }
 
 /// Signed four-digit value of hhmm representing

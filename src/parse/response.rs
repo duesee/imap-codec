@@ -70,17 +70,13 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> 
 
 /// resp-text = ["[" resp-text-code "]" SP] text
 fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
-    let parser = tuple((
+    tuple((
         opt(terminated(
             delimited(tag(b"["), resp_text_code, tag(b"]")),
             SP,
         )),
         text,
-    ));
-
-    let (remaining, resp_text) = parser(input)?;
-
-    Ok((remaining, resp_text))
+    ))(input)
 }
 
 /// ; errata id: 261

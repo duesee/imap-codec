@@ -19,7 +19,7 @@ pub(crate) fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
 
 /// section-spec = section-msgtext / (section-part ["." section-text])
 fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
-    let parser = alt((
+    alt((
         map(section_msgtext, |part_specifier| match part_specifier {
             PartSpecifier::PartNumber(_) => unreachable!(),
             PartSpecifier::Header => Section::Header(None),
@@ -49,18 +49,14 @@ fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
                 }
             },
         ),
-    ));
-
-    let (remaining, parsed_section_spec) = parser(input)?;
-
-    Ok((remaining, parsed_section_spec))
+    ))(input)
 }
 
 /// Top-level or MESSAGE/RFC822 part
 ///
 /// section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"
 fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
-    let parser = alt((
+    alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
             |(_, _, header_list)| {
@@ -79,11 +75,7 @@ fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
         ),
         value(PartSpecifier::Header, tag_no_case(b"HEADER")),
         value(PartSpecifier::Text, tag_no_case(b"TEXT")),
-    ));
-
-    let (remaining, parsed_section_msgtext) = parser(input)?;
-
-    Ok((remaining, parsed_section_msgtext))
+    ))(input)
 }
 
 #[inline]
@@ -91,23 +83,15 @@ fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 ///
 /// section-part = nz-number *("." nz-number)
 fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
-    let parser = separated_nonempty_list(tag(b"."), nz_number);
-
-    let (remaining, parsed_section_part) = parser(input)?;
-
-    Ok((remaining, parsed_section_part))
+    separated_nonempty_list(tag(b"."), nz_number)(input)
 }
 
 /// Text other than actual body part (headers, etc.)
 ///
 /// section-text = section-msgtext / "MIME"
 fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
-    let parser = alt((
+    alt((
         section_msgtext,
         value(PartSpecifier::Mime, tag_no_case(b"MIME")),
-    ));
-
-    let (remaining, parsed_section_text) = parser(input)?;
-
-    Ok((remaining, parsed_section_text))
+    ))(input)
 }

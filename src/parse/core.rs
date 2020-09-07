@@ -9,7 +9,7 @@ use nom::{
     character::streaming::{digit1, one_of},
     combinator::{map, map_res, opt, recognize, value},
     error::ErrorKind,
-    sequence::{delimited, tuple},
+    sequence::{delimited, terminated, tuple},
     IResult,
 };
 use std::{borrow::Cow, str::from_utf8};
@@ -79,7 +79,7 @@ fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
 
 /// QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
 pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
-    let parser = alt((
+    alt((
         map(
             take_while_m_n(1, 1, is_any_text_char_except_quoted_specials),
             |bytes: &[u8]| {
@@ -94,11 +94,7 @@ pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
                 bytes[0] as char
             },
         ),
-    ));
-
-    let (remaining, quoted_char) = parser(input)?;
-
-    Ok((remaining, quoted_char))
+    ))(input)
 }
 
 fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
@@ -113,9 +109,7 @@ fn is_quoted_specials(byte: u8) -> bool {
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
 pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = tuple((delimited(tag(b"{"), number, tag(b"}")), CRLF));
-
-    let (remaining, (number, _)) = parser(input)?;
+    let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
     let (remaining, data) = take(number)(remaining)?;
 
@@ -139,16 +133,12 @@ fn is_char8(i: u8) -> bool {
 
 /// astring = 1*ASTRING-CHAR / string
 pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
-    let parser = alt((
+    alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             astr::Atom(std::str::from_utf8(bytes).unwrap())
         }),
         map(string, astr::String),
-    ));
-
-    let (remaining, parsed_astring) = parser(input)?;
-
-    Ok((remaining, parsed_astring))
+    ))(input)
 }
 
 /// ASTRING-CHAR = ATOM-CHAR / resp-specials
@@ -194,14 +184,10 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 
 /// nstring = string / nil
 pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
-    let parser = alt((
+    alt((
         map(string, |item| nstr(Some(item))),
         map(nil, |_| nstr(None)),
-    ));
-
-    let (remaining, parsed_nstring) = parser(input)?;
-
-    Ok((remaining, parsed_nstring))
+    ))(input)
 }
 
 #[inline]
@@ -227,17 +213,13 @@ pub(crate) fn is_text_char(c: u8) -> bool {
 
 /// base64 = *(4base64-char) [base64-terminal]
 pub(crate) fn base64(input: &[u8]) -> IResult<&[u8], &str> {
-    let parser = map_res(
+    map_res(
         recognize(tuple((
             take_while(is_base64_char),
             opt(alt((tag("=="), tag("=")))),
         ))),
         from_utf8,
-    );
-
-    let (remaining, base64) = parser(input)?;
-
-    Ok((remaining, base64))
+    )(input)
 }
 
 /// base64-char = ALPHA / DIGIT / "+" / "/" ; Case-sensitive
@@ -252,14 +234,10 @@ fn is_base64_char(i: u8) -> bool {
 /// charset = atom / quoted
 /// errata id: 261
 pub(crate) fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
-    let parser = alt((
+    alt((
         map(atom, |val| Charset(val.0.to_string())),
         map(quoted, |cow| Charset(cow.to_string())),
-    ));
-
-    let (remaining, charset) = parser(input)?;
-
-    Ok((remaining, charset))
+    ))(input)
 }
 
 // ----- tag -----

@@ -15,13 +15,13 @@ use nom::{
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
     multi::separated_nonempty_list,
-    sequence::{delimited, tuple},
+    sequence::{delimited, terminated, tuple},
     IResult,
 };
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
 pub(crate) fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
-    let (remaining, (msg, _)) = tuple((nz_number, SP))(input)?;
+    let (remaining, msg) = terminated(nz_number, SP)(input)?;
 
     alt((
         map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(msg)),

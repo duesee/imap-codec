@@ -25,16 +25,12 @@ use nom::{
 
 /// list-mailbox = 1*list-char / string
 pub(crate) fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
-    let parser = alt((
+    alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
             ListMailbox::Token(String::from_utf8(bytes.to_vec()).unwrap())
         }),
         map(string, |istr| ListMailbox::String(istr.to_owned())),
-    ));
-
-    let (remaining, parsed_list_mailbox) = parser(input)?;
-
-    Ok((remaining, parsed_list_mailbox))
+    ))(input)
 }
 
 /// list-char = ATOM-CHAR / list-wildcards / resp-specials

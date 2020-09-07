@@ -51,16 +51,12 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
 ///
 /// Note: Valid in all states
 fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = alt((
+    alt((
         value(CommandBody::Capability, tag_no_case(b"CAPABILITY")),
         value(CommandBody::Logout, tag_no_case(b"LOGOUT")),
         value(CommandBody::Noop, tag_no_case(b"NOOP")),
         // x-command = "X" atom <experimental command arguments>
-    ));
-
-    let (remaining, parsed_command_any) = parser(input)?;
-
-    Ok((remaining, parsed_command_any))
+    ))(input)
 }
 
 /// # Command Auth
@@ -73,7 +69,7 @@ fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///
 /// Note: Valid only in Authenticated or Selected state
 fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = alt((
+    alt((
         append,
         create,
         delete,
@@ -86,11 +82,7 @@ fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         subscribe,
         unsubscribe,
         idle, // RFC 2177
-    ));
-
-    let (remaining, parsed_command_auth) = parser(input)?;
-
-    Ok((remaining, parsed_command_auth))
+    ))(input)
 }
 
 /// append = "APPEND" SP mailbox [SP flag-list] [SP date-time] SP literal
@@ -234,11 +226,7 @@ fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///
 /// Valid only in Authenticated or Selected state
 fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = value(CommandBody::Idle, tag_no_case("IDLE"));
-
-    let (remaining, parsed_idle) = parser(input)?;
-
-    Ok((remaining, parsed_idle))
+    value(CommandBody::Idle, tag_no_case("IDLE"))(input)
 }
 
 /// This parser must be executed *instead* of the command parser
@@ -352,7 +340,7 @@ pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
 ///
 /// Note: Valid only when in Selected state
 fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let parser = alt((
+    alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
         value(CommandBody::Expunge, tag_no_case(b"EXPUNGE")),
@@ -361,11 +349,7 @@ fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
         store,
         uid,
         search,
-    ));
-
-    let (remaining, parsed_command_select) = parser(input)?;
-
-    Ok((remaining, parsed_command_select))
+    ))(input)
 }
 
 /// copy = "COPY" SP sequence-set SP mailbox
@@ -429,7 +413,7 @@ fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///             "BODY" section ["<" number "." nz-number ">"] /
 ///             "BODY.PEEK" section ["<" number "." nz-number ">"]
 fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
-    let parser = alt((
+    alt((
         value(DataItem::Envelope, tag_no_case(b"ENVELOPE")),
         value(DataItem::Flags, tag_no_case(b"FLAGS")),
         value(DataItem::InternalDate, tag_no_case(b"INTERNALDATE")),
@@ -471,11 +455,7 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
         value(DataItem::Rfc822Header, tag_no_case(b"RFC822.HEADER")),
         value(DataItem::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
         value(DataItem::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
-    ));
-
-    let (remaining, parsed_fetch_att) = parser(input)?;
-
-    Ok((remaining, parsed_fetch_att))
+    ))(input)
 }
 
 /// store = "STORE" SP sequence-set SP store-att-flags
@@ -635,7 +615,7 @@ fn search_key_limited<'a>(
     let search_key =
         move |input: &'a [u8]| search_key_limited(input, remaining_recursion.saturating_sub(1));
 
-    let parser = alt((
+    alt((
         alt((
             value(SearchKey::All, tag_no_case(b"ALL")),
             value(SearchKey::Answered, tag_no_case(b"ANSWERED")),
@@ -751,11 +731,7 @@ fn search_key_limited<'a>(
                 },
             ),
         )),
-    ));
-
-    let (remaining, parsed_search_key) = parser(input)?;
-
-    Ok((remaining, parsed_search_key))
+    ))(input)
 }
 
 #[cfg(test)]
