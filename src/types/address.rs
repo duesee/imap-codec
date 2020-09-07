@@ -1,17 +1,15 @@
 use crate::{codec::Codec, types::core::NString};
 
-/// An address structure is a parenthesized list that describes an
-/// electronic mail address.  The fields of an address structure
-/// are in the following order:
+/// An address structure describes an electronic mail address.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Address {
-    /// personal name,
+    /// Personal name
     name: NString,
-    /// [SMTP] at-domain-list (source route),
+    /// At-domain-list (source route)
     adl: NString,
-    /// mailbox name,
+    /// Mailbox name
     mailbox: NString,
-    /// and host name.
+    /// Host name
     host: NString,
 }
 
