@@ -117,12 +117,10 @@ pub enum FlagNameAttribute {
 
 impl FlagNameAttribute {
     pub fn is_selectability(&self) -> bool {
-        match self {
-            FlagNameAttribute::Noselect
-            | FlagNameAttribute::Marked
-            | FlagNameAttribute::Unmarked => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            FlagNameAttribute::Noselect | FlagNameAttribute::Marked | FlagNameAttribute::Unmarked
+        )
     }
 }
 
