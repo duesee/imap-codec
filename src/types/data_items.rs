@@ -352,7 +352,7 @@ impl Codec for Section {
                         out.extend_from_slice(b".HEADER.FIELDS.NOT (");
                         out
                     }
-                    None => b"HEADER.FIElDS.NOT (".to_vec(),
+                    None => b"HEADER.FIELDS.NOT (".to_vec(),
                 };
                 out.extend(join_serializable(header_list, b" "));
                 out.push(b')');
@@ -368,7 +368,7 @@ impl Codec for Section {
             },
             Section::Mime(part) => {
                 let mut out = part.serialize();
-                out.extend_from_slice(b".TEXT");
+                out.extend_from_slice(b".MIME");
                 out
             }
         }
