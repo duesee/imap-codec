@@ -73,7 +73,7 @@ fn body_type_1part_limited<'a>(
         move |input: &'a [u8]| body_type_msg_limited(input, remaining_recursions.saturating_sub(1));
 
     let parser = tuple((
-        alt((body_type_basic, body_type_msg, body_type_text)),
+        alt((body_type_msg, body_type_text, body_type_basic)),
         opt(preceded(SP, body_ext_1part)),
     ));
 
