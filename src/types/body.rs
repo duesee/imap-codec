@@ -1,6 +1,10 @@
-use crate::types::{
-    core::{IString, NString, Number},
-    envelope::Envelope,
+use crate::{
+    codec::Codec,
+    types::{
+        core::{IString, NString, Number},
+        envelope::Envelope,
+    },
+    List1AttributeValueOrNil, List1OrNil,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,6 +13,59 @@ pub struct Body {
     pub basic: BasicFields,
     /// Type-specific fields
     pub specific: SpecificFields,
+}
+
+impl Codec for Body {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        match self.specific {
+            SpecificFields::Basic {
+                ref type_,
+                ref subtype,
+            } => {
+                out.extend(&type_.serialize());
+                out.push(b' ');
+                out.extend(&subtype.serialize());
+                out.push(b' ');
+                out.extend(&self.basic.serialize());
+            }
+            SpecificFields::Message {
+                ref envelope,
+                ref body_structure,
+                number_of_lines,
+            } => {
+                out.extend_from_slice(b"\"TEXT\" \"RFC822\" ");
+                out.extend(&self.basic.serialize());
+                out.push(b' ');
+                out.extend(&envelope.serialize());
+                out.push(b' ');
+                out.extend(&body_structure.serialize());
+                out.push(b' ');
+                out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
+            }
+            SpecificFields::Text {
+                ref subtype,
+                number_of_lines,
+            } => {
+                out.extend_from_slice(b"\"TEXT\" ");
+                out.extend(&subtype.serialize());
+                out.push(b' ');
+                out.extend(&self.basic.serialize());
+                out.push(b' ');
+                out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
+            }
+        }
+
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 // impl std::fmt::Display for Body {
@@ -92,6 +149,29 @@ pub struct BasicFields {
     /// Note that this size is the size in its transfer encoding
     /// and not the resulting size after any decoding.
     pub size: Number,
+}
+
+impl Codec for BasicFields {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend(List1AttributeValueOrNil(&self.parameter_list).serialize());
+        out.push(b' ');
+        out.extend(&self.id.serialize());
+        out.push(b' ');
+        out.extend(&self.description.serialize());
+        out.push(b' ');
+        out.extend(&self.content_transfer_encoding.serialize());
+        out.push(b' ');
+        out.extend(format!("{}", self.size).as_bytes());
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -230,6 +310,47 @@ pub struct SinglePartExtensionData {
     pub extension: Vec<u8>,
 }
 
+impl Codec for SinglePartExtensionData {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = self.md5.serialize();
+        if let Some(ref dsp) = self.disposition {
+            out.push(b' ');
+            match dsp {
+                Some((s, param)) => {
+                    out.extend(s.serialize());
+                    out.push(b' ');
+                    out.extend(&List1AttributeValueOrNil(&param).serialize());
+                }
+                None => out.extend_from_slice(b"NIL"),
+            }
+
+            if let Some(ref lang) = self.language {
+                out.push(b' ');
+                out.extend(&List1OrNil(lang, b" ").serialize());
+
+                if let Some(ref loc) = self.location {
+                    out.push(b' ');
+                    out.extend(&loc.serialize());
+
+                    if !self.extension.is_empty() {
+                        out.push(b' ');
+                        out.extend(&self.extension);
+                    }
+                }
+            }
+        }
+
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
+
 /// The extension data of a multipart body part are in the following order:
 ///
 /// # Trace (not in RFC)
@@ -273,6 +394,48 @@ pub struct MultiPartExtensionData {
     pub location: Option<NString>,
 
     pub extension: Vec<u8>,
+}
+
+impl Codec for MultiPartExtensionData {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = List1AttributeValueOrNil(&self.parameter_list).serialize();
+
+        if let Some(ref dsp) = self.disposition {
+            out.push(b' ');
+            match dsp {
+                Some((s, param)) => {
+                    out.extend(s.serialize());
+                    out.push(b' ');
+                    out.extend(&List1AttributeValueOrNil(&param).serialize());
+                }
+                None => out.extend_from_slice(b"NIL"),
+            }
+
+            if let Some(ref lang) = self.language {
+                out.push(b' ');
+                out.extend(&List1OrNil(lang, b" ").serialize());
+
+                if let Some(ref loc) = self.location {
+                    out.push(b' ');
+                    out.extend(&loc.serialize());
+
+                    if !self.extension.is_empty() {
+                        out.push(b' ');
+                        out.extend(&self.extension);
+                    }
+                }
+            }
+        }
+
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -351,42 +514,42 @@ pub enum BodyStructure {
     },
 }
 
-// impl Codec for BodyStructure {
-//     fn serialize(&self) -> Vec<u8> {
-//         use std::fmt::Write;
-//
-//         match self {
-//             Self::Single(body) => format!("{}", body).into_bytes(),
-//             Self::Multi(bodystructs, subtype, extensions) => {
-//                 let mut ret_val = String::new();
-//
-//                 write!(ret_val, "(").unwrap();
-//                 for bodystruct in bodystructs {
-//                     write!(
-//                         ret_val,
-//                         "{}",
-//                         String::from_utf8(bodystruct.serialize()).unwrap()
-//                     )
-//                     .unwrap();
-//                 }
-//
-//                 write!(ret_val, " {}", subtype).unwrap();
-//
-//                 if let Some(_extensions) = extensions {
-//                     unimplemented!();
-//                 }
-//
-//                 write!(ret_val, ")").unwrap();
-//
-//                 ret_val.into_bytes()
-//             }
-//         }
-//     }
-//
-//     fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), BodyStructure>
-//     where
-//         Self: Sized,
-//     {
-//         unimplemented!()
-//     }
-// }
+impl Codec for BodyStructure {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = b"(".to_vec();
+        match self {
+            BodyStructure::Single { body, extension } => {
+                out.extend(&body.serialize());
+                if let Some(extension) = extension {
+                    out.push(b' ');
+                    out.extend(&extension.serialize());
+                }
+            }
+            BodyStructure::Multi {
+                bodies,
+                subtype,
+                extension_data,
+            } => {
+                for body in bodies {
+                    out.extend(&body.serialize());
+                }
+                out.push(b' ');
+                out.extend(&subtype.serialize());
+
+                if let Some(extension) = extension_data {
+                    out.push(b' ');
+                    out.extend(&extension.serialize());
+                }
+            }
+        }
+        out.push(b')');
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), BodyStructure>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}

@@ -37,3 +37,41 @@ where
         unimplemented!()
     }
 }
+
+struct List1AttributeValueOrNil<'a, T>(&'a Vec<(T, T)>);
+
+impl<'a, T> Codec for List1AttributeValueOrNil<'a, T>
+where
+    T: Codec,
+{
+    fn serialize(&self) -> Vec<u8> {
+        if let Some((last, head)) = self.0.split_last() {
+            let mut out = b"(".to_vec();
+
+            for (attribute, value) in head {
+                out.extend(&attribute.serialize());
+                out.push(b' ');
+                out.extend(&value.serialize());
+                out.push(b' ');
+            }
+
+            let (attribute, value) = last;
+            out.extend(&attribute.serialize());
+            out.push(b' ');
+            out.extend(&value.serialize());
+
+            out.push(b')');
+
+            out
+        } else {
+            b"NIL".to_vec()
+        }
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
