@@ -1,5 +1,23 @@
 # Fuzzing
 
+## Use Nightly
+
+Cargo fuzz requires nightly. You can override the toolchain by using
+
+```sh
+rustup override set nightly
+```
+
+Don't forget to unset it with
+
+```sh
+rustup override unset
+```
+
+as imap-proto-server should work with stable.
+
+## Run the fuzzing process
+
 Three fuzzing targets are defined `greeting`, `command`, and `response`. They can be run with
 
 ```sh
