@@ -54,7 +54,9 @@ fn body_limited<'a>(
     )(input)
 }
 
-/// body-type-1part = (body-type-basic / body-type-msg / body-type-text) [SP body-ext-1part]
+/// body-type-1part = (body-type-basic /
+///                    body-type-msg /
+///                    body-type-text) [SP body-ext-1part]
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed.
@@ -111,7 +113,11 @@ fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)
     ))
 }
 
-/// body-type-msg = media-message SP body-fields SP envelope SP body SP body-fld-lines
+/// body-type-msg = media-message SP
+///                 body-fields SP
+///                 envelope SP
+///                 body SP
+///                 body-fld-lines
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
