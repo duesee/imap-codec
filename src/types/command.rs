@@ -16,7 +16,7 @@ use crate::{
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Command {
     pub tag: Tag,
     pub body: CommandBody,
