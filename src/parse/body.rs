@@ -84,11 +84,8 @@ fn body_type_1part_limited<'a>(
     Ok((
         remaining,
         BodyStructure::Single {
-            body: Body {
-                basic,
-                specific,
-                extension: maybe_extension,
-            },
+            body: Body { basic, specific },
+            extension: maybe_extension,
         },
     ))
 }

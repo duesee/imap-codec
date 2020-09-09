@@ -9,16 +9,6 @@ pub struct Body {
     pub basic: BasicFields,
     /// Type-specific fields
     pub specific: SpecificFields,
-    /// Extension data
-    ///
-    /// Extension data is never returned with the BODY fetch,
-    /// but can be returned with a BODYSTRUCTURE fetch.
-    /// Extension data, if present, MUST be in the defined order.
-    ///
-    /// Any following extension data are not yet defined in this
-    /// version of the protocol, and would be as described above under
-    /// multipart extension data.
-    pub extension: Option<SinglePartExtensionData>,
 }
 
 // impl std::fmt::Display for Body {
@@ -293,7 +283,19 @@ pub enum BodyStructure {
     /// ```text
     /// ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 2279 48)
     /// ```
-    Single { body: Body },
+    Single {
+        body: Body,
+        /// Extension data
+        ///
+        /// Extension data is never returned with the BODY fetch,
+        /// but can be returned with a BODYSTRUCTURE fetch.
+        /// Extension data, if present, MUST be in the defined order.
+        ///
+        /// Any following extension data are not yet defined in this
+        /// version of the protocol, and would be as described above under
+        /// multipart extension data.
+        extension: Option<SinglePartExtensionData>,
+    },
 
     /// Multiple parts are indicated by parenthesis nesting.  Instead
     /// of a body type as the first element of the parenthesized list,
