@@ -43,13 +43,6 @@ impl Codec for Response {
             Response::Continuation(continuation) => continuation.serialize(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 // FIXME: IMAP text != UTF-8 String, must not be empty
@@ -287,13 +280,6 @@ impl Codec for Status {
             }
             Status::Bye { code, text } => format_status(&None, "BYE", code, text).into_bytes(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Status>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -658,13 +644,6 @@ impl Codec for Data {
             .concat(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Data>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 pub type Inbox = String;
@@ -765,13 +744,6 @@ impl Codec for Continuation {
             },
             Continuation::Base64(data) => format!("+ {}\r\n", data).into_bytes(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Continuation>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -920,13 +892,6 @@ impl Codec for Code {
     fn serialize(&self) -> Vec<u8> {
         self.to_string().into_bytes()
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// The current data items are:
@@ -1072,13 +1037,6 @@ impl Codec for DataItemResponse {
             }
             Uid(uid) => format!("UID {}", uid).into_bytes(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), DataItemResponse>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 

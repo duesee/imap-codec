@@ -19,13 +19,6 @@ impl Codec for ListMailbox {
             ListMailbox::String(imap_str) => imap_str.serialize(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), ListMailbox>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 impl From<&str> for ListMailbox {
@@ -121,13 +114,6 @@ impl Codec for Mailbox {
             Mailbox::Inbox => b"INBOX".to_vec(),
             Mailbox::Other(a_str) => a_str.serialize(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Mailbox>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 

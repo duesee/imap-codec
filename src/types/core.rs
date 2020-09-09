@@ -92,13 +92,6 @@ impl Codec for Atom {
     fn serialize(&self) -> Vec<u8> {
         self.0.to_string().into_bytes()
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Atom>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 // ## 4.2. Number
@@ -223,13 +216,6 @@ impl Codec for IString {
             Self::Quoted(val) => format!("\"{}\"", escape_quoted(val)).into_bytes(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), IString>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 #[allow(non_camel_case_types)]
@@ -257,13 +243,6 @@ impl Codec for NString {
             Some(imap_str) => imap_str.serialize(),
             None => b"NIL".to_vec(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), NString>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -324,13 +303,6 @@ impl Codec for AString {
             AString::Atom(atom) => atom.as_bytes().to_vec(),
             AString::String(imap_str) => imap_str.serialize(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), AString>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -415,13 +387,6 @@ impl std::fmt::Display for Charset {
 impl Codec for Charset {
     fn serialize(&self) -> Vec<u8> {
         self.to_string().into_bytes()
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 

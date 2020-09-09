@@ -29,13 +29,6 @@ where
             b"NIL".to_vec()
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 struct List1AttributeValueOrNil<'a, T>(&'a Vec<(T, T)>);
@@ -66,12 +59,5 @@ where
         } else {
             b"NIL".to_vec()
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }

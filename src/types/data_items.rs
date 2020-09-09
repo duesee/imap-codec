@@ -39,13 +39,6 @@ impl Codec for Macro {
             Macro::Full => b"FULL".to_vec(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
@@ -70,13 +63,6 @@ impl Codec for MacroOrDataItems {
                 }
             }
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -236,13 +222,6 @@ impl Codec for DataItem {
             DataItem::Uid => b"UID".to_vec(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// A part specifier is either a part number or one of the following:
@@ -373,13 +352,6 @@ impl Codec for Section {
             }
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -394,12 +366,5 @@ impl Codec for Part {
                 .collect::<Vec<Vec<u8>>>(),
             b".",
         )
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }

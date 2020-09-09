@@ -59,13 +59,6 @@ impl Codec for Body {
 
         out
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 // impl std::fmt::Display for Body {
@@ -164,13 +157,6 @@ impl Codec for BasicFields {
         out.push(b' ');
         out.extend(format!("{}", self.size).as_bytes());
         out
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -342,13 +328,6 @@ impl Codec for SinglePartExtensionData {
 
         out
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// The extension data of a multipart body part are in the following order:
@@ -428,13 +407,6 @@ impl Codec for MultiPartExtensionData {
         }
 
         out
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -544,12 +516,5 @@ impl Codec for BodyStructure {
         }
         out.push(b')');
         out
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), BodyStructure>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }

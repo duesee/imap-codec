@@ -1362,13 +1362,6 @@ impl Codec for Command {
         out.extend_from_slice(b"\r\n");
         out
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 impl CommandBody {
@@ -1644,13 +1637,6 @@ impl Codec for CommandBody {
             CommandBody::Idle => b"IDLE".to_vec(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// The currently defined status data items that can be requested.
@@ -1681,13 +1667,6 @@ impl Codec for StatusItem {
             StatusItem::UidValidity => b"UIDVALIDITY".to_vec(),
             StatusItem::Unseen => b"UNSEEN".to_vec(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], StatusItem), StatusItem>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
@@ -1927,13 +1906,6 @@ impl Codec for SearchKey {
                 }
             }
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 

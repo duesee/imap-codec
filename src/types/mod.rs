@@ -76,11 +76,4 @@ impl Codec for AuthMechanism {
             AuthMechanism::Other(atom) => atom.serialize(),
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }

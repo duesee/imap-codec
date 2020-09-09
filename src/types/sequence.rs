@@ -15,13 +15,6 @@ impl Codec for Sequence {
             }
         }
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,13 +29,6 @@ impl Codec for SeqNo {
             SeqNo::Value(number) => number.to_string().into_bytes(),
             SeqNo::Largest => b"*".to_vec(),
         }
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 

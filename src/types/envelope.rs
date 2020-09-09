@@ -91,11 +91,4 @@ impl Codec for Envelope {
         out.push(b')');
         out
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }

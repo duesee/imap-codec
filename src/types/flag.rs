@@ -82,13 +82,6 @@ impl Codec for Flag {
     fn serialize(&self) -> Vec<u8> {
         format!("{}", self).into_bytes()
     }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
-    }
 }
 
 /// Four name attributes are defined.
@@ -139,13 +132,6 @@ impl std::fmt::Display for FlagNameAttribute {
 impl Codec for FlagNameAttribute {
     fn serialize(&self) -> Vec<u8> {
         format!("{}", self).into_bytes()
-    }
-
-    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
-    where
-        Self: Sized,
-    {
-        unimplemented!()
     }
 }
 
