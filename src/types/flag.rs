@@ -1,6 +1,6 @@
 // ### 2.3.2. Flags Message Attribute
 
-use crate::{codec::Codec, types::core::Atom};
+use crate::{codec::Encoder, types::core::Atom};
 use serde::Deserialize;
 
 /// A list of zero or more named tokens associated with the message.  A
@@ -78,8 +78,8 @@ impl std::fmt::Display for Flag {
     }
 }
 
-impl Codec for Flag {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Flag {
+    fn encode(&self) -> Vec<u8> {
         format!("{}", self).into_bytes()
     }
 }
@@ -129,8 +129,8 @@ impl std::fmt::Display for FlagNameAttribute {
     }
 }
 
-impl Codec for FlagNameAttribute {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for FlagNameAttribute {
+    fn encode(&self) -> Vec<u8> {
         format!("{}", self).into_bytes()
     }
 }

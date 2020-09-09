@@ -3,7 +3,7 @@
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
 use crate::{
-    codec::Codec,
+    codec::Encoder,
     types::{
         core::{AString, Atom, Charset, Tag},
         data_items::MacroOrDataItems,
@@ -1354,11 +1354,11 @@ pub enum CommandBody {
     Idle,
 }
 
-impl Codec for Command {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Command {
+    fn encode(&self) -> Vec<u8> {
         let mut out = self.tag.0.as_bytes().to_vec();
         out.push(b' ');
-        out.extend(self.body.serialize());
+        out.extend(self.body.encode());
         out.extend_from_slice(b"\r\n");
         out
     }
@@ -1398,8 +1398,8 @@ impl CommandBody {
     }
 }
 
-impl Codec for CommandBody {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for CommandBody {
+    fn encode(&self) -> Vec<u8> {
         match self {
             CommandBody::Capability => b"CAPABILITY".to_vec(),
             CommandBody::Noop => b"NOOP".to_vec(),
@@ -1411,7 +1411,7 @@ impl Codec for CommandBody {
             } => {
                 let mut out = b"AUTHENTICATE".to_vec();
                 out.push(b' ');
-                out.extend(mechanism.serialize());
+                out.extend(mechanism.encode());
 
                 if let Some(ir) = initial_response {
                     out.push(b' ');
@@ -1423,33 +1423,33 @@ impl Codec for CommandBody {
             CommandBody::Login { username, password } => {
                 let mut out = b"LOGIN".to_vec();
                 out.push(b' ');
-                out.extend(username.serialize());
+                out.extend(username.encode());
                 out.push(b' ');
-                out.extend(password.serialize());
+                out.extend(password.encode());
                 out
             }
             CommandBody::Select { mailbox_name } => {
                 let mut out = b"SELECT".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::Examine { mailbox_name } => {
                 let mut out = b"EXAMINE".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::Create { mailbox_name } => {
                 let mut out = b"CREATE".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::Delete { mailbox_name } => {
                 let mut out = b"DELETE".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::Rename {
@@ -1458,51 +1458,51 @@ impl Codec for CommandBody {
             } => {
                 let mut out = b"RENAME".to_vec();
                 out.push(b' ');
-                out.extend(existing_mailbox_name.serialize());
+                out.extend(existing_mailbox_name.encode());
                 out.push(b' ');
-                out.extend(new_mailbox_name.serialize());
+                out.extend(new_mailbox_name.encode());
                 out
             }
             CommandBody::Subscribe { mailbox_name } => {
                 let mut out = b"SUBSCRIBE".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::Unsubscribe { mailbox_name } => {
                 let mut out = b"UNSUBSCRIBE".to_vec();
                 out.push(b' ');
-                out.extend(mailbox_name.serialize());
+                out.extend(mailbox_name.encode());
                 out
             }
             CommandBody::List { reference, mailbox } => {
                 let mut out = b"LIST".to_vec();
                 out.push(b' ');
-                out.extend(reference.serialize());
+                out.extend(reference.encode());
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out
             }
             CommandBody::Lsub { reference, mailbox } => {
                 let mut out = b"LSUB".to_vec();
                 out.push(b' ');
-                out.extend(reference.serialize());
+                out.extend(reference.encode());
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out
             }
             CommandBody::Status { mailbox, items } => {
                 let mut out = b"STATUS".to_vec();
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out.push(b' ');
                 out.push(b'(');
                 if let Some((last, elements)) = items.split_last() {
                     for element in elements {
-                        out.extend(element.serialize());
+                        out.extend(element.encode());
                         out.push(b' ');
                     }
-                    out.extend(last.serialize());
+                    out.extend(last.encode());
                 }
                 out.push(b')');
                 out
@@ -1515,20 +1515,20 @@ impl Codec for CommandBody {
             } => {
                 let mut out = b"APPEND".to_vec();
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 if let Some((last, elements)) = flags.split_last() {
                     out.push(b' ');
                     out.push(b'(');
                     for element in elements {
-                        out.extend(element.serialize());
+                        out.extend(element.encode());
                         out.push(b' ');
                     }
-                    out.extend(last.serialize());
+                    out.extend(last.encode());
                     out.push(b')');
                 }
                 if let Some(date) = date {
                     out.push(b' ');
-                    out.extend(date.serialize());
+                    out.extend(date.encode());
                 }
                 out.push(b' ');
                 out.extend(format!("{{{}}}\r\n", message.len()).into_bytes());
@@ -1556,7 +1556,7 @@ impl Codec for CommandBody {
                 if let SearchKey::And(search_keys) = criteria {
                     out.extend(join_serializable(search_keys, b" "));
                 } else {
-                    out.extend(criteria.serialize());
+                    out.extend(criteria.encode());
                 }
                 out
             }
@@ -1575,13 +1575,13 @@ impl Codec for CommandBody {
                 let seq = join_bytes(
                     sequence_set
                         .iter()
-                        .map(Codec::serialize)
+                        .map(Encoder::encode)
                         .collect::<Vec<Vec<u8>>>(),
                     b",",
                 );
                 out.extend(seq);
                 out.push(b' ');
-                out.extend(items.serialize());
+                out.extend(items.encode());
                 out
             }
             CommandBody::Store {
@@ -1631,7 +1631,7 @@ impl Codec for CommandBody {
                 };
                 out.extend(join_serializable(sequence_set, b","));
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out
             }
             CommandBody::Idle => b"IDLE".to_vec(),
@@ -1658,8 +1658,8 @@ pub enum StatusItem {
     Unseen,
 }
 
-impl Codec for StatusItem {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for StatusItem {
+    fn encode(&self) -> Vec<u8> {
         match self {
             StatusItem::Messages => b"MESSAGES".to_vec(),
             StatusItem::Recent => b"RECENT".to_vec(),
@@ -1819,64 +1819,64 @@ pub enum SearchKey {
     Unseen,
 }
 
-impl Codec for SearchKey {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for SearchKey {
+    fn encode(&self) -> Vec<u8> {
         match self {
             SearchKey::All => b"ALL".to_vec(),
             SearchKey::Answered => b"ANSWERED".to_vec(),
-            SearchKey::Bcc(astring) => [b"BCC ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Before(date) => [b"BEFORE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Body(astring) => [b"BODY ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Cc(astring) => [b"CC ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Bcc(astring) => [b"BCC ".as_ref(), &astring.encode()].concat(),
+            SearchKey::Before(date) => [b"BEFORE ".as_ref(), &date.encode()].concat(),
+            SearchKey::Body(astring) => [b"BODY ".as_ref(), &astring.encode()].concat(),
+            SearchKey::Cc(astring) => [b"CC ".as_ref(), &astring.encode()].concat(),
             SearchKey::Deleted => b"DELETED".to_vec(),
             SearchKey::Flagged => b"FLAGGED".to_vec(),
-            SearchKey::From(astring) => [b"FROM ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::From(astring) => [b"FROM ".as_ref(), &astring.encode()].concat(),
             SearchKey::Keyword(flag_keyword) => {
-                [b"KEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+                [b"KEYWORD ".as_ref(), &flag_keyword.encode()].concat()
             }
             SearchKey::New => b"NEW".to_vec(),
             SearchKey::Old => b"OLD".to_vec(),
-            SearchKey::On(date) => [b"ON ".as_ref(), &date.serialize()].concat(),
+            SearchKey::On(date) => [b"ON ".as_ref(), &date.encode()].concat(),
             SearchKey::Recent => b"RECENT".to_vec(),
             SearchKey::Seen => b"SEEN".to_vec(),
-            SearchKey::Since(date) => [b"SINCE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Subject(astring) => [b"SUBJECT ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Text(astring) => [b"TEXT ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::To(astring) => [b"TO ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::Since(date) => [b"SINCE ".as_ref(), &date.encode()].concat(),
+            SearchKey::Subject(astring) => [b"SUBJECT ".as_ref(), &astring.encode()].concat(),
+            SearchKey::Text(astring) => [b"TEXT ".as_ref(), &astring.encode()].concat(),
+            SearchKey::To(astring) => [b"TO ".as_ref(), &astring.encode()].concat(),
             SearchKey::Unanswered => b"UNANSWERED".to_vec(),
             SearchKey::Undeleted => b"UNDELETED".to_vec(),
             SearchKey::Unflagged => b"UNFLAGGED".to_vec(),
             SearchKey::Unkeyword(flag_keyword) => {
-                [b"UNKEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+                [b"UNKEYWORD ".as_ref(), &flag_keyword.encode()].concat()
             }
             SearchKey::Unseen => b"UNSEEN".to_vec(),
             SearchKey::Draft => b"DRAFT".to_vec(),
             SearchKey::Header(header_fld_name, astring) => [
                 b"HEADER ".as_ref(),
-                &header_fld_name.serialize(),
+                &header_fld_name.encode(),
                 b" ".as_ref(),
-                &astring.serialize(),
+                &astring.encode(),
             ]
             .concat(),
             SearchKey::Larger(number) => format!("LARGER {}", number).into_bytes(),
-            SearchKey::Not(search_key) => [b"NOT ".as_ref(), &search_key.serialize()].concat(),
+            SearchKey::Not(search_key) => [b"NOT ".as_ref(), &search_key.encode()].concat(),
             SearchKey::Or(search_key_a, search_key_b) => [
                 b"OR ".as_ref(),
-                &search_key_a.serialize(),
+                &search_key_a.encode(),
                 b" ".as_ref(),
-                &search_key_b.serialize(),
+                &search_key_b.encode(),
             ]
             .concat(),
-            SearchKey::SentBefore(date) => [b"SENTBEFORE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::SentOn(date) => [b"SENTON ".as_ref(), &date.serialize()].concat(),
-            SearchKey::SentSince(date) => [b"SENTSINCE ".as_ref(), &date.serialize()].concat(),
+            SearchKey::SentBefore(date) => [b"SENTBEFORE ".as_ref(), &date.encode()].concat(),
+            SearchKey::SentOn(date) => [b"SENTON ".as_ref(), &date.encode()].concat(),
+            SearchKey::SentSince(date) => [b"SENTSINCE ".as_ref(), &date.encode()].concat(),
             SearchKey::Smaller(number) => format!("SMALLER {}", number).into_bytes(),
             SearchKey::Uid(sequence_set) => [
                 b"UID ".as_ref(),
                 join_bytes(
                     sequence_set
                         .iter()
-                        .map(Codec::serialize)
+                        .map(Encoder::encode)
                         .collect::<Vec<Vec<u8>>>(),
                     b",",
                 )
@@ -1887,7 +1887,7 @@ impl Codec for SearchKey {
             SearchKey::SequenceSet(sequence_set) => join_bytes(
                 sequence_set
                     .iter()
-                    .map(Codec::serialize)
+                    .map(Encoder::encode)
                     .collect::<Vec<Vec<u8>>>(),
                 b",",
             ),
@@ -1895,10 +1895,10 @@ impl Codec for SearchKey {
                 let mut out = b"(".to_vec();
                 if let Some((last, elements)) = search_keys.split_last() {
                     for element in elements {
-                        out.extend(element.serialize());
+                        out.extend(element.encode());
                         out.push(b' ')
                     }
-                    out.extend(last.serialize());
+                    out.extend(last.encode());
                     out.push(b')');
                     out
                 } else {
@@ -1912,7 +1912,7 @@ impl Codec for SearchKey {
 #[cfg(test)]
 mod test {
     use crate::{
-        codec::Codec,
+        codec::Encoder,
         types::{
             command::{Command, SearchKey, StatusItem},
             core::{AString, IString},
@@ -2045,7 +2045,7 @@ mod test {
         for cmd in cmds {
             println!("Test: {:?}", cmd);
 
-            let serialized = cmd.serialize();
+            let serialized = cmd.encode();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
 

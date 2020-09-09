@@ -1,5 +1,5 @@
 use crate::{
-    codec::Codec,
+    codec::Encoder,
     types::{
         core::{IString, NString, Number},
         envelope::Envelope,
@@ -15,8 +15,8 @@ pub struct Body {
     pub specific: SpecificFields,
 }
 
-impl Codec for Body {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Body {
+    fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         match self.specific {
@@ -24,11 +24,11 @@ impl Codec for Body {
                 ref type_,
                 ref subtype,
             } => {
-                out.extend(&type_.serialize());
+                out.extend(&type_.encode());
                 out.push(b' ');
-                out.extend(&subtype.serialize());
+                out.extend(&subtype.encode());
                 out.push(b' ');
-                out.extend(&self.basic.serialize());
+                out.extend(&self.basic.encode());
             }
             SpecificFields::Message {
                 ref envelope,
@@ -36,11 +36,11 @@ impl Codec for Body {
                 number_of_lines,
             } => {
                 out.extend_from_slice(b"\"TEXT\" \"RFC822\" ");
-                out.extend(&self.basic.serialize());
+                out.extend(&self.basic.encode());
                 out.push(b' ');
-                out.extend(&envelope.serialize());
+                out.extend(&envelope.encode());
                 out.push(b' ');
-                out.extend(&body_structure.serialize());
+                out.extend(&body_structure.encode());
                 out.push(b' ');
                 out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
             }
@@ -49,9 +49,9 @@ impl Codec for Body {
                 number_of_lines,
             } => {
                 out.extend_from_slice(b"\"TEXT\" ");
-                out.extend(&subtype.serialize());
+                out.extend(&subtype.encode());
                 out.push(b' ');
-                out.extend(&self.basic.serialize());
+                out.extend(&self.basic.encode());
                 out.push(b' ');
                 out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
             }
@@ -144,16 +144,16 @@ pub struct BasicFields {
     pub size: Number,
 }
 
-impl Codec for BasicFields {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for BasicFields {
+    fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        out.extend(List1AttributeValueOrNil(&self.parameter_list).serialize());
+        out.extend(List1AttributeValueOrNil(&self.parameter_list).encode());
         out.push(b' ');
-        out.extend(&self.id.serialize());
+        out.extend(&self.id.encode());
         out.push(b' ');
-        out.extend(&self.description.serialize());
+        out.extend(&self.description.encode());
         out.push(b' ');
-        out.extend(&self.content_transfer_encoding.serialize());
+        out.extend(&self.content_transfer_encoding.encode());
         out.push(b' ');
         out.extend(format!("{}", self.size).as_bytes());
         out
@@ -296,27 +296,27 @@ pub struct SinglePartExtensionData {
     pub extension: Vec<u8>,
 }
 
-impl Codec for SinglePartExtensionData {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = self.md5.serialize();
+impl Encoder for SinglePartExtensionData {
+    fn encode(&self) -> Vec<u8> {
+        let mut out = self.md5.encode();
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
             match dsp {
                 Some((s, param)) => {
-                    out.extend(s.serialize());
+                    out.extend(s.encode());
                     out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).serialize());
+                    out.extend(&List1AttributeValueOrNil(&param).encode());
                 }
                 None => out.extend_from_slice(b"NIL"),
             }
 
             if let Some(ref lang) = self.language {
                 out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").serialize());
+                out.extend(&List1OrNil(lang, b" ").encode());
 
                 if let Some(ref loc) = self.location {
                     out.push(b' ');
-                    out.extend(&loc.serialize());
+                    out.extend(&loc.encode());
 
                     if !self.extension.is_empty() {
                         out.push(b' ');
@@ -375,28 +375,28 @@ pub struct MultiPartExtensionData {
     pub extension: Vec<u8>,
 }
 
-impl Codec for MultiPartExtensionData {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = List1AttributeValueOrNil(&self.parameter_list).serialize();
+impl Encoder for MultiPartExtensionData {
+    fn encode(&self) -> Vec<u8> {
+        let mut out = List1AttributeValueOrNil(&self.parameter_list).encode();
 
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
             match dsp {
                 Some((s, param)) => {
-                    out.extend(s.serialize());
+                    out.extend(s.encode());
                     out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).serialize());
+                    out.extend(&List1AttributeValueOrNil(&param).encode());
                 }
                 None => out.extend_from_slice(b"NIL"),
             }
 
             if let Some(ref lang) = self.language {
                 out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").serialize());
+                out.extend(&List1OrNil(lang, b" ").encode());
 
                 if let Some(ref loc) = self.location {
                     out.push(b' ');
-                    out.extend(&loc.serialize());
+                    out.extend(&loc.encode());
 
                     if !self.extension.is_empty() {
                         out.push(b' ');
@@ -486,15 +486,15 @@ pub enum BodyStructure {
     },
 }
 
-impl Codec for BodyStructure {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for BodyStructure {
+    fn encode(&self) -> Vec<u8> {
         let mut out = b"(".to_vec();
         match self {
             BodyStructure::Single { body, extension } => {
-                out.extend(&body.serialize());
+                out.extend(&body.encode());
                 if let Some(extension) = extension {
                     out.push(b' ');
-                    out.extend(&extension.serialize());
+                    out.extend(&extension.encode());
                 }
             }
             BodyStructure::Multi {
@@ -503,14 +503,14 @@ impl Codec for BodyStructure {
                 extension_data,
             } => {
                 for body in bodies {
-                    out.extend(&body.serialize());
+                    out.extend(&body.encode());
                 }
                 out.push(b' ');
-                out.extend(&subtype.serialize());
+                out.extend(&subtype.encode());
 
                 if let Some(extension) = extension_data {
                     out.push(b' ');
-                    out.extend(&extension.serialize());
+                    out.extend(&extension.encode());
                 }
             }
         }

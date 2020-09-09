@@ -1,5 +1,5 @@
 use crate::{
-    codec::Codec,
+    codec::Encoder,
     types::{address::Address, core::NString},
     List1OrNil,
 };
@@ -56,38 +56,38 @@ use crate::{
 pub struct Envelope {
     pub date: NString, // TODO: must not be empty string
     pub subject: NString,
-    pub from: Vec<Address>,     // serialize as nil if empty?
+    pub from: Vec<Address>,     // encode as nil if empty?
     pub sender: Vec<Address>,   // TODO: set to from if absent or empty
     pub reply_to: Vec<Address>, // TODO: set to from if absent or empty
-    pub to: Vec<Address>,       // serialize as nil if empty?
-    pub cc: Vec<Address>,       // serialize as nil if empty?
-    pub bcc: Vec<Address>,      // serialize as nil if empty?
+    pub to: Vec<Address>,       // encode as nil if empty?
+    pub cc: Vec<Address>,       // encode as nil if empty?
+    pub bcc: Vec<Address>,      // encode as nil if empty?
     pub in_reply_to: NString,   // TODO: must not be empty string
     pub message_id: NString,    // TODO: must not be empty string
 }
 
-impl Codec for Envelope {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Envelope {
+    fn encode(&self) -> Vec<u8> {
         let mut out = b"(".to_vec();
-        out.extend(self.date.serialize());
+        out.extend(self.date.encode());
         out.push(b' ');
-        out.extend(self.subject.serialize());
+        out.extend(self.subject.encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.from, b"").serialize());
+        out.extend(List1OrNil(&self.from, b"").encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.sender, b"").serialize());
+        out.extend(List1OrNil(&self.sender, b"").encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.reply_to, b"").serialize());
+        out.extend(List1OrNil(&self.reply_to, b"").encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.to, b"").serialize());
+        out.extend(List1OrNil(&self.to, b"").encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.cc, b"").serialize());
+        out.extend(List1OrNil(&self.cc, b"").encode());
         out.push(b' ');
-        out.extend(List1OrNil(&self.bcc, b"").serialize());
+        out.extend(List1OrNil(&self.bcc, b"").encode());
         out.push(b' ');
-        out.extend(self.in_reply_to.serialize());
+        out.extend(self.in_reply_to.encode());
         out.push(b' ');
-        out.extend(self.message_id.serialize());
+        out.extend(self.message_id.encode());
         out.push(b')');
         out
     }

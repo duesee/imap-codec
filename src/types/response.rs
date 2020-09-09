@@ -1,7 +1,7 @@
 //! # 7. Server Responses
 
 use crate::{
-    codec::Codec,
+    codec::Encoder,
     types::{
         body::BodyStructure,
         core::{escape_quoted, Atom, Charset, NString, Tag},
@@ -35,12 +35,12 @@ pub enum Response {
     Continuation(Continuation),
 }
 
-impl Codec for Response {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Response {
+    fn encode(&self) -> Vec<u8> {
         match self {
-            Response::Status(status) => status.serialize(),
-            Response::Data(data) => data.serialize(),
-            Response::Continuation(continuation) => continuation.serialize(),
+            Response::Status(status) => status.encode(),
+            Response::Data(data) => data.encode(),
+            Response::Continuation(continuation) => continuation.encode(),
         }
     }
 }
@@ -252,8 +252,8 @@ impl Status {
     }
 }
 
-impl Codec for Status {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Status {
+    fn encode(&self) -> Vec<u8> {
         fn format_status(
             tag: &Option<Tag>,
             status: &str,
@@ -573,8 +573,8 @@ pub enum Data {
     },
 }
 
-impl Codec for Data {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Data {
+    fn encode(&self) -> Vec<u8> {
         match self {
             Data::Capability(caps) => format!("* CAPABILITY {}\r\n", join(caps, " ")).into_bytes(),
             Data::List {
@@ -592,7 +592,7 @@ impl Codec for Data {
                     out.extend_from_slice(b"nil");
                 }
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out.extend_from_slice(b"\r\n");
                 out
             }
@@ -611,13 +611,13 @@ impl Codec for Data {
                     out.extend_from_slice(b"nil");
                 }
                 out.push(b' ');
-                out.extend(mailbox.serialize());
+                out.extend(mailbox.encode());
                 out.extend_from_slice(b"\r\n");
                 out
             }
             Data::Status { name, items } => [
                 b"* STATUS ".as_ref(),
-                name.serialize().as_ref(),
+                name.encode().as_ref(),
                 b" (",
                 join(items, " ").as_bytes(),
                 b")\r\n",
@@ -638,7 +638,7 @@ impl Codec for Data {
                 b"* ".as_ref(),
                 msg.to_string().as_bytes(),
                 b" FETCH (",
-                join_bytes(items.iter().map(|item| item.serialize()).collect(), b" ").as_ref(),
+                join_bytes(items.iter().map(|item| item.encode()).collect(), b" ").as_ref(),
                 b")\r\n",
             ]
             .concat(),
@@ -735,8 +735,8 @@ impl Continuation {
     }
 }
 
-impl Codec for Continuation {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Continuation {
+    fn encode(&self) -> Vec<u8> {
         match self {
             Continuation::Basic { code, text } => match code {
                 Some(ref code) => format!("+ [{}] {}\r\n", code, text).into_bytes(),
@@ -888,8 +888,8 @@ impl std::fmt::Display for Code {
     }
 }
 
-impl Codec for Code {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Code {
+    fn encode(&self) -> Vec<u8> {
         self.to_string().into_bytes()
     }
 }
@@ -994,8 +994,8 @@ pub enum DataItemResponse {
     Uid(u32),
 }
 
-impl Codec for DataItemResponse {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for DataItemResponse {
+    fn encode(&self) -> Vec<u8> {
         use DataItemResponse::*;
 
         match self {
@@ -1006,7 +1006,7 @@ impl Codec for DataItemResponse {
             } => {
                 let mut out = b"BODY[".to_vec();
                 if let Some(section) = section {
-                    out.extend(&section.serialize());
+                    out.extend(&section.encode());
                 }
                 out.push(b']');
                 if let Some(origin) = origin {
@@ -1015,26 +1015,24 @@ impl Codec for DataItemResponse {
                     out.push(b'>');
                 }
                 out.push(b' ');
-                out.extend(&data.serialize());
+                out.extend(&data.encode());
 
                 out
             }
             // FIXME: do not return body-ext-1part and body-ext-mpart here
-            Body(body) => [b"BODY ".as_ref(), body.serialize().as_ref()].concat(),
-            BodyStructure(body) => [b"BODYSTRUCTURE ".as_ref(), body.serialize().as_ref()].concat(),
-            Envelope(envelope) => [b"ENVELOPE ".as_ref(), envelope.serialize().as_ref()].concat(),
+            Body(body) => [b"BODY ".as_ref(), body.encode().as_ref()].concat(),
+            BodyStructure(body) => [b"BODYSTRUCTURE ".as_ref(), body.encode().as_ref()].concat(),
+            Envelope(envelope) => [b"ENVELOPE ".as_ref(), envelope.encode().as_ref()].concat(),
             Flags(flags) => format!("FLAGS ({})", join(flags, " ")).into_bytes(),
             InternalDate(datetime) => {
-                [b"INTERNALDATE ".as_ref(), datetime.serialize().as_ref()].concat()
+                [b"INTERNALDATE ".as_ref(), datetime.encode().as_ref()].concat()
             }
-            Rfc822(nstring) => [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat(),
+            Rfc822(nstring) => [b"RFC822 ".as_ref(), nstring.encode().as_ref()].concat(),
             Rfc822Header(nstring) => {
-                [b"RFC822.HEADER ".as_ref(), nstring.serialize().as_ref()].concat()
+                [b"RFC822.HEADER ".as_ref(), nstring.encode().as_ref()].concat()
             }
             Rfc822Size(size) => format!("RFC822.SIZE {}", size).into_bytes(),
-            Rfc822Text(nstring) => {
-                [b"RFC822.TEXT ".as_ref(), nstring.serialize().as_ref()].concat()
-            }
+            Rfc822Text(nstring) => [b"RFC822.TEXT ".as_ref(), nstring.encode().as_ref()].concat(),
             Uid(uid) => format!("UID {}", uid).into_bytes(),
         }
     }
@@ -1114,7 +1112,7 @@ mod test {
         ];
 
         for (parsed, serialized) in tests {
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            assert_eq!(parsed.encode(), serialized.to_vec());
             // FIXME
             //assert_eq!(
             //    <Status as Codec>::deserialize(serialized).unwrap().1,
@@ -1146,7 +1144,7 @@ mod test {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            assert_eq!(parsed.encode(), serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
         }
@@ -1168,7 +1166,7 @@ mod test {
         ];
 
         for (parsed, serialized) in tests.into_iter() {
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            assert_eq!(parsed.encode(), serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
         }

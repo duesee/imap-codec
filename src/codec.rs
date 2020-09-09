@@ -1,3 +1,3 @@
-pub trait Codec {
-    fn serialize(&self) -> Vec<u8>;
+pub trait Encoder {
+    fn encode(&self) -> Vec<u8>;
 }

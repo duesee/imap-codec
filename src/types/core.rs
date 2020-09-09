@@ -7,7 +7,7 @@
 //! using "astring" syntax may be either an atom or a string.
 
 use crate::{
-    codec::Codec,
+    codec::Encoder,
     parse::core::{is_astring_char, is_atom_char, is_text_char},
 };
 use serde::Deserialize;
@@ -88,8 +88,8 @@ impl fmt::Display for Atom {
     }
 }
 
-impl Codec for Atom {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Atom {
+    fn encode(&self) -> Vec<u8> {
         self.0.to_string().into_bytes()
     }
 }
@@ -205,8 +205,8 @@ pub fn unescape_quoted(escaped: &str) -> Cow<str> {
     unescaped
 }
 
-impl Codec for IString {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for IString {
+    fn encode(&self) -> Vec<u8> {
         match self {
             Self::Literal(val) => {
                 let mut out = format!("{{{}}}\r\n", val.len()).into_bytes();
@@ -237,10 +237,10 @@ impl<'a> nstr<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct NString(pub Option<IString>);
 
-impl Codec for NString {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for NString {
+    fn encode(&self) -> Vec<u8> {
         match &self.0 {
-            Some(imap_str) => imap_str.serialize(),
+            Some(imap_str) => imap_str.encode(),
             None => b"NIL".to_vec(),
         }
     }
@@ -297,11 +297,11 @@ impl TryFrom<AString> for String {
     }
 }
 
-impl Codec for AString {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for AString {
+    fn encode(&self) -> Vec<u8> {
         match self {
             AString::Atom(atom) => atom.as_bytes().to_vec(),
-            AString::String(imap_str) => imap_str.serialize(),
+            AString::String(imap_str) => imap_str.encode(),
         }
     }
 }
@@ -384,8 +384,8 @@ impl std::fmt::Display for Charset {
     }
 }
 
-impl Codec for Charset {
-    fn serialize(&self) -> Vec<u8> {
+impl Encoder for Charset {
+    fn encode(&self) -> Vec<u8> {
         self.to_string().into_bytes()
     }
 }
@@ -437,7 +437,7 @@ mod test {
         for (from, expected) in tests.iter() {
             let cs = Charset::try_from(*from).unwrap();
             println!("{}", cs);
-            assert_eq!(String::from_utf8(cs.serialize()).unwrap(), *expected);
+            assert_eq!(String::from_utf8(cs.encode()).unwrap(), *expected);
         }
 
         assert!(Charset::try_from("\r").is_err());

@@ -1,5 +1,5 @@
 use imap_proto_server::{
-    codec::Codec,
+    codec::Encoder,
     parse::{command::command, response::response},
 };
 
@@ -47,7 +47,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = command(line).unwrap();
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
-                let serialized = parsed.serialize();
+                let serialized = parsed.encode();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -62,7 +62,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = response(line).unwrap();
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
-                let serialized = parsed.serialize();
+                let serialized = parsed.encode();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
