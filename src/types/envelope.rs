@@ -1,4 +1,8 @@
-use crate::types::{address::Address, core::NString};
+use crate::{
+    codec::Codec,
+    types::{address::Address, core::NString},
+    List1OrNil,
+};
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,
@@ -62,22 +66,36 @@ pub struct Envelope {
     pub message_id: NString,    // TODO: must not be empty string
 }
 
-// FIXME
-// impl std::fmt::Display for Envelope {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-//         write!(
-//             f,
-//             "({} {} {} ({}) ({}) {} {} {} {} {})",
-//             self.date,
-//             self.subject,
-//             join_or_nil(&self.from, " "),
-//             join(&self.sender, " "),   // FIXME: set to from if empty
-//             join(&self.reply_to, " "), // FIXME: set to from if empty
-//             join_or_nil(&self.to, " "),
-//             join_or_nil(&self.cc, " "),
-//             join_or_nil(&self.bcc, " "),
-//             self.in_reply_to,
-//             self.message_id,
-//         )
-//     }
-// }
+impl Codec for Envelope {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = b"(".to_vec();
+        out.extend(self.date.serialize());
+        out.push(b' ');
+        out.extend(self.subject.serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.from, b"").serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.sender, b"").serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.reply_to, b"").serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.to, b"").serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.cc, b"").serialize());
+        out.push(b' ');
+        out.extend(List1OrNil(&self.bcc, b"").serialize());
+        out.push(b' ');
+        out.extend(self.in_reply_to.serialize());
+        out.push(b' ');
+        out.extend(self.message_id.serialize());
+        out.push(b')');
+        out
+    }
+
+    fn deserialize(_input: &[u8]) -> Result<(&[u8], Self), Self>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}
