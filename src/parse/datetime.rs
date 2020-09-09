@@ -1,5 +1,5 @@
 use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
@@ -117,10 +117,16 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOff
     let date = NaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
 
     match (date, time, zone) {
-        (Some(date), Some(time), Some(zone)) => Ok((
-            remaining,
-            Some(DateTime::from_utc(NaiveDateTime::new(date, time), zone)),
-        )),
+        (Some(date), Some(time), Some(zone)) => {
+            let local_datetime = NaiveDateTime::new(date, time);
+
+            // Not sure about that... Still, one less `unwrap`.
+            if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
+                Ok((remaining, Some(datetime)))
+            } else {
+                Ok((remaining, None))
+            }
+        }
         _ => Ok((remaining, None)),
     }
 }
@@ -284,16 +290,43 @@ mod test {
     fn test_date_time() {
         let (rem, val) = date_time(b"\" 1-Feb-1985 12:34:56 +0100\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(
-            val,
-            Some(DateTime::from_utc(
-                NaiveDateTime::new(
-                    NaiveDate::from_ymd(1985, 2, 1),
-                    NaiveTime::from_hms(12, 34, 56)
-                ),
-                FixedOffset::east(3600)
-            ))
+
+        let local_datetime = NaiveDateTime::new(
+            NaiveDate::from_ymd(1985, 2, 1),
+            NaiveTime::from_hms(12, 34, 56),
         );
+
+        let datetime = FixedOffset::east(3600)
+            .from_local_datetime(&local_datetime)
+            .unwrap();
+
+        println!("{} == \n{}", val.unwrap(), datetime);
+
+        assert_eq!(val.unwrap(), datetime);
+    }
+
+    #[test]
+    fn test_date_time_invalid() {
+        let tests = [
+            b"\" 1-Feb-0000 12:34:56 +0000\"xxx".as_ref(),
+            b"\" 1-Feb-0000 12:34:56 +9999\"xxx",
+            b"\" 1-Feb-9999 12:34:56 +0000\"xxx",
+            b"\" 1-Feb-9999 12:34:56 +9999\"xxx",
+            b"\" 1-Feb-0000 12:34:56 -0000\"xxx",
+            b"\" 1-Feb-0000 12:34:56 -9999\"xxx",
+            b"\" 1-Feb-9999 12:34:56 -0000\"xxx",
+            b"\" 1-Feb-9999 12:34:56 -9999\"xxx",
+            b"\" 1-Feb-2020 00:00:00 +0100\"xxx",
+            b"\" 1-Feb-2020 99:99:99 +0100\"xxx",
+            b"\"31-Feb-2020 00:00:00 +0100\"xxx",
+            b"\"99-Feb-2020 99:99:99 +0100\"xxx",
+        ];
+
+        for test in tests.iter() {
+            let (rem, datetime) = date_time(test).unwrap();
+            assert_eq!(rem, b"xxx");
+            println!("{} -> {:?}", std::str::from_utf8(test).unwrap(), datetime);
+        }
     }
 
     #[test]
