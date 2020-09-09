@@ -1031,28 +1031,46 @@ pub enum DataItemResponse {
 
 impl Codec for DataItemResponse {
     fn serialize(&self) -> Vec<u8> {
+        use DataItemResponse::*;
+
         match self {
-            DataItemResponse::Body(_structure) => unimplemented!(),
-            DataItemResponse::BodyExt {
-                section: _,
-                origin: _,
-                data: _,
-            } => unimplemented!(),
-            DataItemResponse::BodyStructure(_structure) => unimplemented!(),
-            DataItemResponse::Envelope(_envelope) => unimplemented!(),
-            DataItemResponse::Flags(flags) => format!("FLAGS ({})", join(flags, " ")).into_bytes(),
-            DataItemResponse::InternalDate(_datetime) => unimplemented!(),
-            DataItemResponse::Rfc822(nstring) => {
-                [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat()
+            BodyExt {
+                section,
+                origin,
+                data,
+            } => {
+                let mut out = b"BODY[".to_vec();
+                if let Some(section) = section {
+                    out.extend(&section.serialize());
+                }
+                out.push(b']');
+                if let Some(origin) = origin {
+                    out.push(b'<');
+                    out.extend_from_slice(format!("{}", origin).as_bytes());
+                    out.push(b'>');
+                }
+                out.push(b' ');
+                out.extend(&data.serialize());
+
+                out
             }
-            DataItemResponse::Rfc822Header(nstring) => {
+            // FIXME: do not return body-ext-1part and body-ext-mpart here
+            Body(body) => [b"BODY ".as_ref(), body.serialize().as_ref()].concat(),
+            BodyStructure(body) => [b"BODYSTRUCTURE ".as_ref(), body.serialize().as_ref()].concat(),
+            Envelope(envelope) => [b"ENVELOPE ".as_ref(), envelope.serialize().as_ref()].concat(),
+            Flags(flags) => format!("FLAGS ({})", join(flags, " ")).into_bytes(),
+            InternalDate(datetime) => {
+                [b"INTERNALDATE ".as_ref(), datetime.serialize().as_ref()].concat()
+            }
+            Rfc822(nstring) => [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat(),
+            Rfc822Header(nstring) => {
                 [b"RFC822.HEADER ".as_ref(), nstring.serialize().as_ref()].concat()
             }
-            DataItemResponse::Rfc822Size(size) => format!("RFC822.SIZE {}", size).into_bytes(),
-            DataItemResponse::Rfc822Text(nstring) => {
+            Rfc822Size(size) => format!("RFC822.SIZE {}", size).into_bytes(),
+            Rfc822Text(nstring) => {
                 [b"RFC822.TEXT ".as_ref(), nstring.serialize().as_ref()].concat()
             }
-            DataItemResponse::Uid(uid) => format!("UID {}", uid).into_bytes(),
+            Uid(uid) => format!("UID {}", uid).into_bytes(),
         }
     }
 
