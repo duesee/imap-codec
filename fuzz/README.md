@@ -14,7 +14,7 @@ Don't forget to unset it with
 rustup override unset
 ```
 
-as imap-proto-server should work with stable.
+as imap-codec should work with stable.
 
 ## Run the fuzzing process
 
@@ -47,5 +47,4 @@ TBD :-)
 
 # Known crashes
 
-I am not able to crash the `greeting`, and `command` targets. The `response` target crashes with `unimplemented!()`, because the serialization of BODYSTRUCTURE is not implemented yet. (This is the last unimplemented thing.) Thus, the fuzzer should uncover at least this panic.
-
+I am not able to crash the `greeting`, `command`, and `response` targets anymore. However, they already uncovered interesting serialization issues.
