@@ -2042,7 +2042,7 @@ mod test {
             Command::idle(),
         ];
 
-        for cmd in cmds {
+        for cmd in cmds.iter() {
             println!("Test: {:?}", cmd);
 
             let serialized = cmd.encode();
