@@ -1,4 +1,4 @@
-use imap_proto_server::parse::response::greeting;
+use imap_codec::parse::response::greeting;
 use std::io::Write;
 
 fn main() -> std::io::Result<()> {

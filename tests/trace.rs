@@ -1,4 +1,4 @@
-use imap_proto_server::{
+use imap_codec::{
     codec::Encoder,
     parse::{command::command, response::response},
 };
