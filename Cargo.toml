@@ -1,5 +1,5 @@
 [package]
-name = "imap-proto-server"
+name = "imap-codec"
 version = "0.1.0"
 authors = ["Damian Poddebniak <poddebniak@fh-muenster.de>"]
 edition = "2018"
