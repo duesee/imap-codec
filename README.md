@@ -1,180 +1,72 @@
 # IMAP Protocol
 
-This library provides complete and *detailed* parsing of all IMAP4rev1 commands and responses.
-Every command (and most responses) can be constructed and serialized.
+This library provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
+
+The three entry points are `greeting` (to parse the first message from a server), `command` (to parse any message from a client) and `response` (to parse any response or result from a server.) Every parser takes an input (`&[u8]`) and produce a remainder and a parsed value.
+
+# Features
+
+The type-system is used to enforce correctness and make the library misuse resistent. It should not be possible to construct messages, which would violate the IMAP specification.
+
+Fuzzing (via [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz)) and (soon) property-based tests are used to uncover parsing and serialization bugs. For example, the library is fuzz-tested to never produce a message it can not parse itself. Additionally, many real-world IMAP traces (including all examples and the sample trace from the IMAP RFC) are decoded and encoded correctly.
 
 Every parser works in streaming mode, i.e. all parsers will return `Incomplete` when there is not enough data to make a final decision and no command or response will ever be truncated.
 
-The two entry points are `command(input: &[u8])` and `response(input: &[u8])`.
-Both parsers are regularily tested against [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz) (libFuzzer) and, as of now, did not reveal a single crash/panic/stack overflow. Although, the fuzzing process helped to find serialization mistakes.
+This is (probably) the most complete IMAP implementation in Rust available. Only [tokio-imap](https://github.com/djc/tokio-imap), which you should also check out, provides a comperative amount of features. However, it does not implement the server-side. (Please tell me if there is another one!)
 
-A goal of this library is to provide a misuse resistent API which makes it hard (or impossible) to construct invalid messages.
-Thus, the newtype pattern is used often. However, it should be easy to construct types using `From<&str>`, and, in case not every string reflects the constraints of the type, `TryFrom<&str>`.
+# Usage
 
-# Alternatives
-
-If you are working on an IMAP *client*, you should also consider https://github.com/djc/tokio-imap (imap-proto), as it received more review.
-
-I am not aware of a more complete implementation of IMAP in Rust. (Please tell me if there is one!)
-
-# Future of this Crate
-
-There is a bunch of crates which all cover a different amount of IMAP. Sadly, this crate is no exception.
-I will continue to work on this library, but would also be happy if this could be merged with related IMAP crates to a complete IMAP library.
-
-## Known issues and TODOs
-
-This library emerged from the need for an IMAP testing tool and some work must be done to further improve the quality of the implementation.
-
-* [ ] implement missing serialization of `Body`
-* [ ] decide when `&[u8]` or `&str` is sufficient and when e.g. `Atom` or `IString` are beneficial
-* [ ] provide "owned" and "referenced" variants of types (work in progress)
-* [ ] switch from naive `Codec` to something more efficient/standard
-* [ ] do not allocate when not needed. Make use of `Cow` (see `quoted` parser)
-* [ ] remove irrelevant comments and cite IMAP RFC is an appropriate way
-
-# Usage notes
-
-Have a look at the `parse_*` examples. You can run it with...
-
-```text
-$ cargo run --example=parse_*
-```
-
-Type any valid IMAP4REV1 command and see if you are happy with what you get.
-
-# Example
-
-```sh
-$ cargo run --example=parse_command
-```
 ```rust
-Enter IMAP4REV1 command (or "exit"): ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>) 
-Command {
-    tag: "ABCD",
-    body: Fetch {
-        sequence_set: [
-            Single(
-                Value(
-                    1,
-                ),
-            ),
-            Range(
-                Value(
-                    2,
-                ),
-                Unlimited,
-            ),
-        ],
-        items: DataItems(
-            [
-                BodyExt {
-                    section: Some(
-                        Mime(
-                            Part(
-                                [
-                                    1,
-                                    2,
-                                    3,
-                                    4,
-                                ],
-                            ),
-                        ),
-                    ),
-                    partial: Some(
-                        (
-                            42,
-                            1337,
-                        ),
-                    ),
-                    peek: true,
-                },
-            ],
-        ),
-        uid: true,
-    },
+use imap_proto_server::{
+    codec::Encoder,          // This trait provides the `encode` method.
+    parse::command::command, // This is the command parser.
+};
+
+fn main() {
+    let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
+
+    let (_remainder, parsed) = command(input).unwrap();
+    println!("// Parsed:");
+    println!("{:#?}", parsed);
+
+    let serialized = parsed.encode(); // This could be send over the network.
+    
+    let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
+    println!("// Serialized:");                              // We just ignore that, so that we can print the message.
+    println!("// {}", serialized);
 }
 ```
 
-# Example (trace from the IMAP RFC)
+# Example (binary)
 
-```rust
-// * OK IMAP4rev1 Service Ready\r
-Status(Ok { tag: None, code: None, text: "IMAP4rev1 Service Ready" })
+Have a look at the `parse_*` examples and try any IMAP message, e.g.
 
-// a001 login mrc secret\r
-Command { tag: "a001", body: Login { username: Atom("mrc"), password: Atom("secret") } }
-
-// a001 OK LOGIN completed\r
-Status(Ok { tag: Some("a001"), code: None, text: "LOGIN completed" })
-
-// a002 select inbox\r
-Command { tag: "a002", body: Select(Inbox) }
-
-// * 18 EXISTS\r
-Data(Exists(18))
-
-// * FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r
-Data(Flags([Answered, Flagged, Deleted, Seen, Draft]))
-
-// * 2 RECENT\r
-Data(Recent(2))
-
-// * OK [UNSEEN 17] Message 17 is the first unseen message\r
-Status(Ok { tag: None, code: Some(Unseen(17)), text: "Message 17 is the first unseen message" })
-
-// * OK [UIDVALIDITY 3857529045] UIDs valid\r
-Status(Ok { tag: None, code: Some(UidValidity(3857529045)), text: "UIDs valid" })
-
-// a002 OK [READ-WRITE] SELECT completed\r
-Status(Ok { tag: Some("a002"), code: Some(ReadWrite), text: "SELECT completed" })
-
-// a003 fetch 12 full\r
-Command { tag: "a003", body: Fetch { sequence_set: [Single(Value(12))], items: Macro(Full) } }
-
-// * 12 FETCH (FLAGS (\\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700")\r
-Data(Fetch(12, [Flags([Seen]), InternalDate(1996-07-16T19:44:25-07:00)]))
-
-// a003 OK FETCH completed\r
-Status(Ok { tag: Some("a003"), code: None, text: "FETCH completed" })
-
-// a004 fetch 12 body[header]\r
-Command { tag: "a004", body: Fetch { sequence_set: [Single(Value(12))], items: DataItems([BodyExt { section: Some(Header(None)), partial: None, peek: false }]) } }
-
-// * 12 FETCH (BODY[HEADER] {3}\r
-XXX)\r
-Data(Fetch(12, [BodyExt { section: Some(Header(None)), origin: None, data: String(Literal([88, 88, 88])) }]))
-
-// a004 OK FETCH completed\r
-Status(Ok { tag: Some("a004"), code: None, text: "FETCH completed" })
-
-// a005 store 12 +flags \\deleted\r
-Command { tag: "a005", body: Store { sequence_set: [Single(Value(12))], kind: Add, response: Answer, flags: [Deleted] } }
-
-// * 12 FETCH (FLAGS (\\Seen \\Deleted))\r
-Data(Fetch(12, [Flags([Seen, Deleted])]))
-
-// a005 OK +FLAGS completed\r
-Status(Ok { tag: Some("a005"), code: None, text: "+FLAGS completed" })
-
-// a006 logout\r
-Command { tag: "a006", body: Logout }
-
-// * BYE IMAP4rev1 server terminating connection\r
-Status(Bye { code: None, text: "IMAP4rev1 server terminating connection" })
-
-// a006 OK LOGOUT completed\r
-Status(Ok { tag: Some("a006"), code: None, text: "LOGOUT completed" })
+```
+$ cargo run --example=parse_command
 ```
 
-## IMAP literals
+# Known issues and TODOs
 
-The way that IMAP specified literals makes it difficult to separate the parsing logic from the application logic.
-When a parsers recognizes a literal (e.g. "{42}"), which can pretty much be used anywhere, a continuation response ("+ ...") must be send.
+* Serialization is currently done through an ad-hoc `Encoder` trait, which returns an `Vec<u8>`, is super inefficient, and must be phased out.
+* Do not allocate when not needed. Make good use of `Cow` (see `quoted` parser).
+* The API is still unstable and must be cleaned up.
+* Public documentation is still missing.
+* Remove irrelevant comments and cite IMAP RFC is an appropriate way
+* Decide when `&[u8]` or `&str` is sufficient and when e.g. `Atom` or `IString` are useful.
+* Provide "owned" and "referenced" variants of types (work in progress)
+
+## A Note on Allocation and Types
+
+Parsed objects are "owned". This makes them comfortable to use as one has not to think about lifetimes. However, I realize, that a low-level parsing library should be more strict about allocations. Thus, I tried to 1) avoid unnecessary allocations 2) defer allocations as far "up" in the parse tree as possible and 3) always make allocations explicit. In other words: the most low-level parsers do not allocate and allocations are done as late as possible, optimally, right before returning an owned object to the user. This is currently a middle-ground with room for improvement.
+
+Due to the correctness guarantees (and the mentioned allocation strategy), the library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString` (in an owned and referenced variant.) I found them quiet useful, but they might not weigh its merit. Positively thinking, this is another opportunity to remove some code.
+
+## A Note on IMAP literals
+
+The way that IMAP specified literals makes it difficult to separate the parsing logic from the application logic. When a parser recognizes a literal (e.g. "{42}"), which can be used anywhere, a so called continuation response ("+ ...") must be send.
 Otherwise, the client or server won't send any more data and a parser would always return `Incomplete(42)`.
 
-However, we do not want to pass sockets to the parser nor clutter every parser with an `NeedsContinuation` error...
-A possible solution is to implement a "framing codec" first. This strategy is motivated by the IMAP4REV1 RFC:
+A possible solution is to implement a "framing codec" first. This strategy is motivated by the IMAP RFC:
 
 ```
 The protocol receiver of an IMAP4rev1 client or server is either reading a line,
@@ -195,6 +87,96 @@ loop {
 # Status
 
 The complete [formal syntax](https://tools.ietf.org/html/rfc3501#section-9) of IMPA4rev1 is implemented.
+
+## Sample IMAP4rev1 connection from RFC 3501
+
+This output was generated by reading the trace from the [IMAP RFC section 8](https://tools.ietf.org/html/rfc3501#section-8), printing the input (first line), printing the Debug of the object (second line), and serializing it again (third line).
+
+```rust
+// * OK IMAP4rev1 Service Ready
+Status(Ok { tag: None, code: None, text: "IMAP4rev1 Service Ready" })
+// * OK IMAP4rev1 Service Ready
+
+// a001 login mrc secret
+Command { tag: Tag("a001"), body: Login { username: Atom("mrc"), password: Atom("secret") } }
+// a001 LOGIN mrc secret
+
+// a001 OK LOGIN completed
+Status(Ok { tag: Some(Tag("a001")), code: None, text: "LOGIN completed" })
+// a001 OK LOGIN completed
+
+// a002 select inbox
+Command { tag: Tag("a002"), body: Select { mailbox_name: Inbox } }
+// a002 SELECT INBOX
+
+// * 18 EXISTS
+Data(Exists(18))
+// * 18 EXISTS
+
+// * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+Data(Flags([Answered, Flagged, Deleted, Seen, Draft]))
+// * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+
+// * 2 RECENT
+Data(Recent(2))
+// * 2 RECENT
+
+// * OK [UNSEEN 17] Message 17 is the first unseen message
+Status(Ok { tag: None, code: Some(Unseen(17)), text: "Message 17 is the first unseen message" })
+// * OK [UNSEEN 17] Message 17 is the first unseen message
+
+// * OK [UIDVALIDITY 3857529045] UIDs valid
+Status(Ok { tag: None, code: Some(UidValidity(3857529045)), text: "UIDs valid" })
+// * OK [UIDVALIDITY 3857529045] UIDs valid
+
+// a002 OK [READ-WRITE] SELECT completed
+Status(Ok { tag: Some(Tag("a002")), code: Some(ReadWrite), text: "SELECT completed" })
+// a002 OK [READ-WRITE] SELECT completed
+
+// a003 fetch 12 full
+Command { tag: Tag("a003"), body: Fetch { sequence_set: [Single(Value(12))], items: Macro(Full), uid: false } }
+// a003 FETCH 12 FULL
+
+// * 12 FETCH (FLAGS (\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700" RFC822.SIZE 4286 ENVELOPE ("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)" "IMAP4rev1 WG mtg summary and minutes" (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) ((NIL NIL "imap" "cac.washington.edu")) ((NIL NIL "minutes" "CNRI.Reston.VA.US")("John Klensin" NIL "KLENSIN" "MIT.EDU")) NIL NIL "<B27397-0100000@cac.washington.edu>") BODY ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 3028 92))
+Data(Fetch { msg: 12, items: [Flags([Seen]), InternalDate(1996-07-17T02:44:25-07:00), Rfc822Size(4286), Envelope(Envelope { date: NString(Some(Quoted("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)"))), subject: NString(Some(Quoted("IMAP4rev1 WG mtg summary and minutes"))), from: [Address { name: NString(Some(Quoted("Terry Gray"))), adl: NString(None), mailbox: NString(Some(Quoted("gray"))), host: NString(Some(Quoted("cac.washington.edu"))) }], sender: [Address { name: NString(Some(Quoted("Terry Gray"))), adl: NString(None), mailbox: NString(Some(Quoted("gray"))), host: NString(Some(Quoted("cac.washington.edu"))) }], reply_to: [Address { name: NString(Some(Quoted("Terry Gray"))), adl: NString(None), mailbox: NString(Some(Quoted("gray"))), host: NString(Some(Quoted("cac.washington.edu"))) }], to: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted("imap"))), host: NString(Some(Quoted("cac.washington.edu"))) }], cc: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted("minutes"))), host: NString(Some(Quoted("CNRI.Reston.VA.US"))) }, Address { name: NString(Some(Quoted("John Klensin"))), adl: NString(None), mailbox: NString(Some(Quoted("KLENSIN"))), host: NString(Some(Quoted("MIT.EDU"))) }], bcc: [], in_reply_to: NString(None), message_id: NString(Some(Quoted("<B27397-0100000@cac.washington.edu>"))) }), Body(Single { body: Body { basic: BasicFields { parameter_list: [(Quoted("CHARSET"), Quoted("US-ASCII"))], id: NString(None), description: NString(None), content_transfer_encoding: Quoted("7BIT"), size: 3028 }, specific: Text { subtype: Quoted("PLAIN"), number_of_lines: 92 } }, extension: None })] })
+// * 12 FETCH (FLAGS (\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700" RFC822.SIZE 4286 ENVELOPE ("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)" "IMAP4rev1 WG mtg summary and minutes" (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) ((NIL NIL "imap" "cac.washington.edu"))((NIL NIL "minutes" "CNRI.Reston.VA.US")("John Klensin" NIL "KLENSIN" "MIT.EDU")) NIL NIL "<B27397-0100000@cac.washington.edu>") BODY ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 3028 92))
+
+// a003 OK FETCH completed
+// Status(Ok { tag: Some(Tag("a003")), code: None, text: "FETCH completed" })
+// a003 OK FETCH completed
+
+// a004 fetch 12 body[header]
+Command { tag: Tag("a004"), body: Fetch { sequence_set: [Single(Value(12))], items: DataItems([BodyExt { section: Some(Header(None)), partial: None, peek: false }]), uid: false } }
+// a004 FETCH 12 BODY[HEADER]
+
+// a004 OK FETCH completed
+Status(Ok { tag: Some(Tag("a004")), code: None, text: "FETCH completed" })
+// a004 OK FETCH completed
+
+// a005 store 12 +flags \deleted
+Command { tag: Tag("a005"), body: Store { sequence_set: [Single(Value(12))], kind: Add, response: Answer, flags: [Deleted], uid: false } }
+// a005 STORE 12 +FLAGS (\Deleted)
+
+// * 12 FETCH (FLAGS (\Seen \Deleted))
+Data(Fetch { msg: 12, items: [Flags([Seen, Deleted])] })
+// * 12 FETCH (FLAGS (\Seen \Deleted))
+
+// a005 OK +FLAGS completed
+Status(Ok { tag: Some(Tag("a005")), code: None, text: "+FLAGS completed" })
+// a005 OK +FLAGS completed
+
+// a006 logout
+Command { tag: Tag("a006"), body: Logout }
+// a006 LOGOUT
+
+// * BYE IMAP4rev1 server terminating connection
+Status(Bye { code: None, text: "IMAP4rev1 server terminating connection" })
+// * BYE IMAP4rev1 server terminating connection
+
+// a006 OK LOGOUT completed
+Status(Ok { tag: Some(Tag("a006")), code: None, text: "LOGOUT completed" })
+// a006 OK LOGOUT completed 
+```
 
 # License
 
