@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use imap_proto_server::{codec::Encoder, parse::command::command};
+use imap_codec::{codec::Encoder, parse::command::command};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok((rem, parsed1)) = command(data) {
