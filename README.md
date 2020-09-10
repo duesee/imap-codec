@@ -17,7 +17,7 @@ This is (probably) the most complete IMAP implementation in Rust available. Only
 # Usage
 
 ```rust
-use imap_proto_server::{
+use imap_codec::{
     codec::Encoder,          // This trait provides the `encode` method.
     parse::command::command, // This is the command parser.
 };
