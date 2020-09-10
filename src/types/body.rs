@@ -301,11 +301,14 @@ impl Encoder for SinglePartExtensionData {
         let mut out = self.md5.encode();
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
+
             match dsp {
                 Some((s, param)) => {
+                    out.push(b'(');
                     out.extend(s.encode());
                     out.push(b' ');
                     out.extend(&List1AttributeValueOrNil(&param).encode());
+                    out.push(b')');
                 }
                 None => out.extend_from_slice(b"NIL"),
             }
@@ -319,7 +322,7 @@ impl Encoder for SinglePartExtensionData {
                     out.extend(&loc.encode());
 
                     if !self.extension.is_empty() {
-                        out.push(b' ');
+                        //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
                         out.extend(&self.extension);
                     }
                 }
@@ -381,11 +384,14 @@ impl Encoder for MultiPartExtensionData {
 
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
+
             match dsp {
                 Some((s, param)) => {
+                    out.push(b'(');
                     out.extend(s.encode());
                     out.push(b' ');
                     out.extend(&List1AttributeValueOrNil(&param).encode());
+                    out.push(b')');
                 }
                 None => out.extend_from_slice(b"NIL"),
             }
@@ -399,7 +405,7 @@ impl Encoder for MultiPartExtensionData {
                     out.extend(&loc.encode());
 
                     if !self.extension.is_empty() {
-                        out.push(b' ');
+                        //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
                         out.extend(&self.extension);
                     }
                 }
