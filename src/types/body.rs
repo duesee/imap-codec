@@ -6,6 +6,7 @@ use crate::{
     },
     List1AttributeValueOrNil, List1OrNil,
 };
+use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Body {
@@ -16,48 +17,44 @@ pub struct Body {
 }
 
 impl Serialize for Body {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = Vec::new();
-
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self.specific {
             SpecificFields::Basic {
                 ref type_,
                 ref subtype,
             } => {
-                out.extend(&type_.serialize());
-                out.push(b' ');
-                out.extend(&subtype.serialize());
-                out.push(b' ');
-                out.extend(&self.basic.serialize());
+                type_.serialize(writer)?;
+                writer.write_all(b" ")?;
+                subtype.serialize(writer)?;
+                writer.write_all(b" ")?;
+                self.basic.serialize(writer)
             }
             SpecificFields::Message {
                 ref envelope,
                 ref body_structure,
                 number_of_lines,
             } => {
-                out.extend_from_slice(b"\"TEXT\" \"RFC822\" ");
-                out.extend(&self.basic.serialize());
-                out.push(b' ');
-                out.extend(&envelope.serialize());
-                out.push(b' ');
-                out.extend(&body_structure.serialize());
-                out.push(b' ');
-                out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
+                writer.write_all(b"\"TEXT\" \"RFC822\" ")?;
+                self.basic.serialize(writer)?;
+                writer.write_all(b" ")?;
+                envelope.serialize(writer)?;
+                writer.write_all(b" ")?;
+                body_structure.serialize(writer)?;
+                writer.write_all(b" ")?;
+                write!(writer, "{}", number_of_lines)
             }
             SpecificFields::Text {
                 ref subtype,
                 number_of_lines,
             } => {
-                out.extend_from_slice(b"\"TEXT\" ");
-                out.extend(&subtype.serialize());
-                out.push(b' ');
-                out.extend(&self.basic.serialize());
-                out.push(b' ');
-                out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
+                writer.write_all(b"\"TEXT\" ")?;
+                subtype.serialize(writer)?;
+                writer.write_all(b" ")?;
+                self.basic.serialize(writer)?;
+                writer.write_all(b" ")?;
+                write!(writer, "{}", number_of_lines)
             }
         }
-
-        out
     }
 }
 
@@ -145,18 +142,16 @@ pub struct BasicFields {
 }
 
 impl Serialize for BasicFields {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = Vec::new();
-        out.extend(List1AttributeValueOrNil(&self.parameter_list).serialize());
-        out.push(b' ');
-        out.extend(&self.id.serialize());
-        out.push(b' ');
-        out.extend(&self.description.serialize());
-        out.push(b' ');
-        out.extend(&self.content_transfer_encoding.serialize());
-        out.push(b' ');
-        out.extend(format!("{}", self.size).as_bytes());
-        out
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        List1AttributeValueOrNil(&self.parameter_list).serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.id.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.description.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.content_transfer_encoding.serialize(writer)?;
+        writer.write_all(b" ")?;
+        write!(writer, "{}", self.size)
     }
 }
 
@@ -297,39 +292,39 @@ pub struct SinglePartExtensionData {
 }
 
 impl Serialize for SinglePartExtensionData {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = self.md5.serialize();
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.md5.serialize(writer)?;
         if let Some(ref dsp) = self.disposition {
-            out.push(b' ');
+            writer.write_all(b" ")?;
 
             match dsp {
                 Some((s, param)) => {
-                    out.push(b'(');
-                    out.extend(s.serialize());
-                    out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).serialize());
-                    out.push(b')');
+                    writer.write_all(b"(")?;
+                    s.serialize(writer)?;
+                    writer.write_all(b" ")?;
+                    List1AttributeValueOrNil(&param).serialize(writer)?;
+                    writer.write_all(b")")?;
                 }
-                None => out.extend_from_slice(b"NIL"),
+                None => writer.write_all(b"NIL")?,
             }
 
             if let Some(ref lang) = self.language {
-                out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").serialize());
+                writer.write_all(b" ")?;
+                List1OrNil(lang, b" ").serialize(writer)?;
 
                 if let Some(ref loc) = self.location {
-                    out.push(b' ');
-                    out.extend(&loc.serialize());
+                    writer.write_all(b" ")?;
+                    loc.serialize(writer)?;
 
                     if !self.extension.is_empty() {
-                        //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
-                        out.extend(&self.extension);
+                        //writer.write_all(b" ")?; // TODO: Extension includes the SP for now, as it is unparsed.
+                        writer.write_all(&self.extension)?;
                     }
                 }
             }
         }
 
-        out
+        Ok(())
     }
 }
 
@@ -379,40 +374,40 @@ pub struct MultiPartExtensionData {
 }
 
 impl Serialize for MultiPartExtensionData {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = List1AttributeValueOrNil(&self.parameter_list).serialize();
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        List1AttributeValueOrNil(&self.parameter_list).serialize(writer)?;
 
         if let Some(ref dsp) = self.disposition {
-            out.push(b' ');
+            writer.write_all(b" ")?;
 
             match dsp {
                 Some((s, param)) => {
-                    out.push(b'(');
-                    out.extend(s.serialize());
-                    out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).serialize());
-                    out.push(b')');
+                    writer.write_all(b"(")?;
+                    s.serialize(writer)?;
+                    writer.write_all(b" ")?;
+                    List1AttributeValueOrNil(&param).serialize(writer)?;
+                    writer.write_all(b")")?;
                 }
-                None => out.extend_from_slice(b"NIL"),
+                None => writer.write_all(b"NIL")?,
             }
 
             if let Some(ref lang) = self.language {
-                out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").serialize());
+                writer.write_all(b" ")?;
+                List1OrNil(lang, b" ").serialize(writer)?;
 
                 if let Some(ref loc) = self.location {
-                    out.push(b' ');
-                    out.extend(&loc.serialize());
+                    writer.write_all(b" ")?;
+                    loc.serialize(writer)?;
 
                     if !self.extension.is_empty() {
-                        //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
-                        out.extend(&self.extension);
+                        //writer.write_all(b" "); // TODO: Extension includes the SP for now, as it is unparsed.
+                        writer.write_all(&self.extension)?;
                     }
                 }
             }
         }
 
-        out
+        Ok(())
     }
 }
 
@@ -493,14 +488,14 @@ pub enum BodyStructure {
 }
 
 impl Serialize for BodyStructure {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = b"(".to_vec();
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"(")?;
         match self {
             BodyStructure::Single { body, extension } => {
-                out.extend(&body.serialize());
+                body.serialize(writer)?;
                 if let Some(extension) = extension {
-                    out.push(b' ');
-                    out.extend(&extension.serialize());
+                    writer.write_all(b" ")?;
+                    extension.serialize(writer)?;
                 }
             }
             BodyStructure::Multi {
@@ -509,18 +504,17 @@ impl Serialize for BodyStructure {
                 extension_data,
             } => {
                 for body in bodies {
-                    out.extend(&body.serialize());
+                    body.serialize(writer)?;
                 }
-                out.push(b' ');
-                out.extend(&subtype.serialize());
+                writer.write_all(b" ")?;
+                subtype.serialize(writer)?;
 
                 if let Some(extension) = extension_data {
-                    out.push(b' ');
-                    out.extend(&extension.serialize());
+                    writer.write_all(b" ")?;
+                    extension.serialize(writer)?;
                 }
             }
         }
-        out.push(b')');
-        out
+        writer.write_all(b")")
     }
 }

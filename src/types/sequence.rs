@@ -1,4 +1,5 @@
 use crate::{codec::Serialize, parse::sequence::sequence_set};
+use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sequence {
@@ -7,11 +8,13 @@ pub enum Sequence {
 }
 
 impl Serialize for Sequence {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Sequence::Single(seq_no) => seq_no.serialize(),
+            Sequence::Single(seq_no) => seq_no.serialize(writer),
             Sequence::Range(from, to) => {
-                [&from.serialize(), b":".as_ref(), &to.serialize()].concat()
+                from.serialize(writer)?;
+                writer.write_all(b":")?;
+                to.serialize(writer)
             }
         }
     }
@@ -24,10 +27,10 @@ pub enum SeqNo {
 }
 
 impl Serialize for SeqNo {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            SeqNo::Value(number) => number.to_string().into_bytes(),
-            SeqNo::Largest => b"*".to_vec(),
+            SeqNo::Value(number) => write!(writer, "{}", number),
+            SeqNo::Largest => writer.write_all(b"*"),
         }
     }
 }
@@ -78,8 +81,9 @@ mod test {
         ];
 
         for (expected, test) in tests.iter() {
-            let got = test.serialize();
-            assert_eq!(*expected, got);
+            let mut out = Vec::new();
+            test.serialize(&mut out).unwrap();
+            assert_eq!(*expected, out);
         }
     }
 

@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use imap_codec::{codec::Encoder, parse::command::command};
+use imap_codec::{codec::Serialize, parse::command::command};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok((rem, parsed1)) = command(data) {
@@ -10,7 +10,8 @@ fuzz_target!(|data: &[u8]| {
         //println!("libFuzzer:  {}", String::from_utf8_lossy(input).trim());
         //println!("parsed:     {:?}", parsed1);
 
-        let input = parsed1.encode();
+        let mut input = Vec::with_capacity(data.len() * 2);
+        parsed1.serialize(&mut input).unwrap();
         //println!("serialized: {}", String::from_utf8_lossy(&input).trim());
         let (rem, parsed2) = command(&input).unwrap();
         //println!("parsed:     {:?}", parsed2);

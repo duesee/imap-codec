@@ -1,4 +1,5 @@
 use codec::Serialize;
+use std::io::Write;
 
 pub mod codec;
 pub mod parse;
@@ -12,21 +13,20 @@ impl<'a, T> Serialize for List1OrNil<'a, T>
 where
     T: Serialize,
 {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         if let Some((last, head)) = self.0.split_last() {
-            let mut out = b"(".to_vec();
+            writer.write_all(b"(")?;
 
             for item in head {
-                out.extend(&item.serialize());
-                out.extend_from_slice(self.1);
+                item.serialize(writer)?;
+                writer.write_all(self.1)?;
             }
 
-            out.extend(&last.serialize());
+            last.serialize(writer)?;
 
-            out.push(b')');
-            out
+            writer.write_all(b")")
         } else {
-            b"NIL".to_vec()
+            writer.write_all(b"NIL")
         }
     }
 }
@@ -37,27 +37,25 @@ impl<'a, T> Serialize for List1AttributeValueOrNil<'a, T>
 where
     T: Serialize,
 {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         if let Some((last, head)) = self.0.split_last() {
-            let mut out = b"(".to_vec();
+            writer.write_all(b"(")?;
 
             for (attribute, value) in head {
-                out.extend(&attribute.serialize());
-                out.push(b' ');
-                out.extend(&value.serialize());
-                out.push(b' ');
+                attribute.serialize(writer)?;
+                writer.write_all(b" ")?;
+                value.serialize(writer)?;
+                writer.write_all(b" ")?;
             }
 
             let (attribute, value) = last;
-            out.extend(&attribute.serialize());
-            out.push(b' ');
-            out.extend(&value.serialize());
+            attribute.serialize(writer)?;
+            writer.write_all(b" ")?;
+            value.serialize(writer)?;
 
-            out.push(b')');
-
-            out
+            writer.write_all(b")")
         } else {
-            b"NIL".to_vec()
+            writer.write_all(b"NIL")
         }
     }
 }

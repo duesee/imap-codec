@@ -3,6 +3,7 @@ use crate::{
     types::{address::Address, core::NString},
     List1OrNil,
 };
+use std::io::Write;
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,
@@ -67,28 +68,27 @@ pub struct Envelope {
 }
 
 impl Serialize for Envelope {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = b"(".to_vec();
-        out.extend(self.date.serialize());
-        out.push(b' ');
-        out.extend(self.subject.serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.from, b"").serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.sender, b"").serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.reply_to, b"").serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.to, b"").serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.cc, b"").serialize());
-        out.push(b' ');
-        out.extend(List1OrNil(&self.bcc, b"").serialize());
-        out.push(b' ');
-        out.extend(self.in_reply_to.serialize());
-        out.push(b' ');
-        out.extend(self.message_id.serialize());
-        out.push(b')');
-        out
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"(")?;
+        self.date.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.subject.serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.from, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.sender, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.reply_to, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.to, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.cc, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        List1OrNil(&self.bcc, b"").serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.in_reply_to.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.message_id.serialize(writer)?;
+        writer.write_all(b")")
     }
 }

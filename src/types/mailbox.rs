@@ -4,7 +4,7 @@ use crate::{
     types::core::{AString, IString},
 };
 use serde::Deserialize;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, io::Write};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListMailbox {
@@ -13,10 +13,10 @@ pub enum ListMailbox {
 }
 
 impl Serialize for ListMailbox {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            ListMailbox::Token(str) => str.clone().into_bytes(),
-            ListMailbox::String(imap_str) => imap_str.serialize(),
+            ListMailbox::Token(str) => writer.write_all(str.as_bytes()),
+            ListMailbox::String(imap_str) => imap_str.serialize(writer),
         }
     }
 }
@@ -109,10 +109,10 @@ pub enum Mailbox {
 }
 
 impl Serialize for Mailbox {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Mailbox::Inbox => b"INBOX".to_vec(),
-            Mailbox::Other(a_str) => a_str.serialize(),
+            Mailbox::Inbox => writer.write_all(b"INBOX"),
+            Mailbox::Other(a_str) => a_str.serialize(writer),
         }
     }
 }

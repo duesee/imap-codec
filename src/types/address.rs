@@ -1,4 +1,5 @@
 use crate::{codec::Serialize, types::core::NString};
+use std::io::Write;
 
 /// An address structure describes an electronic mail address.
 #[derive(Debug, Clone, PartialEq)]
@@ -25,16 +26,17 @@ impl Address {
 }
 
 impl Serialize for Address {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = b"(".to_vec();
-        out.extend(self.name.serialize());
-        out.push(b' ');
-        out.extend(self.adl.serialize());
-        out.push(b' ');
-        out.extend(self.mailbox.serialize());
-        out.push(b' ');
-        out.extend(self.host.serialize());
-        out.push(b')');
-        out
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"(")?;
+        self.name.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.adl.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.mailbox.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.host.serialize(writer)?;
+        writer.write_all(b")")?;
+
+        Ok(())
     }
 }

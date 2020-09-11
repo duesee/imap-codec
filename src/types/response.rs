@@ -11,10 +11,11 @@ use crate::{
         mailbox::Mailbox,
         Capability,
     },
-    utils::{join, join_bytes, join_serializable},
+    utils::{join, join_serializable},
 };
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
+use std::io::Write;
 
 /// Server responses are in three forms.
 #[derive(Debug, Clone, PartialEq)]
@@ -36,11 +37,11 @@ pub enum Response {
 }
 
 impl Serialize for Response {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Response::Status(status) => status.serialize(),
-            Response::Data(data) => data.serialize(),
-            Response::Continuation(continuation) => continuation.serialize(),
+            Response::Status(status) => status.serialize(writer),
+            Response::Data(data) => data.serialize(writer),
+            Response::Continuation(continuation) => continuation.serialize(writer),
         }
     }
 }
@@ -253,32 +254,31 @@ impl Status {
 }
 
 impl Serialize for Status {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         fn format_status(
             tag: &Option<Tag>,
             status: &str,
             code: &Option<Code>,
             comment: &str,
-        ) -> String {
+            writer: &mut impl Write,
+        ) -> std::io::Result<()> {
             let tag = match tag {
                 Some(tag) => tag.to_string(),
                 None => "*".to_string(),
             };
 
             match code {
-                Some(code) => format!("{} {} [{}] {}\r\n", tag, status, code, comment),
-                None => format!("{} {} {}\r\n", tag, status, comment),
+                Some(code) => write!(writer, "{} {} [{}] {}\r\n", tag, status, code, comment),
+                None => write!(writer, "{} {} {}\r\n", tag, status, comment),
             }
         }
 
         match self {
-            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text).into_bytes(),
-            Status::No { tag, code, text } => format_status(tag, "NO", code, text).into_bytes(),
-            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text).into_bytes(),
-            Status::PreAuth { code, text } => {
-                format_status(&None, "PREAUTH", code, text).into_bytes()
-            }
-            Status::Bye { code, text } => format_status(&None, "BYE", code, text).into_bytes(),
+            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, writer),
+            Status::No { tag, code, text } => format_status(tag, "NO", code, text, writer),
+            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, writer),
+            Status::PreAuth { code, text } => format_status(&None, "PREAUTH", code, text, writer),
+            Status::Bye { code, text } => format_status(&None, "BYE", code, text, writer),
         }
     }
 }
@@ -574,75 +574,79 @@ pub enum Data {
 }
 
 impl Serialize for Data {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Data::Capability(caps) => format!("* CAPABILITY {}\r\n", join(caps, " ")).into_bytes(),
+            Data::Capability(caps) => {
+                writer.write_all(b"* CAPABILITY ")?;
+                join_serializable(caps, b" ", writer)?;
+            }
             Data::List {
                 items,
                 delimiter,
                 mailbox,
             } => {
-                let mut out = b"* LIST (".to_vec();
-                out.extend(join_serializable(items, b" "));
-                out.extend_from_slice(b") ");
+                writer.write_all(b"* LIST (")?;
+                join_serializable(items, b" ", writer)?;
+                writer.write_all(b") ")?;
+
                 if let Some(delimiter) = delimiter {
                     // TODO: newtype Delimiter?
-                    out.extend(format!("\"{}\"", escape_quoted(&delimiter.to_string())).as_bytes());
+                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
                 } else {
-                    out.extend_from_slice(b"nil");
+                    writer.write_all(b"NIL")?;
                 }
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out.extend_from_slice(b"\r\n");
-                out
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)?;
             }
             Data::Lsub {
                 items,
                 delimiter,
                 mailbox,
             } => {
-                let mut out = b"* LSUB (".to_vec();
-                out.extend(join_serializable(items, b" "));
-                out.extend_from_slice(b") ");
+                writer.write_all(b"* LSUB (")?;
+                join_serializable(items, b" ", writer)?;
+                writer.write_all(b") ")?;
+
                 if let Some(delimiter) = delimiter {
                     // TODO: newtype Delimiter?
-                    out.extend(format!("\"{}\"", escape_quoted(&delimiter.to_string())).as_bytes());
+                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
                 } else {
-                    out.extend_from_slice(b"nil");
+                    writer.write_all(b"NIL")?;
                 }
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out.extend_from_slice(b"\r\n");
-                out
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)?;
             }
-            Data::Status { name, items } => [
-                b"* STATUS ".as_ref(),
-                name.serialize().as_ref(),
-                b" (",
-                join(items, " ").as_bytes(),
-                b")\r\n",
-            ]
-            .concat(),
+            Data::Status { name, items } => {
+                writer.write_all(b"* STATUS ")?;
+                name.serialize(writer)?;
+                writer.write_all(b" (")?;
+                join_serializable(items, b" ", writer)?;
+                writer.write_all(b")")?;
+            }
             Data::Search(seqs) => {
                 if seqs.is_empty() {
-                    "* SEARCH\r\n".to_string().into_bytes()
+                    writer.write_all(b"* SEARCH")?;
                 } else {
-                    format!("* SEARCH {}\r\n", join(seqs, " ")).into_bytes()
+                    writer.write_all(b"* SEARCH ")?;
+                    join_serializable(seqs, b" ", writer)?;
                 }
             }
-            Data::Flags(flags) => format!("* FLAGS ({})\r\n", join(flags, " ")).into_bytes(),
-            Data::Exists(count) => format!("* {} EXISTS\r\n", count).into_bytes(),
-            Data::Recent(count) => format!("* {} RECENT\r\n", count).into_bytes(),
-            Data::Expunge(msg) => format!("* {} EXPUNGE\r\n", msg).into_bytes(),
-            Data::Fetch { msg, items } => [
-                b"* ".as_ref(),
-                msg.to_string().as_bytes(),
-                b" FETCH (",
-                join_bytes(items.iter().map(|item| item.serialize()).collect(), b" ").as_ref(),
-                b")\r\n",
-            ]
-            .concat(),
+            Data::Flags(flags) => {
+                writer.write_all(b"* FLAGS (")?;
+                join_serializable(flags, b" ", writer)?;
+                writer.write_all(b")")?;
+            }
+            Data::Exists(count) => write!(writer, "* {} EXISTS", count)?,
+            Data::Recent(count) => write!(writer, "* {} RECENT", count)?,
+            Data::Expunge(msg) => write!(writer, "* {} EXPUNGE", msg)?,
+            Data::Fetch { msg, items } => {
+                write!(writer, "* {} FETCH (", msg)?;
+                join_serializable(items, b" ", writer)?;
+                writer.write_all(b")")?;
+            }
         }
+
+        writer.write_all(b"\r\n")
     }
 }
 
@@ -678,6 +682,12 @@ impl std::fmt::Display for StatusItemResponse {
             Self::UidValidity(identifier) => write!(f, "UIDVALIDITY {}", identifier),
             Self::Unseen(count) => write!(f, "UNSEEN {}", count),
         }
+    }
+}
+
+impl Serialize for StatusItemResponse {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
     }
 }
 
@@ -736,13 +746,13 @@ impl Continuation {
 }
 
 impl Serialize for Continuation {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Continuation::Basic { code, text } => match code {
-                Some(ref code) => format!("+ [{}] {}\r\n", code, text).into_bytes(),
-                None => format!("+ {}\r\n", text).into_bytes(),
+                Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
+                None => write!(writer, "+ {}\r\n", text),
             },
-            Continuation::Base64(data) => format!("+ {}\r\n", data).into_bytes(),
+            Continuation::Base64(data) => write!(writer, "+ {}\r\n", data),
         }
     }
 }
@@ -889,8 +899,8 @@ impl std::fmt::Display for Code {
 }
 
 impl Serialize for Code {
-    fn serialize(&self) -> Vec<u8> {
-        self.to_string().into_bytes()
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
     }
 }
 
@@ -995,7 +1005,7 @@ pub enum DataItemResponse {
 }
 
 impl Serialize for DataItemResponse {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         use DataItemResponse::*;
 
         match self {
@@ -1004,38 +1014,53 @@ impl Serialize for DataItemResponse {
                 origin,
                 data,
             } => {
-                let mut out = b"BODY[".to_vec();
+                writer.write_all(b"BODY[")?;
                 if let Some(section) = section {
-                    out.extend(&section.serialize());
+                    section.serialize(writer)?;
                 }
-                out.push(b']');
+                writer.write_all(b"]")?;
                 if let Some(origin) = origin {
-                    out.push(b'<');
-                    out.extend_from_slice(format!("{}", origin).as_bytes());
-                    out.push(b'>');
+                    write!(writer, "<{}>", origin)?;
                 }
-                out.push(b' ');
-                out.extend(&data.serialize());
-
-                out
+                writer.write_all(b" ")?;
+                data.serialize(writer)
             }
             // FIXME: do not return body-ext-1part and body-ext-mpart here
-            Body(body) => [b"BODY ".as_ref(), body.serialize().as_ref()].concat(),
-            BodyStructure(body) => [b"BODYSTRUCTURE ".as_ref(), body.serialize().as_ref()].concat(),
-            Envelope(envelope) => [b"ENVELOPE ".as_ref(), envelope.serialize().as_ref()].concat(),
-            Flags(flags) => format!("FLAGS ({})", join(flags, " ")).into_bytes(),
+            Body(body) => {
+                writer.write_all(b"BODY ")?;
+                body.serialize(writer)
+            }
+            BodyStructure(body) => {
+                writer.write_all(b"BODYSTRUCTURE ")?;
+                body.serialize(writer)
+            }
+            Envelope(envelope) => {
+                writer.write_all(b"ENVELOPE ")?;
+                envelope.serialize(writer)
+            }
+            Flags(flags) => {
+                writer.write_all(b"FLAGS (")?;
+                join_serializable(flags, b" ", writer)?;
+                writer.write_all(b")")
+            }
             InternalDate(datetime) => {
-                [b"INTERNALDATE ".as_ref(), datetime.serialize().as_ref()].concat()
+                writer.write_all(b"INTERNALDATE ")?;
+                datetime.serialize(writer)
             }
-            Rfc822(nstring) => [b"RFC822 ".as_ref(), nstring.serialize().as_ref()].concat(),
+            Rfc822(nstring) => {
+                writer.write_all(b"RFC822 ")?;
+                nstring.serialize(writer)
+            }
             Rfc822Header(nstring) => {
-                [b"RFC822.HEADER ".as_ref(), nstring.serialize().as_ref()].concat()
+                writer.write_all(b"RFC822.HEADER ")?;
+                nstring.serialize(writer)
             }
-            Rfc822Size(size) => format!("RFC822.SIZE {}", size).into_bytes(),
+            Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
             Rfc822Text(nstring) => {
-                [b"RFC822.TEXT ".as_ref(), nstring.serialize().as_ref()].concat()
+                writer.write_all(b"RFC822.TEXT ")?;
+                nstring.serialize(writer)
             }
-            Uid(uid) => format!("UID {}", uid).into_bytes(),
+            Uid(uid) => write!(writer, "UID {}", uid),
         }
     }
 }
@@ -1114,7 +1139,10 @@ mod test {
         ];
 
         for (parsed, serialized) in tests {
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            let mut out = Vec::new();
+            parsed.serialize(&mut out).unwrap();
+
+            assert_eq!(out, serialized.to_vec());
             // FIXME
             //assert_eq!(
             //    <Status as Codec>::deserialize(serialized).unwrap().1,
@@ -1146,7 +1174,9 @@ mod test {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            let mut out = Vec::new();
+            parsed.serialize(&mut out).unwrap();
+            assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
         }
@@ -1168,7 +1198,9 @@ mod test {
         ];
 
         for (parsed, serialized) in tests.into_iter() {
-            assert_eq!(parsed.serialize(), serialized.to_vec());
+            let mut out = Vec::new();
+            parsed.serialize(&mut out).unwrap();
+            assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
         }

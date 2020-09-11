@@ -1,6 +1,6 @@
 use crate::{codec::Serialize, types::core::Tag};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use std::iter;
+use std::{io::Write, iter};
 
 pub(crate) fn gen_tag() -> Tag {
     let mut rng = thread_rng();
@@ -18,18 +18,19 @@ pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
         .join(sep)
 }
 
-pub(crate) fn join_bytes(elements: Vec<Vec<u8>>, sep: &[u8]) -> Vec<u8> {
-    elements
-        .iter()
-        .map(|x| x.to_vec())
-        .collect::<Vec<Vec<u8>>>()
-        .join(sep)
-}
+pub(crate) fn join_serializable<I: Serialize>(
+    elements: &[I],
+    sep: &[u8],
+    writer: &mut impl Write,
+) -> std::io::Result<()> {
+    if let Some((last, head)) = elements.split_last() {
+        for item in head {
+            item.serialize(writer)?;
+            writer.write_all(sep)?;
+        }
 
-pub(crate) fn join_serializable<I: Serialize>(elements: &[I], sep: &[u8]) -> Vec<u8> {
-    elements
-        .iter()
-        .map(|x| x.serialize())
-        .collect::<Vec<Vec<u8>>>()
-        .join(sep)
+        last.serialize(writer)
+    } else {
+        Ok(())
+    }
 }

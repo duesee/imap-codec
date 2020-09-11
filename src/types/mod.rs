@@ -1,6 +1,6 @@
 use crate::{codec::Serialize, types::core::Atom};
 use serde::Deserialize;
-use std::fmt;
+use std::{fmt, io::Write};
 
 pub mod address;
 pub mod body;
@@ -55,6 +55,12 @@ impl fmt::Display for Capability {
     }
 }
 
+impl Serialize for Capability {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
+    }
+}
+
 /// Note: Defined by [SASL]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum AuthMechanism {
@@ -69,11 +75,11 @@ pub enum AuthMechanism {
 }
 
 impl Serialize for AuthMechanism {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            AuthMechanism::Plain => b"PLAIN".to_vec(),
-            AuthMechanism::Login => b"LOGIN".to_vec(),
-            AuthMechanism::Other(atom) => atom.serialize(),
+            AuthMechanism::Plain => writer.write_all(b"PLAIN"),
+            AuthMechanism::Login => writer.write_all(b"LOGIN"),
+            AuthMechanism::Other(atom) => atom.serialize(writer),
         }
     }
 }

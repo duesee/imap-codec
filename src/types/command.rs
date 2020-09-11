@@ -12,9 +12,10 @@ use crate::{
         sequence::{Sequence, ToSequence},
         AuthMechanism,
     },
-    utils::{gen_tag, join_bytes, join_serializable},
+    utils::{gen_tag, join_serializable},
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
+use std::io::Write;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Command {
@@ -1355,12 +1356,11 @@ pub enum CommandBody {
 }
 
 impl Serialize for Command {
-    fn serialize(&self) -> Vec<u8> {
-        let mut out = self.tag.0.as_bytes().to_vec();
-        out.push(b' ');
-        out.extend(self.body.serialize());
-        out.extend_from_slice(b"\r\n");
-        out
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.tag.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.body.serialize(writer)?;
+        writer.write_all(b"\r\n")
     }
 }
 
@@ -1399,113 +1399,96 @@ impl CommandBody {
 }
 
 impl Serialize for CommandBody {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            CommandBody::Capability => b"CAPABILITY".to_vec(),
-            CommandBody::Noop => b"NOOP".to_vec(),
-            CommandBody::Logout => b"LOGOUT".to_vec(),
-            CommandBody::StartTLS => b"STARTTLS".to_vec(),
+            CommandBody::Capability => writer.write_all(b"CAPABILITY"),
+            CommandBody::Noop => writer.write_all(b"NOOP"),
+            CommandBody::Logout => writer.write_all(b"LOGOUT"),
+            CommandBody::StartTLS => writer.write_all(b"STARTTLS"),
             CommandBody::Authenticate {
                 mechanism,
                 initial_response,
             } => {
-                let mut out = b"AUTHENTICATE".to_vec();
-                out.push(b' ');
-                out.extend(mechanism.serialize());
+                writer.write_all(b"AUTHENTICATE")?;
+                writer.write_all(b" ")?;
+                mechanism.serialize(writer)?;
 
                 if let Some(ir) = initial_response {
-                    out.push(b' ');
-                    out.extend_from_slice(ir.as_bytes());
+                    writer.write_all(b" ")?;
+                    writer.write_all(ir.as_bytes())?;
                 };
 
-                out
+                Ok(())
             }
             CommandBody::Login { username, password } => {
-                let mut out = b"LOGIN".to_vec();
-                out.push(b' ');
-                out.extend(username.serialize());
-                out.push(b' ');
-                out.extend(password.serialize());
-                out
+                writer.write_all(b"LOGIN")?;
+                writer.write_all(b" ")?;
+                username.serialize(writer)?;
+                writer.write_all(b" ")?;
+                password.serialize(writer)
             }
             CommandBody::Select { mailbox_name } => {
-                let mut out = b"SELECT".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"SELECT")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::Examine { mailbox_name } => {
-                let mut out = b"EXAMINE".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"EXAMINE")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::Create { mailbox_name } => {
-                let mut out = b"CREATE".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"CREATE")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::Delete { mailbox_name } => {
-                let mut out = b"DELETE".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"DELETE")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::Rename {
                 existing_mailbox_name,
                 new_mailbox_name,
             } => {
-                let mut out = b"RENAME".to_vec();
-                out.push(b' ');
-                out.extend(existing_mailbox_name.serialize());
-                out.push(b' ');
-                out.extend(new_mailbox_name.serialize());
-                out
+                writer.write_all(b"RENAME")?;
+                writer.write_all(b" ")?;
+                existing_mailbox_name.serialize(writer)?;
+                writer.write_all(b" ")?;
+                new_mailbox_name.serialize(writer)
             }
             CommandBody::Subscribe { mailbox_name } => {
-                let mut out = b"SUBSCRIBE".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"SUBSCRIBE")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::Unsubscribe { mailbox_name } => {
-                let mut out = b"UNSUBSCRIBE".to_vec();
-                out.push(b' ');
-                out.extend(mailbox_name.serialize());
-                out
+                writer.write_all(b"UNSUBSCRIBE")?;
+                writer.write_all(b" ")?;
+                mailbox_name.serialize(writer)
             }
             CommandBody::List { reference, mailbox } => {
-                let mut out = b"LIST".to_vec();
-                out.push(b' ');
-                out.extend(reference.serialize());
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out
+                writer.write_all(b"LIST")?;
+                writer.write_all(b" ")?;
+                reference.serialize(writer)?;
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)
             }
             CommandBody::Lsub { reference, mailbox } => {
-                let mut out = b"LSUB".to_vec();
-                out.push(b' ');
-                out.extend(reference.serialize());
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out
+                writer.write_all(b"LSUB")?;
+                writer.write_all(b" ")?;
+                reference.serialize(writer)?;
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)
             }
             CommandBody::Status { mailbox, items } => {
-                let mut out = b"STATUS".to_vec();
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out.push(b' ');
-                out.push(b'(');
-                if let Some((last, elements)) = items.split_last() {
-                    for element in elements {
-                        out.extend(element.serialize());
-                        out.push(b' ');
-                    }
-                    out.extend(last.serialize());
-                }
-                out.push(b')');
-                out
+                writer.write_all(b"STATUS")?;
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)?;
+                writer.write_all(b" ")?;
+                writer.write_all(b"(")?;
+                join_serializable(items, b" ", writer)?;
+                writer.write_all(b")")
             }
             CommandBody::Append {
                 mailbox,
@@ -1513,76 +1496,64 @@ impl Serialize for CommandBody {
                 date,
                 message,
             } => {
-                let mut out = b"APPEND".to_vec();
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                if let Some((last, elements)) = flags.split_last() {
-                    out.push(b' ');
-                    out.push(b'(');
-                    for element in elements {
-                        out.extend(element.serialize());
-                        out.push(b' ');
-                    }
-                    out.extend(last.serialize());
-                    out.push(b')');
+                writer.write_all(b"APPEND")?;
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)?;
+
+                if !flags.is_empty() {
+                    writer.write_all(b" ")?;
+                    writer.write_all(b"(")?;
+                    join_serializable(flags, b" ", writer)?;
+                    writer.write_all(b")")?;
                 }
+
                 if let Some(date) = date {
-                    out.push(b' ');
-                    out.extend(date.serialize());
+                    writer.write_all(b" ")?;
+                    date.serialize(writer)?;
                 }
-                out.push(b' ');
-                out.extend(format!("{{{}}}\r\n", message.len()).into_bytes());
-                out.extend(message);
-                out
+
+                writer.write_all(b" ")?;
+                writer.write_all(format!("{{{}}}\r\n", message.len()).as_bytes())?;
+                writer.write_all(message)
             }
-            CommandBody::Check => b"CHECK".to_vec(),
-            CommandBody::Close => b"CLOSE".to_vec(),
-            CommandBody::Expunge => b"EXPUNGE".to_vec(),
+            CommandBody::Check => writer.write_all(b"CHECK"),
+            CommandBody::Close => writer.write_all(b"CLOSE"),
+            CommandBody::Expunge => writer.write_all(b"EXPUNGE"),
             CommandBody::Search {
                 charset,
                 criteria,
                 uid,
             } => {
-                let mut out = if *uid {
-                    b"UID SEARCH".to_vec()
+                if *uid {
+                    writer.write_all(b"UID SEARCH")?;
                 } else {
-                    b"SEARCH".to_vec()
-                };
+                    writer.write_all(b"SEARCH")?;
+                }
                 if let Some(charset) = charset {
-                    out.push(b' ');
-                    out.extend(format!("CHARSET {}", charset).into_bytes());
+                    writer.write_all(b" ")?;
+                    write!(writer, "CHARSET {}", charset)?;
                 }
-                out.push(b' ');
+                writer.write_all(b" ")?;
                 if let SearchKey::And(search_keys) = criteria {
-                    out.extend(join_serializable(search_keys, b" "));
+                    join_serializable(search_keys, b" ", writer) // TODO: use List1?
                 } else {
-                    out.extend(criteria.serialize());
+                    criteria.serialize(writer)
                 }
-                out
             }
             CommandBody::Fetch {
                 sequence_set,
                 items,
                 uid,
             } => {
-                let mut out = if *uid {
-                    b"UID FETCH".to_vec()
+                if *uid {
+                    writer.write_all(b"UID FETCH ")?;
                 } else {
-                    b"FETCH".to_vec()
-                };
-                out.push(b' ');
+                    writer.write_all(b"FETCH ")?;
+                }
 
-                let seq = join_bytes(
-                    sequence_set
-                        .iter()
-                        .map(Serialize::serialize)
-                        .collect::<Vec<Vec<u8>>>(),
-                    b",",
-                );
-                out.extend(seq);
-                out.push(b' ');
-                out.extend(items.serialize());
-                out
+                join_serializable(sequence_set, b",", writer)?;
+                writer.write_all(b" ")?;
+                items.serialize(writer)
             }
             CommandBody::Store {
                 sequence_set,
@@ -1591,50 +1562,47 @@ impl Serialize for CommandBody {
                 flags,
                 uid,
             } => {
-                let mut out = if *uid {
-                    b"UID STORE ".to_vec()
+                if *uid {
+                    writer.write_all(b"UID STORE ")?;
                 } else {
-                    b"STORE ".to_vec()
-                };
+                    writer.write_all(b"STORE ")?;
+                }
 
-                out.extend(join_serializable(sequence_set, b","));
-                out.push(b' ');
+                join_serializable(sequence_set, b",", writer)?;
+                writer.write_all(b" ")?;
 
                 match kind {
-                    StoreType::Add => out.push(b'+'),
-                    StoreType::Remove => out.push(b'-'),
+                    StoreType::Add => writer.write_all(b"+")?,
+                    StoreType::Remove => writer.write_all(b"-")?,
                     StoreType::Replace => {}
                 }
 
-                out.extend_from_slice(b"FLAGS");
+                writer.write_all(b"FLAGS")?;
 
                 match response {
                     StoreResponse::Answer => {}
-                    StoreResponse::Silent => out.extend_from_slice(b".SILENT"),
+                    StoreResponse::Silent => writer.write_all(b".SILENT")?,
                 }
 
-                out.extend_from_slice(b" (");
-                out.extend(join_serializable(flags, b" "));
-                out.push(b')');
-
-                out
+                writer.write_all(b" (")?;
+                join_serializable(flags, b" ", writer)?;
+                writer.write_all(b")")
             }
             CommandBody::Copy {
                 sequence_set,
                 mailbox,
                 uid,
             } => {
-                let mut out = if *uid {
-                    b"UID COPY ".to_vec()
+                if *uid {
+                    writer.write_all(b"UID COPY ")?;
                 } else {
-                    b"COPY ".to_vec()
-                };
-                out.extend(join_serializable(sequence_set, b","));
-                out.push(b' ');
-                out.extend(mailbox.serialize());
-                out
+                    writer.write_all(b"COPY ")?;
+                }
+                join_serializable(sequence_set, b",", writer)?;
+                writer.write_all(b" ")?;
+                mailbox.serialize(writer)
             }
-            CommandBody::Idle => b"IDLE".to_vec(),
+            CommandBody::Idle => writer.write_all(b"IDLE"),
         }
     }
 }
@@ -1659,13 +1627,13 @@ pub enum StatusItem {
 }
 
 impl Serialize for StatusItem {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            StatusItem::Messages => b"MESSAGES".to_vec(),
-            StatusItem::Recent => b"RECENT".to_vec(),
-            StatusItem::UidNext => b"UIDNEXT".to_vec(),
-            StatusItem::UidValidity => b"UIDVALIDITY".to_vec(),
-            StatusItem::Unseen => b"UNSEEN".to_vec(),
+            StatusItem::Messages => writer.write_all(b"MESSAGES"),
+            StatusItem::Recent => writer.write_all(b"RECENT"),
+            StatusItem::UidNext => writer.write_all(b"UIDNEXT"),
+            StatusItem::UidValidity => writer.write_all(b"UIDVALIDITY"),
+            StatusItem::Unseen => writer.write_all(b"UNSEEN"),
         }
     }
 }
@@ -1820,90 +1788,109 @@ pub enum SearchKey {
 }
 
 impl Serialize for SearchKey {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            SearchKey::All => b"ALL".to_vec(),
-            SearchKey::Answered => b"ANSWERED".to_vec(),
-            SearchKey::Bcc(astring) => [b"BCC ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Before(date) => [b"BEFORE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Body(astring) => [b"BODY ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Cc(astring) => [b"CC ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Deleted => b"DELETED".to_vec(),
-            SearchKey::Flagged => b"FLAGGED".to_vec(),
-            SearchKey::From(astring) => [b"FROM ".as_ref(), &astring.serialize()].concat(),
+            SearchKey::All => writer.write_all(b"ALL"),
+            SearchKey::Answered => writer.write_all(b"ANSWERED"),
+            SearchKey::Bcc(astring) => {
+                writer.write_all(b"BCC ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Before(date) => {
+                writer.write_all(b"BEFORE ")?;
+                date.serialize(writer)
+            }
+            SearchKey::Body(astring) => {
+                writer.write_all(b"BODY ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Cc(astring) => {
+                writer.write_all(b"CC ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Deleted => writer.write_all(b"DELETED"),
+            SearchKey::Flagged => writer.write_all(b"FLAGGED"),
+            SearchKey::From(astring) => {
+                writer.write_all(b"FROM ")?;
+                astring.serialize(writer)
+            }
             SearchKey::Keyword(flag_keyword) => {
-                [b"KEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+                writer.write_all(b"KEYWORD ")?;
+                flag_keyword.serialize(writer)
             }
-            SearchKey::New => b"NEW".to_vec(),
-            SearchKey::Old => b"OLD".to_vec(),
-            SearchKey::On(date) => [b"ON ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Recent => b"RECENT".to_vec(),
-            SearchKey::Seen => b"SEEN".to_vec(),
-            SearchKey::Since(date) => [b"SINCE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Subject(astring) => [b"SUBJECT ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Text(astring) => [b"TEXT ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::To(astring) => [b"TO ".as_ref(), &astring.serialize()].concat(),
-            SearchKey::Unanswered => b"UNANSWERED".to_vec(),
-            SearchKey::Undeleted => b"UNDELETED".to_vec(),
-            SearchKey::Unflagged => b"UNFLAGGED".to_vec(),
+            SearchKey::New => writer.write_all(b"NEW"),
+            SearchKey::Old => writer.write_all(b"OLD"),
+            SearchKey::On(date) => {
+                writer.write_all(b"ON ")?;
+                date.serialize(writer)
+            }
+            SearchKey::Recent => writer.write_all(b"RECENT"),
+            SearchKey::Seen => writer.write_all(b"SEEN"),
+            SearchKey::Since(date) => {
+                writer.write_all(b"SINCE ")?;
+                date.serialize(writer)
+            }
+            SearchKey::Subject(astring) => {
+                writer.write_all(b"SUBJECT ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Text(astring) => {
+                writer.write_all(b"TEXT ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::To(astring) => {
+                writer.write_all(b"TO ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Unanswered => writer.write_all(b"UNANSWERED"),
+            SearchKey::Undeleted => writer.write_all(b"UNDELETED"),
+            SearchKey::Unflagged => writer.write_all(b"UNFLAGGED"),
             SearchKey::Unkeyword(flag_keyword) => {
-                [b"UNKEYWORD ".as_ref(), &flag_keyword.serialize()].concat()
+                writer.write_all(b"UNKEYWORD ")?;
+                flag_keyword.serialize(writer)
             }
-            SearchKey::Unseen => b"UNSEEN".to_vec(),
-            SearchKey::Draft => b"DRAFT".to_vec(),
-            SearchKey::Header(header_fld_name, astring) => [
-                b"HEADER ".as_ref(),
-                &header_fld_name.serialize(),
-                b" ".as_ref(),
-                &astring.serialize(),
-            ]
-            .concat(),
-            SearchKey::Larger(number) => format!("LARGER {}", number).into_bytes(),
-            SearchKey::Not(search_key) => [b"NOT ".as_ref(), &search_key.serialize()].concat(),
-            SearchKey::Or(search_key_a, search_key_b) => [
-                b"OR ".as_ref(),
-                &search_key_a.serialize(),
-                b" ".as_ref(),
-                &search_key_b.serialize(),
-            ]
-            .concat(),
-            SearchKey::SentBefore(date) => [b"SENTBEFORE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::SentOn(date) => [b"SENTON ".as_ref(), &date.serialize()].concat(),
-            SearchKey::SentSince(date) => [b"SENTSINCE ".as_ref(), &date.serialize()].concat(),
-            SearchKey::Smaller(number) => format!("SMALLER {}", number).into_bytes(),
-            SearchKey::Uid(sequence_set) => [
-                b"UID ".as_ref(),
-                join_bytes(
-                    sequence_set
-                        .iter()
-                        .map(Serialize::serialize)
-                        .collect::<Vec<Vec<u8>>>(),
-                    b",",
-                )
-                .as_ref(),
-            ]
-            .concat(),
-            SearchKey::Undraft => b"UNDRAFT".to_vec(),
-            SearchKey::SequenceSet(sequence_set) => join_bytes(
-                sequence_set
-                    .iter()
-                    .map(Serialize::serialize)
-                    .collect::<Vec<Vec<u8>>>(),
-                b",",
-            ),
+            SearchKey::Unseen => writer.write_all(b"UNSEEN"),
+            SearchKey::Draft => writer.write_all(b"DRAFT"),
+            SearchKey::Header(header_fld_name, astring) => {
+                writer.write_all(b"HEADER ")?;
+                header_fld_name.serialize(writer)?;
+                writer.write_all(b" ")?;
+                astring.serialize(writer)
+            }
+            SearchKey::Larger(number) => write!(writer, "LARGER {}", number),
+            SearchKey::Not(search_key) => {
+                writer.write_all(b"NOT ")?;
+                search_key.serialize(writer)
+            }
+            SearchKey::Or(search_key_a, search_key_b) => {
+                writer.write_all(b"OR ")?;
+                search_key_a.serialize(writer)?;
+                writer.write_all(b" ")?;
+                search_key_b.serialize(writer)
+            }
+            SearchKey::SentBefore(date) => {
+                writer.write_all(b"SENTBEFORE ")?;
+                date.serialize(writer)
+            }
+            SearchKey::SentOn(date) => {
+                writer.write_all(b"SENTON ")?;
+                date.serialize(writer)
+            }
+            SearchKey::SentSince(date) => {
+                writer.write_all(b"SENTSINCE ")?;
+                date.serialize(writer)
+            }
+            SearchKey::Smaller(number) => write!(writer, "SMALLER {}", number),
+            SearchKey::Uid(sequence_set) => {
+                writer.write_all(b"UID ")?;
+                join_serializable(sequence_set, b",", writer)
+            }
+            SearchKey::Undraft => writer.write_all(b"UNDRAFT"),
+            SearchKey::SequenceSet(sequence_set) => join_serializable(sequence_set, b",", writer),
             SearchKey::And(search_keys) => {
-                let mut out = b"(".to_vec();
-                if let Some((last, elements)) = search_keys.split_last() {
-                    for element in elements {
-                        out.extend(element.serialize());
-                        out.push(b' ')
-                    }
-                    out.extend(last.serialize());
-                    out.push(b')');
-                    out
-                } else {
-                    panic!("This should not happen.")
-                }
+                writer.write_all(b"(")?;
+                join_serializable(search_keys, b" ", writer)?;
+                writer.write_all(b")")
             }
         }
     }
@@ -2045,7 +2032,8 @@ mod test {
         for cmd in cmds.iter() {
             println!("Test: {:?}", cmd);
 
-            let serialized = cmd.serialize();
+            let mut serialized = Vec::new();
+            cmd.serialize(&mut serialized).unwrap();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
 

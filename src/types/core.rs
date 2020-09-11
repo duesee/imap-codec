@@ -11,10 +11,17 @@ use crate::{
     parse::core::{is_astring_char, is_atom_char, is_text_char},
 };
 use serde::Deserialize;
+use std::io::Write;
 use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
 
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 pub struct Tag(pub(crate) String);
+
+impl Serialize for Tag {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.0.as_bytes())
+    }
+}
 
 impl TryFrom<&str> for Tag {
     type Error = ();
@@ -89,8 +96,8 @@ impl fmt::Display for Atom {
 }
 
 impl Serialize for Atom {
-    fn serialize(&self) -> Vec<u8> {
-        self.0.to_string().into_bytes()
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.0.as_bytes())
     }
 }
 
@@ -206,14 +213,13 @@ pub fn unescape_quoted(escaped: &str) -> Cow<str> {
 }
 
 impl Serialize for IString {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Self::Literal(val) => {
-                let mut out = format!("{{{}}}\r\n", val.len()).into_bytes();
-                out.extend_from_slice(val);
-                out
+                write!(writer, "{{{}}}\r\n", val.len())?;
+                writer.write_all(val)
             }
-            Self::Quoted(val) => format!("\"{}\"", escape_quoted(val)).into_bytes(),
+            Self::Quoted(val) => write!(writer, "\"{}\"", escape_quoted(val)),
         }
     }
 }
@@ -238,10 +244,10 @@ impl<'a> nstr<'a> {
 pub struct NString(pub Option<IString>);
 
 impl Serialize for NString {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match &self.0 {
-            Some(imap_str) => imap_str.serialize(),
-            None => b"NIL".to_vec(),
+            Some(imap_str) => imap_str.serialize(writer),
+            None => writer.write_all(b"NIL"),
         }
     }
 }
@@ -298,10 +304,10 @@ impl TryFrom<AString> for String {
 }
 
 impl Serialize for AString {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            AString::Atom(atom) => atom.as_bytes().to_vec(),
-            AString::String(imap_str) => imap_str.serialize(),
+            AString::Atom(atom) => writer.write_all(atom.as_bytes()),
+            AString::String(imap_str) => imap_str.serialize(writer),
         }
     }
 }
@@ -385,8 +391,8 @@ impl std::fmt::Display for Charset {
 }
 
 impl Serialize for Charset {
-    fn serialize(&self) -> Vec<u8> {
-        self.to_string().into_bytes()
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.to_string().as_bytes())
     }
 }
 
@@ -437,7 +443,10 @@ mod test {
         for (from, expected) in tests.iter() {
             let cs = Charset::try_from(*from).unwrap();
             println!("{}", cs);
-            assert_eq!(String::from_utf8(cs.serialize()).unwrap(), *expected);
+
+            let mut out = Vec::new();
+            cs.serialize(&mut out).unwrap();
+            assert_eq!(String::from_utf8(out).unwrap(), *expected);
         }
 
         assert!(Charset::try_from("\r").is_err());

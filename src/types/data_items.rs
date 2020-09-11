@@ -1,8 +1,5 @@
-use crate::{
-    codec::Serialize,
-    types::core::AString,
-    utils::{join_bytes, join_serializable},
-};
+use crate::{codec::Serialize, types::core::AString, utils::join_serializable};
+use std::io::Write;
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
@@ -32,11 +29,11 @@ impl Macro {
 }
 
 impl Serialize for Macro {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Macro::All => b"ALL".to_vec(),
-            Macro::Fast => b"FAST".to_vec(),
-            Macro::Full => b"FULL".to_vec(),
+            Macro::All => writer.write_all(b"ALL"),
+            Macro::Fast => writer.write_all(b"FAST"),
+            Macro::Full => writer.write_all(b"FULL"),
         }
     }
 }
@@ -49,17 +46,16 @@ pub enum MacroOrDataItems {
 }
 
 impl Serialize for MacroOrDataItems {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            MacroOrDataItems::Macro(m) => m.serialize(),
+            MacroOrDataItems::Macro(m) => m.serialize(writer),
             MacroOrDataItems::DataItems(items) => {
                 if items.len() == 1 {
-                    items[0].serialize()
+                    items[0].serialize(writer)
                 } else {
-                    let mut out = b"(".to_vec();
-                    out.extend(join_serializable(items.as_slice(), b" "));
-                    out.push(b')');
-                    out
+                    writer.write_all(b"(")?;
+                    join_serializable(items.as_slice(), b" ", writer)?;
+                    writer.write_all(b")")
                 }
             }
         }
@@ -189,37 +185,38 @@ pub enum DataItem {
 }
 
 impl Serialize for DataItem {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            DataItem::Body => b"BODY".to_vec(),
+            DataItem::Body => writer.write_all(b"BODY"),
             DataItem::BodyExt {
                 section,
                 partial,
                 peek,
             } => {
-                let mut out = if *peek {
-                    b"BODY.PEEK[".to_vec()
+                if *peek {
+                    writer.write_all(b"BODY.PEEK[")?;
                 } else {
-                    b"BODY[".to_vec()
-                };
+                    writer.write_all(b"BODY[")?;
+                }
                 if let Some(section) = section {
-                    out.extend(section.serialize());
+                    section.serialize(writer)?;
                 }
-                out.push(b']');
+                writer.write_all(b"]")?;
                 if let Some((a, b)) = partial {
-                    out.extend(format!("<{}.{}>", a, b).into_bytes());
+                    write!(writer, "<{}.{}>", a, b)?;
                 }
-                out
+
+                Ok(())
             }
-            DataItem::BodyStructure => b"BODYSTRUCTURE".to_vec(),
-            DataItem::Envelope => b"ENVELOPE".to_vec(),
-            DataItem::Flags => b"FLAGS".to_vec(),
-            DataItem::InternalDate => b"INTERNALDATE".to_vec(),
-            DataItem::Rfc822 => b"RFC822".to_vec(),
-            DataItem::Rfc822Header => b"RFC822.HEADER".to_vec(),
-            DataItem::Rfc822Size => b"RFC822.SIZE".to_vec(),
-            DataItem::Rfc822Text => b"RFC822.TEXT".to_vec(),
-            DataItem::Uid => b"UID".to_vec(),
+            DataItem::BodyStructure => writer.write_all(b"BODYSTRUCTURE"),
+            DataItem::Envelope => writer.write_all(b"ENVELOPE"),
+            DataItem::Flags => writer.write_all(b"FLAGS"),
+            DataItem::InternalDate => writer.write_all(b"INTERNALDATE"),
+            DataItem::Rfc822 => writer.write_all(b"RFC822"),
+            DataItem::Rfc822Header => writer.write_all(b"RFC822.HEADER"),
+            DataItem::Rfc822Size => writer.write_all(b"RFC822.SIZE"),
+            DataItem::Rfc822Text => writer.write_all(b"RFC822.TEXT"),
+            DataItem::Uid => writer.write_all(b"UID"),
         }
     }
 }
@@ -300,55 +297,48 @@ pub enum Section {
 }
 
 impl Serialize for Section {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Section::Part(part) => part.serialize(),
+            Section::Part(part) => part.serialize(writer),
             Section::Header(maybe_part) => match maybe_part {
                 Some(part) => {
-                    let mut out = part.serialize();
-                    out.extend_from_slice(b".HEADER");
-                    out
+                    part.serialize(writer)?;
+                    writer.write_all(b".HEADER")
                 }
-                None => b"HEADER".to_vec(),
+                None => writer.write_all(b"HEADER"),
             },
             Section::HeaderFields(maybe_part, header_list) => {
-                let mut out = match maybe_part {
+                match maybe_part {
                     Some(part) => {
-                        let mut out = part.serialize();
-                        out.extend_from_slice(b".HEADER.FIELDS (");
-                        out
+                        part.serialize(writer)?;
+                        writer.write_all(b".HEADER.FIELDS (")?;
                     }
-                    None => b"HEADER.FIElDS (".to_vec(),
+                    None => writer.write_all(b"HEADER.FIElDS (")?,
                 };
-                out.extend(join_serializable(header_list, b" "));
-                out.push(b')');
-                out
+                join_serializable(header_list, b" ", writer)?;
+                writer.write_all(b")")
             }
             Section::HeaderFieldsNot(maybe_part, header_list) => {
-                let mut out = match maybe_part {
+                match maybe_part {
                     Some(part) => {
-                        let mut out = part.serialize();
-                        out.extend_from_slice(b".HEADER.FIELDS.NOT (");
-                        out
+                        part.serialize(writer)?;
+                        writer.write_all(b".HEADER.FIELDS.NOT (")?;
                     }
-                    None => b"HEADER.FIELDS.NOT (".to_vec(),
+                    None => writer.write_all(b"HEADER.FIElDS.NOT (")?,
                 };
-                out.extend(join_serializable(header_list, b" "));
-                out.push(b')');
-                out
+                join_serializable(header_list, b" ", writer)?;
+                writer.write_all(b")")
             }
             Section::Text(maybe_part) => match maybe_part {
                 Some(part) => {
-                    let mut out = part.serialize();
-                    out.extend_from_slice(b".TEXT");
-                    out
+                    part.serialize(writer)?;
+                    writer.write_all(b".TEXT")
                 }
-                None => b"TEXT".to_vec(),
+                None => writer.write_all(b"TEXT"),
             },
             Section::Mime(part) => {
-                let mut out = part.serialize();
-                out.extend_from_slice(b".MIME");
-                out
+                part.serialize(writer)?;
+                writer.write_all(b".MIME")
             }
         }
     }
@@ -357,14 +347,14 @@ impl Serialize for Section {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part(pub Vec<u32>);
 
+impl Serialize for u32 {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
+    }
+}
+
 impl Serialize for Part {
-    fn serialize(&self) -> Vec<u8> {
-        join_bytes(
-            self.0
-                .iter()
-                .map(|num| format!("{}", num).into_bytes())
-                .collect::<Vec<Vec<u8>>>(),
-            b".",
-        )
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        join_serializable(&self.0, b".", writer)
     }
 }

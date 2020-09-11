@@ -2,6 +2,7 @@
 
 use crate::{codec::Serialize, types::core::Atom};
 use serde::Deserialize;
+use std::io::Write;
 
 /// A list of zero or more named tokens associated with the message.  A
 /// flag is set by its addition to this list, and is cleared by its
@@ -79,8 +80,8 @@ impl std::fmt::Display for Flag {
 }
 
 impl Serialize for Flag {
-    fn serialize(&self) -> Vec<u8> {
-        format!("{}", self).into_bytes()
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
     }
 }
 
@@ -130,8 +131,8 @@ impl std::fmt::Display for FlagNameAttribute {
 }
 
 impl Serialize for FlagNameAttribute {
-    fn serialize(&self) -> Vec<u8> {
-        format!("{}", self).into_bytes()
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
     }
 }
 
