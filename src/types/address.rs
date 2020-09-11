@@ -1,4 +1,4 @@
-use crate::{codec::Encoder, types::core::NString};
+use crate::{codec::Serialize, types::core::NString};
 
 /// An address structure describes an electronic mail address.
 #[derive(Debug, Clone, PartialEq)]
@@ -24,16 +24,16 @@ impl Address {
     }
 }
 
-impl Encoder for Address {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Address {
+    fn serialize(&self) -> Vec<u8> {
         let mut out = b"(".to_vec();
-        out.extend(self.name.encode());
+        out.extend(self.name.serialize());
         out.push(b' ');
-        out.extend(self.adl.encode());
+        out.extend(self.adl.serialize());
         out.push(b' ');
-        out.extend(self.mailbox.encode());
+        out.extend(self.mailbox.serialize());
         out.push(b' ');
-        out.extend(self.host.encode());
+        out.extend(self.host.serialize());
         out.push(b')');
         out
     }

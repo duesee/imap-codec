@@ -1,5 +1,5 @@
 use crate::{
-    codec::Encoder,
+    codec::Serialize,
     types::{
         core::{IString, NString, Number},
         envelope::Envelope,
@@ -15,8 +15,8 @@ pub struct Body {
     pub specific: SpecificFields,
 }
 
-impl Encoder for Body {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Body {
+    fn serialize(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         match self.specific {
@@ -24,11 +24,11 @@ impl Encoder for Body {
                 ref type_,
                 ref subtype,
             } => {
-                out.extend(&type_.encode());
+                out.extend(&type_.serialize());
                 out.push(b' ');
-                out.extend(&subtype.encode());
+                out.extend(&subtype.serialize());
                 out.push(b' ');
-                out.extend(&self.basic.encode());
+                out.extend(&self.basic.serialize());
             }
             SpecificFields::Message {
                 ref envelope,
@@ -36,11 +36,11 @@ impl Encoder for Body {
                 number_of_lines,
             } => {
                 out.extend_from_slice(b"\"TEXT\" \"RFC822\" ");
-                out.extend(&self.basic.encode());
+                out.extend(&self.basic.serialize());
                 out.push(b' ');
-                out.extend(&envelope.encode());
+                out.extend(&envelope.serialize());
                 out.push(b' ');
-                out.extend(&body_structure.encode());
+                out.extend(&body_structure.serialize());
                 out.push(b' ');
                 out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
             }
@@ -49,9 +49,9 @@ impl Encoder for Body {
                 number_of_lines,
             } => {
                 out.extend_from_slice(b"\"TEXT\" ");
-                out.extend(&subtype.encode());
+                out.extend(&subtype.serialize());
                 out.push(b' ');
-                out.extend(&self.basic.encode());
+                out.extend(&self.basic.serialize());
                 out.push(b' ');
                 out.extend_from_slice(format!("{}", number_of_lines).as_bytes());
             }
@@ -144,16 +144,16 @@ pub struct BasicFields {
     pub size: Number,
 }
 
-impl Encoder for BasicFields {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for BasicFields {
+    fn serialize(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        out.extend(List1AttributeValueOrNil(&self.parameter_list).encode());
+        out.extend(List1AttributeValueOrNil(&self.parameter_list).serialize());
         out.push(b' ');
-        out.extend(&self.id.encode());
+        out.extend(&self.id.serialize());
         out.push(b' ');
-        out.extend(&self.description.encode());
+        out.extend(&self.description.serialize());
         out.push(b' ');
-        out.extend(&self.content_transfer_encoding.encode());
+        out.extend(&self.content_transfer_encoding.serialize());
         out.push(b' ');
         out.extend(format!("{}", self.size).as_bytes());
         out
@@ -296,18 +296,18 @@ pub struct SinglePartExtensionData {
     pub extension: Vec<u8>,
 }
 
-impl Encoder for SinglePartExtensionData {
-    fn encode(&self) -> Vec<u8> {
-        let mut out = self.md5.encode();
+impl Serialize for SinglePartExtensionData {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = self.md5.serialize();
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
 
             match dsp {
                 Some((s, param)) => {
                     out.push(b'(');
-                    out.extend(s.encode());
+                    out.extend(s.serialize());
                     out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).encode());
+                    out.extend(&List1AttributeValueOrNil(&param).serialize());
                     out.push(b')');
                 }
                 None => out.extend_from_slice(b"NIL"),
@@ -315,11 +315,11 @@ impl Encoder for SinglePartExtensionData {
 
             if let Some(ref lang) = self.language {
                 out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").encode());
+                out.extend(&List1OrNil(lang, b" ").serialize());
 
                 if let Some(ref loc) = self.location {
                     out.push(b' ');
-                    out.extend(&loc.encode());
+                    out.extend(&loc.serialize());
 
                     if !self.extension.is_empty() {
                         //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
@@ -378,9 +378,9 @@ pub struct MultiPartExtensionData {
     pub extension: Vec<u8>,
 }
 
-impl Encoder for MultiPartExtensionData {
-    fn encode(&self) -> Vec<u8> {
-        let mut out = List1AttributeValueOrNil(&self.parameter_list).encode();
+impl Serialize for MultiPartExtensionData {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = List1AttributeValueOrNil(&self.parameter_list).serialize();
 
         if let Some(ref dsp) = self.disposition {
             out.push(b' ');
@@ -388,9 +388,9 @@ impl Encoder for MultiPartExtensionData {
             match dsp {
                 Some((s, param)) => {
                     out.push(b'(');
-                    out.extend(s.encode());
+                    out.extend(s.serialize());
                     out.push(b' ');
-                    out.extend(&List1AttributeValueOrNil(&param).encode());
+                    out.extend(&List1AttributeValueOrNil(&param).serialize());
                     out.push(b')');
                 }
                 None => out.extend_from_slice(b"NIL"),
@@ -398,11 +398,11 @@ impl Encoder for MultiPartExtensionData {
 
             if let Some(ref lang) = self.language {
                 out.push(b' ');
-                out.extend(&List1OrNil(lang, b" ").encode());
+                out.extend(&List1OrNil(lang, b" ").serialize());
 
                 if let Some(ref loc) = self.location {
                     out.push(b' ');
-                    out.extend(&loc.encode());
+                    out.extend(&loc.serialize());
 
                     if !self.extension.is_empty() {
                         //out.push(b' '); // TODO: Extension includes the SP for now, as it is unparsed.
@@ -492,15 +492,15 @@ pub enum BodyStructure {
     },
 }
 
-impl Encoder for BodyStructure {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for BodyStructure {
+    fn serialize(&self) -> Vec<u8> {
         let mut out = b"(".to_vec();
         match self {
             BodyStructure::Single { body, extension } => {
-                out.extend(&body.encode());
+                out.extend(&body.serialize());
                 if let Some(extension) = extension {
                     out.push(b' ');
-                    out.extend(&extension.encode());
+                    out.extend(&extension.serialize());
                 }
             }
             BodyStructure::Multi {
@@ -509,14 +509,14 @@ impl Encoder for BodyStructure {
                 extension_data,
             } => {
                 for body in bodies {
-                    out.extend(&body.encode());
+                    out.extend(&body.serialize());
                 }
                 out.push(b' ');
-                out.extend(&subtype.encode());
+                out.extend(&subtype.serialize());
 
                 if let Some(extension) = extension_data {
                     out.push(b' ');
-                    out.extend(&extension.encode());
+                    out.extend(&extension.serialize());
                 }
             }
         }

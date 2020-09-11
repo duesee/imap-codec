@@ -1,4 +1,4 @@
-use crate::{codec::Encoder, parse::sequence::sequence_set};
+use crate::{codec::Serialize, parse::sequence::sequence_set};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sequence {
@@ -6,11 +6,13 @@ pub enum Sequence {
     Range(SeqNo, SeqNo),
 }
 
-impl Encoder for Sequence {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Sequence {
+    fn serialize(&self) -> Vec<u8> {
         match self {
-            Sequence::Single(seq_no) => seq_no.encode(),
-            Sequence::Range(from, to) => [&from.encode(), b":".as_ref(), &to.encode()].concat(),
+            Sequence::Single(seq_no) => seq_no.serialize(),
+            Sequence::Range(from, to) => {
+                [&from.serialize(), b":".as_ref(), &to.serialize()].concat()
+            }
         }
     }
 }
@@ -21,8 +23,8 @@ pub enum SeqNo {
     Largest,
 }
 
-impl Encoder for SeqNo {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for SeqNo {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             SeqNo::Value(number) => number.to_string().into_bytes(),
             SeqNo::Largest => b"*".to_vec(),
@@ -62,7 +64,7 @@ impl ToSequence for &str {
 #[cfg(test)]
 mod test {
     use super::{SeqNo, Sequence, ToSequence};
-    use crate::codec::Encoder;
+    use crate::codec::Serialize;
 
     #[test]
     fn test_sequence_serialize() {
@@ -76,7 +78,7 @@ mod test {
         ];
 
         for (expected, test) in tests.iter() {
-            let got = test.encode();
+            let got = test.serialize();
             assert_eq!(*expected, got);
         }
     }

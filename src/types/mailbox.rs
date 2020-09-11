@@ -1,5 +1,5 @@
 use crate::{
-    codec::Encoder,
+    codec::Serialize,
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
@@ -12,11 +12,11 @@ pub enum ListMailbox {
     String(IString),
 }
 
-impl Encoder for ListMailbox {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for ListMailbox {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             ListMailbox::Token(str) => str.clone().into_bytes(),
-            ListMailbox::String(imap_str) => imap_str.encode(),
+            ListMailbox::String(imap_str) => imap_str.serialize(),
         }
     }
 }
@@ -108,11 +108,11 @@ pub enum Mailbox {
     Other(AString),
 }
 
-impl Encoder for Mailbox {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Mailbox {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             Mailbox::Inbox => b"INBOX".to_vec(),
-            Mailbox::Other(a_str) => a_str.encode(),
+            Mailbox::Other(a_str) => a_str.serialize(),
         }
     }
 }

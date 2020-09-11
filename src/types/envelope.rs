@@ -1,5 +1,5 @@
 use crate::{
-    codec::Encoder,
+    codec::Serialize,
     types::{address::Address, core::NString},
     List1OrNil,
 };
@@ -66,28 +66,28 @@ pub struct Envelope {
     pub message_id: NString,    // TODO: must not be empty string
 }
 
-impl Encoder for Envelope {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Envelope {
+    fn serialize(&self) -> Vec<u8> {
         let mut out = b"(".to_vec();
-        out.extend(self.date.encode());
+        out.extend(self.date.serialize());
         out.push(b' ');
-        out.extend(self.subject.encode());
+        out.extend(self.subject.serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.from, b"").encode());
+        out.extend(List1OrNil(&self.from, b"").serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.sender, b"").encode());
+        out.extend(List1OrNil(&self.sender, b"").serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.reply_to, b"").encode());
+        out.extend(List1OrNil(&self.reply_to, b"").serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.to, b"").encode());
+        out.extend(List1OrNil(&self.to, b"").serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.cc, b"").encode());
+        out.extend(List1OrNil(&self.cc, b"").serialize());
         out.push(b' ');
-        out.extend(List1OrNil(&self.bcc, b"").encode());
+        out.extend(List1OrNil(&self.bcc, b"").serialize());
         out.push(b' ');
-        out.extend(self.in_reply_to.encode());
+        out.extend(self.in_reply_to.serialize());
         out.push(b' ');
-        out.extend(self.message_id.encode());
+        out.extend(self.message_id.serialize());
         out.push(b')');
         out
     }

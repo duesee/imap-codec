@@ -1,4 +1,4 @@
-use crate::{codec::Encoder, types::core::Atom};
+use crate::{codec::Serialize, types::core::Atom};
 use serde::Deserialize;
 use std::fmt;
 
@@ -68,12 +68,12 @@ pub enum AuthMechanism {
     Other(Atom),
 }
 
-impl Encoder for AuthMechanism {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for AuthMechanism {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             AuthMechanism::Plain => b"PLAIN".to_vec(),
             AuthMechanism::Login => b"LOGIN".to_vec(),
-            AuthMechanism::Other(atom) => atom.encode(),
+            AuthMechanism::Other(atom) => atom.serialize(),
         }
     }
 }

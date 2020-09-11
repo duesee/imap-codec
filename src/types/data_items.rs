@@ -1,5 +1,5 @@
 use crate::{
-    codec::Encoder,
+    codec::Serialize,
     types::core::AString,
     utils::{join_bytes, join_serializable},
 };
@@ -31,8 +31,8 @@ impl Macro {
     }
 }
 
-impl Encoder for Macro {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Macro {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             Macro::All => b"ALL".to_vec(),
             Macro::Fast => b"FAST".to_vec(),
@@ -48,13 +48,13 @@ pub enum MacroOrDataItems {
     DataItems(Vec<DataItem>),
 }
 
-impl Encoder for MacroOrDataItems {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for MacroOrDataItems {
+    fn serialize(&self) -> Vec<u8> {
         match self {
-            MacroOrDataItems::Macro(m) => m.encode(),
+            MacroOrDataItems::Macro(m) => m.serialize(),
             MacroOrDataItems::DataItems(items) => {
                 if items.len() == 1 {
-                    items[0].encode()
+                    items[0].serialize()
                 } else {
                     let mut out = b"(".to_vec();
                     out.extend(join_serializable(items.as_slice(), b" "));
@@ -188,8 +188,8 @@ pub enum DataItem {
     Uid,
 }
 
-impl Encoder for DataItem {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for DataItem {
+    fn serialize(&self) -> Vec<u8> {
         match self {
             DataItem::Body => b"BODY".to_vec(),
             DataItem::BodyExt {
@@ -203,7 +203,7 @@ impl Encoder for DataItem {
                     b"BODY[".to_vec()
                 };
                 if let Some(section) = section {
-                    out.extend(section.encode());
+                    out.extend(section.serialize());
                 }
                 out.push(b']');
                 if let Some((a, b)) = partial {
@@ -299,13 +299,13 @@ pub enum Section {
     Mime(Part),
 }
 
-impl Encoder for Section {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Section {
+    fn serialize(&self) -> Vec<u8> {
         match self {
-            Section::Part(part) => part.encode(),
+            Section::Part(part) => part.serialize(),
             Section::Header(maybe_part) => match maybe_part {
                 Some(part) => {
-                    let mut out = part.encode();
+                    let mut out = part.serialize();
                     out.extend_from_slice(b".HEADER");
                     out
                 }
@@ -314,7 +314,7 @@ impl Encoder for Section {
             Section::HeaderFields(maybe_part, header_list) => {
                 let mut out = match maybe_part {
                     Some(part) => {
-                        let mut out = part.encode();
+                        let mut out = part.serialize();
                         out.extend_from_slice(b".HEADER.FIELDS (");
                         out
                     }
@@ -327,7 +327,7 @@ impl Encoder for Section {
             Section::HeaderFieldsNot(maybe_part, header_list) => {
                 let mut out = match maybe_part {
                     Some(part) => {
-                        let mut out = part.encode();
+                        let mut out = part.serialize();
                         out.extend_from_slice(b".HEADER.FIELDS.NOT (");
                         out
                     }
@@ -339,14 +339,14 @@ impl Encoder for Section {
             }
             Section::Text(maybe_part) => match maybe_part {
                 Some(part) => {
-                    let mut out = part.encode();
+                    let mut out = part.serialize();
                     out.extend_from_slice(b".TEXT");
                     out
                 }
                 None => b"TEXT".to_vec(),
             },
             Section::Mime(part) => {
-                let mut out = part.encode();
+                let mut out = part.serialize();
                 out.extend_from_slice(b".MIME");
                 out
             }
@@ -357,8 +357,8 @@ impl Encoder for Section {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part(pub Vec<u32>);
 
-impl Encoder for Part {
-    fn encode(&self) -> Vec<u8> {
+impl Serialize for Part {
+    fn serialize(&self) -> Vec<u8> {
         join_bytes(
             self.0
                 .iter()
