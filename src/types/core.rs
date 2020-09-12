@@ -378,7 +378,7 @@ impl std::fmt::Display for Charset {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.0.is_empty() {
             write!(f, "\"\"")
-        } else if self
+        } else if self // TODO: don't check every time...
             .0
             .chars()
             .all(|c| c.is_ascii() && is_atom_char(c as u8))
