@@ -60,15 +60,6 @@ pub enum Status {
     /// ### 7.1.1. OK Response
     ///
     /// The OK response indicates an information message from the server.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * OK IMAP4rev1 server ready
-    /// C: A001 LOGIN fred blurdybloop
-    /// S: * OK [ALERT] System shutdown in 10 minutes
-    /// S: A001 OK LOGIN Completed
-    /// ```
     Ok {
         /// When tagged, it indicates successful completion of the associated
         /// command.  The human-readable text MAY be presented to the user as
@@ -90,18 +81,6 @@ pub enum Status {
     /// ### 7.1.2. NO Response
     ///
     /// The NO response indicates an operational error message from the server.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: A222 COPY 1:2 owatagusiam
-    /// S: * NO Disk is 98% full, please delete unnecessary data
-    /// S: A222 OK COPY completed
-    /// C: A223 COPY 3:200 blurdybloop
-    /// S: * NO Disk is 98% full, please delete unnecessary data
-    /// S: * NO Disk is 99% full, please delete unnecessary data
-    /// S: A223 NO COPY failed: disk is full
-    /// ```
     No {
         /// When tagged, it indicates unsuccessful completion of the
         /// associated command.  The untagged form indicates a warning; the
@@ -116,19 +95,6 @@ pub enum Status {
     /// ### 7.1.3. BAD Response
     ///
     /// The BAD response indicates an error message from the server.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// C: ...very long command line...
-    /// S: * BAD Command line too long
-    /// C: ...empty line...
-    /// S: * BAD Empty command line
-    /// C: A443 EXPUNGE
-    /// S: * BAD Disk crash, attempting salvage to a new disk!
-    /// S: * OK Salvage successful, no data lost
-    /// S: A443 OK Expunge completed
-    /// ```
     Bad {
         /// When tagged, it reports a protocol-level error in the client's command;
         /// the tag indicates the command that caused the error.  The untagged
@@ -148,12 +114,6 @@ pub enum Status {
     /// possible greetings at connection startup.  It indicates that the
     /// connection has already been authenticated by external means; thus
     /// no LOGIN command is needed.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * PREAUTH IMAP4rev1 server logged in as Smith
-    /// ```
     PreAuth {
         /// Response code (optional)
         code: Option<Code>,
@@ -190,12 +150,6 @@ pub enum Status {
     /// continue to read response data from the server until the
     /// connection is closed; this will ensure that any pending untagged
     /// or completion responses are read and processed.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * BYE Autologout; idle for too long
-    /// ```
     Bye {
         /// Response code (optional)
         code: Option<Code>,
@@ -339,12 +293,6 @@ pub enum Data {
     /// OK response as part of a successful authentication.  It is
     /// unnecessary for a client to send a separate CAPABILITY command if
     /// it recognizes these automatic capabilities.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI XPIG-LATIN
-    /// ```
     Capability(Vec<Capability>),
 
     /// ### 7.2.2. LIST Response
@@ -364,12 +312,6 @@ pub enum Data {
     /// MUST be valid for use as a reference in LIST and LSUB commands.
     /// Unless \Noselect is indicated, the name MUST also be valid as an
     /// argument for commands, such as SELECT, that accept mailbox names.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * LIST (\Noselect) "/" ~/Mail/foo
-    /// ```
     List {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
@@ -385,12 +327,6 @@ pub enum Data {
     /// returns a single name that matches the LSUB specification.  There
     /// can be multiple LSUB responses for a single LSUB command.  The
     /// data is identical in format to the LIST response.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * LSUB () "." #news.comp.mail.misc
-    /// ```
     Lsub {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
@@ -405,12 +341,6 @@ pub enum Data {
     /// The STATUS response occurs as a result of an STATUS command.  It
     /// returns the mailbox name that matches the STATUS specification and
     /// the requested mailbox status information.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * STATUS blurdybloop (MESSAGES 231 UIDNEXT 44292)
-    /// ```
     Status {
         /// Name
         name: Mailbox,
@@ -427,12 +357,6 @@ pub enum Data {
     /// search criteria.  For SEARCH, these are message sequence numbers;
     /// for UID SEARCH, these are unique identifiers.  Each number is
     /// delimited by a space.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * SEARCH 2 3 6
-    /// ```
     Search(Vec<u32>),
 
     /// ### 7.2.6.  FLAGS Response
@@ -446,12 +370,6 @@ pub enum Data {
     /// depending on server implementation.
     ///
     /// The update from the FLAGS response MUST be recorded by the client.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
-    /// ```
     Flags(Vec<Flag>),
 
     // ## 7.3. Server Responses - Mailbox Size
@@ -467,12 +385,6 @@ pub enum Data {
     /// and if the size of the mailbox changes (e.g., new messages).
     ///
     /// The update from the EXISTS response MUST be recorded by the client.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * 23 EXISTS
-    /// ```
     Exists(u32),
 
     /// ### 7.3.2. RECENT Response
@@ -497,12 +409,6 @@ pub enum Data {
     ///   set, or to do a SEARCH RECENT.
     ///
     /// The update from the RECENT response MUST be recorded by the client.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * 5 RECENT
-    /// ```
     Recent(u32),
 
     // ## 7.4. Server Responses - Message Status
@@ -547,12 +453,6 @@ pub enum Data {
     ///   response MAY be sent during a UID command.
     ///
     /// The update from the EXPUNGE response MUST be recorded by the client.
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * 44 EXPUNGE
-    /// ```
     Expunge(u32),
 
     /// ### 7.4.2. FETCH Response
@@ -562,12 +462,6 @@ pub enum Data {
     /// parentheses.  This response occurs as the result of a FETCH or
     /// STORE command, as well as by unilateral server decision (e.g.,
     /// flag updates).
-    ///
-    /// # Trace
-    ///
-    /// ```text
-    /// S: * 23 FETCH (FLAGS (\Seen) RFC822.SIZE 44827)
-    /// ```
     Fetch {
         /// Message SEQ or UID
         msg: u32,
@@ -712,19 +606,6 @@ impl Serialize for StatusItemResponse {
 /// command, follows the octets of the literal.  If there are any
 /// additional command arguments, the literal octets are followed by a
 /// space and those arguments.
-///
-/// # Trace
-///
-/// ```text
-/// C: A001 LOGIN {11}
-/// S: + Ready for additional command text
-/// C: FRED FOOBAR {7}
-/// S: + Ready for additional command text
-/// C: fat man
-/// S: A001 OK LOGIN completed
-/// C: A044 BLURDYBLOOP {102856}
-/// S: A044 BAD No such command as "BLURDYBLOOP"
-/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Continuation {
     Basic { code: Option<Code>, text: String },

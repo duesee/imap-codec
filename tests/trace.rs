@@ -1,6 +1,9 @@
 use imap_codec::{
     codec::Serialize,
-    parse::{command::command, response::response},
+    parse::{
+        command::command,
+        response::{greeting, response},
+    },
 };
 
 enum Who {
@@ -506,6 +509,168 @@ S: a005 OK +FLAGS completed
 C: a006 logout
 S: * BYE IMAP4rev1 server terminating connection
 S: a006 OK LOGOUT completed
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_status_ok() {
+    let trace = br#"S: * OK IMAP4rev1 server ready
+C: A001 LOGIN fred blurdybloop
+S: * OK [ALERT] System shutdown in 10 minutes
+S: A001 OK LOGIN Completed
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_status_no() {
+    let trace = br#"C: A222 COPY 1:2 owatagusiam
+S: * NO Disk is 98% full, please delete unnecessary data
+S: A222 OK COPY completed
+C: A223 COPY 3:200 blurdybloop
+S: * NO Disk is 98% full, please delete unnecessary data
+S: * NO Disk is 99% full, please delete unnecessary data
+S: A223 NO COPY failed: disk is full
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_status_bad() {
+    let trace = br#"S: * BAD Command line too long
+S: * BAD Empty command line
+C: A443 EXPUNGE
+S: * BAD Disk crash, attempting salvage to a new disk!
+S: * OK Salvage successful, no data lost
+S: A443 OK Expunge completed
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_status_preauth() {
+    // This can only be parsed with `greeting`
+    let line = b"* PREAUTH IMAP4rev1 server logged in as Smith\r\n";
+
+    println!("S:          {}", String::from_utf8_lossy(line).trim());
+    let (rem, parsed) = greeting(line).unwrap();
+    println!("Parsed:     {:?}", parsed);
+    assert!(rem.is_empty());
+    let mut serialized = Vec::new();
+    parsed.serialize(&mut serialized).unwrap();
+    println!(
+        "Serialized: {}",
+        String::from_utf8_lossy(&serialized).trim()
+    );
+    let (rem, parsed2) = greeting(&serialized).unwrap();
+    assert!(rem.is_empty());
+    assert_eq!(parsed, parsed2);
+    println!()
+}
+
+#[test]
+fn test_response_status_bye() {
+    let trace = br#"S: * BYE Autologout; idle for too long
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_capability() {
+    let trace = br#"S: * CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI XPIG-LATIN
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_list() {
+    let trace = br#"S: * LIST (\Noselect) "/" ~/Mail/foo
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_lsub() {
+    let trace = br#"S: * LSUB () "." #news.comp.mail.misc
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_status() {
+    let trace = br#"S: * STATUS blurdybloop (MESSAGES 231 UIDNEXT 44292)
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_search() {
+    let trace = br#"S: * SEARCH 2 3 6
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_flags() {
+    let trace = br#"S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_exists() {
+    let trace = br#"S: * 23 EXISTS
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_recent() {
+    let trace = br#"S: * 5 RECENT
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_expunge() {
+    let trace = br#"S: * 44 EXPUNGE
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_fetch() {
+    let trace = br#"S: * 23 FETCH (FLAGS (\Seen) RFC822.SIZE 44827)
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
+fn test_response_data_continuation() {
+    // C: A001 LOGIN {11}
+    // C: FRED FOOBAR {7}
+    // C: fat man
+    // C: A044 BLURDYBLOOP {102856}
+
+    let trace = br#"S: + Ready for additional command text
+S: A001 OK LOGIN completed
+S: A044 BAD No such command as "BLURDYBLOOP"
 "#;
 
     test_lines_of_trace(trace);
