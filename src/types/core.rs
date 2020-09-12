@@ -392,6 +392,8 @@ impl std::fmt::Display for Charset {
 
 impl Serialize for Charset {
     fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        // FIXME(perf): conversion calls should not
+        //              be requires for serialization.
         writer.write_all(self.to_string().as_bytes())
     }
 }

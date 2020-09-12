@@ -101,7 +101,7 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     Ok((
         remaining,
-        // FIXME: do not use unwrap()
+        // FIXME(panic): do not use unwrap()
         CommandBody::Append {
             mailbox,
             flags: flags.unwrap_or_default(),
@@ -547,7 +547,7 @@ fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     let criteria = match criteria.len() {
         0 => unreachable!(),
-        1 => criteria.first().unwrap().clone(),
+        1 => criteria[0].clone(),
         _ => SearchKey::And(criteria),
     };
 
@@ -730,7 +730,7 @@ fn search_key_limited<'a>(
                 ),
                 |val| match val.len() {
                     0 => unreachable!(),
-                    1 => val.first().unwrap().clone(),
+                    1 => val[0].clone(),
                     _ => SearchKey::And(val),
                 },
             ),

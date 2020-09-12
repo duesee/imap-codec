@@ -120,7 +120,7 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOff
         (Some(date), Some(time), Some(zone)) => {
             let local_datetime = NaiveDateTime::new(date, time);
 
-            // Not sure about that... Still, one less `unwrap`.
+            // Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
                 Ok((remaining, Some(datetime)))
             } else {
