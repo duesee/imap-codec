@@ -135,7 +135,9 @@ fn is_char8(i: u8) -> bool {
 pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
-            astr::Atom(std::str::from_utf8(bytes).unwrap())
+            // Note: this is safe, because is_astring_char enforces
+            //       that the string only contains ASCII characters
+            astr::Atom(unsafe { std::str::from_utf8_unchecked(bytes) })
         }),
         map(string, astr::String),
     ))(input)
