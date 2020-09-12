@@ -1,6 +1,7 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, unescape_quoted, Charset, Tag},
+    types::core::{astr, atm, istr, nstr, Charset, Tag},
+    utils::unescape_quoted,
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{

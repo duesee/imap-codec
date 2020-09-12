@@ -9,45 +9,10 @@
 use crate::{
     codec::Serialize,
     parse::core::{is_astring_char, is_atom_char, is_text_char},
+    utils::escape_quoted,
 };
 use serde::Deserialize;
-use std::io::Write;
-use std::{borrow::Cow, convert::TryFrom, fmt, string::FromUtf8Error};
-
-#[derive(Debug, PartialEq, Clone, Deserialize)]
-pub struct Tag(pub(crate) String);
-
-impl Serialize for Tag {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
-    }
-}
-
-impl TryFrom<&str> for Tag {
-    type Error = ();
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Tag::try_from(value.to_string())
-    }
-}
-
-impl TryFrom<String> for Tag {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.bytes().all(|c| is_astring_char(c) && c != b'+') {
-            Ok(Tag(value))
-        } else {
-            Err(())
-        }
-    }
-}
-
-impl std::fmt::Display for Tag {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
 
 // ## 4.1. Atom
 
@@ -78,17 +43,6 @@ impl TryFrom<String> for Atom {
     }
 }
 
-/// An atom consists of one or more non-special characters.
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub(crate) struct atm<'a>(pub(crate) &'a str);
-
-impl<'a> atm<'a> {
-    pub fn to_owned(&self) -> Atom {
-        Atom(self.0.to_string())
-    }
-}
-
 impl fmt::Display for Atom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.0)
@@ -109,22 +63,6 @@ impl Serialize for Atom {
 pub type Number = u32;
 
 // ## 4.3. String
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
-pub(crate) enum istr<'a> {
-    Literal(&'a [u8]),
-    Quoted(Cow<'a, str>),
-}
-
-impl<'a> istr<'a> {
-    pub fn to_owned(&self) -> IString {
-        match self {
-            istr::Literal(bytes) => IString::Literal(bytes.to_vec()),
-            istr::Quoted(cowstr) => IString::Quoted(cowstr.to_string()),
-        }
-    }
-}
 
 /// A string is in one of two forms: either literal or quoted string.
 ///
@@ -157,17 +95,6 @@ pub enum IString {
     Quoted(String),
 }
 
-impl TryFrom<IString> for String {
-    type Error = FromUtf8Error;
-
-    fn try_from(value: IString) -> Result<Self, Self::Error> {
-        match value {
-            IString::Quoted(utf8) => Ok(utf8),
-            IString::Literal(bytes) => String::from_utf8(bytes),
-        }
-    }
-}
-
 impl From<&str> for IString {
     fn from(s: &str) -> Self {
         s.to_string().into()
@@ -184,32 +111,15 @@ impl From<String> for IString {
     }
 }
 
-pub fn escape_quoted(unescaped: &str) -> Cow<str> {
-    let mut escaped = Cow::Borrowed(unescaped);
+impl TryFrom<IString> for String {
+    type Error = FromUtf8Error;
 
-    if escaped.contains('\\') {
-        escaped = Cow::Owned(escaped.replace("\\", "\\\\"));
+    fn try_from(value: IString) -> Result<Self, Self::Error> {
+        match value {
+            IString::Quoted(utf8) => Ok(utf8),
+            IString::Literal(bytes) => String::from_utf8(bytes),
+        }
     }
-
-    if escaped.contains('\"') {
-        escaped = Cow::Owned(escaped.replace("\"", "\\\""));
-    }
-
-    escaped
-}
-
-pub fn unescape_quoted(escaped: &str) -> Cow<str> {
-    let mut unescaped = Cow::Borrowed(escaped);
-
-    if unescaped.contains("\\\\") {
-        unescaped = Cow::Owned(unescaped.replace("\\\\", "\\"));
-    }
-
-    if unescaped.contains("\\\"") {
-        unescaped = Cow::Owned(unescaped.replace("\\\"", "\""));
-    }
-
-    unescaped
 }
 
 impl Serialize for IString {
@@ -224,22 +134,6 @@ impl Serialize for IString {
     }
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
-pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
-
-impl<'a> nstr<'a> {
-    pub fn to_owned(&self) -> NString {
-        NString(self.0.as_ref().map(|inner| inner.to_owned()))
-    }
-}
-
-//impl<'a> std::borrow::Borrow<nstr<'a>> for NString {
-//    fn borrow(&self) -> &nstr<'a> {
-//        &nstr(self.0.map(|inner| *inner.borrow()))
-//    }
-//}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct NString(pub Option<IString>);
 
@@ -248,22 +142,6 @@ impl Serialize for NString {
         match &self.0 {
             Some(imap_str) => imap_str.serialize(writer),
             None => writer.write_all(b"NIL"),
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
-pub(crate) enum astr<'a> {
-    Atom(&'a str),
-    String(istr<'a>),
-}
-
-impl<'a> astr<'a> {
-    pub fn to_owned(&self) -> AString {
-        match self {
-            astr::Atom(str) => AString::Atom(str.to_string()),
-            astr::String(istr) => AString::String(istr.to_owned()),
         }
     }
 }
@@ -351,6 +229,41 @@ impl Serialize for AString {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
+#[derive(Debug, PartialEq, Clone, Deserialize)]
+pub struct Tag(pub(crate) String);
+
+impl TryFrom<&str> for Tag {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Tag::try_from(value.to_string())
+    }
+}
+
+impl TryFrom<String> for Tag {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.bytes().all(|c| is_astring_char(c) && c != b'+') {
+            Ok(Tag(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl std::fmt::Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Serialize for Tag {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.0.as_bytes())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Charset(pub(crate) String);
 
@@ -398,25 +311,63 @@ impl Serialize for Charset {
     }
 }
 
+// ----- "Referenced types" used for non-allocating code -----
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub(crate) struct atm<'a>(pub(crate) &'a str);
+
+impl<'a> atm<'a> {
+    pub fn to_owned(&self) -> Atom {
+        Atom(self.0.to_string())
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub(crate) enum istr<'a> {
+    Literal(&'a [u8]),
+    Quoted(Cow<'a, str>),
+}
+
+impl<'a> istr<'a> {
+    pub fn to_owned(&self) -> IString {
+        match self {
+            istr::Literal(bytes) => IString::Literal(bytes.to_vec()),
+            istr::Quoted(cowstr) => IString::Quoted(cowstr.to_string()),
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
+
+impl<'a> nstr<'a> {
+    pub fn to_owned(&self) -> NString {
+        NString(self.0.as_ref().map(|inner| inner.to_owned()))
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq)]
+pub(crate) enum astr<'a> {
+    Atom(&'a str),
+    String(istr<'a>),
+}
+
+impl<'a> astr<'a> {
+    pub fn to_owned(&self) -> AString {
+        match self {
+            astr::Atom(str) => AString::Atom(str.to_string()),
+            astr::String(istr) => AString::String(istr.to_owned()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn test_escape_quoted() {
-        assert_eq!(escape_quoted("alice"), "alice");
-        assert_eq!(escape_quoted("\\alice\\"), "\\\\alice\\\\");
-        assert_eq!(escape_quoted("alice\""), "alice\\\"");
-        assert_eq!(escape_quoted(r#"\alice\ ""#), r#"\\alice\\ \""#);
-    }
-
-    #[test]
-    fn test_unescape_quoted() {
-        assert_eq!(unescape_quoted("alice"), "alice");
-        assert_eq!(unescape_quoted("\\\\alice\\\\"), "\\alice\\");
-        assert_eq!(unescape_quoted("alice\\\""), "alice\"");
-        assert_eq!(unescape_quoted(r#"\\alice\\ \""#), r#"\alice\ ""#);
-    }
 
     #[test]
     fn test_conversion() {

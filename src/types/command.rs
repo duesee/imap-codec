@@ -235,6 +235,15 @@ impl Command {
     }
 }
 
+impl Serialize for Command {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.tag.serialize(writer)?;
+        writer.write_all(b" ")?;
+        self.body.serialize(writer)?;
+        writer.write_all(b"\r\n")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CommandBody {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
@@ -1355,15 +1364,6 @@ pub enum CommandBody {
     Idle,
 }
 
-impl Serialize for Command {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.tag.serialize(writer)?;
-        writer.write_all(b" ")?;
-        self.body.serialize(writer)?;
-        writer.write_all(b"\r\n")
-    }
-}
-
 impl CommandBody {
     pub fn name(&self) -> &'static str {
         // TODO: consider the `strum` crate or use a macro?
@@ -1903,8 +1903,7 @@ mod test {
         types::{
             command::{Command, SearchKey, StatusItem},
             core::{AString, IString},
-            data_items::Macro,
-            data_items::{DataItem, Part, Section},
+            data_items::{DataItem, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
             mailbox::{ListMailbox, Mailbox},
             sequence::ToSequence,

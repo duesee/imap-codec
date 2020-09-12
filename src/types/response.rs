@@ -4,14 +4,14 @@ use crate::{
     codec::Serialize,
     types::{
         body::BodyStructure,
-        core::{escape_quoted, Atom, Charset, NString, Tag},
+        core::{Atom, Charset, NString, Tag},
         data_items::Section,
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
         Capability,
     },
-    utils::{join, join_serializable},
+    utils::{escape_quoted, join, join_serializable},
 };
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
