@@ -262,15 +262,18 @@ impl Serialize for Status {
             comment: &str,
             writer: &mut impl Write,
         ) -> std::io::Result<()> {
-            let tag = match tag {
-                Some(tag) => tag.to_string(),
-                None => "*".to_string(),
-            };
-
-            match code {
-                Some(code) => write!(writer, "{} {} [{}] {}\r\n", tag, status, code, comment),
-                None => write!(writer, "{} {} {}\r\n", tag, status, comment),
+            match tag {
+                Some(tag) => tag.serialize(writer)?,
+                None => writer.write_all(b"*")?,
             }
+            writer.write_all(b" ")?;
+            writer.write_all(status.as_bytes())?;
+            writer.write_all(b" ")?;
+            if let Some(code) = code {
+                write!(writer, "[{}] ", code)?;
+            }
+            writer.write_all(comment.as_bytes())?;
+            writer.write_all(b"\r\n")
         }
 
         match self {
