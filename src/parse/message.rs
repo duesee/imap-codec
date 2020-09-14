@@ -21,13 +21,13 @@ use nom::{
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
 pub(crate) fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
-    let (remaining, msg) = terminated(nz_number, SP)(input)?;
+    let (remaining, seq_or_uid) = terminated(nz_number, SP)(input)?;
 
     alt((
-        map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(msg)),
+        map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq_or_uid)),
         map(
             tuple((tag_no_case(b"FETCH"), SP, msg_att)),
-            move |(_, _, items)| Data::Fetch { msg, items },
+            move |(_, _, items)| Data::Fetch { seq_or_uid, items },
         ),
     ))(remaining)
 }

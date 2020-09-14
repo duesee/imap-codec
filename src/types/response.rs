@@ -343,7 +343,7 @@ pub enum Data {
     /// the requested mailbox status information.
     Status {
         /// Name
-        name: Mailbox,
+        mailbox: Mailbox,
         /// Status parenthesized list
         items: Vec<StatusItemResponse>,
     },
@@ -464,7 +464,7 @@ pub enum Data {
     /// flag updates).
     Fetch {
         /// Message SEQ or UID
-        msg: u32,
+        seq_or_uid: u32,
         /// Message data
         items: Vec<DataItemResponse>,
     },
@@ -513,9 +513,9 @@ impl Serialize for Data {
                 writer.write_all(b" ")?;
                 mailbox.serialize(writer)?;
             }
-            Data::Status { name, items } => {
+            Data::Status { mailbox, items } => {
                 writer.write_all(b"* STATUS ")?;
-                name.serialize(writer)?;
+                mailbox.serialize(writer)?;
                 writer.write_all(b" (")?;
                 join_serializable(items, b" ", writer)?;
                 writer.write_all(b")")?;
@@ -536,8 +536,8 @@ impl Serialize for Data {
             Data::Exists(count) => write!(writer, "* {} EXISTS", count)?,
             Data::Recent(count) => write!(writer, "* {} RECENT", count)?,
             Data::Expunge(msg) => write!(writer, "* {} EXPUNGE", msg)?,
-            Data::Fetch { msg, items } => {
-                write!(writer, "* {} FETCH (", msg)?;
+            Data::Fetch { seq_or_uid, items } => {
+                write!(writer, "* {} FETCH (", seq_or_uid)?;
                 join_serializable(items, b" ", writer)?;
                 writer.write_all(b")")?;
             }

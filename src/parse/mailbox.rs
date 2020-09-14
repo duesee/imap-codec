@@ -135,8 +135,8 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
                 SP,
                 delimited(tag(b"("), opt(status_att_list), tag(b")")),
             )),
-            |(_, _, name, _, items)| Data::Status {
-                name,
+            |(_, _, mailbox, _, items)| Data::Status {
+                mailbox,
                 items: items.unwrap_or_default(),
             },
         ),

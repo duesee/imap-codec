@@ -64,56 +64,62 @@ impl Command {
         )
     }
 
-    pub fn select(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Select { mailbox_name })
+    pub fn select(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Select { mailbox })
     }
 
-    pub fn examine(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Examine { mailbox_name })
+    pub fn examine(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Examine { mailbox })
     }
 
-    pub fn create(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Create { mailbox_name })
+    pub fn create(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Create { mailbox })
     }
 
-    pub fn delete(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Delete { mailbox_name })
+    pub fn delete(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Delete { mailbox })
     }
 
-    pub fn rename(existing_mailbox_name: Mailbox, new_mailbox_name: Mailbox) -> Command {
+    pub fn rename(mailbox: Mailbox, new_mailbox: Mailbox) -> Command {
         Command::new(
             gen_tag(),
             CommandBody::Rename {
-                existing_mailbox_name,
-                new_mailbox_name,
+                mailbox,
+                new_mailbox,
             },
         )
     }
 
-    pub fn subscribe(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Subscribe { mailbox_name })
+    pub fn subscribe(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Subscribe { mailbox })
     }
 
-    pub fn unsubscribe(mailbox_name: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Unsubscribe { mailbox_name })
+    pub fn unsubscribe(mailbox: Mailbox) -> Command {
+        Command::new(gen_tag(), CommandBody::Unsubscribe { mailbox })
     }
 
-    pub fn list<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
+    pub fn list<A: Into<Mailbox>, B: Into<ListMailbox>>(
+        reference: A,
+        mailbox_wildcard: B,
+    ) -> Command {
         Command::new(
             gen_tag(),
             CommandBody::List {
                 reference: reference.into(),
-                mailbox: mailbox.into(),
+                mailbox_wildcard: mailbox_wildcard.into(),
             },
         )
     }
 
-    pub fn lsub<A: Into<Mailbox>, B: Into<ListMailbox>>(reference: A, mailbox: B) -> Command {
+    pub fn lsub<A: Into<Mailbox>, B: Into<ListMailbox>>(
+        reference: A,
+        mailbox_wildcard: B,
+    ) -> Command {
         Command::new(
             gen_tag(),
             CommandBody::Lsub {
                 reference: reference.into(),
-                mailbox: mailbox.into(),
+                mailbox_wildcard: mailbox_wildcard.into(),
             },
         )
     }
@@ -553,7 +559,7 @@ pub enum CommandBody {
     /// per-user (as opposed to global) basis.  Netnews messages marked in
     /// a server-based .newsrc file are an example of such per-user
     /// permanent state that can be modified with read-only mailboxes.
-    Select { mailbox_name: Mailbox },
+    Select { mailbox: Mailbox },
 
     /// 6.3.2.  EXAMINE Command
     ///
@@ -574,7 +580,7 @@ pub enum CommandBody {
     ///
     /// The text of the tagged OK response to the EXAMINE command MUST
     /// begin with the "[READ-ONLY]" response code.
-    Examine { mailbox_name: Mailbox },
+    Examine { mailbox: Mailbox },
 
     /// ### 6.3.3.  CREATE Command
     ///
@@ -619,7 +625,7 @@ pub enum CommandBody {
     ///   named "owatagusiam" with a member called "blurdybloop" is
     ///   created.  Otherwise, two mailboxes at the same hierarchy
     ///   level are created.
-    Create { mailbox_name: Mailbox },
+    Create { mailbox: Mailbox },
 
     /// 6.3.4.  DELETE Command
     ///
@@ -653,7 +659,7 @@ pub enum CommandBody {
     /// incarnation, UNLESS the new incarnation has a different unique
     /// identifier validity value.  See the description of the UID command
     /// for more detail.
-    Delete { mailbox_name: Mailbox },
+    Delete { mailbox: Mailbox },
 
     /// 6.3.5.  RENAME Command
     ///
@@ -696,8 +702,8 @@ pub enum CommandBody {
     /// inferior hierarchical names of INBOX, these are unaffected by a
     /// rename of INBOX.
     Rename {
-        existing_mailbox_name: Mailbox,
-        new_mailbox_name: Mailbox,
+        mailbox: Mailbox,
+        new_mailbox: Mailbox,
     },
 
     /// ### 6.3.6.  SUBSCRIBE Command
@@ -724,7 +730,7 @@ pub enum CommandBody {
     ///   name (e.g., "system-alerts") after its contents expire,
     ///   with the intention of recreating it when new contents
     ///   are appropriate.
-    Subscribe { mailbox_name: Mailbox },
+    Subscribe { mailbox: Mailbox },
 
     /// 6.3.7.  UNSUBSCRIBE Command
     ///
@@ -738,7 +744,7 @@ pub enum CommandBody {
     /// the server's set of "active" or "subscribed" mailboxes as returned
     /// by the LSUB command.  This command returns a tagged OK response
     /// only if the unsubscription is successful.
-    Unsubscribe { mailbox_name: Mailbox },
+    Unsubscribe { mailbox: Mailbox },
 
     /// ### 6.3.8.  LIST Command
     ///
@@ -873,7 +879,7 @@ pub enum CommandBody {
     /// on this or some other server.
     List {
         reference: Mailbox,
-        mailbox: ListMailbox,
+        mailbox_wildcard: ListMailbox,
     },
 
     /// ### 6.3.9.  LSUB Command
@@ -907,7 +913,7 @@ pub enum CommandBody {
     /// longer exists.
     Lsub {
         reference: Mailbox,
-        mailbox: ListMailbox,
+        mailbox_wildcard: ListMailbox,
     },
 
     /// ### 6.3.10. STATUS Command
@@ -1427,59 +1433,65 @@ impl Serialize for CommandBody {
                 writer.write_all(b" ")?;
                 password.serialize(writer)
             }
-            CommandBody::Select { mailbox_name } => {
+            CommandBody::Select { mailbox } => {
                 writer.write_all(b"SELECT")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
-            CommandBody::Examine { mailbox_name } => {
+            CommandBody::Examine { mailbox } => {
                 writer.write_all(b"EXAMINE")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
-            CommandBody::Create { mailbox_name } => {
+            CommandBody::Create { mailbox } => {
                 writer.write_all(b"CREATE")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
-            CommandBody::Delete { mailbox_name } => {
+            CommandBody::Delete { mailbox } => {
                 writer.write_all(b"DELETE")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
             CommandBody::Rename {
-                existing_mailbox_name,
-                new_mailbox_name,
+                mailbox,
+                new_mailbox,
             } => {
                 writer.write_all(b"RENAME")?;
                 writer.write_all(b" ")?;
-                existing_mailbox_name.serialize(writer)?;
+                mailbox.serialize(writer)?;
                 writer.write_all(b" ")?;
-                new_mailbox_name.serialize(writer)
+                new_mailbox.serialize(writer)
             }
-            CommandBody::Subscribe { mailbox_name } => {
+            CommandBody::Subscribe { mailbox } => {
                 writer.write_all(b"SUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
-            CommandBody::Unsubscribe { mailbox_name } => {
+            CommandBody::Unsubscribe { mailbox } => {
                 writer.write_all(b"UNSUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox_name.serialize(writer)
+                mailbox.serialize(writer)
             }
-            CommandBody::List { reference, mailbox } => {
+            CommandBody::List {
+                reference,
+                mailbox_wildcard,
+            } => {
                 writer.write_all(b"LIST")?;
                 writer.write_all(b" ")?;
                 reference.serialize(writer)?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox_wildcard.serialize(writer)
             }
-            CommandBody::Lsub { reference, mailbox } => {
+            CommandBody::Lsub {
+                reference,
+                mailbox_wildcard,
+            } => {
                 writer.write_all(b"LSUB")?;
                 writer.write_all(b" ")?;
                 reference.serialize(writer)?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox_wildcard.serialize(writer)
             }
             CommandBody::Status { mailbox, items } => {
                 writer.write_all(b"STATUS")?;
