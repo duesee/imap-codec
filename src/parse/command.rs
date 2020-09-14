@@ -101,11 +101,10 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     Ok((
         remaining,
-        // FIXME(panic): do not use unwrap()
         CommandBody::Append {
             mailbox,
             flags: flags.unwrap_or_default(),
-            date: date_time.map(|maybe_date| maybe_date.unwrap()),
+            date: date_time,
             message: literal.to_vec(),
         },
     ))

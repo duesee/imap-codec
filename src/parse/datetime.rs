@@ -5,6 +5,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
     character::streaming::char,
     combinator::{map_res, recognize, value},
+    error::ErrorKind,
     sequence::{delimited, tuple},
     IResult,
 };
@@ -95,7 +96,7 @@ fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 }
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
-pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOffset>>> {
+pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
     let parser = delimited(
         DQUOTE,
         tuple((
@@ -122,12 +123,12 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], Option<DateTime<FixedOff
 
             // Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, Some(datetime)))
+                Ok((remaining, datetime))
             } else {
-                Ok((remaining, None))
+                Err(nom::Err::Failure((remaining, ErrorKind::Verify))) // TODO(verify): use `Failure` or `Error`?
             }
         }
-        _ => Ok((remaining, None)),
+        _ => Err(nom::Err::Failure((remaining, ErrorKind::Verify))), // TODO(verify): use `Failure` or `Error`?
     }
 }
 
@@ -300,32 +301,36 @@ mod test {
             .from_local_datetime(&local_datetime)
             .unwrap();
 
-        println!("{} == \n{}", val.unwrap(), datetime);
+        println!("{} == \n{}", val, datetime);
 
-        assert_eq!(val.unwrap(), datetime);
+        assert_eq!(val, datetime);
     }
 
     #[test]
     fn test_date_time_invalid() {
         let tests = [
-            b"\" 1-Feb-0000 12:34:56 +0000\"xxx".as_ref(),
+            b"\" 1-Feb-0000 12:34:56 +0000\"xxx".as_ref(), // ok
+            b"\" 1-Feb-9999 12:34:56 +0000\"xxx",          // ok
+            b"\" 1-Feb-0000 12:34:56 -0000\"xxx",          // ok
+            b"\" 1-Feb-9999 12:34:56 -0000\"xxx",          // ok
+            b"\" 1-Feb-2020 00:00:00 +0100\"xxx",          // ok
             b"\" 1-Feb-0000 12:34:56 +9999\"xxx",
-            b"\" 1-Feb-9999 12:34:56 +0000\"xxx",
             b"\" 1-Feb-9999 12:34:56 +9999\"xxx",
-            b"\" 1-Feb-0000 12:34:56 -0000\"xxx",
             b"\" 1-Feb-0000 12:34:56 -9999\"xxx",
-            b"\" 1-Feb-9999 12:34:56 -0000\"xxx",
             b"\" 1-Feb-9999 12:34:56 -9999\"xxx",
-            b"\" 1-Feb-2020 00:00:00 +0100\"xxx",
             b"\" 1-Feb-2020 99:99:99 +0100\"xxx",
             b"\"31-Feb-2020 00:00:00 +0100\"xxx",
             b"\"99-Feb-2020 99:99:99 +0100\"xxx",
         ];
 
-        for test in tests.iter() {
+        for test in &tests[..5] {
             let (rem, datetime) = date_time(test).unwrap();
             assert_eq!(rem, b"xxx");
             println!("{} -> {:?}", std::str::from_utf8(test).unwrap(), datetime);
+        }
+
+        for test in &tests[5..] {
+            assert!(date_time(test).is_err());
         }
     }
 

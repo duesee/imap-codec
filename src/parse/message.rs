@@ -81,9 +81,8 @@ fn msg_att_static(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
             |(_, _, envelope)| DataItemResponse::Envelope(envelope),
         ),
         map(
-            // FIXME(panic): do not use unwrap()
             tuple((tag_no_case(b"INTERNALDATE"), SP, date_time)),
-            |(_, _, date_time)| DataItemResponse::InternalDate(date_time.unwrap()),
+            |(_, _, date_time)| DataItemResponse::InternalDate(date_time),
         ),
         alt((
             map(
