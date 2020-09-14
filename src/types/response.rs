@@ -609,13 +609,6 @@ pub enum Continuation {
 
 impl Continuation {
     pub fn basic(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
-        // TODO: empty text is not allowed in continuation
-        let text = if text.is_empty() {
-            ".".to_owned()
-        } else {
-            text.to_owned()
-        };
-
         Ok(Continuation::Basic {
             code,
             text: text.try_into()?,
@@ -1116,14 +1109,9 @@ mod test {
     fn test_continuation() {
         let tests: Vec<(_, &[u8])> = vec![
             (Continuation::basic(None, "hello"), b"+ hello\r\n".as_ref()),
-            (Continuation::basic(None, ""), b"+ .\r\n"),
             (
                 Continuation::basic(Some(Code::ReadWrite), "hello"),
                 b"+ [READ-WRITE] hello\r\n",
-            ),
-            (
-                Continuation::basic(Some(Code::ReadWrite), ""),
-                b"+ [READ-WRITE] .\r\n",
             ),
         ];
 
@@ -1134,6 +1122,19 @@ mod test {
             assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
+        }
+    }
+
+    #[test]
+    fn test_continuation_fail() {
+        let tests: Vec<_> = vec![
+            Continuation::basic(None, ""),
+            Continuation::basic(Some(Code::ReadWrite), ""),
+        ];
+
+        for test in tests.into_iter() {
+            println!("{:?}", test);
+            assert!(test.is_err());
         }
     }
 
