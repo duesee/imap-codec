@@ -21,7 +21,7 @@ use std::{borrow::Cow, str::from_utf8};
 ///
 /// number = 1*DIGIT
 pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
-    map_res(map_res(digit1, from_utf8), str::parse::<u32>)(input)
+    map_res(map_res(digit1, from_utf8), str::parse::<u32>)(input) // FIXME(perf): use from_utf8_unchecked
 }
 
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
@@ -68,7 +68,7 @@ fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
                 '\\',
                 one_of("\\\""),
             ),
-            from_utf8,
+            from_utf8, // FIXME(perf): use from_utf8_unchecked
         ),
         DQUOTE,
     ));
@@ -178,9 +178,7 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    // TODO: from_utf8_unchecked could be used. However, I do not want
-    //       to introduce an unsafe block right now.
-    Ok((remaining, atm(std::str::from_utf8(parsed_atom).unwrap())))
+    Ok((remaining, atm(std::str::from_utf8(parsed_atom).unwrap()))) // FIXME(perf): use from_utf8_unchecked
 }
 
 // ----- nstring ----- nil or string
@@ -224,7 +222,7 @@ pub(crate) fn base64(input: &[u8]) -> IResult<&[u8], &str> {
             take_while(is_base64_char),
             opt(alt((tag("=="), tag("=")))),
         ))),
-        from_utf8,
+        from_utf8, // FIXME(perf): use from_utf8_unchecked
     )(input)
 }
 
@@ -251,7 +249,7 @@ pub(crate) fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
 /// tag = 1*<any ASTRING-CHAR except "+">
 pub(crate) fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
     map(
-        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8),
+        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8), // FIXME(perf): use from_utf8_unchecked
         |s| Tag(s.to_string()),
     )(input)
 }

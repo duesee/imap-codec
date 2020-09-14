@@ -33,7 +33,7 @@ fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 /// date-day = 1*2DIGIT
 fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     map_res(
-        map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8),
+        map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
         str::parse::<u8>,
     )(input)
 }
@@ -61,7 +61,7 @@ fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 /// date-year = 4DIGIT
 fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     map_res(
-        map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8),
+        map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
         str::parse::<u16>,
     )(input)
 }
@@ -72,17 +72,17 @@ fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
 fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let parser = tuple((
         map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
             str::parse::<u8>,
         ),
         tag(b":"),
         map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
             str::parse::<u8>,
         ),
         tag(b":"),
         map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
             str::parse::<u8>,
         ),
     ));
@@ -142,7 +142,7 @@ fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
                 recognize(tuple((SP, take_while_m_n(1, 1, is_DIGIT)))),
                 take_while_m_n(2, 2, is_DIGIT),
             )),
-            |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()),
+            |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()), // FIXME(perf): use from_utf8_unchecked
         ),
         str::parse::<u8>,
     )(input)
@@ -160,11 +160,11 @@ fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let parser = tuple((
         alt((char('+'), char('-'))),
         map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
             str::parse::<i32>,
         ),
         map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8),
+            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
             str::parse::<i32>,
         ),
     ));

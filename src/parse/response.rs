@@ -65,7 +65,7 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, txt))> {
     let parser = tuple((
         map_res(
             alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
-            from_utf8,
+            from_utf8, // FIXME(perf): use from_utf8_unchecked
         ),
         SP,
         resp_text,
@@ -151,7 +151,7 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     SP,
                     map_res(
                         take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                        from_utf8,
+                        from_utf8, // FIXME(perf): use from_utf8_unchecked
                     ),
                 )),
             )),
@@ -327,7 +327,7 @@ fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, txt)> {
 
     Ok((
         remaining,
-        (from_utf8(raw_status).expect("can't fail"), maybe_code, text),
+        (from_utf8(raw_status).expect("can't fail"), maybe_code, text), // FIXME(perf): use from_utf8_unchecked
     ))
 }
 

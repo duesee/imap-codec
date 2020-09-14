@@ -318,7 +318,7 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
         auth_type,
         opt(preceded(
             SP,
-            alt((base64, map_res(tag("="), std::str::from_utf8))),
+            alt((base64, map_res(tag("="), std::str::from_utf8))), // FIXME(perf): use from_utf8_unchecked
         )),
     ));
 
