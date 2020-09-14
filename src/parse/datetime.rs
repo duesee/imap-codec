@@ -4,12 +4,11 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
     character::streaming::char,
-    combinator::{map_res, recognize, value},
+    combinator::{map, map_res, value},
     error::ErrorKind,
-    sequence::{delimited, tuple},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
-use std::str::from_utf8;
 
 /// date = date-text / DQUOTE date-text DQUOTE
 pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
@@ -32,10 +31,7 @@ fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 ///
 /// date-day = 1*2DIGIT
 fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
-    map_res(
-        map_res(take_while_m_n(1, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-        str::parse::<u8>,
-    )(input)
+    digit_1_2(input)
 }
 
 /// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
@@ -60,32 +56,14 @@ fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 
 /// date-year = 4DIGIT
 fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
-    map_res(
-        map_res(take_while_m_n(4, 4, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-        str::parse::<u16>,
-    )(input)
+    digit_4(input)
 }
 
 /// Hours minutes seconds
 ///
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
-    let parser = tuple((
-        map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-            str::parse::<u8>,
-        ),
-        tag(b":"),
-        map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-            str::parse::<u8>,
-        ),
-        tag(b":"),
-        map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-            str::parse::<u8>,
-        ),
-    ));
+    let parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
 
@@ -136,16 +114,12 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
 ///
 /// date-day-fixed = (SP DIGIT) / 2DIGIT
 fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
-    map_res(
-        map_res(
-            alt((
-                recognize(tuple((SP, take_while_m_n(1, 1, is_DIGIT)))),
-                take_while_m_n(2, 2, is_DIGIT),
-            )),
-            |bytes| from_utf8(bytes).map(|bytes| bytes.trim_start()), // FIXME(perf): use from_utf8_unchecked
-        ),
-        str::parse::<u8>,
-    )(input)
+    alt((
+        map(preceded(SP, take_while_m_n(1, 1, is_DIGIT)), |bytes| {
+            bytes[0] - b'0'
+        }),
+        digit_2,
+    ))(input)
 }
 
 /// Signed four-digit value of hhmm representing
@@ -157,21 +131,11 @@ fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
 ///
 /// zone = ("+" / "-") 4DIGIT
 fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
-    let parser = tuple((
-        alt((char('+'), char('-'))),
-        map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-            str::parse::<i32>,
-        ),
-        map_res(
-            map_res(take_while_m_n(2, 2, is_DIGIT), from_utf8), // FIXME(perf): use from_utf8_unchecked
-            str::parse::<i32>,
-        ),
-    ));
+    let parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;
 
-    let offset = 3600 * hh + 60 * mm;
+    let offset = 3600 * (hh as i32) + 60 * (mm as i32);
 
     let zone = match sign {
         '+' => FixedOffset::east_opt(offset),
@@ -180,6 +144,44 @@ fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     };
 
     Ok((remaining, zone))
+}
+
+//fn digit_min_max(min: usize, max: usize) -> impl Fn(&[u8]) -> IResult<&[u8], ...> { // u8, u16, ...
+//    move |input| {
+//        map_res(
+//            map(take_while_m_n(min, max, is_DIGIT), |bytes| unsafe {
+//                std::str::from_utf8_unchecked(bytes)
+//            }),
+//            str::parse::<u8>,
+//        )(input)
+//    }
+//}
+
+fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
+    map_res(
+        map(take_while_m_n(1, 2, is_DIGIT), |bytes| unsafe {
+            std::str::from_utf8_unchecked(bytes)
+        }),
+        str::parse::<u8>,
+    )(input)
+}
+
+fn digit_2(input: &[u8]) -> IResult<&[u8], u8> {
+    map_res(
+        map(take_while_m_n(2, 2, is_DIGIT), |bytes| unsafe {
+            std::str::from_utf8_unchecked(bytes)
+        }),
+        str::parse::<u8>,
+    )(input)
+}
+
+fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
+    map_res(
+        map(take_while_m_n(4, 4, is_DIGIT), |bytes| unsafe {
+            std::str::from_utf8_unchecked(bytes)
+        }),
+        str::parse::<u16>,
+    )(input)
 }
 
 #[cfg(test)]
