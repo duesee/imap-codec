@@ -1,6 +1,6 @@
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, Charset, Tag},
+    types::core::{astr, atm, istr, nstr, txt, Charset, Tag},
     utils::unescape_quoted,
 };
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
@@ -202,8 +202,11 @@ pub(crate) fn nil(input: &[u8]) -> IResult<&[u8], &[u8]> {
 // ----- text -----
 
 /// text = 1*TEXT-CHAR
-pub(crate) fn text(input: &[u8]) -> IResult<&[u8], &str> {
-    map_res(take_while1(is_text_char), from_utf8)(input)
+pub(crate) fn text(input: &[u8]) -> IResult<&[u8], txt> {
+    map(take_while1(is_text_char), |bytes|
+        // Note: is_text_char makes sure that the sequence of bytes
+        //       is always valid ASCII. Thus, it is also valid UTF-8.
+        unsafe { txt(std::str::from_utf8_unchecked(bytes)) })(input)
 }
 
 /// TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F

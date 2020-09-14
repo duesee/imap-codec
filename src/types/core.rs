@@ -264,6 +264,45 @@ impl Serialize for Tag {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Deserialize, Eq)]
+pub struct Text(pub(crate) String);
+
+impl TryFrom<&str> for Text {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Text::try_from(value.to_string())
+    }
+}
+
+impl TryFrom<String> for Text {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            Err("Text must not be empty.")
+        } else {
+            if value.bytes().all(is_text_char) {
+                Ok(Text(value.to_string()))
+            } else {
+                Err("Text contains illegal characters.")
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Serialize for Text {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.0.as_bytes())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Charset(pub(crate) String);
 
@@ -362,6 +401,16 @@ impl<'a> astr<'a> {
             astr::Atom(str) => AString::Atom(str.to_string()),
             astr::String(istr) => AString::String(istr.to_owned()),
         }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
+pub struct txt<'a>(pub(crate) &'a str);
+
+impl<'a> txt<'a> {
+    pub fn to_owned(&self) -> Text {
+        Text(self.0.to_string())
     }
 }
 

@@ -7,6 +7,7 @@ use crate::{
         message::message_data,
     },
     types::{
+        core::txt,
         response::{Code, Continuation, Data, Response, Status},
         Capability,
     },
@@ -33,13 +34,21 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
             map(
                 resp_cond_auth,
                 |(raw_status, (maybe_code, comment))| match raw_status.to_lowercase().as_ref() {
-                    "ok" => Status::ok(None, maybe_code, comment),
-                    "preauth" => Status::preauth(maybe_code, comment),
+                    "ok" => Status::Ok {
+                        tag: None,
+                        code: maybe_code,
+                        text: comment.to_owned(),
+                    },
+                    "preauth" => Status::PreAuth {
+                        code: maybe_code,
+                        text: comment.to_owned(),
+                    },
                     _ => unreachable!(),
                 },
             ),
-            map(resp_cond_bye, |(maybe_code, comment)| {
-                Status::bye(maybe_code, comment)
+            map(resp_cond_bye, |(maybe_code, comment)| Status::Bye {
+                code: maybe_code,
+                text: comment.to_owned(),
             }),
         )),
         CRLF,
@@ -53,7 +62,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
 /// Authentication condition
 ///
 /// resp-cond-auth = ("OK" / "PREAUTH") SP resp-text
-fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> {
+fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, txt))> {
     let parser = tuple((
         map_res(
             alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
@@ -69,7 +78,7 @@ fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, &str))> 
 }
 
 /// resp-text = ["[" resp-text-code "]" SP] text
-fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
+fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, txt)> {
     tuple((
         opt(terminated(
             delimited(tag(b"["), resp_text_code, tag(b"]")),
@@ -205,7 +214,7 @@ fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
 }
 
 /// resp-cond-bye = "BYE" SP resp-text
-fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, &str)> {
+fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, txt)> {
     let parser = tuple((tag_no_case(b"BYE"), SP, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
@@ -263,16 +272,33 @@ fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
         alt((
             map(resp_cond_state, |(raw_status, code, text)| {
                 let status = match raw_status.to_lowercase().as_ref() {
-                    "ok" => Status::ok(None, code, text),
-                    "no" => Status::no(None, code, text),
-                    "bad" => Status::bad(None, code, text),
+                    "ok" => Status::Ok {
+                        tag: None,
+                        code,
+                        text: text.to_owned(),
+                    },
+                    "no" => Status::No {
+                        tag: None,
+                        code,
+                        text: text.to_owned(),
+                    },
+                    "bad" => Status::Bad {
+                        tag: None,
+                        code,
+                        text: text.to_owned(),
+                    },
                     _ => unreachable!(),
                 };
 
                 Response::Status(status)
             }),
             map(resp_cond_bye, |(code, text)| {
-                Response::Status(Status::bye(code, text))
+                Response::Status({
+                    Status::Bye {
+                        code,
+                        text: text.to_owned(),
+                    }
+                })
             }),
             map(mailbox_data, Response::Data),
             map(message_data, Response::Data),
@@ -291,7 +317,7 @@ fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
 /// Status condition
 ///
 /// resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text
-fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, &str)> {
+fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, txt)> {
     let parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
         SP,
@@ -318,9 +344,21 @@ fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
     let (remaining, (tag, _, (raw_status, maybe_code, text), _)) = parser(input)?;
 
     let status = match raw_status.to_lowercase().as_ref() {
-        "ok" => Status::ok(Some(tag), maybe_code, text),
-        "no" => Status::no(Some(tag), maybe_code, text),
-        "bad" => Status::bad(Some(tag), maybe_code, text),
+        "ok" => Status::Ok {
+            tag: Some(tag),
+            code: maybe_code,
+            text: text.to_owned(),
+        },
+        "no" => Status::No {
+            tag: Some(tag),
+            code: maybe_code,
+            text: text.to_owned(),
+        },
+        "bad" => Status::Bad {
+            tag: Some(tag),
+            code: maybe_code,
+            text: text.to_owned(),
+        },
         _ => unreachable!(),
     };
 
@@ -335,5 +373,10 @@ fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
 
     let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
 
-    Ok((remaining, Status::bye(maybe_code, text)))
+    Ok((remaining, {
+        Status::Bye {
+            code: maybe_code,
+            text: text.to_owned(),
+        }
+    }))
 }

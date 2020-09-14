@@ -47,11 +47,14 @@ fn bench_response_serialize(b: &mut Bencher) {
     // Setup
     let tag = "ABC1234567".try_into().unwrap();
 
-    let rsp = Response::Status(Status::ok(
-        Some(tag),
-        Some(Code::Other("XXXXX".try_into().unwrap(), None)),
-        "xyz...",
-    ));
+    let rsp = Response::Status(
+        Status::ok(
+            Some(tag),
+            Some(Code::Other("XXXXX".try_into().unwrap(), None)),
+            "xyz...",
+        )
+        .unwrap(),
+    );
 
     // Bench
     b.iter(|| {

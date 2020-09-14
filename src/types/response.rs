@@ -4,7 +4,7 @@ use crate::{
     codec::Serialize,
     types::{
         body::BodyStructure,
-        core::{Atom, Charset, NString, Tag},
+        core::{Atom, Charset, NString, Tag, Text},
         data_items::Section,
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
@@ -15,7 +15,7 @@ use crate::{
 };
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
-use std::io::Write;
+use std::{convert::TryInto, io::Write};
 
 /// Server responses are in three forms.
 #[derive(Debug, Clone, PartialEq)]
@@ -45,9 +45,6 @@ impl Serialize for Response {
         }
     }
 }
-
-// FIXME: IMAP text != UTF-8 String, must not be empty
-pub type Text = String;
 
 /// ## 7.1. Server Responses - Status Responses
 ///
@@ -160,50 +157,50 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn greeting(code: Option<Code>, text: &str) -> Self {
-        Status::Ok {
+    pub fn greeting(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::Ok {
             tag: None,
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 
-    pub fn ok(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
-        Status::Ok {
+    pub fn ok(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::Ok {
             tag,
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 
-    pub fn no(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
-        Status::No {
+    pub fn no(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::No {
             tag,
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 
-    pub fn bad(tag: Option<Tag>, code: Option<Code>, text: &str) -> Self {
-        Status::Bad {
+    pub fn bad(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::Bad {
             tag,
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 
-    pub fn preauth(code: Option<Code>, text: &str) -> Self {
-        Status::PreAuth {
+    pub fn preauth(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::PreAuth {
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 
-    pub fn bye(code: Option<Code>, text: &str) -> Self {
-        Status::Bye {
+    pub fn bye(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+        Ok(Status::Bye {
             code,
-            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
-        }
+            text: text.try_into()?,
+        })
     }
 }
 
@@ -213,7 +210,7 @@ impl Serialize for Status {
             tag: &Option<Tag>,
             status: &str,
             code: &Option<Code>,
-            comment: &str,
+            comment: &Text,
             writer: &mut impl Write,
         ) -> std::io::Result<()> {
             match tag {
@@ -226,7 +223,7 @@ impl Serialize for Status {
             if let Some(code) = code {
                 write!(writer, "[{}] ", code)?;
             }
-            writer.write_all(comment.as_bytes())?;
+            comment.serialize(writer)?;
             writer.write_all(b"\r\n")
         }
 
@@ -608,12 +605,12 @@ impl Serialize for StatusItemResponse {
 /// space and those arguments.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Continuation {
-    Basic { code: Option<Code>, text: String },
+    Basic { code: Option<Code>, text: Text },
     Base64(String),
 }
 
 impl Continuation {
-    pub fn basic(code: Option<Code>, text: &str) -> Self {
+    pub fn basic(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
         // TODO: empty text is not allowed in continuation
         let text = if text.is_empty() {
             ".".to_owned()
@@ -621,7 +618,10 @@ impl Continuation {
             text.to_owned()
         };
 
-        Continuation::Basic { code, text }
+        Ok(Continuation::Basic {
+            code,
+            text: text.try_into()?,
+        })
     }
 
     pub fn base64(data: &str) -> Self {
@@ -1022,9 +1022,10 @@ mod test {
             ),
         ];
 
-        for (parsed, serialized) in tests {
+        for (constructed, serialized) in tests {
+            let constructed = constructed.unwrap();
             let mut out = Vec::new();
-            parsed.serialize(&mut out).unwrap();
+            constructed.serialize(&mut out).unwrap();
 
             assert_eq!(out, serialized.to_vec());
             // FIXME
@@ -1081,9 +1082,10 @@ mod test {
             ),
         ];
 
-        for (parsed, serialized) in tests.into_iter() {
+        for (constructed, serialized) in tests.into_iter() {
+            let constructed = constructed.unwrap();
             let mut out = Vec::new();
-            parsed.serialize(&mut out).unwrap();
+            constructed.serialize(&mut out).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
