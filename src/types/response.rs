@@ -9,7 +9,7 @@ use crate::{
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
-        Capability,
+        AuthMechanism,
     },
     utils::{escape_quoted, join, join_serializable},
 };
@@ -783,6 +783,53 @@ impl std::fmt::Display for Code {
 }
 
 impl Serialize for Code {
+    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub enum Capability {
+    Imap4Rev1,
+    Auth(AuthMechanism),
+    LoginDisabled,
+    StartTls,
+    // ---
+    Idle,             // RFC 2177
+    MailboxReferrals, // RFC 2193
+    LoginReferrals,   // RFC 2221
+    SaslIr,           // RFC 4959
+    Enable,           // RFC 5161
+    // --- Other ---
+    // TODO: Is this a good idea?
+    // FIXME: mark this enum as non-exhaustive at least?
+    Other(Atom),
+}
+
+impl std::fmt::Display for Capability {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        use Capability::*;
+
+        match self {
+            Imap4Rev1 => write!(f, "IMAP4REV1"),
+            Auth(mechanism) => match mechanism {
+                AuthMechanism::Plain => write!(f, "AUTH=PLAIN"),
+                AuthMechanism::Login => write!(f, "AUTH=LOGIN"),
+                AuthMechanism::Other(mech) => write!(f, "AUTH={}", mech),
+            },
+            LoginDisabled => write!(f, "LOGINDISABLED"),
+            StartTls => write!(f, "STARTTLS"),
+            Idle => write!(f, "IDLE"),
+            MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
+            LoginReferrals => write!(f, "LOGIN-REFERRALS"),
+            SaslIr => write!(f, "SASL-IR"),
+            Enable => write!(f, "ENABLE"),
+            Other(atom) => write!(f, "{}", atom),
+        }
+    }
+}
+
+impl Serialize for Capability {
     fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }

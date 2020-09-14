@@ -8,8 +8,7 @@ use crate::{
     },
     types::{
         core::txt,
-        response::{Code, Continuation, Data, Response, Status},
-        Capability,
+        response::{Capability, Code, Continuation, Data, Response, Status},
     },
 };
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
