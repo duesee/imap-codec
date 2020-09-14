@@ -34,7 +34,7 @@ pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
     if number == 0 {
         return Err(nom::Err::Error(nom::error::make_error(
             input,
-            nom::error::ErrorKind::Verify,
+            nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
         )));
     }
 
@@ -114,9 +114,8 @@ pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
 
     let (remaining, data) = take(number)(remaining)?;
 
-    // FIXME: what should we do?
     if !data.iter().cloned().all(is_char8) {
-        return Err(nom::Err::Error((remaining, ErrorKind::Verify))); // FIXME: what ErrorKind should this have?
+        return Err(nom::Err::Error((remaining, ErrorKind::Verify))); // TODO(verify): use `Failure` or `Error`?
     }
 
     Ok((remaining, data))

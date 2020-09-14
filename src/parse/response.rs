@@ -178,7 +178,7 @@ fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
     if !caps.contains(&Capability::Imap4Rev1) {
         return Err(nom::Err::Error(nom::error::make_error(
             input,
-            nom::error::ErrorKind::Verify,
+            nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
         )));
     }
 

@@ -70,7 +70,7 @@ pub(crate) fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribu
     if sflag_count > 1 {
         return Err(nom::Err::Error(nom::error::make_error(
             input,
-            nom::error::ErrorKind::Verify,
+            nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
         )));
     }
 
