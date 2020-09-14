@@ -544,8 +544,6 @@ impl Serialize for Data {
     }
 }
 
-pub type Inbox = String;
-
 /// The currently defined status data items.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StatusItemResponse {
