@@ -164,7 +164,7 @@ impl Status {
         Status::Ok {
             tag: None,
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 
@@ -172,7 +172,7 @@ impl Status {
         Status::Ok {
             tag,
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 
@@ -180,7 +180,7 @@ impl Status {
         Status::No {
             tag,
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 
@@ -188,21 +188,21 @@ impl Status {
         Status::Bad {
             tag,
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 
     pub fn preauth(code: Option<Code>, text: &str) -> Self {
         Status::PreAuth {
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 
     pub fn bye(code: Option<Code>, text: &str) -> Self {
         Status::Bye {
             code,
-            text: text.to_owned(),
+            text: text.to_owned(), // FIXME(misuse): Fix in Status: use newtype Text
         }
     }
 }
@@ -674,7 +674,7 @@ pub enum Code {
     /// capabilities list.  This makes it unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes this
     /// response.
-    Capability(Vec<Capability>),
+    Capability(Vec<Capability>), // FIXME(misuse): List must contain IMAP4REV1
 
     /// `PARSE`
     ///

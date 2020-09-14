@@ -117,7 +117,7 @@ impl TryFrom<IString> for String {
     fn try_from(value: IString) -> Result<Self, Self::Error> {
         match value {
             IString::Quoted(utf8) => Ok(utf8),
-            IString::Literal(bytes) => String::from_utf8(bytes),
+            IString::Literal(bytes) => String::from_utf8(bytes), // FIXME(misuse): must not contain \x00
         }
     }
 }

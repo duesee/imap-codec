@@ -58,8 +58,8 @@ impl Command {
         Command::new(
             gen_tag(),
             CommandBody::Login {
-                username: username.into(),
-                password: password.into(),
+                username: username.into(), // FIXME(misuse): this should be TryInto. Fix in AString
+                password: password.into(), // FIXME(misuse): this should be TryInto. Fix in AString
             },
         )
     }
