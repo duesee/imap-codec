@@ -8,7 +8,6 @@ pub mod core;
 pub mod datetime;
 pub mod envelope;
 pub mod flag;
-pub mod header;
 pub mod mailbox;
 pub mod message;
 pub mod response;

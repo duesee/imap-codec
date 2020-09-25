@@ -1,6 +1,9 @@
 use crate::{
-    parse::{core::nz_number, header::header_list},
-    types::data_items::{Part, PartSpecifier, Section},
+    parse::core::{astring, nz_number},
+    types::{
+        core::astr,
+        data_items::{Part, PartSpecifier, Section},
+    },
 };
 use abnf_core::streaming::SP;
 use nom::{
@@ -94,4 +97,19 @@ fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
         section_msgtext,
         value(PartSpecifier::Mime, tag_no_case(b"MIME")),
     ))(input)
+}
+
+/// header-list = "(" header-fld-name *(SP header-fld-name) ")"
+fn header_list(input: &[u8]) -> IResult<&[u8], Vec<astr>> {
+    delimited(
+        tag(b"("),
+        separated_nonempty_list(SP, header_fld_name),
+        tag(b")"),
+    )(input)
+}
+
+#[inline]
+/// header-fld-name = astring
+pub(crate) fn header_fld_name(input: &[u8]) -> IResult<&[u8], astr> {
+    astring(input)
 }
