@@ -33,6 +33,7 @@ If a crash was found, it is helpful to uncomment the `println` statements in the
 # Making fuzzing more effective
 
 * Use `terminals.dict` as fuzzing dictionary. It contains all terminals (>1 character) from the IMAP4rev1 formal syntax and ABNFs core rules.
+* The `imap.dict` dictionary contains a full IMAP trace. `blns.dict` is the "big list of naughty strings".
 * Decrease the the input size to e.g. 64 bytes. Short inputs might still trigger complex parsing routines.
 * Use multiple processes.
 * Try to use `-ascii_only` to exclude inputs, which are less likely to be valid (useful to test serializing.)
