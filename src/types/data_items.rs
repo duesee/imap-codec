@@ -313,7 +313,7 @@ impl Serialize for Section {
                         part.serialize(writer)?;
                         writer.write_all(b".HEADER.FIELDS (")?;
                     }
-                    None => writer.write_all(b"HEADER.FIElDS (")?,
+                    None => writer.write_all(b"HEADER.FIELDS (")?,
                 };
                 join_serializable(header_list, b" ", writer)?;
                 writer.write_all(b")")
