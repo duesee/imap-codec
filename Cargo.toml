@@ -15,4 +15,4 @@ abnf-core = "0.3"
 rand = "0.7.3"
 
 [dev-dependencies]
-assert_matches = "*"
+assert_matches = "1.4"
