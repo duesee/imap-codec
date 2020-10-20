@@ -34,7 +34,7 @@ impl Serialize for Body {
                 ref body_structure,
                 number_of_lines,
             } => {
-                writer.write_all(b"\"TEXT\" \"RFC822\" ")?;
+                writer.write_all(b"\"MESSAGE\" \"RFC822\" ")?;
                 self.basic.serialize(writer)?;
                 writer.write_all(b" ")?;
                 envelope.serialize(writer)?;
