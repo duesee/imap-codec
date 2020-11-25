@@ -7,6 +7,60 @@ pub enum Sequence {
     Range(SeqNo, SeqNo),
 }
 
+pub struct SequenceSet(pub Vec<Sequence>);
+
+impl<'a> SequenceSet {
+    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = u32> + 'a {
+        match strategy {
+            Strategy::Naive { largest } => SequenceSetIterNaive {
+                iter: self.0.iter(),
+                active_range: None,
+                largest,
+            },
+        }
+    }
+}
+
+pub enum Strategy {
+    Naive { largest: u32 },
+}
+
+pub struct SequenceSetIterNaive<'a> {
+    iter: core::slice::Iter<'a, Sequence>,
+    active_range: Option<std::ops::RangeInclusive<u32>>,
+    largest: u32,
+}
+
+impl<'a> Iterator for SequenceSetIterNaive<'a> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(ref mut range) = self.active_range {
+                if let Some(seq_or_uid) = range.next() {
+                    return Some(seq_or_uid);
+                } else {
+                    self.active_range = None;
+                }
+            }
+
+            match self.iter.next() {
+                Some(seq) => match seq {
+                    Sequence::Single(seq_no) => {
+                        return Some(seq_no.expand(self.largest));
+                    }
+                    Sequence::Range(from, to) => {
+                        let from = from.expand(self.largest);
+                        let to = to.expand(self.largest);
+                        self.active_range = Some(from..=to);
+                    }
+                },
+                None => return None,
+            }
+        }
+    }
+}
+
 impl Serialize for Sequence {
     fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
@@ -75,7 +129,7 @@ impl ToSequence for &str {
 
 #[cfg(test)]
 mod test {
-    use super::{SeqNo, Sequence, ToSequence};
+    use super::{SeqNo, Sequence, SequenceSet, Strategy, ToSequence};
     use crate::codec::Serialize;
 
     #[test]
@@ -132,6 +186,24 @@ mod test {
 
         for (test, expected) in tests.iter() {
             let got = test.to_sequence().unwrap();
+            assert_eq!(*expected, got);
+        }
+    }
+
+    #[test]
+    fn test_sequence_set_iter() {
+        let tests = &[
+            ("*", vec![3]),
+            ("1:*", vec![1, 2, 3]),
+            ("5,1:*,2:*", vec![5, 1, 2, 3, 2, 3]),
+            ("*:2", vec![]),
+            ("*:*", vec![3]),
+            ("4:6,*", vec![4, 5, 6, 3]),
+        ];
+
+        for (test, expected) in tests {
+            let seq_set = SequenceSet(test.to_sequence().unwrap());
+            let got: Vec<u32> = seq_set.iter(Strategy::Naive { largest: 3 }).collect();
             assert_eq!(*expected, got);
         }
     }
