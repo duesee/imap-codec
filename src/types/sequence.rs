@@ -26,6 +26,15 @@ pub enum SeqNo {
     Largest,
 }
 
+impl SeqNo {
+    pub fn expand(&self, largest: u32) -> u32 {
+        match self {
+            SeqNo::Value(value) => *value,
+            SeqNo::Largest => largest,
+        }
+    }
+}
+
 impl Serialize for SeqNo {
     fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
