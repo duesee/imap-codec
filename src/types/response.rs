@@ -801,6 +801,7 @@ pub enum Capability {
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
+    // FIXME: case-sensitive when compared
     Other(Atom),
 }
 
