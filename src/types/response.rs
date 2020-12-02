@@ -465,6 +465,9 @@ pub enum Data {
         /// Message data
         items: Vec<DataItemResponse>,
     },
+
+    /// ----- ENABLE Extension (RFC 5161) -----
+    Enabled { capabilities: Vec<Capability> },
 }
 
 impl Serialize for Data {
@@ -537,6 +540,10 @@ impl Serialize for Data {
                 write!(writer, "* {} FETCH (", seq_or_uid)?;
                 join_serializable(items, b" ", writer)?;
                 writer.write_all(b")")?;
+            }
+            Data::Enabled { capabilities } => {
+                write!(writer, "* ENABLED ")?;
+                join_serializable(capabilities, b" ", writer)?;
             }
         }
 

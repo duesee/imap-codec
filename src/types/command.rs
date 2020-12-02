@@ -9,6 +9,7 @@ use crate::{
         data_items::MacroOrDataItems,
         flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
+        response::Capability,
         sequence::{Sequence, ToSequence},
         AuthMechanism,
     },
@@ -234,6 +235,10 @@ impl Command {
 
     pub fn idle() -> Command {
         Command::new(gen_tag(), CommandBody::Idle)
+    }
+
+    pub fn enable(capabilities: Vec<Capability>) -> Command {
+        Command::new(gen_tag(), CommandBody::Enable { capabilities })
     }
 
     pub fn name(&self) -> &'static str {
@@ -1368,6 +1373,9 @@ pub enum CommandBody {
     //X,
     /// ----- Idle Extension (https://tools.ietf.org/html/rfc2177) -----
     Idle,
+
+    /// ----- Enable Extension (https://tools.ietf.org/html/rfc5161)
+    Enable { capabilities: Vec<Capability> },
 }
 
 impl CommandBody {
@@ -1400,6 +1408,7 @@ impl CommandBody {
             Store { .. } => "STORE",
             Copy { .. } => "COPY",
             Idle => "IDLE",
+            Enable { .. } => "ENABLE",
         }
     }
 }
@@ -1615,6 +1624,10 @@ impl Serialize for CommandBody {
                 mailbox.serialize(writer)
             }
             CommandBody::Idle => writer.write_all(b"IDLE"),
+            CommandBody::Enable { capabilities } => {
+                writer.write_all(b"ENABLE ")?;
+                join_serializable(capabilities, b" ", writer)
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ use crate::{
         datetime::{date, date_time},
         flag::{flag, flag_list},
         mailbox::{list_mailbox, mailbox},
+        response::capability,
         section::{header_fld_name, section},
         sequence::sequence_set,
         status::status_att,
@@ -81,6 +82,9 @@ fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         subscribe,
         unsubscribe,
         idle, // RFC 2177
+        // The formal syntax defines ENABLE in command-any, but describes it to
+        // be allowed in the authenticated state only. I will use the authenticated state.
+        enable, // RFC 5161
     ))(input)
 }
 
@@ -237,6 +241,15 @@ fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// Valid only in Authenticated or Selected state
 fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
     value(CommandBody::Idle, tag_no_case("IDLE"))(input)
+}
+
+/// command-any =/ "ENABLE" 1*(SP capability)
+fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
+    let parser = tuple((tag_no_case("ENABLE"), many1(preceded(SP, capability))));
+
+    let (remaining, (_, capabilities)) = parser(input)?;
+
+    Ok((remaining, CommandBody::Enable { capabilities }))
 }
 
 /// This parser must be executed *instead* of the command parser
@@ -751,7 +764,11 @@ fn search_key_limited<'a>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::types::sequence::{SeqNo, Sequence};
+    use crate::types::{
+        response::Capability,
+        sequence::{SeqNo, Sequence},
+    };
+    use std::convert::TryInto;
 
     #[test]
     fn test_fetch() {
@@ -802,5 +819,22 @@ mod test {
         assert!(search_key(1)(b"(1:5)|").is_err());
         assert!(search_key(2)(b"(1:5)|").is_ok());
         assert!(search_key(2)(b"((1:5))|").is_err());
+    }
+
+    #[test]
+    fn test_enable() {
+        let got = command(b"A123 enable UTF8=ACCEPT ENABLE\r\n").unwrap().1;
+        assert_eq!(
+            Command::new(
+                "A123".try_into().unwrap(),
+                CommandBody::Enable {
+                    capabilities: vec![
+                        Capability::Other("UTF8=ACCEPT".try_into().unwrap()),
+                        Capability::Enable
+                    ]
+                }
+            ),
+            got
+        );
     }
 }

@@ -16,7 +16,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, map_res, opt, value},
-    multi::separated_nonempty_list,
+    multi::{many1, separated_nonempty_list},
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
@@ -304,6 +304,9 @@ fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
             map(capability_data, |caps| {
                 Response::Data(Data::Capability(caps))
             }),
+            // RFC 5161
+            // response-data =/ "*" SP enable-data CRLF
+            map(enable_data, Response::Data),
         )),
         CRLF,
     ));
@@ -378,4 +381,15 @@ fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
             text: text.to_owned(),
         }
     }))
+}
+
+// ----- EXTENSIONS -----
+
+/// enable-data = "ENABLED" *(SP capability)
+fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
+    let parser = tuple((tag_no_case(b"ENABLED"), many1(preceded(SP, capability))));
+
+    let (remaining, (_, capabilities)) = parser(input)?;
+
+    Ok((remaining, { Data::Enabled { capabilities } }))
 }

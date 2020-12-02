@@ -515,6 +515,24 @@ S: a006 OK LOGOUT completed
 }
 
 #[test]
+fn test_transcript_from_rfc5161() {
+    let trace = br#"C: t1 CAPABILITY
+S: * CAPABILITY IMAP4rev1 ID LITERAL+ ENABLE X-GOOD-IDEA
+S: t1 OK foo
+C: t2 ENABLE CONDSTORE X-GOOD-IDEA
+S: * ENABLED X-GOOD-IDEA
+S: t2 OK foo
+C: t3 CAPABILITY
+S: * CAPABILITY IMAP4rev1 ID LITERAL+ ENABLE X-GOOD-IDEA
+S: t3 OK foo again
+C: a1 ENABLE CONDSTORE
+S: * ENABLED CONDSTORE
+S: a1 OK Conditional Store enabled"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[test]
 fn test_response_status_ok() {
     let trace = br#"S: * OK IMAP4rev1 server ready
 C: A001 LOGIN fred blurdybloop
