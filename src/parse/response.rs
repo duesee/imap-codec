@@ -186,7 +186,7 @@ fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
 }
 
 /// capability = ("AUTH=" auth-type) / atom
-fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
+pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
     alt((
         map(
             tuple((tag_no_case(b"AUTH="), auth_type)),
