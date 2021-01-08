@@ -14,7 +14,7 @@ use crate::{
     utils::{escape_quoted, join, join_serializable},
 };
 use chrono::{DateTime, FixedOffset};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, io::Write};
 
 /// Server responses are in three forms.
@@ -52,7 +52,7 @@ impl Encode for Response {
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [ResponseCode](ResponseCode).)
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Status {
     /// ### 7.1.1. OK Response
     ///
@@ -647,7 +647,7 @@ impl Encode for Continuation {
 /// information.
 ///
 /// The currently defined response codes are:
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Code {
     /// `ALERT`
     ///
@@ -786,7 +786,7 @@ impl Encode for Code {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Capability {
     Imap4Rev1,
     Auth(AuthMechanism),
