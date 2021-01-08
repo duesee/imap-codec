@@ -1,4 +1,4 @@
-use crate::{codec::Serialize, types::core::AString, utils::join_serializable};
+use crate::{codec::Encode, types::core::AString, utils::join_serializable};
 use std::io::Write;
 
 /// There are three macros which specify commonly-used sets of data
@@ -28,8 +28,8 @@ impl Macro {
     }
 }
 
-impl Serialize for Macro {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Macro {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Macro::All => writer.write_all(b"ALL"),
             Macro::Fast => writer.write_all(b"FAST"),
@@ -45,13 +45,13 @@ pub enum MacroOrDataItems {
     DataItems(Vec<DataItem>),
 }
 
-impl Serialize for MacroOrDataItems {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for MacroOrDataItems {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            MacroOrDataItems::Macro(m) => m.serialize(writer),
+            MacroOrDataItems::Macro(m) => m.encode(writer),
             MacroOrDataItems::DataItems(items) => {
                 if items.len() == 1 {
-                    items[0].serialize(writer)
+                    items[0].encode(writer)
                 } else {
                     writer.write_all(b"(")?;
                     join_serializable(items.as_slice(), b" ", writer)?;
@@ -184,8 +184,8 @@ pub enum DataItem {
     Uid,
 }
 
-impl Serialize for DataItem {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for DataItem {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             DataItem::Body => writer.write_all(b"BODY"),
             DataItem::BodyExt {
@@ -199,7 +199,7 @@ impl Serialize for DataItem {
                     writer.write_all(b"BODY[")?;
                 }
                 if let Some(section) = section {
-                    section.serialize(writer)?;
+                    section.encode(writer)?;
                 }
                 writer.write_all(b"]")?;
                 if let Some((a, b)) = partial {
@@ -296,13 +296,13 @@ pub enum Section {
     Mime(Part),
 }
 
-impl Serialize for Section {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Section {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Section::Part(part) => part.serialize(writer),
+            Section::Part(part) => part.encode(writer),
             Section::Header(maybe_part) => match maybe_part {
                 Some(part) => {
-                    part.serialize(writer)?;
+                    part.encode(writer)?;
                     writer.write_all(b".HEADER")
                 }
                 None => writer.write_all(b"HEADER"),
@@ -310,7 +310,7 @@ impl Serialize for Section {
             Section::HeaderFields(maybe_part, header_list) => {
                 match maybe_part {
                     Some(part) => {
-                        part.serialize(writer)?;
+                        part.encode(writer)?;
                         writer.write_all(b".HEADER.FIELDS (")?;
                     }
                     None => writer.write_all(b"HEADER.FIELDS (")?,
@@ -321,7 +321,7 @@ impl Serialize for Section {
             Section::HeaderFieldsNot(maybe_part, header_list) => {
                 match maybe_part {
                     Some(part) => {
-                        part.serialize(writer)?;
+                        part.encode(writer)?;
                         writer.write_all(b".HEADER.FIELDS.NOT (")?;
                     }
                     None => writer.write_all(b"HEADER.FIElDS.NOT (")?,
@@ -331,13 +331,13 @@ impl Serialize for Section {
             }
             Section::Text(maybe_part) => match maybe_part {
                 Some(part) => {
-                    part.serialize(writer)?;
+                    part.encode(writer)?;
                     writer.write_all(b".TEXT")
                 }
                 None => writer.write_all(b"TEXT"),
             },
             Section::Mime(part) => {
-                part.serialize(writer)?;
+                part.encode(writer)?;
                 writer.write_all(b".MIME")
             }
         }
@@ -347,14 +347,14 @@ impl Serialize for Section {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part(pub Vec<u32>);
 
-impl Serialize for u32 {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for u32 {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }
 
-impl Serialize for Part {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Part {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         join_serializable(&self.0, b".", writer)
     }
 }

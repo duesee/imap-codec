@@ -1,4 +1,4 @@
-use crate::{codec::Serialize, parse::sequence::sequence_set};
+use crate::{codec::Encode, parse::sequence::sequence_set};
 use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,14 +61,14 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
     }
 }
 
-impl Serialize for Sequence {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Sequence {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Sequence::Single(seq_no) => seq_no.serialize(writer),
+            Sequence::Single(seq_no) => seq_no.encode(writer),
             Sequence::Range(from, to) => {
-                from.serialize(writer)?;
+                from.encode(writer)?;
                 writer.write_all(b":")?;
-                to.serialize(writer)
+                to.encode(writer)
             }
         }
     }
@@ -89,8 +89,8 @@ impl SeqNo {
     }
 }
 
-impl Serialize for SeqNo {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for SeqNo {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             SeqNo::Value(number) => write!(writer, "{}", number),
             SeqNo::Largest => writer.write_all(b"*"),
@@ -130,7 +130,7 @@ impl ToSequence for &str {
 #[cfg(test)]
 mod test {
     use super::{SeqNo, Sequence, SequenceSet, Strategy, ToSequence};
-    use crate::codec::Serialize;
+    use crate::codec::Encode;
 
     #[test]
     fn test_sequence_serialize() {
@@ -145,7 +145,7 @@ mod test {
 
         for (expected, test) in tests.iter() {
             let mut out = Vec::new();
-            test.serialize(&mut out).unwrap();
+            test.encode(&mut out).unwrap();
             assert_eq!(*expected, out);
         }
     }

@@ -1,6 +1,6 @@
 // ### 2.3.2. Flags Message Attribute
 
-use crate::{codec::Serialize, types::core::Atom};
+use crate::{codec::Encode, types::core::Atom};
 use serde::Deserialize;
 use std::io::Write;
 
@@ -79,8 +79,8 @@ impl std::fmt::Display for Flag {
     }
 }
 
-impl Serialize for Flag {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Flag {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }
@@ -130,8 +130,8 @@ impl std::fmt::Display for FlagNameAttribute {
     }
 }
 
-impl Serialize for FlagNameAttribute {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for FlagNameAttribute {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }

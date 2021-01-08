@@ -1,4 +1,4 @@
-use crate::{codec::Serialize, types::core::Atom};
+use crate::{codec::Encode, types::core::Atom};
 use serde::Deserialize;
 use std::io::Write;
 
@@ -27,12 +27,12 @@ pub enum AuthMechanism {
     Other(Atom),
 }
 
-impl Serialize for AuthMechanism {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for AuthMechanism {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             AuthMechanism::Plain => writer.write_all(b"PLAIN"),
             AuthMechanism::Login => writer.write_all(b"LOGIN"),
-            AuthMechanism::Other(atom) => atom.serialize(writer),
+            AuthMechanism::Other(atom) => atom.encode(writer),
         }
     }
 }

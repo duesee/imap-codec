@@ -2,7 +2,7 @@
 extern crate test;
 
 use imap_codec::{
-    codec::Serialize,
+    codec::Encode,
     types::{
         command::Command,
         data_items::{DataItem, MacroOrDataItems, Section},
@@ -35,7 +35,7 @@ fn bench_command_serialize(b: &mut Bencher) {
     // Bench
     b.iter(|| {
         let mut out = Vec::with_capacity(512);
-        cmd.serialize(&mut out).unwrap();
+        cmd.encode(&mut out).unwrap();
         // Make sure that serialization step is not removed as dead code.
         // Not sure if needed...
         test::black_box(out);
@@ -59,7 +59,7 @@ fn bench_response_serialize(b: &mut Bencher) {
     // Bench
     b.iter(|| {
         let mut out = Vec::with_capacity(512);
-        rsp.serialize(&mut out).unwrap();
+        rsp.encode(&mut out).unwrap();
         // Make sure that serialization step is not removed as dead code.
         // Not sure if needed...
         test::black_box(out);

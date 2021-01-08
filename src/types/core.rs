@@ -7,7 +7,7 @@
 //! using "astring" syntax may be either an atom or a string.
 
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     parse::core::{is_astring_char, is_atom_char, is_text_char},
     utils::escape_quoted,
 };
@@ -49,8 +49,8 @@ impl fmt::Display for Atom {
     }
 }
 
-impl Serialize for Atom {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Atom {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.0.as_bytes())
     }
 }
@@ -122,8 +122,8 @@ impl TryFrom<IString> for String {
     }
 }
 
-impl Serialize for IString {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for IString {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Self::Literal(val) => {
                 write!(writer, "{{{}}}\r\n", val.len())?;
@@ -137,10 +137,10 @@ impl Serialize for IString {
 #[derive(Debug, Clone, PartialEq)]
 pub struct NString(pub Option<IString>);
 
-impl Serialize for NString {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for NString {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match &self.0 {
-            Some(imap_str) => imap_str.serialize(writer),
+            Some(imap_str) => imap_str.encode(writer),
             None => writer.write_all(b"NIL"),
         }
     }
@@ -181,11 +181,11 @@ impl TryFrom<AString> for String {
     }
 }
 
-impl Serialize for AString {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for AString {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             AString::Atom(atom) => writer.write_all(atom.as_bytes()),
-            AString::String(imap_str) => imap_str.serialize(writer),
+            AString::String(imap_str) => imap_str.encode(writer),
         }
     }
 }
@@ -258,8 +258,8 @@ impl std::fmt::Display for Tag {
     }
 }
 
-impl Serialize for Tag {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Tag {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.0.as_bytes())
     }
 }
@@ -297,8 +297,8 @@ impl std::fmt::Display for Text {
     }
 }
 
-impl Serialize for Text {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Text {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.0.as_bytes())
     }
 }
@@ -342,8 +342,8 @@ impl std::fmt::Display for Charset {
     }
 }
 
-impl Serialize for Charset {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Charset {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         // FIXME(perf): conversion calls should not
         //              be requires for serialization.
         writer.write_all(self.to_string().as_bytes())
@@ -447,7 +447,7 @@ mod test {
             println!("{}", cs);
 
             let mut out = Vec::new();
-            cs.serialize(&mut out).unwrap();
+            cs.encode(&mut out).unwrap();
             assert_eq!(String::from_utf8(out).unwrap(), *expected);
         }
 

@@ -1,5 +1,5 @@
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
@@ -12,11 +12,11 @@ pub enum ListMailbox {
     String(IString),
 }
 
-impl Serialize for ListMailbox {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for ListMailbox {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             ListMailbox::Token(str) => writer.write_all(str.as_bytes()),
-            ListMailbox::String(imap_str) => imap_str.serialize(writer),
+            ListMailbox::String(imap_str) => imap_str.encode(writer),
         }
     }
 }
@@ -108,11 +108,11 @@ pub enum Mailbox {
     Other(AString),
 }
 
-impl Serialize for Mailbox {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Mailbox {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => writer.write_all(b"INBOX"),
-            Mailbox::Other(a_str) => a_str.serialize(writer),
+            Mailbox::Other(a_str) => a_str.encode(writer),
         }
     }
 }
