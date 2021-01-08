@@ -1,5 +1,5 @@
 use std::io::Write;
 
-pub trait Serialize {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()>;
+pub trait Encode {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()>;
 }

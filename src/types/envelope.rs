@@ -1,5 +1,5 @@
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     types::{address::Address, core::NString},
     List1OrNil,
 };
@@ -67,28 +67,28 @@ pub struct Envelope {
     pub message_id: NString,    // TODO: must not be empty string
 }
 
-impl Serialize for Envelope {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Envelope {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"(")?;
-        self.date.serialize(writer)?;
+        self.date.encode(writer)?;
         writer.write_all(b" ")?;
-        self.subject.serialize(writer)?;
+        self.subject.encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.from, b"").serialize(writer)?;
+        List1OrNil(&self.from, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.sender, b"").serialize(writer)?;
+        List1OrNil(&self.sender, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.reply_to, b"").serialize(writer)?;
+        List1OrNil(&self.reply_to, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.to, b"").serialize(writer)?;
+        List1OrNil(&self.to, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.cc, b"").serialize(writer)?;
+        List1OrNil(&self.cc, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.bcc, b"").serialize(writer)?;
+        List1OrNil(&self.bcc, b"").encode(writer)?;
         writer.write_all(b" ")?;
-        self.in_reply_to.serialize(writer)?;
+        self.in_reply_to.encode(writer)?;
         writer.write_all(b" ")?;
-        self.message_id.serialize(writer)?;
+        self.message_id.encode(writer)?;
         writer.write_all(b")")
     }
 }

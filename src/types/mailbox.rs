@@ -1,9 +1,9 @@
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, io::Write};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -12,11 +12,11 @@ pub enum ListMailbox {
     String(IString),
 }
 
-impl Serialize for ListMailbox {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for ListMailbox {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             ListMailbox::Token(str) => writer.write_all(str.as_bytes()),
-            ListMailbox::String(imap_str) => imap_str.serialize(writer),
+            ListMailbox::String(imap_str) => imap_str.encode(writer),
         }
     }
 }
@@ -101,18 +101,18 @@ impl TryFrom<ListMailbox> for String {
 ///    levels of hierarchy.
 /// 5) Two characters, "#" and "&", have meanings by convention, and should be avoided except
 ///    when used in that convention.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Mailbox {
     Inbox,
     // FIXME: prevent `Mailbox::Other("Inbox")`?
     Other(AString),
 }
 
-impl Serialize for Mailbox {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Mailbox {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => writer.write_all(b"INBOX"),
-            Mailbox::Other(a_str) => a_str.serialize(writer),
+            Mailbox::Other(a_str) => a_str.encode(writer),
         }
     }
 }

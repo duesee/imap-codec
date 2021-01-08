@@ -1,4 +1,4 @@
-use crate::{codec::Serialize, types::core::Tag};
+use crate::{codec::Encode, types::core::Tag};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::{borrow::Cow, io::Write, iter};
 
@@ -18,18 +18,18 @@ pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
         .join(sep)
 }
 
-pub(crate) fn join_serializable<I: Serialize>(
+pub(crate) fn join_serializable<I: Encode>(
     elements: &[I],
     sep: &[u8],
     writer: &mut impl Write,
 ) -> std::io::Result<()> {
     if let Some((last, head)) = elements.split_last() {
         for item in head {
-            item.serialize(writer)?;
+            item.encode(writer)?;
             writer.write_all(sep)?;
         }
 
-        last.serialize(writer)
+        last.encode(writer)
     } else {
         Ok(())
     }

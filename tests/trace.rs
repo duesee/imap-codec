@@ -1,5 +1,5 @@
 use imap_codec::{
-    codec::Serialize,
+    codec::Encode,
     parse::{
         command::command,
         response::{greeting, response},
@@ -51,7 +51,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
                 let mut serialized = Vec::new();
-                parsed.serialize(&mut serialized).unwrap();
+                parsed.encode(&mut serialized).unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -67,7 +67,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
                 let mut serialized = Vec::new();
-                parsed.serialize(&mut serialized).unwrap();
+                parsed.encode(&mut serialized).unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -580,7 +580,7 @@ fn test_response_status_preauth() {
     println!("Parsed:     {:?}", parsed);
     assert!(rem.is_empty());
     let mut serialized = Vec::new();
-    parsed.serialize(&mut serialized).unwrap();
+    parsed.encode(&mut serialized).unwrap();
     println!(
         "Serialized: {}",
         String::from_utf8_lossy(&serialized).trim()

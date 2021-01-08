@@ -1,7 +1,7 @@
 //! # 7. Server Responses
 
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     types::{
         body::BodyStructure,
         core::{Atom, Charset, NString, Tag, Text},
@@ -14,7 +14,7 @@ use crate::{
     utils::{escape_quoted, join, join_serializable},
 };
 use chrono::{DateTime, FixedOffset};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, io::Write};
 
 /// Server responses are in three forms.
@@ -36,12 +36,12 @@ pub enum Response {
     Continuation(Continuation),
 }
 
-impl Serialize for Response {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Response {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Response::Status(status) => status.serialize(writer),
-            Response::Data(data) => data.serialize(writer),
-            Response::Continuation(continuation) => continuation.serialize(writer),
+            Response::Status(status) => status.encode(writer),
+            Response::Data(data) => data.encode(writer),
+            Response::Continuation(continuation) => continuation.encode(writer),
         }
     }
 }
@@ -52,7 +52,7 @@ impl Serialize for Response {
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [ResponseCode](ResponseCode).)
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Status {
     /// ### 7.1.1. OK Response
     ///
@@ -204,8 +204,8 @@ impl Status {
     }
 }
 
-impl Serialize for Status {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Status {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         fn format_status(
             tag: &Option<Tag>,
             status: &str,
@@ -214,7 +214,7 @@ impl Serialize for Status {
             writer: &mut impl Write,
         ) -> std::io::Result<()> {
             match tag {
-                Some(tag) => tag.serialize(writer)?,
+                Some(tag) => tag.encode(writer)?,
                 None => writer.write_all(b"*")?,
             }
             writer.write_all(b" ")?;
@@ -223,7 +223,7 @@ impl Serialize for Status {
             if let Some(code) = code {
                 write!(writer, "[{}] ", code)?;
             }
-            comment.serialize(writer)?;
+            comment.encode(writer)?;
             writer.write_all(b"\r\n")
         }
 
@@ -470,8 +470,8 @@ pub enum Data {
     Enabled { capabilities: Vec<Capability> },
 }
 
-impl Serialize for Data {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Data {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Data::Capability(caps) => {
                 writer.write_all(b"* CAPABILITY ")?;
@@ -493,7 +493,7 @@ impl Serialize for Data {
                     writer.write_all(b"NIL")?;
                 }
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
             }
             Data::Lsub {
                 items,
@@ -511,11 +511,11 @@ impl Serialize for Data {
                     writer.write_all(b"NIL")?;
                 }
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
             }
             Data::Status { mailbox, items } => {
                 writer.write_all(b"* STATUS ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
                 writer.write_all(b" (")?;
                 join_serializable(items, b" ", writer)?;
                 writer.write_all(b")")?;
@@ -584,8 +584,8 @@ impl std::fmt::Display for StatusItemResponse {
     }
 }
 
-impl Serialize for StatusItemResponse {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for StatusItemResponse {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }
@@ -627,8 +627,8 @@ impl Continuation {
     }
 }
 
-impl Serialize for Continuation {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Continuation {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Continuation::Basic { code, text } => match code {
                 Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
@@ -647,7 +647,7 @@ impl Serialize for Continuation {
 /// information.
 ///
 /// The currently defined response codes are:
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Code {
     /// `ALERT`
     ///
@@ -780,13 +780,13 @@ impl std::fmt::Display for Code {
     }
 }
 
-impl Serialize for Code {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Code {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Capability {
     Imap4Rev1,
     Auth(AuthMechanism),
@@ -828,8 +828,8 @@ impl std::fmt::Display for Capability {
     }
 }
 
-impl Serialize for Capability {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for Capability {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
 }
@@ -934,8 +934,8 @@ pub enum DataItemResponse {
     Uid(u32),
 }
 
-impl Serialize for DataItemResponse {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for DataItemResponse {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         use DataItemResponse::*;
 
         match self {
@@ -946,27 +946,27 @@ impl Serialize for DataItemResponse {
             } => {
                 writer.write_all(b"BODY[")?;
                 if let Some(section) = section {
-                    section.serialize(writer)?;
+                    section.encode(writer)?;
                 }
                 writer.write_all(b"]")?;
                 if let Some(origin) = origin {
                     write!(writer, "<{}>", origin)?;
                 }
                 writer.write_all(b" ")?;
-                data.serialize(writer)
+                data.encode(writer)
             }
             // FIXME: do not return body-ext-1part and body-ext-mpart here
             Body(body) => {
                 writer.write_all(b"BODY ")?;
-                body.serialize(writer)
+                body.encode(writer)
             }
             BodyStructure(body) => {
                 writer.write_all(b"BODYSTRUCTURE ")?;
-                body.serialize(writer)
+                body.encode(writer)
             }
             Envelope(envelope) => {
                 writer.write_all(b"ENVELOPE ")?;
-                envelope.serialize(writer)
+                envelope.encode(writer)
             }
             Flags(flags) => {
                 writer.write_all(b"FLAGS (")?;
@@ -975,20 +975,20 @@ impl Serialize for DataItemResponse {
             }
             InternalDate(datetime) => {
                 writer.write_all(b"INTERNALDATE ")?;
-                datetime.serialize(writer)
+                datetime.encode(writer)
             }
             Rfc822(nstring) => {
                 writer.write_all(b"RFC822 ")?;
-                nstring.serialize(writer)
+                nstring.encode(writer)
             }
             Rfc822Header(nstring) => {
                 writer.write_all(b"RFC822.HEADER ")?;
-                nstring.serialize(writer)
+                nstring.encode(writer)
             }
             Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
             Rfc822Text(nstring) => {
                 writer.write_all(b"RFC822.TEXT ")?;
-                nstring.serialize(writer)
+                nstring.encode(writer)
             }
             Uid(uid) => write!(writer, "UID {}", uid),
         }
@@ -1071,7 +1071,7 @@ mod test {
         for (constructed, serialized) in tests {
             let constructed = constructed.unwrap();
             let mut out = Vec::new();
-            constructed.serialize(&mut out).unwrap();
+            constructed.encode(&mut out).unwrap();
 
             assert_eq!(out, serialized.to_vec());
             // FIXME
@@ -1106,7 +1106,7 @@ mod test {
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
             let mut out = Vec::new();
-            parsed.serialize(&mut out).unwrap();
+            parsed.encode(&mut out).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
@@ -1126,7 +1126,7 @@ mod test {
         for (constructed, serialized) in tests.into_iter() {
             let constructed = constructed.unwrap();
             let mut out = Vec::new();
-            constructed.serialize(&mut out).unwrap();
+            constructed.encode(&mut out).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME:
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);

@@ -3,7 +3,7 @@
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
 use crate::{
-    codec::Serialize,
+    codec::Encode,
     types::{
         core::{AString, Atom, Charset, Tag},
         data_items::MacroOrDataItems,
@@ -246,11 +246,11 @@ impl Command {
     }
 }
 
-impl Serialize for Command {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.tag.serialize(writer)?;
+impl Encode for Command {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.tag.encode(writer)?;
         writer.write_all(b" ")?;
-        self.body.serialize(writer)?;
+        self.body.encode(writer)?;
         writer.write_all(b"\r\n")
     }
 }
@@ -1413,8 +1413,8 @@ impl CommandBody {
     }
 }
 
-impl Serialize for CommandBody {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for CommandBody {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             CommandBody::Capability => writer.write_all(b"CAPABILITY"),
             CommandBody::Noop => writer.write_all(b"NOOP"),
@@ -1426,7 +1426,7 @@ impl Serialize for CommandBody {
             } => {
                 writer.write_all(b"AUTHENTICATE")?;
                 writer.write_all(b" ")?;
-                mechanism.serialize(writer)?;
+                mechanism.encode(writer)?;
 
                 if let Some(ir) = initial_response {
                     writer.write_all(b" ")?;
@@ -1438,29 +1438,29 @@ impl Serialize for CommandBody {
             CommandBody::Login { username, password } => {
                 writer.write_all(b"LOGIN")?;
                 writer.write_all(b" ")?;
-                username.serialize(writer)?;
+                username.encode(writer)?;
                 writer.write_all(b" ")?;
-                password.serialize(writer)
+                password.encode(writer)
             }
             CommandBody::Select { mailbox } => {
                 writer.write_all(b"SELECT")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Examine { mailbox } => {
                 writer.write_all(b"EXAMINE")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Create { mailbox } => {
                 writer.write_all(b"CREATE")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Delete { mailbox } => {
                 writer.write_all(b"DELETE")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Rename {
                 mailbox,
@@ -1468,19 +1468,19 @@ impl Serialize for CommandBody {
             } => {
                 writer.write_all(b"RENAME")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
                 writer.write_all(b" ")?;
-                new_mailbox.serialize(writer)
+                new_mailbox.encode(writer)
             }
             CommandBody::Subscribe { mailbox } => {
                 writer.write_all(b"SUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Unsubscribe { mailbox } => {
                 writer.write_all(b"UNSUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::List {
                 reference,
@@ -1488,9 +1488,9 @@ impl Serialize for CommandBody {
             } => {
                 writer.write_all(b"LIST")?;
                 writer.write_all(b" ")?;
-                reference.serialize(writer)?;
+                reference.encode(writer)?;
                 writer.write_all(b" ")?;
-                mailbox_wildcard.serialize(writer)
+                mailbox_wildcard.encode(writer)
             }
             CommandBody::Lsub {
                 reference,
@@ -1498,14 +1498,14 @@ impl Serialize for CommandBody {
             } => {
                 writer.write_all(b"LSUB")?;
                 writer.write_all(b" ")?;
-                reference.serialize(writer)?;
+                reference.encode(writer)?;
                 writer.write_all(b" ")?;
-                mailbox_wildcard.serialize(writer)
+                mailbox_wildcard.encode(writer)
             }
             CommandBody::Status { mailbox, items } => {
                 writer.write_all(b"STATUS")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
                 writer.write_all(b" ")?;
                 writer.write_all(b"(")?;
                 join_serializable(items, b" ", writer)?;
@@ -1519,7 +1519,7 @@ impl Serialize for CommandBody {
             } => {
                 writer.write_all(b"APPEND")?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)?;
+                mailbox.encode(writer)?;
 
                 if !flags.is_empty() {
                     writer.write_all(b" ")?;
@@ -1530,7 +1530,7 @@ impl Serialize for CommandBody {
 
                 if let Some(date) = date {
                     writer.write_all(b" ")?;
-                    date.serialize(writer)?;
+                    date.encode(writer)?;
                 }
 
                 writer.write_all(b" ")?;
@@ -1558,7 +1558,7 @@ impl Serialize for CommandBody {
                 if let SearchKey::And(search_keys) = criteria {
                     join_serializable(search_keys, b" ", writer) // TODO: use List1?
                 } else {
-                    criteria.serialize(writer)
+                    criteria.encode(writer)
                 }
             }
             CommandBody::Fetch {
@@ -1574,7 +1574,7 @@ impl Serialize for CommandBody {
 
                 join_serializable(sequence_set, b",", writer)?;
                 writer.write_all(b" ")?;
-                items.serialize(writer)
+                items.encode(writer)
             }
             CommandBody::Store {
                 sequence_set,
@@ -1621,7 +1621,7 @@ impl Serialize for CommandBody {
                 }
                 join_serializable(sequence_set, b",", writer)?;
                 writer.write_all(b" ")?;
-                mailbox.serialize(writer)
+                mailbox.encode(writer)
             }
             CommandBody::Idle => writer.write_all(b"IDLE"),
             CommandBody::Enable { capabilities } => {
@@ -1651,8 +1651,8 @@ pub enum StatusItem {
     Unseen,
 }
 
-impl Serialize for StatusItem {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for StatusItem {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             StatusItem::Messages => writer.write_all(b"MESSAGES"),
             StatusItem::Recent => writer.write_all(b"RECENT"),
@@ -1812,98 +1812,98 @@ pub enum SearchKey {
     Unseen,
 }
 
-impl Serialize for SearchKey {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for SearchKey {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             SearchKey::All => writer.write_all(b"ALL"),
             SearchKey::Answered => writer.write_all(b"ANSWERED"),
             SearchKey::Bcc(astring) => {
                 writer.write_all(b"BCC ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Before(date) => {
                 writer.write_all(b"BEFORE ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::Body(astring) => {
                 writer.write_all(b"BODY ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Cc(astring) => {
                 writer.write_all(b"CC ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Deleted => writer.write_all(b"DELETED"),
             SearchKey::Flagged => writer.write_all(b"FLAGGED"),
             SearchKey::From(astring) => {
                 writer.write_all(b"FROM ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Keyword(flag_keyword) => {
                 writer.write_all(b"KEYWORD ")?;
-                flag_keyword.serialize(writer)
+                flag_keyword.encode(writer)
             }
             SearchKey::New => writer.write_all(b"NEW"),
             SearchKey::Old => writer.write_all(b"OLD"),
             SearchKey::On(date) => {
                 writer.write_all(b"ON ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::Recent => writer.write_all(b"RECENT"),
             SearchKey::Seen => writer.write_all(b"SEEN"),
             SearchKey::Since(date) => {
                 writer.write_all(b"SINCE ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::Subject(astring) => {
                 writer.write_all(b"SUBJECT ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Text(astring) => {
                 writer.write_all(b"TEXT ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::To(astring) => {
                 writer.write_all(b"TO ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Unanswered => writer.write_all(b"UNANSWERED"),
             SearchKey::Undeleted => writer.write_all(b"UNDELETED"),
             SearchKey::Unflagged => writer.write_all(b"UNFLAGGED"),
             SearchKey::Unkeyword(flag_keyword) => {
                 writer.write_all(b"UNKEYWORD ")?;
-                flag_keyword.serialize(writer)
+                flag_keyword.encode(writer)
             }
             SearchKey::Unseen => writer.write_all(b"UNSEEN"),
             SearchKey::Draft => writer.write_all(b"DRAFT"),
             SearchKey::Header(header_fld_name, astring) => {
                 writer.write_all(b"HEADER ")?;
-                header_fld_name.serialize(writer)?;
+                header_fld_name.encode(writer)?;
                 writer.write_all(b" ")?;
-                astring.serialize(writer)
+                astring.encode(writer)
             }
             SearchKey::Larger(number) => write!(writer, "LARGER {}", number),
             SearchKey::Not(search_key) => {
                 writer.write_all(b"NOT ")?;
-                search_key.serialize(writer)
+                search_key.encode(writer)
             }
             SearchKey::Or(search_key_a, search_key_b) => {
                 writer.write_all(b"OR ")?;
-                search_key_a.serialize(writer)?;
+                search_key_a.encode(writer)?;
                 writer.write_all(b" ")?;
-                search_key_b.serialize(writer)
+                search_key_b.encode(writer)
             }
             SearchKey::SentBefore(date) => {
                 writer.write_all(b"SENTBEFORE ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::SentOn(date) => {
                 writer.write_all(b"SENTON ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::SentSince(date) => {
                 writer.write_all(b"SENTSINCE ")?;
-                date.serialize(writer)
+                date.encode(writer)
             }
             SearchKey::Smaller(number) => write!(writer, "SMALLER {}", number),
             SearchKey::Uid(sequence_set) => {
@@ -1924,7 +1924,7 @@ impl Serialize for SearchKey {
 #[cfg(test)]
 mod test {
     use crate::{
-        codec::Serialize,
+        codec::Encode,
         types::{
             command::{Command, SearchKey, StatusItem},
             core::{AString, IString},
@@ -2057,7 +2057,7 @@ mod test {
             println!("Test: {:?}", cmd);
 
             let mut serialized = Vec::new();
-            cmd.serialize(&mut serialized).unwrap();
+            cmd.encode(&mut serialized).unwrap();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
 

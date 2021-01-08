@@ -54,10 +54,10 @@
 //! ```
 
 use crate::types::mailbox::Mailbox;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// State of the IMAP4rev1 connection.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum State {
     /// ## 3.1. Not Authenticated State
     ///

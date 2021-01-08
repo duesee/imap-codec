@@ -1,5 +1,5 @@
-use crate::{codec::Serialize, types::core::Atom};
-use serde::Deserialize;
+use crate::{codec::Encode, types::core::Atom};
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 pub mod address;
@@ -15,7 +15,7 @@ pub mod response;
 pub mod sequence;
 
 /// Note: Defined by [SASL]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum AuthMechanism {
     // RFC4616: The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
     // AUTH=PLAIN
@@ -27,12 +27,12 @@ pub enum AuthMechanism {
     Other(Atom),
 }
 
-impl Serialize for AuthMechanism {
-    fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl Encode for AuthMechanism {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             AuthMechanism::Plain => writer.write_all(b"PLAIN"),
             AuthMechanism::Login => writer.write_all(b"LOGIN"),
-            AuthMechanism::Other(atom) => atom.serialize(writer),
+            AuthMechanism::Other(atom) => atom.encode(writer),
         }
     }
 }
