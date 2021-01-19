@@ -18,7 +18,7 @@ use crate::{
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use std::io::Write;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Command {
     pub tag: Tag,
     pub body: CommandBody,
@@ -255,7 +255,7 @@ impl Encode for Command {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommandBody {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
     /// ### 6.1.1.  CAPABILITY Command
@@ -1633,7 +1633,7 @@ impl Encode for CommandBody {
 }
 
 /// The currently defined status data items that can be requested.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StatusItem {
     /// The number of messages in the mailbox.
     Messages,

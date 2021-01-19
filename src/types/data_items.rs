@@ -3,7 +3,7 @@ use std::io::Write;
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Macro {
     /// `ALL` Macro equivalent to:
     ///   `(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE)`
@@ -39,7 +39,7 @@ impl Encode for Macro {
 }
 
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MacroOrDataItems {
     Macro(Macro),
     DataItems(Vec<DataItem>),
@@ -75,7 +75,7 @@ impl From<Vec<DataItem>> for MacroOrDataItems {
 }
 
 /// The currently defined data items that can be fetched are:
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataItem {
     /// `BODY`
     ///
@@ -236,7 +236,7 @@ impl Encode for DataItem {
 /// and the body; the blank line is included in all header fetches,
 /// except in the case of a message which has no body and no blank
 /// line.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PartSpecifier {
     PartNumber(u32),
     Header,
@@ -274,7 +274,7 @@ pub enum PartSpecifier {
 /// 4.2.2.1    TEXT/PLAIN
 /// 4.2.2.2    TEXT/RICHTEXT
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Section {
     Part(Part),
 
@@ -344,7 +344,7 @@ impl Encode for Section {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Part(pub Vec<u32>);
 
 impl Encode for u32 {

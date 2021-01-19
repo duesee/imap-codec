@@ -134,7 +134,7 @@ impl Encode for IString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NString(pub Option<IString>);
 
 impl Encode for NString {
@@ -229,7 +229,7 @@ impl Encode for AString {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct Tag(pub(crate) String);
 
 impl TryFrom<&str> for Tag {
@@ -264,7 +264,7 @@ impl Encode for Tag {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Eq, Serialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub struct Text(pub(crate) String);
 
 impl TryFrom<&str> for Text {
@@ -363,7 +363,7 @@ impl<'a> atm<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum istr<'a> {
     Literal(&'a [u8]),
     Quoted(Cow<'a, str>),
@@ -379,7 +379,7 @@ impl<'a> istr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
 
 impl<'a> nstr<'a> {
@@ -389,7 +389,7 @@ impl<'a> nstr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum astr<'a> {
     Atom(&'a str),
     String(istr<'a>),
@@ -405,7 +405,7 @@ impl<'a> astr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct txt<'a>(pub(crate) &'a str);
 
 impl<'a> txt<'a> {

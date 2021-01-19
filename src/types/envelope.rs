@@ -53,7 +53,7 @@ use std::io::Write;
 ///    From header.  Therefore, the from, sender, and reply-to
 ///    members in the envelope can not be NIL.
 /// TODO: many invariants here...
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Envelope {
     pub date: NString, // TODO: must not be empty string
     pub subject: NString,

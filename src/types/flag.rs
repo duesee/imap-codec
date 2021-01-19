@@ -136,14 +136,14 @@ impl Encode for FlagNameAttribute {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StoreType {
     Replace,
     Add,
     Remove,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StoreResponse {
     Answer,
     Silent,
