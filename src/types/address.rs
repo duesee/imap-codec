@@ -2,7 +2,7 @@ use crate::{codec::Encode, types::core::NString};
 use std::io::Write;
 
 /// An address structure describes an electronic mail address.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address {
     /// Personal name
     name: NString,

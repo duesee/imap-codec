@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, io::Write};
 
 /// Server responses are in three forms.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response {
     /// Status responses can be tagged or untagged.  Tagged status responses
     /// indicate the completion result (OK, NO, or BAD status) of a client
@@ -52,7 +52,7 @@ impl Encode for Response {
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [ResponseCode](ResponseCode).)
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Status {
     /// ### 7.1.1. OK Response
     ///
@@ -238,7 +238,7 @@ impl Encode for Status {
 }
 
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Data {
     // ## 7.2. Server Responses - Server and Mailbox Status
     //
@@ -552,7 +552,7 @@ impl Encode for Data {
 }
 
 /// The currently defined status data items.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StatusItemResponse {
     /// The number of messages in the mailbox.
     Messages(u32),
@@ -608,7 +608,7 @@ impl Encode for StatusItemResponse {
 /// command, follows the octets of the literal.  If there are any
 /// additional command arguments, the literal octets are followed by a
 /// space and those arguments.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continuation {
     Basic { code: Option<Code>, text: Text },
     Base64(String),
@@ -647,7 +647,7 @@ impl Encode for Continuation {
 /// information.
 ///
 /// The currently defined response codes are:
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Code {
     /// `ALERT`
     ///
@@ -786,7 +786,7 @@ impl Encode for Code {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Capability {
     Imap4Rev1,
     Auth(AuthMechanism),
@@ -835,7 +835,7 @@ impl Encode for Capability {
 }
 
 /// The current data items are:
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataItemResponse {
     /// A form of BODYSTRUCTURE without extension data.
     ///

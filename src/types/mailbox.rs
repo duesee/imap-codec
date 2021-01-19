@@ -6,7 +6,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, io::Write};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListMailbox {
     Token(String),
     String(IString),
@@ -101,7 +101,7 @@ impl TryFrom<ListMailbox> for String {
 ///    levels of hierarchy.
 /// 5) Two characters, "#" and "&", have meanings by convention, and should be avoided except
 ///    when used in that convention.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Mailbox {
     Inbox,
     // FIXME: prevent `Mailbox::Other("Inbox")`?

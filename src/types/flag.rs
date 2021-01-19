@@ -9,7 +9,7 @@ use std::io::Write;
 /// removal.  There are two types of flags in IMAP4rev1. A flag of either
 /// type can be permanent or session-only.
 /// FIXME: this struct is not very usable currently...
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Flag {
     // ----- System -----
     //
@@ -86,7 +86,7 @@ impl Encode for Flag {
 }
 
 /// Four name attributes are defined.
-#[derive(Eq, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Eq, Debug, Clone, PartialEq, Hash, Deserialize, Serialize)]
 pub enum FlagNameAttribute {
     /// It is not possible for any child levels of hierarchy to exist
     /// under this name; no child levels exist now and none can be
@@ -136,14 +136,14 @@ impl Encode for FlagNameAttribute {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreType {
     Replace,
     Add,
     Remove,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreResponse {
     Answer,
     Silent,

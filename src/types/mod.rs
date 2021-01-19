@@ -15,7 +15,7 @@ pub mod response;
 pub mod sequence;
 
 /// Note: Defined by [SASL]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum AuthMechanism {
     // RFC4616: The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
     // AUTH=PLAIN

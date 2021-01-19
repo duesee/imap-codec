@@ -1,7 +1,7 @@
 use crate::{codec::Encode, parse::sequence::sequence_set};
 use std::io::Write;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sequence {
     Single(SeqNo),
     Range(SeqNo, SeqNo),
@@ -74,7 +74,7 @@ impl Encode for Sequence {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SeqNo {
     Value(u32),
     Largest,

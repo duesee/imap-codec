@@ -18,7 +18,7 @@ use crate::{
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use std::io::Write;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Command {
     pub tag: Tag,
     pub body: CommandBody,
@@ -255,7 +255,7 @@ impl Encode for Command {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommandBody {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
     /// ### 6.1.1.  CAPABILITY Command
@@ -1633,7 +1633,7 @@ impl Encode for CommandBody {
 }
 
 /// The currently defined status data items that can be requested.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StatusItem {
     /// The number of messages in the mailbox.
     Messages,
@@ -1664,7 +1664,7 @@ impl Encode for StatusItem {
 }
 
 /// The defined search keys.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchKey {
     // <Not in RFC.>
     //

@@ -8,7 +8,7 @@ use crate::{
 };
 use std::io::Write;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Body {
     /// Basic fields
     pub basic: BasicFields,
@@ -59,7 +59,7 @@ impl Encode for Body {
 }
 
 /// The basic fields of a non-multipart body part.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BasicFields {
     /// List of attribute/value pairs ([MIME-IMB].)
     pub parameter_list: Vec<(IString, IString)>,
@@ -94,7 +94,7 @@ impl Encode for BasicFields {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SpecificFields {
     /// # Example (not in RFC)
     ///
@@ -210,7 +210,7 @@ pub enum SpecificFields {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BodyStructure {
     /// For example, a simple text message of 48 lines and 2279 octets
     /// can have a body structure of:
@@ -319,7 +319,7 @@ impl Encode for BodyStructure {
 }
 
 /// The extension data of a non-multipart body part are in the following order:
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SinglePartExtensionData {
     /// A string giving the body MD5 value as defined in [MD5].
     pub md5: NString,
@@ -389,7 +389,7 @@ impl Encode for SinglePartExtensionData {
 ///           | extension multipart data
 /// )
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiPartExtensionData {
     /// `body parameter parenthesized list`
     ///

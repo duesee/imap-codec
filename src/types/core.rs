@@ -17,7 +17,7 @@ use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Atom(String);
 
 impl TryFrom<&str> for Atom {
@@ -69,7 +69,7 @@ pub type Number = u32;
 /// The empty string is represented as either "" (a quoted string
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum IString {
     /// A literal is a sequence of zero or more octets (including CR and
     /// LF), prefix-quoted with an octet count in the form of an open
@@ -134,7 +134,7 @@ impl Encode for IString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NString(pub Option<IString>);
 
 impl Encode for NString {
@@ -146,7 +146,7 @@ impl Encode for NString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum AString {
     Atom(String),
     String(IString),
@@ -229,7 +229,7 @@ impl Encode for AString {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub struct Tag(pub(crate) String);
 
 impl TryFrom<&str> for Tag {
@@ -303,7 +303,7 @@ impl Encode for Text {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Charset(pub(crate) String);
 
 impl TryFrom<&str> for Charset {
@@ -353,7 +353,7 @@ impl Encode for Charset {
 // ----- "Referenced types" used for non-allocating code -----
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub(crate) struct atm<'a>(pub(crate) &'a str);
 
 impl<'a> atm<'a> {
@@ -363,7 +363,7 @@ impl<'a> atm<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum istr<'a> {
     Literal(&'a [u8]),
     Quoted(Cow<'a, str>),
@@ -379,7 +379,7 @@ impl<'a> istr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
 
 impl<'a> nstr<'a> {
@@ -389,7 +389,7 @@ impl<'a> nstr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum astr<'a> {
     Atom(&'a str),
     String(istr<'a>),
@@ -405,7 +405,7 @@ impl<'a> astr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub struct txt<'a>(pub(crate) &'a str);
 
 impl<'a> txt<'a> {
