@@ -6,8 +6,11 @@ use crate::{
     },
     List1AttributeValueOrNil, List1OrNil,
 };
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Body {
     /// Basic fields
@@ -59,6 +62,7 @@ impl Encode for Body {
 }
 
 /// The basic fields of a non-multipart body part.
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BasicFields {
     /// List of attribute/value pairs ([MIME-IMB].)
@@ -94,6 +98,7 @@ impl Encode for BasicFields {
     }
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SpecificFields {
     /// # Example (not in RFC)
@@ -210,6 +215,7 @@ pub enum SpecificFields {
     },
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BodyStructure {
     /// For example, a simple text message of 48 lines and 2279 octets
@@ -319,6 +325,7 @@ impl Encode for BodyStructure {
 }
 
 /// The extension data of a non-multipart body part are in the following order:
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SinglePartExtensionData {
     /// A string giving the body MD5 value as defined in [MD5].
@@ -389,6 +396,7 @@ impl Encode for SinglePartExtensionData {
 ///           | extension multipart data
 /// )
 /// ```
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiPartExtensionData {
     /// `body parameter parenthesized list`

@@ -1,6 +1,7 @@
 // ### 2.3.2. Flags Message Attribute
 
 use crate::{codec::Encode, types::core::Atom};
+#[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
@@ -9,7 +10,8 @@ use std::io::Write;
 /// removal.  There are two types of flags in IMAP4rev1. A flag of either
 /// type can be permanent or session-only.
 /// FIXME: this struct is not very usable currently...
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Flag {
     // ----- System -----
     //
@@ -86,7 +88,8 @@ impl Encode for Flag {
 }
 
 /// Four name attributes are defined.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FlagNameAttribute {
     /// It is not possible for any child levels of hierarchy to exist
     /// under this name; no child levels exist now and none can be
@@ -136,6 +139,7 @@ impl Encode for FlagNameAttribute {
     }
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreType {
     Replace,
@@ -143,6 +147,7 @@ pub enum StoreType {
     Remove,
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreResponse {
     Answer,

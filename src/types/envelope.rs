@@ -3,6 +3,8 @@ use crate::{
     types::{address::Address, core::NString},
     List1OrNil,
 };
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 /// The fields of the envelope structure are in the following
@@ -53,6 +55,7 @@ use std::io::Write;
 ///    From header.  Therefore, the from, sender, and reply-to
 ///    members in the envelope can not be NIL.
 /// TODO: many invariants here...
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Envelope {
     pub date: NString, // TODO: must not be empty string

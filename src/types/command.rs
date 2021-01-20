@@ -16,8 +16,11 @@ use crate::{
     utils::{gen_tag, join_serializable},
 };
 use chrono::{DateTime, FixedOffset, NaiveDate};
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command {
     pub tag: Tag,
@@ -255,6 +258,7 @@ impl Encode for Command {
     }
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommandBody {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
@@ -1633,6 +1637,7 @@ impl Encode for CommandBody {
 }
 
 /// The currently defined status data items that can be requested.
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StatusItem {
     /// The number of messages in the mailbox.
@@ -1664,6 +1669,7 @@ impl Encode for StatusItem {
 }
 
 /// The defined search keys.
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchKey {
     // <Not in RFC.>

@@ -3,9 +3,11 @@ use crate::{
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
+#[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, io::Write};
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListMailbox {
     Token(String),
@@ -101,7 +103,8 @@ impl TryFrom<ListMailbox> for String {
 ///    levels of hierarchy.
 /// 5) Two characters, "#" and "&", have meanings by convention, and should be avoided except
 ///    when used in that convention.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mailbox {
     Inbox,
     // FIXME: prevent `Mailbox::Other("Inbox")`?

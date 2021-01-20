@@ -11,13 +11,15 @@ use crate::{
     parse::core::{is_astring_char, is_atom_char, is_text_char},
     utils::escape_quoted,
 };
+#[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
 
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Atom(String);
 
 impl TryFrom<&str> for Atom {
@@ -69,7 +71,8 @@ pub type Number = u32;
 /// The empty string is represented as either "" (a quoted string
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString {
     /// A literal is a sequence of zero or more octets (including CR and
     /// LF), prefix-quoted with an octet count in the form of an open
@@ -134,6 +137,7 @@ impl Encode for IString {
     }
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NString(pub Option<IString>);
 
@@ -146,7 +150,8 @@ impl Encode for NString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString {
     Atom(String),
     String(IString),
@@ -229,7 +234,8 @@ impl Encode for AString {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag(pub(crate) String);
 
 impl TryFrom<&str> for Tag {
@@ -264,7 +270,8 @@ impl Encode for Tag {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text(pub(crate) String);
 
 impl TryFrom<&str> for Text {
@@ -303,7 +310,8 @@ impl Encode for Text {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Charset(pub(crate) String);
 
 impl TryFrom<&str> for Charset {
@@ -353,7 +361,7 @@ impl Encode for Charset {
 // ----- "Referenced types" used for non-allocating code -----
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct atm<'a>(pub(crate) &'a str);
 
 impl<'a> atm<'a> {
@@ -405,7 +413,7 @@ impl<'a> astr<'a> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct txt<'a>(pub(crate) &'a str);
 
 impl<'a> txt<'a> {

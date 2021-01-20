@@ -54,10 +54,12 @@
 //! ```
 
 use crate::types::mailbox::Mailbox;
+#[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
 /// State of the IMAP4rev1 connection.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub enum State {
     /// ## 3.1. Not Authenticated State
     ///

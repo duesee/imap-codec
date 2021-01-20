@@ -7,12 +7,18 @@ repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
 edition = "2018"
 
+[features]
+default = ["serdex"]
+serdex  = ["serde", "chrono/serde"]
+
 [dependencies]
 chrono = "0.4"
 nom = "5"
-serde = { version = "1.0", features = ["derive"] }
 abnf-core = "0.3"
 rand = "0.7.3"
+
+# Optional
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 assert_matches = "1.4"

@@ -1,7 +1,10 @@
 use crate::{codec::Encode, types::core::NString};
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 /// An address structure describes an electronic mail address.
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address {
     /// Personal name

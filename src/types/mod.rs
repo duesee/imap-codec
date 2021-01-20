@@ -1,4 +1,5 @@
 use crate::{codec::Encode, types::core::Atom};
+#[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
@@ -15,7 +16,8 @@ pub mod response;
 pub mod sequence;
 
 /// Note: Defined by [SASL]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AuthMechanism {
     // RFC4616: The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
     // AUTH=PLAIN
