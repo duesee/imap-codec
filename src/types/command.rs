@@ -18,7 +18,7 @@ use crate::{
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use std::io::Write;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command {
     pub tag: Tag,
     pub body: CommandBody,

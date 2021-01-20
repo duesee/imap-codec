@@ -86,7 +86,7 @@ impl Encode for Flag {
 }
 
 /// Four name attributes are defined.
-#[derive(Eq, Debug, Clone, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum FlagNameAttribute {
     /// It is not possible for any child levels of hierarchy to exist
     /// under this name; no child levels exist now and none can be

@@ -74,7 +74,7 @@ impl Encode for Sequence {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum SeqNo {
     Value(u32),
     Largest,
