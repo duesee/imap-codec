@@ -288,12 +288,10 @@ impl TryFrom<String> for Text {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() {
             Err("Text must not be empty.")
+        } else if value.bytes().all(is_text_char) {
+            Ok(Text(value))
         } else {
-            if value.bytes().all(is_text_char) {
-                Ok(Text(value.to_string()))
-            } else {
-                Err("Text contains illegal characters.")
-            }
+            Err("Text contains illegal characters.")
         }
     }
 }
