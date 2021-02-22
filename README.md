@@ -18,7 +18,7 @@ This is (probably) the most complete IMAP implementation in Rust available. Only
 
 ```rust
 use imap_codec::{
-    codec::Serialize,        // This trait provides the `serialize` method.
+    codec::Encode,           // This trait provides the `serialize` method.
     parse::command::command, // This is the command parser.
 };
 
@@ -30,7 +30,7 @@ fn main() {
     println!("{:#?}", parsed);
 
     let mut serialized = Vec::new();
-    parsed.serialize(&mut serialized); // This could be send over the network.
+    parsed.encode(&mut serialized).unwrap(); // This could be send over the network.
     
     let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
     println!("// Serialized:");                              // We just ignore that, so that we can print the message.
