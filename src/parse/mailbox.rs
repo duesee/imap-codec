@@ -157,7 +157,7 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 fn mailbox_list(
     input: &[u8],
 ) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<char>, Mailbox)> {
-    let parser = tuple((
+    let mut parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         SP,
         alt((

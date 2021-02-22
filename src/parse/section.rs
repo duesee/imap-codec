@@ -10,7 +10,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, value},
-    multi::separated_nonempty_list,
+    multi::separated_list1,
     sequence::{delimited, tuple},
     IResult,
 };
@@ -86,7 +86,7 @@ fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 ///
 /// section-part = nz-number *("." nz-number)
 fn section_part(input: &[u8]) -> IResult<&[u8], Vec<u32>> {
-    separated_nonempty_list(tag(b"."), nz_number)(input)
+    separated_list1(tag(b"."), nz_number)(input)
 }
 
 /// Text other than actual body part (headers, etc.)
@@ -101,11 +101,7 @@ fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 
 /// header-list = "(" header-fld-name *(SP header-fld-name) ")"
 fn header_list(input: &[u8]) -> IResult<&[u8], Vec<astr>> {
-    delimited(
-        tag(b"("),
-        separated_nonempty_list(SP, header_fld_name),
-        tag(b")"),
-    )(input)
+    delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")"))(input)
 }
 
 #[inline]

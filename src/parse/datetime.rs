@@ -17,7 +17,7 @@ pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 
 /// date-text = date-day "-" date-month "-" date-year
 fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
-    let parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
+    let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
@@ -63,7 +63,7 @@ fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
 ///
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
-    let parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
+    let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
 
@@ -75,7 +75,7 @@ fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
 pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
-    let parser = delimited(
+    let mut parser = delimited(
         DQUOTE,
         tuple((
             date_day_fixed,
@@ -103,10 +103,16 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
                 Ok((remaining, datetime))
             } else {
-                Err(nom::Err::Failure((remaining, ErrorKind::Verify))) // TODO(verify): use `Failure` or `Error`?
+                Err(nom::Err::Failure(nom::error::Error::new(
+                    remaining,
+                    ErrorKind::Verify,
+                ))) // TODO(verify): use `Failure` or `Error`?
             }
         }
-        _ => Err(nom::Err::Failure((remaining, ErrorKind::Verify))), // TODO(verify): use `Failure` or `Error`?
+        _ => Err(nom::Err::Failure(nom::error::Error::new(
+            remaining,
+            ErrorKind::Verify,
+        ))), // TODO(verify): use `Failure` or `Error`?
     }
 }
 
@@ -131,7 +137,7 @@ fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
 ///
 /// zone = ("+" / "-") 4DIGIT
 fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
-    let parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
+    let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;
 

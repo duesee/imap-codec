@@ -14,7 +14,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
-    multi::separated_nonempty_list,
+    multi::separated_list1,
     sequence::{delimited, terminated, tuple},
     IResult,
 };
@@ -38,7 +38,7 @@ pub(crate) fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
     delimited(
         tag(b"("),
-        separated_nonempty_list(SP, alt((msg_att_dynamic, msg_att_static))),
+        separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
         tag(b")"),
     )(input)
 }
@@ -47,14 +47,10 @@ fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<DataItemResponse>> {
 ///
 /// Note: MAY change for a message
 fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], DataItemResponse> {
-    let parser = tuple((
+    let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         SP,
-        delimited(
-            tag(b"("),
-            opt(separated_nonempty_list(SP, flag_fetch)),
-            tag(b")"),
-        ),
+        delimited(tag(b"("), opt(separated_list1(SP, flag_fetch)), tag(b")")),
     ));
 
     let (remaining, (_, _, flags)) = parser(input)?;

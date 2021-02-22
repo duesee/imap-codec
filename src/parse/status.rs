@@ -7,7 +7,7 @@ use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,
     combinator::{map, value},
-    multi::separated_nonempty_list,
+    multi::separated_list1,
     sequence::tuple,
     IResult,
 };
@@ -26,7 +26,7 @@ pub(crate) fn status_att(input: &[u8]) -> IResult<&[u8], StatusItem> {
 /// ; errata id: 261
 /// status-att-list = status-att-val *(SP status-att-val)
 pub(crate) fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusItemResponse>> {
-    separated_nonempty_list(SP, status_att_val)(input)
+    separated_list1(SP, status_att_val)(input)
 }
 
 /// ; errata id: 261

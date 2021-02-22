@@ -10,7 +10,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, value},
-    multi::{separated_list, separated_nonempty_list},
+    multi::{separated_list0, separated_list1},
     sequence::{delimited, preceded},
     IResult,
 };
@@ -50,7 +50,7 @@ fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
 
 /// flag-list = "(" [flag *(SP flag)] ")"
 pub(crate) fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
-    delimited(tag(b"("), separated_list(SP, flag), tag(b")"))(input)
+    delimited(tag(b"("), separated_list0(SP, flag), tag(b")"))(input)
 }
 
 /// mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
@@ -59,8 +59,7 @@ pub(crate) fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
 /// Note: ABNF enforces that sflag is not used more than once.
 ///       We parse any flag and check for multiple occurrences of sflag later.
 pub(crate) fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
-    let (remaining, flags) =
-        separated_nonempty_list(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
+    let (remaining, flags) = separated_list1(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
 
     let sflag_count = flags
         .iter()

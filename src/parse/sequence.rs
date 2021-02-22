@@ -3,8 +3,8 @@ use crate::{
     types::sequence::{SeqNo, Sequence},
 };
 use nom::{
-    branch::alt, bytes::streaming::tag, combinator::map, combinator::value,
-    multi::separated_nonempty_list, sequence::tuple, IResult,
+    branch::alt, bytes::streaming::tag, combinator::map, combinator::value, multi::separated_list1,
+    sequence::tuple, IResult,
 };
 
 /// Set of seq-number values, regardless of order.
@@ -28,7 +28,7 @@ use nom::{
 ///
 /// TODO: Why the errata?
 pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
-    separated_nonempty_list(
+    separated_list1(
         tag(b","),
         alt((
             // Ordering is important!
@@ -47,7 +47,7 @@ pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
 ///
 /// seq-range = seq-number ":" seq-number
 fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
-    let parser = tuple((seq_number, tag(b":"), seq_number));
+    let mut parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
 

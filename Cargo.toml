@@ -13,8 +13,8 @@ serdex  = ["serde", "chrono/serde"]
 
 [dependencies]
 chrono = "0.4"
-nom = "5"
-abnf-core = "0.3"
+nom = "6"
+abnf-core = "0.4"
 rand = "0.7.3"
 
 # Optional

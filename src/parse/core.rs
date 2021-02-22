@@ -60,7 +60,7 @@ pub(crate) fn string(input: &[u8]) -> IResult<&[u8], istr> {
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
 fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
-    let parser = tuple((
+    let mut parser = tuple((
         DQUOTE,
         map_res(
             escaped(
@@ -115,7 +115,10 @@ pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
     let (remaining, data) = take(number)(remaining)?;
 
     if !data.iter().cloned().all(is_char8) {
-        return Err(nom::Err::Error((remaining, ErrorKind::Verify))); // TODO(verify): use `Failure` or `Error`?
+        return Err(nom::Err::Error(nom::error::Error::new(
+            remaining,
+            ErrorKind::Verify,
+        ))); // TODO(verify): use `Failure` or `Error`?
     }
 
     Ok((remaining, data))

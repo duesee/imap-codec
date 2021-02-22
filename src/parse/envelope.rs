@@ -28,7 +28,7 @@ use nom::{
 ///            env-message-id
 ///            ")"
 pub(crate) fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
-    let parser = delimited(
+    let mut parser = delimited(
         tag(b"("),
         tuple((
             env_date,

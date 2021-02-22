@@ -16,7 +16,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, recognize},
-    multi::{many0, many1, separated_nonempty_list},
+    multi::{many0, many1, separated_list1},
     sequence::{delimited, preceded, tuple},
     IResult,
 };
@@ -74,7 +74,7 @@ fn body_type_1part_limited<'a>(
     let body_type_msg =
         move |input: &'a [u8]| body_type_msg_limited(input, remaining_recursions.saturating_sub(1));
 
-    let parser = tuple((
+    let mut parser = tuple((
         alt((body_type_msg, body_type_text, body_type_basic)),
         opt(preceded(SP, body_ext_1part)),
     ));
@@ -94,7 +94,7 @@ fn body_type_1part_limited<'a>(
 ///
 /// MESSAGE subtype MUST NOT be "RFC822"
 fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
-    let parser = tuple((media_basic, SP, body_fields));
+    let mut parser = tuple((media_basic, SP, body_fields));
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
@@ -131,7 +131,7 @@ fn body_type_msg_limited<'a>(
 
     let body = move |input: &'a [u8]| body_limited(input, remaining_recursions.saturating_sub(1));
 
-    let parser = tuple((
+    let mut parser = tuple((
         media_message,
         SP,
         body_fields,
@@ -161,7 +161,7 @@ fn body_type_msg_limited<'a>(
 
 /// body-type-text = media-text SP body-fields SP body-fld-lines
 fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
-    let parser = tuple((media_text, SP, body_fields, SP, body_fld_lines));
+    let mut parser = tuple((media_text, SP, body_fields, SP, body_fld_lines));
 
     let (remaining, (subtype, _, basic, _, number_of_lines)) = parser(input)?;
 
@@ -181,7 +181,7 @@ fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)>
 ///               body-fld-desc SP body-fld-enc SP
 ///               body-fld-octets
 fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
-    let parser = tuple((
+    let mut parser = tuple((
         body_fld_param,
         SP,
         body_fld_id,
@@ -213,10 +213,10 @@ fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
 
 /// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
 fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(istr, istr)>> {
-    let parser = alt((
+    let mut parser = alt((
         delimited(
             tag(b"("),
-            separated_nonempty_list(
+            separated_list1(
                 SP,
                 map(tuple((string, SP, string)), |(key, _, value)| (key, value)),
             ),
@@ -359,7 +359,7 @@ fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
             Some(item) => vec![item],
             None => vec![],
         }),
-        delimited(tag(b"("), separated_nonempty_list(SP, string), tag(b")")),
+        delimited(tag(b"("), separated_list1(SP, string), tag(b")")),
     ))(input)
 }
 
@@ -404,7 +404,7 @@ fn body_extension_limited<'a>(
         recognize(number),
         recognize(delimited(
             tag(b"("),
-            separated_nonempty_list(SP, body_extension),
+            separated_list1(SP, body_extension),
             tag(b")"),
         )),
     ))(input)
@@ -427,7 +427,7 @@ fn body_type_mpart_limited(
         )));
     }
 
-    let parser = tuple((
+    let mut parser = tuple((
         many1(body(remaining_recursion)),
         SP,
         media_subtype,
@@ -526,7 +526,7 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 ///
 /// Defined in [MIME-IMT]
 fn media_basic(input: &[u8]) -> IResult<&[u8], (istr, istr)> {
-    let parser = tuple((string, SP, media_subtype));
+    let mut parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
 
@@ -561,7 +561,7 @@ fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
 ///
 /// "text" "?????" basic specific-for-text extension
 fn media_text(input: &[u8]) -> IResult<&[u8], istr> {
-    let parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
+    let mut parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;
 

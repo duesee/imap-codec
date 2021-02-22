@@ -14,7 +14,7 @@ use nom::{
 ///               addr-mailbox SP
 ///               addr-host ")"
 pub(crate) fn address(input: &[u8]) -> IResult<&[u8], Address> {
-    let parser = delimited(
+    let mut parser = delimited(
         tag(b"("),
         tuple((addr_name, SP, addr_adl, SP, addr_mailbox, SP, addr_host)),
         tag(b")"),
