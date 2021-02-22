@@ -16,13 +16,6 @@ This is (probably) the most complete IMAP implementation in Rust available. Only
 
 # Usage
 
-This crate is not yet on crates.io. You can use it directly from GitHub. Just make sure to keep your Cargo.lock file.
-
-```toml
-[dependencies]
-imap-codec = { git = "https://github.com/duesee/imap-codec" }
-```
-
 ```rust
 use imap_codec::{
     codec::Serialize,        // This trait provides the `serialize` method.
