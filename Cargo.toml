@@ -2,7 +2,7 @@
 name = "imap-codec"
 description = "Low-level IMAP Parser and Serializer"
 keywords = ["email", "imap", "parser", "codec"]
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Damian Poddebniak <poddebniak@fh-muenster.de>"]
 repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
