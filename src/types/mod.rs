@@ -38,3 +38,17 @@ impl Encode for AuthMechanism {
         }
     }
 }
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CompressionAlgorithm {
+    Deflate,
+}
+
+impl Encode for CompressionAlgorithm {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
+        }
+    }
+}

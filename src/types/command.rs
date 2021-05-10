@@ -11,7 +11,7 @@ use crate::{
         mailbox::{ListMailbox, Mailbox},
         response::Capability,
         sequence::{Sequence, ToSequence},
-        AuthMechanism,
+        AuthMechanism, CompressionAlgorithm,
     },
     utils::{gen_tag, join_serializable},
 };
@@ -1380,6 +1380,9 @@ pub enum CommandBody {
 
     /// ----- Enable Extension (https://tools.ietf.org/html/rfc5161)
     Enable { capabilities: Vec<Capability> },
+
+    /// ----- Compress Extension (https://tools.ietf.org/html/rfc4978) -----
+    Compress { algorithm: CompressionAlgorithm },
 }
 
 impl CommandBody {
@@ -1413,6 +1416,7 @@ impl CommandBody {
             Copy { .. } => "COPY",
             Idle => "IDLE",
             Enable { .. } => "ENABLE",
+            Compress { .. } => "COMPRESS",
         }
     }
 }
@@ -1631,6 +1635,10 @@ impl Encode for CommandBody {
             CommandBody::Enable { capabilities } => {
                 writer.write_all(b"ENABLE ")?;
                 join_serializable(capabilities, b" ", writer)
+            }
+            CommandBody::Compress { algorithm } => {
+                writer.write_all(b"COMPRESS ")?;
+                algorithm.encode(writer)
             }
         }
     }

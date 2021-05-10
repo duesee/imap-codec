@@ -9,7 +9,7 @@ use crate::{
         envelope::Envelope,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
-        AuthMechanism,
+        AuthMechanism, CompressionAlgorithm,
     },
     utils::{escape_quoted, join, join_serializable},
 };
@@ -749,6 +749,9 @@ pub enum Code {
 
     /// IMAP4 Login Referrals (RFC 2221)
     Referral(String), // TODO: the imap url is more complicated than that...
+
+    // The IMAP COMPRESS Extension (RFC 4978)
+    CompressionActive,
 }
 
 impl Code {
@@ -783,6 +786,7 @@ impl std::fmt::Display for Code {
             },
             // RFC 2221
             Code::Referral(url) => write!(f, "REFERRAL {}", url),
+            Code::CompressionActive => write!(f, "COMPRESSIONACTIVE"),
         }
     }
 }
@@ -806,6 +810,8 @@ pub enum Capability {
     LoginReferrals,   // RFC 2221
     SaslIr,           // RFC 4959
     Enable,           // RFC 5161
+    // RFC 4978
+    Compress { algorithm: CompressionAlgorithm },
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
@@ -831,6 +837,9 @@ impl std::fmt::Display for Capability {
             LoginReferrals => write!(f, "LOGIN-REFERRALS"),
             SaslIr => write!(f, "SASL-IR"),
             Enable => write!(f, "ENABLE"),
+            Compress { algorithm } => match algorithm {
+                CompressionAlgorithm::Deflate => write!(f, "COMPRESS=DEFLATE"),
+            },
             Other(atom) => write!(f, "{}", atom),
         }
     }

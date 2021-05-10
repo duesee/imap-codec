@@ -1,5 +1,8 @@
-use crate::{parse::core::atom, types::AuthMechanism};
-use nom::IResult;
+use crate::{
+    parse::core::atom,
+    types::{AuthMechanism, CompressionAlgorithm},
+};
+use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
 pub mod address;
 pub mod body;
@@ -31,6 +34,11 @@ pub(crate) fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     };
 
     Ok((rem, mechanism))
+}
+
+/// algorithm = "DEFLATE"
+pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
+    value(CompressionAlgorithm::Deflate, tag_no_case("DEFLATE"))(input)
 }
 
 #[cfg(test)]

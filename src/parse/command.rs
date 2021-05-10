@@ -1,6 +1,6 @@
 use crate::{
     parse::{
-        auth_type,
+        algorithm, auth_type,
         core::{astring, atom, base64, charset, literal, number, nz_number, tag_imap},
         datetime::{date, date_time},
         flag::{flag, flag_list},
@@ -66,6 +66,7 @@ fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///                rename / select / status /
 ///                subscribe / unsubscribe /
 ///                idle ; RFC 2177
+///                compress ; RFC 4978
 ///
 /// Note: Valid only in Authenticated or Selected state
 fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
@@ -85,6 +86,7 @@ fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         // The formal syntax defines ENABLE in command-any, but describes it to
         // be allowed in the authenticated state only. I will use the authenticated state.
         enable, // RFC 5161
+        compress, // RFC 4978
     ))(input)
 }
 
@@ -250,6 +252,13 @@ fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let (remaining, (_, capabilities)) = parser(input)?;
 
     Ok((remaining, CommandBody::Enable { capabilities }))
+}
+
+/// compress = "COMPRESS" SP algorithm
+pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
+    map(preceded(tag_no_case("COMPRESS "), algorithm), |algorithm| {
+        CommandBody::Compress { algorithm }
+    })(input)
 }
 
 /// This parser must be executed *instead* of the command parser

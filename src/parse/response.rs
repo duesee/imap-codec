@@ -1,6 +1,6 @@
 use crate::{
     parse::{
-        auth_type,
+        algorithm, auth_type,
         core::{atom, base64, charset, is_text_char, nz_number, tag_imap, text},
         flag::flag_perm,
         mailbox::mailbox_data,
@@ -99,6 +99,7 @@ fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, txt)> {
 ///                  "UIDNEXT" SP nz-number /
 ///                  "UIDVALIDITY" SP nz-number /
 ///                  "UNSEEN" SP nz-number /
+///                  "COMPRESSIONACTIVE" ; RFC 4978
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
     alt((
@@ -144,6 +145,7 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
             tuple((tag_no_case(b"UNSEEN"), SP, nz_number)),
             |(_, _, num)| Code::Unseen(num),
         ),
+        value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         map(
             tuple((
                 atom,
@@ -185,12 +187,18 @@ fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
     Ok((rem, caps))
 }
 
-/// capability = ("AUTH=" auth-type) / atom
+/// capability = ("AUTH=" auth-type) /
+///              "COMPRESS=" algorithm / ; RFC 4978
+///              atom
 pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
     alt((
         map(
             tuple((tag_no_case(b"AUTH="), auth_type)),
             |(_, mechanism)| Capability::Auth(mechanism),
+        ),
+        map(
+            tuple((tag_no_case(b"COMPRESS="), algorithm)),
+            |(_, algorithm)| Capability::Compress { algorithm },
         ),
         map(atom, |atom| {
             match atom.0.to_lowercase().as_ref() {
