@@ -66,6 +66,7 @@ fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///                rename / select / status /
 ///                subscribe / unsubscribe /
 ///                idle ; RFC 2177
+///                enable ; RFC 5161
 ///                compress ; RFC 4978
 ///
 /// Note: Valid only in Authenticated or Selected state
@@ -85,7 +86,7 @@ fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         idle, // RFC 2177
         // The formal syntax defines ENABLE in command-any, but describes it to
         // be allowed in the authenticated state only. I will use the authenticated state.
-        enable, // RFC 5161
+        enable,   // RFC 5161
         compress, // RFC 4978
     ))(input)
 }
