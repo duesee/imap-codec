@@ -177,13 +177,6 @@ fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    if !caps.contains(&Capability::Imap4Rev1) {
-        return Err(nom::Err::Error(nom::error::make_error(
-            input,
-            nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
-        )));
-    }
-
     Ok((rem, caps))
 }
 
