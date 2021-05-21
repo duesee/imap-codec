@@ -3,8 +3,12 @@ use crate::{
     types::sequence::{SeqNo, Sequence},
 };
 use nom::{
-    branch::alt, bytes::streaming::tag, combinator::map, combinator::value, multi::separated_list1,
-    sequence::tuple, IResult,
+    branch::alt,
+    bytes::streaming::tag,
+    combinator::{map, value},
+    multi::separated_list1,
+    sequence::tuple,
+    IResult,
 };
 
 /// Set of seq-number values, regardless of order.
