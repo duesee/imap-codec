@@ -1,7 +1,9 @@
-use crate::{codec::Encode, parse::sequence::sequence_set};
+use std::io::Write;
+
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::{codec::Encode, parse::sequence::sequence_set};
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

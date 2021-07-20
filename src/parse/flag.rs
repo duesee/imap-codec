@@ -1,10 +1,3 @@
-use crate::{
-    parse::core::atom,
-    types::{
-        core::atm,
-        flag::{Flag, FlagNameAttribute},
-    },
-};
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
@@ -13,6 +6,14 @@ use nom::{
     multi::{separated_list0, separated_list1},
     sequence::{delimited, preceded},
     IResult,
+};
+
+use crate::{
+    parse::core::atom,
+    types::{
+        core::atm,
+        flag::{Flag, FlagNameAttribute},
+    },
 };
 
 /// flag = "\Answered" / "\Flagged" / "\Deleted" / "\Seen" / "\Draft" /

@@ -1,6 +1,8 @@
-use crate::{codec::Encode, types::core::Tag};
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::{borrow::Cow, io::Write, iter};
+
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+
+use crate::{codec::Encode, types::core::Tag};
 
 pub(crate) fn gen_tag() -> Tag {
     let mut rng = thread_rng();

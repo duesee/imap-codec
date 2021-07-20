@@ -1,9 +1,11 @@
 // ### 2.3.2. Flags Message Attribute
 
-use crate::{codec::Encode, types::core::Atom};
+use std::io::Write;
+
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::{codec::Encode, types::core::Atom};
 
 /// A list of zero or more named tokens associated with the message.  A
 /// flag is set by its addition to this list, and is cleared by its

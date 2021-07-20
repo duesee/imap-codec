@@ -1,11 +1,13 @@
+use std::io::Write;
+
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     types::{address::Address, core::NString},
     List1OrNil,
 };
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::io::Write;
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,

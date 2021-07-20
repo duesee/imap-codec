@@ -1,8 +1,5 @@
-use crate::{
-    parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, txt, Charset, Tag},
-    utils::unescape_quoted,
-};
+use std::{borrow::Cow, str::from_utf8};
+
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
     branch::alt,
@@ -13,7 +10,12 @@ use nom::{
     sequence::{delimited, terminated, tuple},
     IResult,
 };
-use std::{borrow::Cow, str::from_utf8};
+
+use crate::{
+    parse::mailbox::is_list_wildcards,
+    types::core::{astr, atm, istr, nstr, txt, Charset, Tag},
+    utils::unescape_quoted,
+};
 
 // ----- number -----
 
@@ -258,8 +260,9 @@ pub(crate) fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use assert_matches::assert_matches;
+
+    use super::*;
 
     #[test]
     fn test_atom() {

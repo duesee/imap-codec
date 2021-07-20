@@ -1,10 +1,3 @@
-use crate::{
-    parse::core::{astring, nz_number},
-    types::{
-        core::astr,
-        data_items::{Part, PartSpecifier, Section},
-    },
-};
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
@@ -13,6 +6,14 @@ use nom::{
     multi::separated_list1,
     sequence::{delimited, tuple},
     IResult,
+};
+
+use crate::{
+    parse::core::{astring, nz_number},
+    types::{
+        core::astr,
+        data_items::{Part, PartSpecifier, Section},
+    },
 };
 
 /// section = "[" [section-spec] "]"

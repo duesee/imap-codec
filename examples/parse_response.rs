@@ -1,5 +1,6 @@
-use imap_codec::parse::response::response;
 use std::io::{Read, Result as IoResult, Write};
+
+use imap_codec::parse::response::response;
 
 pub fn read_file(path: &str) -> IoResult<Vec<u8>> {
     let mut file = std::fs::File::open(path)?;

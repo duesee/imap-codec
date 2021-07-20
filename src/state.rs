@@ -53,9 +53,10 @@
 //! (7) LOGOUT command, server shutdown, or connection closed
 //! ```
 
-use crate::types::mailbox::Mailbox;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
+
+use crate::types::mailbox::Mailbox;
 
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]

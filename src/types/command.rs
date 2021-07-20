@@ -2,6 +2,12 @@
 //!
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
+use std::io::Write;
+
+use chrono::{DateTime, FixedOffset, NaiveDate};
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     types::{
@@ -15,10 +21,6 @@ use crate::{
     },
     utils::{gen_tag, join_serializable},
 };
-use chrono::{DateTime, FixedOffset, NaiveDate};
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::io::Write;
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1937,6 +1939,10 @@ impl Encode for SearchKey {
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
+    use chrono::{SubsecRound, Utc};
+
     use crate::{
         codec::Encode,
         types::{
@@ -1949,8 +1955,6 @@ mod test {
             AuthMechanism,
         },
     };
-    use chrono::{SubsecRound, Utc};
-    use std::convert::TryInto;
 
     #[test]
     fn test_command_new() {

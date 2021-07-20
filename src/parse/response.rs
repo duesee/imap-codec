@@ -1,3 +1,15 @@
+use std::str::from_utf8;
+
+use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
+use nom::{
+    branch::alt,
+    bytes::streaming::{tag, tag_no_case, take_while1},
+    combinator::{map, map_res, opt, value},
+    multi::{many1, separated_list1},
+    sequence::{delimited, preceded, terminated, tuple},
+    IResult,
+};
+
 use crate::{
     parse::{
         algorithm, auth_type,
@@ -11,16 +23,6 @@ use crate::{
         response::{Capability, Code, Continuation, Data, Response, Status},
     },
 };
-use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
-use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while1},
-    combinator::{map, map_res, opt, value},
-    multi::{many1, separated_list1},
-    sequence::{delimited, preceded, terminated, tuple},
-    IResult,
-};
-use std::str::from_utf8;
 
 // ----- greeting -----
 

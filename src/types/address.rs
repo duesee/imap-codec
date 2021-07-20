@@ -1,7 +1,9 @@
-use crate::{codec::Encode, types::core::NString};
+use std::io::Write;
+
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::{codec::Encode, types::core::NString};
 
 /// An address structure describes an electronic mail address.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]

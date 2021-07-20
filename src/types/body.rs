@@ -1,3 +1,8 @@
+use std::io::Write;
+
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     types::{
@@ -6,9 +11,6 @@ use crate::{
     },
     List1AttributeValueOrNil, List1OrNil,
 };
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::io::Write;
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

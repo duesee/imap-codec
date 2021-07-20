@@ -1,8 +1,9 @@
+use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
+
 use crate::{
     parse::core::atom,
     types::{AuthMechanism, CompressionAlgorithm},
 };
-use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
 pub mod address;
 pub mod body;
@@ -43,9 +44,10 @@ pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use super::auth_type;
     use crate::types::AuthMechanism;
-    use std::convert::TryInto;
 
     #[test]
     fn test_auth_type() {

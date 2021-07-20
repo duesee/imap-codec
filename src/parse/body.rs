@@ -1,3 +1,13 @@
+use abnf_core::streaming::SP;
+use nom::{
+    branch::alt,
+    bytes::streaming::{tag, tag_no_case},
+    combinator::{map, opt, recognize},
+    multi::{many0, many1, separated_list1},
+    sequence::{delimited, preceded, tuple},
+    IResult,
+};
+
 use crate::{
     parse::{
         core::{nil, nstring, number, string},
@@ -10,15 +20,6 @@ use crate::{
         },
         core::{istr, nstr},
     },
-};
-use abnf_core::streaming::SP;
-use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt, recognize},
-    multi::{many0, many1, separated_list1},
-    sequence::{delimited, preceded, tuple},
-    IResult,
 };
 
 /// body = "(" (body-type-1part / body-type-mpart) ")"

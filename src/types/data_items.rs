@@ -1,7 +1,9 @@
-use crate::{codec::Encode, types::core::AString, utils::join_serializable};
+use std::io::Write;
+
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::{codec::Encode, types::core::AString, utils::join_serializable};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.

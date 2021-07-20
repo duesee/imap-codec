@@ -1,7 +1,3 @@
-use crate::{
-    parse::core::nz_number,
-    types::sequence::{SeqNo, Sequence},
-};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -9,6 +5,11 @@ use nom::{
     multi::separated_list1,
     sequence::tuple,
     IResult,
+};
+
+use crate::{
+    parse::core::nz_number,
+    types::sequence::{SeqNo, Sequence},
 };
 
 /// Set of seq-number values, regardless of order.
