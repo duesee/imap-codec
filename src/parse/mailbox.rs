@@ -1,3 +1,13 @@
+use abnf_core::streaming::{DQUOTE, SP};
+use nom::{
+    branch::alt,
+    bytes::streaming::{tag, tag_no_case, take_while1},
+    combinator::{map, opt, value},
+    multi::many0,
+    sequence::{delimited, preceded, tuple},
+    IResult,
+};
+
 use crate::{
     parse::{
         core::{
@@ -12,15 +22,6 @@ use crate::{
         mailbox::{ListMailbox, Mailbox},
         response::Data,
     },
-};
-use abnf_core::streaming::{DQUOTE, SP};
-use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while1},
-    combinator::{map, opt, value},
-    multi::many0,
-    sequence::{delimited, preceded, tuple},
-    IResult,
 };
 
 /// list-mailbox = 1*list-char / string

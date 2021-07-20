@@ -1,12 +1,13 @@
-use crate::{
-    parse::core::nstring,
-    types::{address::Address, core::nstr},
-};
 use abnf_core::streaming::SP;
 use nom::{
     bytes::streaming::tag,
     sequence::{delimited, tuple},
     IResult,
+};
+
+use crate::{
+    parse::core::nstring,
+    types::{address::Address, core::nstr},
 };
 
 /// address = "(" addr-name SP

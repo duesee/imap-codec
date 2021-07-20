@@ -1,10 +1,3 @@
-use crate::{
-    parse::{
-        address::address,
-        core::{nil, nstring},
-    },
-    types::{address::Address, core::nstr, envelope::Envelope},
-};
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
@@ -13,6 +6,14 @@ use nom::{
     multi::many1,
     sequence::{delimited, tuple},
     IResult,
+};
+
+use crate::{
+    parse::{
+        address::address,
+        core::{nil, nstring},
+    },
+    types::{address::Address, core::nstr, envelope::Envelope},
 };
 
 /// envelope = "("

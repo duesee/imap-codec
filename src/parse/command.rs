@@ -1,3 +1,13 @@
+use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
+use nom::{
+    branch::alt,
+    bytes::streaming::{tag, tag_no_case},
+    combinator::{map, map_opt, map_res, opt, value},
+    multi::{many1, separated_list0, separated_list1},
+    sequence::{delimited, preceded, terminated, tuple},
+    IResult,
+};
+
 use crate::{
     parse::{
         algorithm, auth_type,
@@ -17,15 +27,6 @@ use crate::{
         flag::{Flag, StoreResponse, StoreType},
         AuthMechanism,
     },
-};
-use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
-use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{map, map_opt, map_res, opt, value},
-    multi::{many1, separated_list0, separated_list1},
-    sequence::{delimited, preceded, terminated, tuple},
-    IResult,
 };
 
 /// command = tag SP (command-any /
@@ -771,12 +772,13 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use super::*;
     use crate::types::{
         response::Capability,
         sequence::{SeqNo, Sequence},
     };
-    use std::convert::TryInto;
 
     #[test]
     fn test_fetch() {

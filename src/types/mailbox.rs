@@ -1,11 +1,13 @@
+use std::{convert::TryFrom, io::Write};
+
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, io::Write};
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

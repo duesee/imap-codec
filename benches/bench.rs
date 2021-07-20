@@ -1,6 +1,8 @@
 #![feature(test)]
 extern crate test;
 
+use std::convert::TryInto;
+
 use imap_codec::{
     codec::Encode,
     types::{
@@ -9,7 +11,6 @@ use imap_codec::{
         response::{Code, Response, Status},
     },
 };
-use std::convert::TryInto;
 use test::Bencher;
 
 #[bench]

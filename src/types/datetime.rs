@@ -1,6 +1,8 @@
-use crate::codec::Encode;
-use chrono::{DateTime, FixedOffset, NaiveDate};
 use std::io::Write;
+
+use chrono::{DateTime, FixedOffset, NaiveDate};
+
+use crate::codec::Encode;
 
 impl Encode for DateTime<FixedOffset> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {

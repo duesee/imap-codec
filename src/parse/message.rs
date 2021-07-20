@@ -1,3 +1,13 @@
+use abnf_core::streaming::SP;
+use nom::{
+    branch::alt,
+    bytes::streaming::{tag, tag_no_case},
+    combinator::{map, opt},
+    multi::separated_list1,
+    sequence::{delimited, terminated, tuple},
+    IResult,
+};
+
 use crate::{
     parse::{
         body::body,
@@ -8,15 +18,6 @@ use crate::{
         section::section,
     },
     types::response::{Data, DataItemResponse},
-};
-use abnf_core::streaming::SP;
-use nom::{
-    branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt},
-    multi::separated_list1,
-    sequence::{delimited, terminated, tuple},
-    IResult,
 };
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))

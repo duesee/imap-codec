@@ -1,5 +1,6 @@
-use codec::Encode;
 use std::io::Write;
+
+use codec::Encode;
 
 pub mod codec;
 pub mod parse;

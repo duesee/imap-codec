@@ -1,7 +1,3 @@
-use crate::{
-    parse::core::{number, nz_number},
-    types::{command::StatusItem, response::StatusItemResponse},
-};
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
@@ -10,6 +6,11 @@ use nom::{
     multi::separated_list1,
     sequence::tuple,
     IResult,
+};
+
+use crate::{
+    parse::core::{number, nz_number},
+    types::{command::StatusItem, response::StatusItemResponse},
 };
 
 /// status-att = "MESSAGES" / "RECENT" / "UIDNEXT" / "UIDVALIDITY" / "UNSEEN"

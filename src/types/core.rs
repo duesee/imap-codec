@@ -6,14 +6,16 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
+use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
+
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     parse::core::{is_astring_char, is_atom_char, is_text_char},
     utils::escape_quoted,
 };
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
 
 // ## 4.1. Atom
 

@@ -1,5 +1,11 @@
 //! # 7. Server Responses
 
+use std::{convert::TryInto, io::Write};
+
+use chrono::{DateTime, FixedOffset};
+#[cfg(feature = "serdex")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     codec::Encode,
     types::{
@@ -13,10 +19,6 @@ use crate::{
     },
     utils::{escape_quoted, join, join_serializable},
 };
-use chrono::{DateTime, FixedOffset};
-#[cfg(feature = "serdex")]
-use serde::{Deserialize, Serialize};
-use std::{convert::TryInto, io::Write};
 
 /// Server responses are in three forms.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -1015,8 +1017,9 @@ impl Encode for DataItemResponse {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use std::convert::TryFrom;
+
+    use super::*;
 
     #[test]
     fn test_status() {

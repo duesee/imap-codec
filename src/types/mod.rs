@@ -1,7 +1,9 @@
-use crate::{codec::Encode, types::core::Atom};
+use std::io::Write;
+
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::{codec::Encode, types::core::Atom};
 
 pub mod address;
 pub mod body;
