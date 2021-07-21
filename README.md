@@ -1,3 +1,6 @@
+![CI](https://github.com/duesee/imap-codec/actions/workflows/ci.yml/badge.svg)
+![Scheduled](https://github.com/duesee/imap-codec/actions/workflows/scheduled.yml/badge.svg)
+
 # IMAP Protocol
 
 This library provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
