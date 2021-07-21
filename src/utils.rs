@@ -6,10 +6,13 @@ use crate::{codec::Encode, types::core::Tag};
 
 pub(crate) fn gen_tag() -> Tag {
     let mut rng = thread_rng();
-    Tag(iter::repeat(())
+    let tag: String = iter::repeat(())
         .map(|()| rng.sample(Alphanumeric))
+        .map(char::from)
         .take(8)
-        .collect())
+        .collect();
+
+    Tag(tag)
 }
 
 pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
