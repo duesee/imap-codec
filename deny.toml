@@ -1,0 +1,9 @@
+[bans]
+multiple-versions = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git      = "deny"
+
+[licenses]
+allow = [ "Apache-2.0", "MIT" ]
