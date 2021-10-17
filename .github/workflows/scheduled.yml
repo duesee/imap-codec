@@ -1,7 +1,7 @@
 name: Scheduled
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '43 21 * * 3,0' # At 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
 
 jobs:
   audit:
