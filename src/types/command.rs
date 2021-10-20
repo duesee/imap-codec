@@ -1941,7 +1941,7 @@ impl Encode for SearchKey {
 mod test {
     use std::convert::TryInto;
 
-    use chrono::{SubsecRound, Utc};
+    use chrono::DateTime;
 
     use crate::{
         codec::Encode,
@@ -2001,13 +2001,13 @@ mod test {
             Command::append(
                 "inbox",
                 vec![],
-                Some(Utc::now().trunc_subsecs(0).into()),
+                Some(DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap()),
                 vec![0xff, 0xff, 0xff],
             ),
             Command::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
-                Some(Utc::now().trunc_subsecs(0).into()),
+                Some(DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap()),
                 vec![0xff, 0xff, 0xff],
             ),
             Command::check(),
