@@ -495,6 +495,7 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
         value(DataItem::Rfc822Header, tag_no_case(b"RFC822.HEADER")),
         value(DataItem::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
         value(DataItem::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
+        value(DataItem::Rfc822, tag_no_case(b"RFC822")),
     ))(input)
 }
 
