@@ -777,6 +777,7 @@ mod test {
 
     use super::*;
     use crate::types::{
+        data_items::Section,
         response::Capability,
         sequence::{SeqNo, Sequence},
     };
@@ -792,10 +793,48 @@ mod test {
     #[test]
     fn test_fetch_att() {
         let tests = [
+            (DataItem::Envelope, "ENVELOPE???"),
+            (DataItem::Flags, "FLAGS???"),
+            (DataItem::InternalDate, "INTERNALDATE???"),
             (DataItem::Rfc822, "RFC822???"),
             (DataItem::Rfc822Header, "RFC822.HEADER???"),
             (DataItem::Rfc822Size, "RFC822.SIZE???"),
             (DataItem::Rfc822Text, "RFC822.TEXT???"),
+            (DataItem::Body, "BODY???"),
+            (DataItem::BodyStructure, "BODYSTRUCTURE???"),
+            (DataItem::Uid, "UID???"),
+            (
+                DataItem::BodyExt {
+                    partial: None,
+                    peek: false,
+                    section: None,
+                },
+                "BODY[]???",
+            ),
+            (
+                DataItem::BodyExt {
+                    partial: None,
+                    peek: true,
+                    section: None,
+                },
+                "BODY.PEEK[]???",
+            ),
+            (
+                DataItem::BodyExt {
+                    partial: None,
+                    peek: true,
+                    section: Some(Section::Text(None)),
+                },
+                "BODY.PEEK[TEXT]???",
+            ),
+            (
+                DataItem::BodyExt {
+                    partial: Some((42, 1337)),
+                    peek: true,
+                    section: Some(Section::Text(None)),
+                },
+                "BODY.PEEK[TEXT]<42.1337>???",
+            ),
         ];
 
         let expected_remainder = "???".as_bytes();
