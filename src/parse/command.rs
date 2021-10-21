@@ -790,6 +790,25 @@ mod test {
     }
 
     #[test]
+    fn test_fetch_att() {
+        let tests = [
+            (DataItem::Rfc822, "RFC822???"),
+            (DataItem::Rfc822Header, "RFC822.HEADER???"),
+            (DataItem::Rfc822Size, "RFC822.SIZE???"),
+            (DataItem::Rfc822Text, "RFC822.TEXT???"),
+        ];
+
+        let expected_remainder = "???".as_bytes();
+
+        for (expected, test) in tests {
+            let (got_remainder, got) = fetch_att(test.as_bytes()).unwrap();
+
+            assert_eq!(expected, got);
+            assert_eq!(expected_remainder, got_remainder);
+        }
+    }
+
+    #[test]
     fn test_search() {
         use SearchKey::*;
         use SeqNo::Value;
