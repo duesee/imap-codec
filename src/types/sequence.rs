@@ -1,4 +1,7 @@
-use std::io::Write;
+use std::{
+    convert::{TryFrom, TryInto},
+    io::Write,
+};
 
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
@@ -138,6 +141,22 @@ impl ToSequence for &str {
         } else {
             Err(())
         }
+    }
+}
+
+impl TryFrom<&str> for SequenceSet {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.to_sequence()
+    }
+}
+
+impl TryFrom<String> for SequenceSet {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
     }
 }
 
