@@ -22,8 +22,8 @@ pub enum Macro {
 }
 
 impl Macro {
-    pub fn expand(&self) -> Vec<DataItem> {
-        use DataItem::*;
+    pub fn expand(&self) -> Vec<FetchAttribute> {
+        use FetchAttribute::*;
 
         match self {
             Self::All => vec![Flags, InternalDate, Rfc822Size, Envelope],
@@ -46,21 +46,21 @@ impl Encode for Macro {
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MacroOrDataItems {
+pub enum MacroOrFetchAttributes {
     Macro(Macro),
-    DataItems(Vec<DataItem>),
+    FetchAttributes(Vec<FetchAttribute>),
 }
 
-impl Encode for MacroOrDataItems {
+impl Encode for MacroOrFetchAttributes {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            MacroOrDataItems::Macro(m) => m.encode(writer),
-            MacroOrDataItems::DataItems(items) => {
-                if items.len() == 1 {
-                    items[0].encode(writer)
+            MacroOrFetchAttributes::Macro(m) => m.encode(writer),
+            MacroOrFetchAttributes::FetchAttributes(attributes) => {
+                if attributes.len() == 1 {
+                    attributes[0].encode(writer)
                 } else {
                     writer.write_all(b"(")?;
-                    join_serializable(items.as_slice(), b" ", writer)?;
+                    join_serializable(attributes.as_slice(), b" ", writer)?;
                     writer.write_all(b")")
                 }
             }
@@ -68,22 +68,22 @@ impl Encode for MacroOrDataItems {
     }
 }
 
-impl From<Macro> for MacroOrDataItems {
+impl From<Macro> for MacroOrFetchAttributes {
     fn from(m: Macro) -> Self {
-        MacroOrDataItems::Macro(m)
+        MacroOrFetchAttributes::Macro(m)
     }
 }
 
-impl From<Vec<DataItem>> for MacroOrDataItems {
-    fn from(items: Vec<DataItem>) -> Self {
-        MacroOrDataItems::DataItems(items)
+impl From<Vec<FetchAttribute>> for MacroOrFetchAttributes {
+    fn from(attributes: Vec<FetchAttribute>) -> Self {
+        MacroOrFetchAttributes::FetchAttributes(attributes)
     }
 }
 
 /// The currently defined data items that can be fetched are:
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum DataItem {
+pub enum FetchAttribute {
     /// `BODY`
     ///
     /// Non-extensible form of `BODYSTRUCTURE`.
@@ -191,11 +191,11 @@ pub enum DataItem {
     Uid,
 }
 
-impl Encode for DataItem {
+impl Encode for FetchAttribute {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            DataItem::Body => writer.write_all(b"BODY"),
-            DataItem::BodyExt {
+            FetchAttribute::Body => writer.write_all(b"BODY"),
+            FetchAttribute::BodyExt {
                 section,
                 partial,
                 peek,
@@ -215,15 +215,15 @@ impl Encode for DataItem {
 
                 Ok(())
             }
-            DataItem::BodyStructure => writer.write_all(b"BODYSTRUCTURE"),
-            DataItem::Envelope => writer.write_all(b"ENVELOPE"),
-            DataItem::Flags => writer.write_all(b"FLAGS"),
-            DataItem::InternalDate => writer.write_all(b"INTERNALDATE"),
-            DataItem::Rfc822 => writer.write_all(b"RFC822"),
-            DataItem::Rfc822Header => writer.write_all(b"RFC822.HEADER"),
-            DataItem::Rfc822Size => writer.write_all(b"RFC822.SIZE"),
-            DataItem::Rfc822Text => writer.write_all(b"RFC822.TEXT"),
-            DataItem::Uid => writer.write_all(b"UID"),
+            FetchAttribute::BodyStructure => writer.write_all(b"BODYSTRUCTURE"),
+            FetchAttribute::Envelope => writer.write_all(b"ENVELOPE"),
+            FetchAttribute::Flags => writer.write_all(b"FLAGS"),
+            FetchAttribute::InternalDate => writer.write_all(b"INTERNALDATE"),
+            FetchAttribute::Rfc822 => writer.write_all(b"RFC822"),
+            FetchAttribute::Rfc822Header => writer.write_all(b"RFC822.HEADER"),
+            FetchAttribute::Rfc822Size => writer.write_all(b"RFC822.SIZE"),
+            FetchAttribute::Rfc822Text => writer.write_all(b"RFC822.TEXT"),
+            FetchAttribute::Uid => writer.write_all(b"UID"),
         }
     }
 }

@@ -7,7 +7,7 @@ use imap_codec::{
     codec::Encode,
     types::{
         command::Command,
-        data_items::{DataItem, MacroOrDataItems, Section},
+        fetch_attributes::{FetchAttribute, MacroOrFetchAttributes, Section},
         response::{Code, Response, Status},
     },
 };
@@ -18,16 +18,16 @@ fn bench_command_serialize(b: &mut Bencher) {
     // Setup
     let cmd = Command::fetch(
         "1:*,2,3,4,5,6,7,8,9",
-        MacroOrDataItems::DataItems(vec![
-            DataItem::Rfc822Size,
-            DataItem::BodyExt {
+        MacroOrFetchAttributes::FetchAttributes(vec![
+            FetchAttribute::Rfc822Size,
+            FetchAttribute::BodyExt {
                 section: Some(Section::Text(None)),
                 peek: true,
                 partial: Some((1, 100)),
             },
-            DataItem::BodyStructure,
-            DataItem::Body,
-            DataItem::Envelope,
+            FetchAttribute::BodyStructure,
+            FetchAttribute::Body,
+            FetchAttribute::Envelope,
         ]),
         true,
     )

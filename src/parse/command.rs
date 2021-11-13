@@ -23,7 +23,7 @@ use crate::{
     types::{
         command::{Command, CommandBody, SearchKey},
         core::astr,
-        data_items::{DataItem, Macro, MacroOrDataItems},
+        fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes},
         flag::{Flag, StoreResponse, StoreType},
         AuthMechanism,
     },
@@ -214,9 +214,15 @@ fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
         delimited(tag(b"("), separated_list0(SP, status_att), tag(b")")),
     ));
 
-    let (remaining, (_, _, mailbox, _, items)) = parser(input)?;
+    let (remaining, (_, _, mailbox, _, attributes)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Status { mailbox, items }))
+    Ok((
+        remaining,
+        CommandBody::Status {
+            mailbox,
+            attributes,
+        },
+    ))
 }
 
 /// subscribe = "SUBSCRIBE" SP mailbox
@@ -419,26 +425,35 @@ fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
         sequence_set,
         SP,
         alt((
-            value(MacroOrDataItems::Macro(Macro::All), tag_no_case(b"ALL")),
-            value(MacroOrDataItems::Macro(Macro::Fast), tag_no_case(b"FAST")),
-            value(MacroOrDataItems::Macro(Macro::Full), tag_no_case(b"FULL")),
+            value(
+                MacroOrFetchAttributes::Macro(Macro::All),
+                tag_no_case(b"ALL"),
+            ),
+            value(
+                MacroOrFetchAttributes::Macro(Macro::Fast),
+                tag_no_case(b"FAST"),
+            ),
+            value(
+                MacroOrFetchAttributes::Macro(Macro::Full),
+                tag_no_case(b"FULL"),
+            ),
             map(fetch_att, |fetch_att| {
-                MacroOrDataItems::DataItems(vec![fetch_att])
+                MacroOrFetchAttributes::FetchAttributes(vec![fetch_att])
             }),
             map(
                 delimited(tag(b"("), separated_list0(SP, fetch_att), tag(b")")),
-                MacroOrDataItems::DataItems,
+                MacroOrFetchAttributes::FetchAttributes,
             ),
         )),
     ));
 
-    let (remaining, (_, _, sequence_set, _, items)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, attributes)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::Fetch {
             sequence_set,
-            items,
+            attributes,
             uid: false,
         },
     ))
@@ -452,12 +467,12 @@ fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///             "UID" /
 ///             "BODY" section ["<" number "." nz-number ">"] /
 ///             "BODY.PEEK" section ["<" number "." nz-number ">"]
-fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
+fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
     alt((
-        value(DataItem::Envelope, tag_no_case(b"ENVELOPE")),
-        value(DataItem::Flags, tag_no_case(b"FLAGS")),
-        value(DataItem::InternalDate, tag_no_case(b"INTERNALDATE")),
-        value(DataItem::BodyStructure, tag_no_case(b"BODYSTRUCTURE")),
+        value(FetchAttribute::Envelope, tag_no_case(b"ENVELOPE")),
+        value(FetchAttribute::Flags, tag_no_case(b"FLAGS")),
+        value(FetchAttribute::InternalDate, tag_no_case(b"INTERNALDATE")),
+        value(FetchAttribute::BodyStructure, tag_no_case(b"BODYSTRUCTURE")),
         map(
             tuple((
                 tag_no_case(b"BODY.PEEK"),
@@ -468,7 +483,7 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
                     tag(b">"),
                 )),
             )),
-            |(_, section, byterange)| DataItem::BodyExt {
+            |(_, section, byterange)| FetchAttribute::BodyExt {
                 section,
                 partial: byterange.map(|(start, _, end)| (start, end)),
                 peek: true,
@@ -484,18 +499,18 @@ fn fetch_att(input: &[u8]) -> IResult<&[u8], DataItem> {
                     tag(b">"),
                 )),
             )),
-            |(_, section, byterange)| DataItem::BodyExt {
+            |(_, section, byterange)| FetchAttribute::BodyExt {
                 section,
                 partial: byterange.map(|(start, _, end)| (start, end)),
                 peek: false,
             },
         ),
-        value(DataItem::Body, tag_no_case(b"BODY")),
-        value(DataItem::Uid, tag_no_case(b"UID")),
-        value(DataItem::Rfc822Header, tag_no_case(b"RFC822.HEADER")),
-        value(DataItem::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
-        value(DataItem::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
-        value(DataItem::Rfc822, tag_no_case(b"RFC822")),
+        value(FetchAttribute::Body, tag_no_case(b"BODY")),
+        value(FetchAttribute::Uid, tag_no_case(b"UID")),
+        value(FetchAttribute::Rfc822Header, tag_no_case(b"RFC822.HEADER")),
+        value(FetchAttribute::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
+        value(FetchAttribute::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
+        value(FetchAttribute::Rfc822, tag_no_case(b"RFC822")),
     ))(input)
 }
 
@@ -777,7 +792,7 @@ mod test {
 
     use super::*;
     use crate::types::{
-        data_items::Section,
+        fetch_attributes::Section,
         response::Capability,
         sequence::{SeqNo, Sequence, SequenceSet as SequenceSetData},
     };
@@ -793,18 +808,18 @@ mod test {
     #[test]
     fn test_fetch_att() {
         let tests = [
-            (DataItem::Envelope, "ENVELOPE???"),
-            (DataItem::Flags, "FLAGS???"),
-            (DataItem::InternalDate, "INTERNALDATE???"),
-            (DataItem::Rfc822, "RFC822???"),
-            (DataItem::Rfc822Header, "RFC822.HEADER???"),
-            (DataItem::Rfc822Size, "RFC822.SIZE???"),
-            (DataItem::Rfc822Text, "RFC822.TEXT???"),
-            (DataItem::Body, "BODY???"),
-            (DataItem::BodyStructure, "BODYSTRUCTURE???"),
-            (DataItem::Uid, "UID???"),
+            (FetchAttribute::Envelope, "ENVELOPE???"),
+            (FetchAttribute::Flags, "FLAGS???"),
+            (FetchAttribute::InternalDate, "INTERNALDATE???"),
+            (FetchAttribute::Rfc822, "RFC822???"),
+            (FetchAttribute::Rfc822Header, "RFC822.HEADER???"),
+            (FetchAttribute::Rfc822Size, "RFC822.SIZE???"),
+            (FetchAttribute::Rfc822Text, "RFC822.TEXT???"),
+            (FetchAttribute::Body, "BODY???"),
+            (FetchAttribute::BodyStructure, "BODYSTRUCTURE???"),
+            (FetchAttribute::Uid, "UID???"),
             (
-                DataItem::BodyExt {
+                FetchAttribute::BodyExt {
                     partial: None,
                     peek: false,
                     section: None,
@@ -812,7 +827,7 @@ mod test {
                 "BODY[]???",
             ),
             (
-                DataItem::BodyExt {
+                FetchAttribute::BodyExt {
                     partial: None,
                     peek: true,
                     section: None,
@@ -820,7 +835,7 @@ mod test {
                 "BODY.PEEK[]???",
             ),
             (
-                DataItem::BodyExt {
+                FetchAttribute::BodyExt {
                     partial: None,
                     peek: true,
                     section: Some(Section::Text(None)),
@@ -828,7 +843,7 @@ mod test {
                 "BODY.PEEK[TEXT]???",
             ),
             (
-                DataItem::BodyExt {
+                FetchAttribute::BodyExt {
                     partial: Some((42, 1337)),
                     peek: true,
                     section: Some(Section::Text(None)),

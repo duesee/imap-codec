@@ -11,8 +11,8 @@ use crate::{
     types::{
         body::BodyStructure,
         core::{Atom, Charset, NString, Tag, Text},
-        data_items::Section,
         envelope::Envelope,
+        fetch_attributes::Section,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
         AuthMechanism, CompressionAlgorithm,
@@ -348,7 +348,7 @@ pub enum Data {
         /// Name
         mailbox: Mailbox,
         /// Status parenthesized list
-        items: Vec<StatusItemResponse>,
+        attributes: Vec<StatusAttributeValue>,
     },
 
     /// ### 7.2.5. SEARCH Response
@@ -469,7 +469,7 @@ pub enum Data {
         /// Message SEQ or UID
         seq_or_uid: u32,
         /// Message data
-        items: Vec<DataItemResponse>,
+        attributes: Vec<MessageAttribute>,
     },
 
     /// ----- ENABLE Extension (RFC 5161) -----
@@ -519,11 +519,14 @@ impl Encode for Data {
                 writer.write_all(b" ")?;
                 mailbox.encode(writer)?;
             }
-            Data::Status { mailbox, items } => {
+            Data::Status {
+                mailbox,
+                attributes,
+            } => {
                 writer.write_all(b"* STATUS ")?;
                 mailbox.encode(writer)?;
                 writer.write_all(b" (")?;
-                join_serializable(items, b" ", writer)?;
+                join_serializable(attributes, b" ", writer)?;
                 writer.write_all(b")")?;
             }
             Data::Search(seqs) => {
@@ -542,9 +545,12 @@ impl Encode for Data {
             Data::Exists(count) => write!(writer, "* {} EXISTS", count)?,
             Data::Recent(count) => write!(writer, "* {} RECENT", count)?,
             Data::Expunge(msg) => write!(writer, "* {} EXPUNGE", msg)?,
-            Data::Fetch { seq_or_uid, items } => {
+            Data::Fetch {
+                seq_or_uid,
+                attributes,
+            } => {
                 write!(writer, "* {} FETCH (", seq_or_uid)?;
-                join_serializable(items, b" ", writer)?;
+                join_serializable(attributes, b" ", writer)?;
                 writer.write_all(b")")?;
             }
             Data::Enabled { capabilities } => {
@@ -560,7 +566,7 @@ impl Encode for Data {
 /// The currently defined status data items.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StatusItemResponse {
+pub enum StatusAttributeValue {
     /// The number of messages in the mailbox.
     Messages(u32),
 
@@ -579,7 +585,7 @@ pub enum StatusItemResponse {
     Unseen(u32),
 }
 
-impl std::fmt::Display for StatusItemResponse {
+impl std::fmt::Display for StatusAttributeValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::Messages(count) => write!(f, "MESSAGES {}", count),
@@ -591,7 +597,7 @@ impl std::fmt::Display for StatusItemResponse {
     }
 }
 
-impl Encode for StatusItemResponse {
+impl Encode for StatusAttributeValue {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
@@ -856,7 +862,7 @@ impl Encode for Capability {
 /// The current data items are:
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum DataItemResponse {
+pub enum MessageAttribute {
     /// A form of BODYSTRUCTURE without extension data.
     ///
     /// `BODY`
@@ -954,9 +960,9 @@ pub enum DataItemResponse {
     Uid(u32),
 }
 
-impl Encode for DataItemResponse {
+impl Encode for MessageAttribute {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use DataItemResponse::*;
+        use MessageAttribute::*;
 
         match self {
             BodyExt {

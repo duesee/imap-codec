@@ -12,7 +12,7 @@ use crate::{
     codec::Encode,
     types::{
         core::{AString, Atom, Charset, Tag},
-        data_items::MacroOrDataItems,
+        fetch_attributes::MacroOrFetchAttributes,
         flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
         response::Capability,
@@ -130,12 +130,12 @@ impl Command {
         )
     }
 
-    pub fn status<M: Into<Mailbox>>(mailbox: M, items: Vec<StatusItem>) -> Command {
+    pub fn status<M: Into<Mailbox>>(mailbox: M, attributes: Vec<StatusAttribute>) -> Command {
         Command::new(
             gen_tag(),
             CommandBody::Status {
                 mailbox: mailbox.into(),
-                items,
+                attributes,
             },
         )
     }
@@ -180,10 +180,10 @@ impl Command {
         )
     }
 
-    pub fn fetch<S, I>(sequence_set: S, items: I, uid: bool) -> Result<Command, S::Error>
+    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command, S::Error>
     where
         S: TryInto<SequenceSet>,
-        I: Into<MacroOrDataItems>,
+        I: Into<MacroOrFetchAttributes>,
     {
         let sequence_set = sequence_set.try_into()?;
 
@@ -191,7 +191,7 @@ impl Command {
             gen_tag(),
             CommandBody::Fetch {
                 sequence_set,
-                items: items.into(),
+                attributes: attributes.into(),
                 uid,
             },
         ))
@@ -973,11 +973,9 @@ pub enum CommandBody {
     ///   in its results, clients SHOULD NOT expect to be able to
     ///   issue many consecutive STATUS commands and obtain
     ///   reasonable performance.
-    ///
-    /// See [StatusDataItem](StatusDataItem).
     Status {
         mailbox: Mailbox,
-        items: Vec<StatusItem>,
+        attributes: Vec<StatusAttribute>,
     },
 
     /// 6.3.11. APPEND Command
@@ -1193,11 +1191,9 @@ pub enum CommandBody {
     ///   For example, if a client receives an ENVELOPE for a
     ///   message when it already knows the envelope, it can
     ///   safely ignore the newly transmitted envelope.
-    ///
-    /// See [DataItem](../data_items/index.html) for more information.
     Fetch {
         sequence_set: SequenceSet,
-        items: MacroOrDataItems,
+        attributes: MacroOrFetchAttributes,
         uid: bool,
     },
 
@@ -1512,13 +1508,16 @@ impl Encode for CommandBody {
                 writer.write_all(b" ")?;
                 mailbox_wildcard.encode(writer)
             }
-            CommandBody::Status { mailbox, items } => {
+            CommandBody::Status {
+                mailbox,
+                attributes,
+            } => {
                 writer.write_all(b"STATUS")?;
                 writer.write_all(b" ")?;
                 mailbox.encode(writer)?;
                 writer.write_all(b" ")?;
                 writer.write_all(b"(")?;
-                join_serializable(items, b" ", writer)?;
+                join_serializable(attributes, b" ", writer)?;
                 writer.write_all(b")")
             }
             CommandBody::Append {
@@ -1573,7 +1572,7 @@ impl Encode for CommandBody {
             }
             CommandBody::Fetch {
                 sequence_set,
-                items,
+                attributes,
                 uid,
             } => {
                 if *uid {
@@ -1584,7 +1583,7 @@ impl Encode for CommandBody {
 
                 sequence_set.encode(writer)?;
                 writer.write_all(b" ")?;
-                items.encode(writer)
+                attributes.encode(writer)
             }
             CommandBody::Store {
                 sequence_set,
@@ -1649,7 +1648,7 @@ impl Encode for CommandBody {
 /// The currently defined status data items that can be requested.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StatusItem {
+pub enum StatusAttribute {
     /// The number of messages in the mailbox.
     Messages,
 
@@ -1666,14 +1665,14 @@ pub enum StatusItem {
     Unseen,
 }
 
-impl Encode for StatusItem {
+impl Encode for StatusAttribute {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            StatusItem::Messages => writer.write_all(b"MESSAGES"),
-            StatusItem::Recent => writer.write_all(b"RECENT"),
-            StatusItem::UidNext => writer.write_all(b"UIDNEXT"),
-            StatusItem::UidValidity => writer.write_all(b"UIDVALIDITY"),
-            StatusItem::Unseen => writer.write_all(b"UNSEEN"),
+            StatusAttribute::Messages => writer.write_all(b"MESSAGES"),
+            StatusAttribute::Recent => writer.write_all(b"RECENT"),
+            StatusAttribute::UidNext => writer.write_all(b"UIDNEXT"),
+            StatusAttribute::UidValidity => writer.write_all(b"UIDVALIDITY"),
+            StatusAttribute::Unseen => writer.write_all(b"UNSEEN"),
         }
     }
 }
@@ -1946,9 +1945,9 @@ mod test {
     use crate::{
         codec::Encode,
         types::{
-            command::{Command, SearchKey, StatusItem},
+            command::{Command, SearchKey, StatusAttribute},
             core::{AString, IString},
-            data_items::{DataItem, Macro, Part, Section},
+            fetch_attributes::{FetchAttribute, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
             mailbox::{ListMailbox, Mailbox},
             AuthMechanism,
@@ -1996,7 +1995,7 @@ mod test {
             ),
             Command::list("inBoX", ListMailbox::Token("test".into())),
             Command::lsub("INBOX", ListMailbox::String(IString::Quoted("\x7f".into()))),
-            Command::status("inbox", vec![StatusItem::Messages]),
+            Command::status("inbox", vec![StatusAttribute::Messages]),
             Command::append(
                 "inbox",
                 vec![],
@@ -2032,7 +2031,7 @@ mod test {
             ),
             Command::fetch(
                 "1",
-                vec![DataItem::BodyExt {
+                vec![FetchAttribute::BodyExt {
                     partial: None,
                     section: Some(Section::Part(Part(vec![1, 1]))), // TODO: Part must be non-zero.
                     peek: true,

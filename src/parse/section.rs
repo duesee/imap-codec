@@ -12,7 +12,7 @@ use crate::{
     parse::core::{astring, nz_number},
     types::{
         core::astr,
-        data_items::{Part, PartSpecifier, Section},
+        fetch_attributes::{Part, PartSpecifier, Section},
     },
 };
 
