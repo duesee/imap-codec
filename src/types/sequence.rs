@@ -115,40 +115,18 @@ impl Encode for SeqNo {
     }
 }
 
-pub trait ToSequence {
-    fn to_sequence(self) -> Result<SequenceSet, ()>;
-}
+impl TryFrom<&str> for SequenceSet {
+    type Error = ();
 
-impl ToSequence for Sequence {
-    fn to_sequence(self) -> Result<SequenceSet, ()> {
-        Ok(SequenceSet(vec![self]))
-    }
-}
-
-impl ToSequence for SequenceSet {
-    fn to_sequence(self) -> Result<SequenceSet, ()> {
-        Ok(self)
-    }
-}
-
-impl ToSequence for &str {
-    fn to_sequence(self) -> Result<SequenceSet, ()> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         // FIXME: turn incomplete parser to complete?
-        let blocker = format!("{}|", self);
+        let blocker = format!("{}|", value);
 
         if let Ok((b"|", sequence)) = sequence_set(blocker.as_bytes()) {
             Ok(sequence)
         } else {
             Err(())
         }
-    }
-}
-
-impl TryFrom<&str> for SequenceSet {
-    type Error = ();
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        value.to_sequence()
     }
 }
 
@@ -162,7 +140,9 @@ impl TryFrom<String> for SequenceSet {
 
 #[cfg(test)]
 mod test {
-    use super::{SeqNo, Sequence, Strategy, ToSequence};
+    use std::convert::TryFrom;
+
+    use super::{SeqNo, Sequence, Strategy};
     use crate::{codec::Encode, types::sequence::SequenceSet};
 
     #[test]
@@ -185,41 +165,40 @@ mod test {
 
     #[test]
     fn test_to_sequence() {
-        let tests = [
-            ("1", vec![Sequence::Single(SeqNo::Value(1))]),
+        let tests = &[
+            ("1", SequenceSet(vec![Sequence::Single(SeqNo::Value(1))])),
             (
                 "1,2,3",
-                vec![
+                SequenceSet(vec![
                     Sequence::Single(SeqNo::Value(1)),
                     Sequence::Single(SeqNo::Value(2)),
                     Sequence::Single(SeqNo::Value(3)),
-                ],
+                ]),
             ),
-            ("*", vec![Sequence::Single(SeqNo::Largest)]),
+            ("*", SequenceSet(vec![Sequence::Single(SeqNo::Largest)])),
             (
                 "1:2",
-                vec![Sequence::Range(SeqNo::Value(1), SeqNo::Value(2))],
+                SequenceSet(vec![Sequence::Range(SeqNo::Value(1), SeqNo::Value(2))]),
             ),
             (
                 "1:2,3",
-                vec![
+                SequenceSet(vec![
                     Sequence::Range(SeqNo::Value(1), SeqNo::Value(2)),
                     Sequence::Single(SeqNo::Value(3)),
-                ],
+                ]),
             ),
             (
                 "1:2,3,*",
-                vec![
+                SequenceSet(vec![
                     Sequence::Range(SeqNo::Value(1), SeqNo::Value(2)),
                     Sequence::Single(SeqNo::Value(3)),
                     Sequence::Single(SeqNo::Largest),
-                ],
+                ]),
             ),
-        ]
-        .map(|(test, expected)| (test, SequenceSet(expected)));
+        ];
 
-        for (test, expected) in tests.iter() {
-            let got = test.to_sequence().unwrap();
+        for (test, expected) in tests.into_iter() {
+            let got = SequenceSet::try_from(*test).unwrap();
             assert_eq!(*expected, got);
         }
     }
@@ -235,8 +214,8 @@ mod test {
             ("4:6,*", vec![4, 5, 6, 3]),
         ];
 
-        for (test, expected) in tests {
-            let seq_set = test.to_sequence().unwrap();
+        for (test, expected) in tests.into_iter() {
+            let seq_set = SequenceSet::try_from(*test).unwrap();
             let got: Vec<u32> = seq_set.iter(Strategy::Naive { largest: 3 }).collect();
             assert_eq!(*expected, got);
         }

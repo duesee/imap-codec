@@ -2,7 +2,7 @@
 //!
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
-use std::io::Write;
+use std::{convert::TryInto, io::Write};
 
 use chrono::{DateTime, FixedOffset, NaiveDate};
 #[cfg(feature = "serdex")]
@@ -16,7 +16,7 @@ use crate::{
         flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
         response::Capability,
-        sequence::{SequenceSet, ToSequence},
+        sequence::SequenceSet,
         AuthMechanism, CompressionAlgorithm,
     },
     utils::{gen_tag, join_serializable},
@@ -180,12 +180,12 @@ impl Command {
         )
     }
 
-    pub fn fetch<S, I>(sequence_set: S, items: I, uid: bool) -> Result<Command, ()>
+    pub fn fetch<S, I>(sequence_set: S, items: I, uid: bool) -> Result<Command, S::Error>
     where
-        S: ToSequence,
+        S: TryInto<SequenceSet>,
         I: Into<MacroOrDataItems>,
     {
-        let sequence_set = sequence_set.to_sequence()?;
+        let sequence_set = sequence_set.try_into()?;
 
         Ok(Command::new(
             gen_tag(),
@@ -203,11 +203,11 @@ impl Command {
         response: StoreResponse,
         flags: Vec<Flag>,
         uid: bool,
-    ) -> Result<Command, ()>
+    ) -> Result<Command, S::Error>
     where
-        S: ToSequence,
+        S: TryInto<SequenceSet>,
     {
-        let sequence_set = sequence_set.to_sequence()?;
+        let sequence_set = sequence_set.try_into()?;
 
         Ok(Command::new(
             gen_tag(),
@@ -221,12 +221,12 @@ impl Command {
         ))
     }
 
-    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, ()>
+    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, S::Error>
     where
-        S: ToSequence,
+        S: TryInto<SequenceSet>,
         M: Into<Mailbox>,
     {
-        let sequence_set = sequence_set.to_sequence()?;
+        let sequence_set = sequence_set.try_into()?;
 
         Ok(Command::new(
             gen_tag(),
@@ -1951,7 +1951,6 @@ mod test {
             data_items::{DataItem, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
             mailbox::{ListMailbox, Mailbox},
-            sequence::ToSequence,
             AuthMechanism,
         },
     };
@@ -2024,16 +2023,8 @@ mod test {
                 true,
             ),
             //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
-            Command::search(
-                None,
-                SearchKey::SequenceSet("42".to_sequence().unwrap()),
-                true,
-            ),
-            Command::search(
-                None,
-                SearchKey::SequenceSet("*".to_sequence().unwrap()),
-                true,
-            ),
+            Command::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
+            Command::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
             Command::search(
                 None,
                 SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
