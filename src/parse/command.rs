@@ -779,7 +779,7 @@ mod test {
     use crate::types::{
         data_items::Section,
         response::Capability,
-        sequence::{SeqNo, Sequence},
+        sequence::{SeqNo, Sequence, SequenceSet as SequenceSetData},
     };
 
     #[test]
@@ -858,7 +858,7 @@ mod test {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: Uid(vec![Single(Value(5))]),
+                criteria: Uid(SequenceSetData(vec![Single(Value(5))])),
                 uid: false,
             }
         );
@@ -867,15 +867,15 @@ mod test {
         let expected = CommandBody::Search {
             charset: None,
             criteria: And(vec![
-                Uid(vec![Single(Value(5))]),
+                Uid(SequenceSetData(vec![Single(Value(5))])),
                 Or(
-                    Box::new(Uid(vec![Single(Value(5))])),
+                    Box::new(Uid(SequenceSetData(vec![Single(Value(5))]))),
                     Box::new(And(vec![
-                        Uid(vec![Single(Value(1))]),
-                        Uid(vec![Single(Value(2))]),
+                        Uid(SequenceSetData(vec![Single(Value(1))])),
+                        Uid(SequenceSetData(vec![Single(Value(2))])),
                     ])),
                 ),
-                Not(Box::new(Uid(vec![Single(Value(5))]))),
+                Not(Box::new(Uid(SequenceSetData(vec![Single(Value(5))])))),
             ]),
             uid: false,
         };

@@ -16,7 +16,7 @@ use crate::{
         flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
         response::Capability,
-        sequence::{Sequence, ToSequence},
+        sequence::{SequenceSet, ToSequence},
         AuthMechanism, CompressionAlgorithm,
     },
     utils::{gen_tag, join_serializable},
@@ -1196,7 +1196,7 @@ pub enum CommandBody {
     ///
     /// See [DataItem](../data_items/index.html) for more information.
     Fetch {
-        sequence_set: Vec<Sequence>,
+        sequence_set: SequenceSet,
         items: MacroOrDataItems,
         uid: bool,
     },
@@ -1252,7 +1252,7 @@ pub enum CommandBody {
     /// -FLAGS.SILENT <flag list>
     ///    Equivalent to -FLAGS, but without returning a new value.
     Store {
-        sequence_set: Vec<Sequence>,
+        sequence_set: SequenceSet,
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag>,
@@ -1286,7 +1286,7 @@ pub enum CommandBody {
     /// implementations MUST restore the destination mailbox to its state
     /// before the COPY attempt.
     Copy {
-        sequence_set: Vec<Sequence>,
+        sequence_set: SequenceSet,
         mailbox: Mailbox,
         uid: bool,
     },
@@ -1582,7 +1582,7 @@ impl Encode for CommandBody {
                     writer.write_all(b"FETCH ")?;
                 }
 
-                join_serializable(sequence_set, b",", writer)?;
+                sequence_set.encode(writer)?;
                 writer.write_all(b" ")?;
                 items.encode(writer)
             }
@@ -1599,7 +1599,7 @@ impl Encode for CommandBody {
                     writer.write_all(b"STORE ")?;
                 }
 
-                join_serializable(sequence_set, b",", writer)?;
+                sequence_set.encode(writer)?;
                 writer.write_all(b" ")?;
 
                 match kind {
@@ -1629,7 +1629,7 @@ impl Encode for CommandBody {
                 } else {
                     writer.write_all(b"COPY ")?;
                 }
-                join_serializable(sequence_set, b",", writer)?;
+                sequence_set.encode(writer)?;
                 writer.write_all(b" ")?;
                 mailbox.encode(writer)
             }
@@ -1696,7 +1696,7 @@ pub enum SearchKey {
 
     /// Messages with message sequence numbers corresponding to the
     /// specified message sequence number set.
-    SequenceSet(Vec<Sequence>),
+    SequenceSet(SequenceSet),
 
     /// All messages in the mailbox; the default initial key for ANDing.
     All,
@@ -1807,7 +1807,7 @@ pub enum SearchKey {
 
     /// Messages with unique identifiers corresponding to the specified
     /// unique identifier set.  Sequence set ranges are permitted.
-    Uid(Vec<Sequence>),
+    Uid(SequenceSet),
 
     /// Messages that do not have the \Answered flag set.
     Unanswered,
@@ -1924,10 +1924,10 @@ impl Encode for SearchKey {
             SearchKey::Smaller(number) => write!(writer, "SMALLER {}", number),
             SearchKey::Uid(sequence_set) => {
                 writer.write_all(b"UID ")?;
-                join_serializable(sequence_set, b",", writer)
+                sequence_set.encode(writer)
             }
             SearchKey::Undraft => writer.write_all(b"UNDRAFT"),
-            SearchKey::SequenceSet(sequence_set) => join_serializable(sequence_set, b",", writer),
+            SearchKey::SequenceSet(sequence_set) => sequence_set.encode(writer),
             SearchKey::And(search_keys) => {
                 writer.write_all(b"(")?;
                 join_serializable(search_keys, b" ", writer)?;

@@ -9,7 +9,7 @@ use nom::{
 
 use crate::{
     parse::core::nz_number,
-    types::sequence::{SeqNo, Sequence},
+    types::sequence::{SeqNo, Sequence, SequenceSet},
 };
 
 /// Set of seq-number values, regardless of order.
@@ -32,14 +32,17 @@ use crate::{
 /// sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))
 ///
 /// TODO: Why the errata?
-pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], Vec<Sequence>> {
-    separated_list1(
-        tag(b","),
-        alt((
-            // Ordering is important!
-            map(seq_range, |(from, to)| Sequence::Range(from, to)),
-            map(seq_number, Sequence::Single),
-        )),
+pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
+    map(
+        separated_list1(
+            tag(b","),
+            alt((
+                // Ordering is important!
+                map(seq_range, |(from, to)| Sequence::Range(from, to)),
+                map(seq_number, Sequence::Single),
+            )),
+        ),
+        |sequence_set| SequenceSet(sequence_set),
     )(input)
 }
 

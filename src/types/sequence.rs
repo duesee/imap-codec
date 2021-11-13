@@ -3,7 +3,7 @@ use std::io::Write;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, parse::sequence::sequence_set};
+use crate::{codec::Encode, parse::sequence::sequence_set, utils::join_serializable};
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -12,7 +12,15 @@ pub enum Sequence {
     Range(SeqNo, SeqNo),
 }
 
-pub struct SequenceSet(pub Vec<Sequence>);
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SequenceSet(pub(crate) Vec<Sequence>);
+
+impl Encode for SequenceSet {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        join_serializable(&self.0, b",", writer)
+    }
+}
 
 impl<'a> SequenceSet {
     pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = u32> + 'a {
@@ -105,23 +113,23 @@ impl Encode for SeqNo {
 }
 
 pub trait ToSequence {
-    fn to_sequence(self) -> Result<Vec<Sequence>, ()>;
+    fn to_sequence(self) -> Result<SequenceSet, ()>;
 }
 
 impl ToSequence for Sequence {
-    fn to_sequence(self) -> Result<Vec<Sequence>, ()> {
-        Ok(vec![self])
+    fn to_sequence(self) -> Result<SequenceSet, ()> {
+        Ok(SequenceSet(vec![self]))
     }
 }
 
-impl ToSequence for Vec<Sequence> {
-    fn to_sequence(self) -> Result<Vec<Sequence>, ()> {
+impl ToSequence for SequenceSet {
+    fn to_sequence(self) -> Result<SequenceSet, ()> {
         Ok(self)
     }
 }
 
 impl ToSequence for &str {
-    fn to_sequence(self) -> Result<Vec<Sequence>, ()> {
+    fn to_sequence(self) -> Result<SequenceSet, ()> {
         // FIXME: turn incomplete parser to complete?
         let blocker = format!("{}|", self);
 
@@ -135,8 +143,8 @@ impl ToSequence for &str {
 
 #[cfg(test)]
 mod test {
-    use super::{SeqNo, Sequence, SequenceSet, Strategy, ToSequence};
-    use crate::codec::Encode;
+    use super::{SeqNo, Sequence, Strategy, ToSequence};
+    use crate::{codec::Encode, types::sequence::SequenceSet};
 
     #[test]
     fn test_sequence_serialize() {
@@ -188,7 +196,8 @@ mod test {
                     Sequence::Single(SeqNo::Largest),
                 ],
             ),
-        ];
+        ]
+        .map(|(test, expected)| (test, SequenceSet(expected)));
 
         for (test, expected) in tests.iter() {
             let got = test.to_sequence().unwrap();
@@ -208,7 +217,7 @@ mod test {
         ];
 
         for (test, expected) in tests {
-            let seq_set = SequenceSet(test.to_sequence().unwrap());
+            let seq_set = test.to_sequence().unwrap();
             let got: Vec<u32> = seq_set.iter(Strategy::Naive { largest: 3 }).collect();
             assert_eq!(*expected, got);
         }
