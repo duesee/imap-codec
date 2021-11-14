@@ -252,7 +252,7 @@ impl TryFrom<String> for Tag {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.bytes().all(|c| is_astring_char(c) && c != b'+') {
+        if !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+') {
             Ok(Tag(value))
         } else {
             Err(())
