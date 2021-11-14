@@ -10,10 +10,8 @@ edition = "2018"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.3"
-
-[dependencies.imap-codec]
-path = ".."
+libfuzzer-sys = "0.4"
+imap-codec = { path = "..", features = ["arbitrary"] }
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -34,5 +32,11 @@ doc = false
 [[bin]]
 name = "response"
 path = "fuzz_targets/response.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "command_to_bytes_and_back"
+path = "fuzz_targets/command_to_bytes_and_back.rs"
 test = false
 doc = false
