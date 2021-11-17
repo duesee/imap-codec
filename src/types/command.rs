@@ -4,7 +4,6 @@
 
 use std::{convert::TryInto, io::Write};
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +11,7 @@ use crate::{
     codec::Encode,
     types::{
         core::{AString, Atom, Charset, Tag},
+        datetime::{MyDateTime, MyNaiveDate},
         fetch_attributes::MacroOrFetchAttributes,
         flag::{Flag, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox},
@@ -143,7 +143,7 @@ impl Command {
     pub fn append<M: Into<Mailbox>>(
         mailbox: M,
         flags: Vec<Flag>,
-        date: Option<DateTime<FixedOffset>>,
+        date: Option<MyDateTime>,
         message: Vec<u8>,
     ) -> Command {
         Command::new(
@@ -1037,7 +1037,7 @@ pub enum CommandBody {
     Append {
         mailbox: Mailbox,
         flags: Vec<Flag>,
-        date: Option<DateTime<FixedOffset>>,
+        date: Option<MyDateTime>,
         message: Vec<u8>,
     },
 
@@ -1709,7 +1709,7 @@ pub enum SearchKey {
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is earlier than the specified date.
-    Before(NaiveDate),
+    Before(MyNaiveDate),
 
     /// Messages that contain the specified string in the body of the
     /// message.
@@ -1761,7 +1761,7 @@ pub enum SearchKey {
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is within the specified date.
-    On(NaiveDate),
+    On(MyNaiveDate),
 
     /// Messages that match either search key.
     Or(Box<SearchKey>, Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
@@ -1774,19 +1774,19 @@ pub enum SearchKey {
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is earlier than the specified date.
-    SentBefore(NaiveDate),
+    SentBefore(MyNaiveDate),
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is within the specified date.
-    SentOn(NaiveDate),
+    SentOn(MyNaiveDate),
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is within or later than the specified date.
-    SentSince(NaiveDate),
+    SentSince(MyNaiveDate),
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is within or later than the specified date.
-    Since(NaiveDate),
+    Since(MyNaiveDate),
 
     /// Messages with an [RFC-2822] size smaller than the specified
     /// number of octets.
@@ -1947,6 +1947,7 @@ mod test {
         types::{
             command::{Command, SearchKey, StatusAttribute},
             core::{AString, IString},
+            datetime::MyDateTime,
             fetch_attributes::{FetchAttribute, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
             mailbox::{ListMailbox, Mailbox},
@@ -1999,13 +2000,17 @@ mod test {
             Command::append(
                 "inbox",
                 vec![],
-                Some(DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap()),
+                Some(MyDateTime(
+                    DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
+                )),
                 vec![0xff, 0xff, 0xff],
             ),
             Command::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
-                Some(DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap()),
+                Some(MyDateTime(
+                    DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
+                )),
                 vec![0xff, 0xff, 0xff],
             ),
             Command::check(),

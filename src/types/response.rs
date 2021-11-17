@@ -2,7 +2,8 @@
 
 use std::{convert::TryInto, io::Write};
 
-use chrono::{DateTime, FixedOffset};
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +12,7 @@ use crate::{
     types::{
         body::BodyStructure,
         core::{Atom, Charset, NString, Tag, Text},
+        datetime::MyDateTime,
         envelope::Envelope,
         fetch_attributes::Section,
         flag::{Flag, FlagNameAttribute},
@@ -928,7 +930,7 @@ pub enum MessageAttribute {
     /// A string representing the internal date of the message.
     ///
     /// `INTERNALDATE`
-    InternalDate(DateTime<FixedOffset>),
+    InternalDate(MyDateTime),
 
     /// Equivalent to BODY[].
     ///

@@ -1,5 +1,5 @@
 use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
-use chrono::{DateTime, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
@@ -10,20 +10,22 @@ use nom::{
     IResult,
 };
 
+use crate::types::datetime::{MyDateTime, MyNaiveDate};
+
 /// date = date-text / DQUOTE date-text DQUOTE
-pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
 /// date-text = date-day "-" date-month "-" date-year
-fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+fn date_text(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
     Ok((
         remaining,
-        NaiveDate::from_ymd_opt(y.into(), m.into(), d.into()),
+        NaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(MyNaiveDate),
     ))
 }
 
@@ -74,7 +76,7 @@ fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 }
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
-pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
+pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
     let mut parser = delimited(
         DQUOTE,
         tuple((
@@ -101,7 +103,7 @@ pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], DateTime<FixedOffset>> {
 
             // Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, datetime))
+                Ok((remaining, MyDateTime(datetime)))
             } else {
                 Err(nom::Err::Failure(nom::error::Error::new(
                     remaining,
@@ -198,22 +200,22 @@ mod test {
     fn test_date() {
         let (rem, val) = date(b"1-Feb-2020xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
     }
 
     #[test]
     fn test_date_text() {
         let (rem, val) = date_text(b"1-Feb-2020").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1));
+        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
     }
 
     #[test]
@@ -305,9 +307,11 @@ mod test {
             NaiveTime::from_hms(12, 34, 56),
         );
 
-        let datetime = FixedOffset::east(3600)
-            .from_local_datetime(&local_datetime)
-            .unwrap();
+        let datetime = MyDateTime(
+            FixedOffset::east(3600)
+                .from_local_datetime(&local_datetime)
+                .unwrap(),
+        );
 
         println!("{} == \n{}", val, datetime);
 
