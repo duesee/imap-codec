@@ -1,11 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
-use base64::decode as b64decode;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, map_opt, map_res, opt, value},
+    combinator::{map, map_opt, opt, value},
     multi::{many1, separated_list0, separated_list1},
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
@@ -357,30 +356,14 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)
         tag_no_case(b"AUTHENTICATE"),
         SP,
         auth_type,
-        opt(preceded(
-            SP,
-            alt((base64, map_res(tag("="), std::str::from_utf8))), // FIXME(perf): use from_utf8_unchecked
-        )),
+        opt(preceded(SP, alt((base64, value(Vec::default(), tag("=")))))),
     ));
 
-    let (remaining, (_, _, auth_type, base64)) = parser(input)?;
+    let (remaining, (_, _, auth_type, raw_data)) = parser(input)?;
 
     // Server must send continuation ("+ ") at this point...
 
-    match base64 {
-        Some(base64) => {
-            match b64decode(base64) {
-                Ok(ir) => Ok((remaining, (auth_type, Some(ir)))),
-                Err(_) => {
-                    return Err(nom::Err::Error(nom::error::make_error(
-                        input,
-                        nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
-                    )));
-                }
-            }
-        }
-        None => Ok((remaining, (auth_type, None))),
-    }
+    Ok((remaining, (auth_type, raw_data)))
 }
 
 /// Use this parser instead of command when doing authentication.
@@ -395,12 +378,8 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)
 ///                                            |
 ///                                            Added by SASL-IR (RFC RFC 4959)
 /// ```
-pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], String> {
-    let mut parser = terminated(base64, CRLF); // FIXME: many0 deleted
-
-    let (remaining, parsed_authenticate_data) = parser(input)?;
-
-    Ok((remaining, parsed_authenticate_data.to_owned()))
+pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    terminated(base64, CRLF)(input) // FIXME: many0 deleted
 }
 
 /// # Command Select

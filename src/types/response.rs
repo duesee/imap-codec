@@ -627,7 +627,7 @@ impl Encode for StatusAttributeValue {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continuation {
     Basic { code: Option<Code>, text: Text },
-    Base64(String),
+    Base64(Vec<u8>),
 }
 
 impl Continuation {
@@ -638,7 +638,7 @@ impl Continuation {
         })
     }
 
-    pub fn base64(data: &str) -> Self {
+    pub fn base64(data: &[u8]) -> Self {
         Continuation::Base64(data.to_owned())
     }
 }
@@ -650,7 +650,7 @@ impl Encode for Continuation {
                 Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
                 None => write!(writer, "+ {}\r\n", text),
             },
-            Continuation::Base64(data) => write!(writer, "+ {}\r\n", data),
+            Continuation::Base64(data) => write!(writer, "+ {}\r\n", base64::encode(data)),
         }
     }
 }

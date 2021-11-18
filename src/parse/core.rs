@@ -228,13 +228,13 @@ pub(crate) fn is_text_char(c: u8) -> bool {
 // ----- base64 -----
 
 /// base64 = *(4base64-char) [base64-terminal]
-pub(crate) fn base64(input: &[u8]) -> IResult<&[u8], &str> {
+pub(crate) fn base64(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
     map_res(
         recognize(tuple((
             take_while(is_base64_char),
             opt(alt((tag("=="), tag("=")))),
         ))),
-        from_utf8, // FIXME(perf): use from_utf8_unchecked
+        base64::decode,
     )(input)
 }
 
