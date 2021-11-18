@@ -144,9 +144,7 @@ pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
             // Note: this is safe, because is_astring_char enforces
             //       that the string only contains ASCII characters
             // TODO(perf): atm::try_from tests all bytes again
-            astr::Atom(unsafe {
-                atm::try_from(std::str::from_utf8_unchecked(bytes)).unwrap_unchecked()
-            })
+            astr::Atom(atm::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
         }),
         map(string, astr::String),
     ))(input)
@@ -189,9 +187,10 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
     // Note: this is safe, because is_atom_char enforces
     //       that the string only contains ASCII characters
     // TODO(perf): atm::try_from tests all bytes again
-    Ok((remaining, unsafe {
-        atm::try_from(std::str::from_utf8_unchecked(parsed_atom)).unwrap_unchecked()
-    }))
+    Ok((
+        remaining,
+        atm::try_from(unsafe { std::str::from_utf8_unchecked(parsed_atom) }).unwrap(),
+    ))
 }
 
 // ----- nstring ----- nil or string
