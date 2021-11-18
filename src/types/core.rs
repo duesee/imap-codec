@@ -373,7 +373,7 @@ impl<'a> atm<'a> {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum istr<'a> {
-    Literal(&'a [u8]),
+    Literal(&'a [u8]), // FIXME(misuse): must be non-zero
     Quoted(Cow<'a, str>),
 }
 

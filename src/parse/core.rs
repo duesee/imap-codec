@@ -111,6 +111,7 @@ fn is_quoted_specials(byte: u8) -> bool {
 
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
+// FIXME(misuse): should be `literal` (non-zero-bytes)
 pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
