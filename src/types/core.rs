@@ -8,6 +8,8 @@
 
 use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -73,6 +75,7 @@ pub type Number = u32;
 /// The empty string is represented as either "" (a quoted string
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString {
@@ -152,6 +155,7 @@ impl Encode for NString {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString {
@@ -310,6 +314,7 @@ impl Encode for Text {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Charset(pub(crate) String);

@@ -1,5 +1,7 @@
 use std::io::Write;
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +9,7 @@ use crate::{codec::Encode, types::core::AString, utils::join_serializable};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Macro {
@@ -44,6 +47,7 @@ impl Encode for Macro {
 }
 
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MacroOrFetchAttributes {
@@ -81,6 +85,7 @@ impl From<Vec<FetchAttribute>> for MacroOrFetchAttributes {
 }
 
 /// The currently defined data items that can be fetched are:
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FetchAttribute {
@@ -282,6 +287,7 @@ pub enum PartSpecifier {
 /// 4.2.2.1    TEXT/PLAIN
 /// 4.2.2.2    TEXT/RICHTEXT
 /// ```
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Section {
@@ -353,6 +359,7 @@ impl Encode for Section {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Part(pub Vec<u32>);

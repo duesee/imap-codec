@@ -4,6 +4,8 @@
 
 use std::{convert::TryInto, io::Write};
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 use base64::encode as b64encode;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
@@ -23,6 +25,7 @@ use crate::{
     utils::{gen_tag, join_serializable},
 };
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command {
@@ -261,6 +264,7 @@ impl Encode for Command {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommandBody {
@@ -1649,6 +1653,7 @@ impl Encode for CommandBody {
 }
 
 /// The currently defined status data items that can be requested.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StatusAttribute {

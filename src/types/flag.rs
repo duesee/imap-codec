@@ -2,6 +2,8 @@
 
 use std::io::Write;
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +14,7 @@ use crate::{codec::Encode, types::core::Atom};
 /// removal.  There are two types of flags in IMAP4rev1. A flag of either
 /// type can be permanent or session-only.
 /// FIXME: this struct is not very usable currently...
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Flag {
@@ -90,6 +93,7 @@ impl Encode for Flag {
 }
 
 /// Four name attributes are defined.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FlagNameAttribute {
@@ -141,6 +145,7 @@ impl Encode for FlagNameAttribute {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreType {
@@ -149,6 +154,7 @@ pub enum StoreType {
     Remove,
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreResponse {

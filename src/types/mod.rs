@@ -1,5 +1,7 @@
 use std::io::Write;
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +20,7 @@ pub mod response;
 pub mod sequence;
 
 /// Note: Defined by [SASL]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AuthMechanism {

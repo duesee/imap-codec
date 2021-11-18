@@ -3,11 +3,14 @@ use std::{
     io::Write,
 };
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
 use crate::{codec::Encode, parse::sequence::sequence_set, utils::join_serializable};
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sequence {
@@ -90,6 +93,7 @@ impl Encode for Sequence {
     }
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum SeqNo {

@@ -13,6 +13,7 @@ default = []
 serdex  = ["serde", "chrono/serde"]
 
 [dependencies]
+arbitrary = { version = "1", optional = true, features = ["derive"] }
 base64 = "*"
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 nom = "6"

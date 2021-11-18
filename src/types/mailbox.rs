@@ -1,5 +1,7 @@
 use std::{convert::TryFrom, io::Write};
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
