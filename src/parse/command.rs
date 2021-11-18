@@ -1,4 +1,5 @@
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
+use base64::decode as b64decode;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -294,9 +295,11 @@ pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
 fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
-        map(authenticate, |(mechanism, ir)| CommandBody::Authenticate {
-            mechanism,
-            initial_response: ir.map(|i| i.to_owned()),
+        map(authenticate, |(mechanism, initial_response)| {
+            CommandBody::Authenticate {
+                mechanism,
+                initial_response,
+            }
         }),
         value(CommandBody::StartTLS, tag_no_case(b"STARTTLS")),
     ));
@@ -342,7 +345,7 @@ fn password(input: &[u8]) -> IResult<&[u8], astr> {
 ///                                            |
 ///                                            Added by SASL-IR (RFC RFC 4959)
 /// ```
-fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
+fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
     let mut parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
         SP,
@@ -353,11 +356,24 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<&str>)> {
         )),
     ));
 
-    let (remaining, (_, _, auth_type, ir)) = parser(input)?;
+    let (remaining, (_, _, auth_type, base64)) = parser(input)?;
 
     // Server must send continuation ("+ ") at this point...
 
-    Ok((remaining, (auth_type, ir)))
+    match base64 {
+        Some(base64) => {
+            match b64decode(base64) {
+                Ok(ir) => Ok((remaining, (auth_type, Some(ir)))),
+                Err(_) => {
+                    return Err(nom::Err::Error(nom::error::make_error(
+                        input,
+                        nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
+                    )));
+                }
+            }
+        }
+        None => Ok((remaining, (auth_type, None))),
+    }
 }
 
 /// Use this parser instead of command when doing authentication.

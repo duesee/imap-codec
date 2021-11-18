@@ -4,6 +4,7 @@
 
 use std::{convert::TryInto, io::Write};
 
+use base64::encode as b64encode;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -50,12 +51,12 @@ impl Command {
         Command::new(gen_tag(), CommandBody::StartTLS)
     }
 
-    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&str>) -> Command {
+    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&[u8]>) -> Command {
         Command::new(
             gen_tag(),
             CommandBody::Authenticate {
                 mechanism,
-                initial_response: initial_response.map(|str| str.to_string()),
+                initial_response: initial_response.map(|bytes| bytes.to_vec()),
             },
         )
     }
@@ -450,7 +451,8 @@ pub enum CommandBody {
     /// the user name whose privileges the client is requesting.
     Authenticate {
         mechanism: AuthMechanism,
-        initial_response: Option<String>,
+        /// Already base64-decoded
+        initial_response: Option<Vec<u8>>,
     },
 
     /// ### 6.2.3.  LOGIN Command
@@ -1436,6 +1438,7 @@ impl Encode for CommandBody {
 
                 if let Some(ir) = initial_response {
                     writer.write_all(b" ")?;
+                    let ir = b64encode(ir);
                     writer.write_all(ir.as_bytes())?;
                 };
 
@@ -1964,8 +1967,8 @@ mod test {
             Command::starttls(),
             Command::authenticate(AuthMechanism::Plain, None),
             Command::authenticate(AuthMechanism::Login, None),
-            Command::authenticate(AuthMechanism::Plain, Some("XXXXXXXX")),
-            Command::authenticate(AuthMechanism::Login, Some("YYYYYYYY")),
+            Command::authenticate(AuthMechanism::Plain, Some(b"XXXXXXXX")),
+            Command::authenticate(AuthMechanism::Login, Some(b"YYYYYYYY")),
             Command::login("alice", "I_am_an_atom"),
             Command::login("alice", "I am \\ \"quoted\""),
             Command::login("alice", "I am a literal²"),
