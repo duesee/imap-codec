@@ -1515,8 +1515,15 @@ impl Encode for CommandBody {
 
                 if let Some(ir) = initial_response {
                     writer.write_all(b" ")?;
-                    let ir = b64encode(ir);
-                    writer.write_all(ir.as_bytes())?;
+
+                    // RFC 4959 (https://datatracker.ietf.org/doc/html/rfc4959#section-3)
+                    // "To send a zero-length initial response, the client MUST send a single pad character ("=").
+                    // This indicates that the response is present, but is a zero-length string."
+                    if ir.is_empty() {
+                        writer.write_all(b"=")?;
+                    } else {
+                        writer.write_all(b64encode(ir).as_bytes())?;
+                    };
                 };
 
                 Ok(())
@@ -2019,15 +2026,15 @@ impl Encode for SearchKey {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
+    use std::convert::{TryFrom, TryInto};
 
     use chrono::DateTime;
 
     use crate::{
         codec::Encode,
         types::{
-            command::{Command, SearchKey, StatusAttribute},
-            core::{AString, IString},
+            command::{Command, CommandBody, SearchKey, StatusAttribute},
+            core::{AString, IString, Tag},
             datetime::MyDateTime,
             fetch_attributes::{FetchAttribute, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
@@ -2186,5 +2193,21 @@ mod test {
 
             println!("Unserialized: {:?}\n", parsed);
         }
+    }
+
+    #[test]
+    fn that_empty_ir_is_encoded_correctly() {
+        let command = Command::new(
+            Tag::try_from("A").unwrap(),
+            CommandBody::Authenticate {
+                mechanism: AuthMechanism::Plain,
+                initial_response: Some(Vec::new()),
+            },
+        );
+
+        let mut buffer = Vec::new();
+        command.encode(&mut buffer).unwrap();
+
+        assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }
 }

@@ -650,6 +650,7 @@ impl Encode for Continuation {
                 Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
                 None => write!(writer, "+ {}\r\n", text),
             },
+            // TODO: Is this correct when data is empty?
             Continuation::Base64(data) => write!(writer, "+ {}\r\n", base64::encode(data)),
         }
     }
