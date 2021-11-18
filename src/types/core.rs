@@ -6,7 +6,15 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
-use std::{borrow::Cow, convert::TryFrom, fmt, io::Write, string::FromUtf8Error};
+use std::{
+    borrow::Cow,
+    convert::{TryFrom, TryInto},
+    fmt,
+    fmt::{Debug, Display, Formatter},
+    io::Write,
+    ops::Deref,
+    string::FromUtf8Error,
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -18,6 +26,30 @@ use crate::{
     parse::core::{is_astring_char, is_atom_char, is_text_char},
     utils::escape_quoted,
 };
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+
+impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
+    type Error = ();
+
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            Err(())
+        } else {
+            Ok(NonEmptyVec(value))
+        }
+    }
+}
+
+impl<T> Deref for NonEmptyVec<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 // ## 4.1. Atom
 
@@ -38,10 +70,7 @@ impl TryFrom<String> for Atom {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        // TODO: use `atom` parser directly?
-        if value.is_empty() {
-            Err(())
-        } else if value.bytes().all(is_atom_char) {
+        if !value.is_empty() && value.bytes().all(is_atom_char) {
             Ok(Atom(value))
         } else {
             Err(())
@@ -49,9 +78,17 @@ impl TryFrom<String> for Atom {
     }
 }
 
-impl fmt::Display for Atom {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+impl Deref for Atom {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for Atom {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 
@@ -69,6 +106,38 @@ impl Encode for Atom {
 pub type Number = u32;
 
 // ## 4.3. String
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NonZeroBytes(Vec<u8>);
+
+impl TryFrom<&[u8]> for NonZeroBytes {
+    type Error = ();
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        value.to_vec().try_into()
+    }
+}
+
+impl TryFrom<Vec<u8>> for NonZeroBytes {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.iter().all(|b| *b != 0) {
+            Ok(NonZeroBytes(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl Deref for NonZeroBytes {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// A string is in one of two forms: either literal or quoted string.
 ///
@@ -91,30 +160,76 @@ pub enum IString {
     /// Note: Even if the octet count is 0, a client transmitting a
     /// literal MUST wait to receive a command continuation request.
     ///
-    /// FIXME: must not contain a zero (\x00)
-    Literal(Vec<u8>),
+    Literal(NonZeroBytes),
     /// The quoted string form is an alternative that avoids the overhead of
     /// processing a literal at the cost of limitations of characters which may be used.
     ///
     /// A quoted string is a sequence of zero or more 7-bit characters,
     /// excluding CR and LF, with double quote (<">) characters at each end.
     ///
-    /// FIXME: not every String (UTF-8) is a valid "quoted IMAP string"
-    Quoted(String),
+    Quoted(Quoted),
 }
 
-impl From<&str> for IString {
-    fn from(s: &str) -> Self {
-        s.to_string().into()
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Quoted(String);
+
+impl TryFrom<&str> for Quoted {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.to_string().try_into()
     }
 }
 
-impl From<String> for IString {
-    fn from(s: String) -> Self {
-        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            IString::Quoted(s)
+impl TryFrom<String> for Quoted {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            Ok(Quoted(value))
         } else {
-            IString::Literal(s.into_bytes()) // FIXME: \x00 not allowed, but may be present in UTF8-String
+            Err(())
+        }
+    }
+}
+
+impl Deref for Quoted {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for Quoted {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "\"{}\"", escape_quoted(&self.0))
+    }
+}
+
+impl TryFrom<&str> for IString {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, ()> {
+        s.to_string().try_into()
+    }
+}
+
+impl TryFrom<String> for IString {
+    type Error = ();
+
+    fn try_from(s: String) -> Result<Self, ()> {
+        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            Ok(IString::Quoted(Quoted(s)))
+        } else {
+            let bytes = s.into_bytes();
+
+            if bytes.iter().all(|b| *b != 0x00) {
+                Ok(IString::Literal(NonZeroBytes(bytes)))
+            } else {
+                Err(())
+            }
         }
     }
 }
@@ -124,8 +239,8 @@ impl TryFrom<IString> for String {
 
     fn try_from(value: IString) -> Result<Self, Self::Error> {
         match value {
-            IString::Quoted(utf8) => Ok(utf8),
-            IString::Literal(bytes) => String::from_utf8(bytes), // FIXME(misuse): must not contain \x00
+            IString::Quoted(utf8) => Ok(utf8.0),
+            IString::Literal(bytes) => String::from_utf8(bytes.0),
         }
     }
 }
@@ -137,7 +252,7 @@ impl Encode for IString {
                 write!(writer, "{{{}}}\r\n", val.len())?;
                 writer.write_all(val)
             }
-            Self::Quoted(val) => write!(writer, "\"{}\"", escape_quoted(val)),
+            Self::Quoted(val) => write!(writer, "\"{}\"", escape_quoted(&val.0)),
         }
     }
 }
@@ -159,24 +274,28 @@ impl Encode for NString {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString {
-    Atom(String),
+    Atom(Atom),
     String(IString),
 }
 
-impl From<&str> for AString {
-    fn from(s: &str) -> Self {
-        s.to_string().into()
+impl TryFrom<&str> for AString {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, ()> {
+        s.to_string().try_into()
     }
 }
 
-impl From<String> for AString {
-    fn from(s: String) -> Self {
-        if s.is_empty() {
-            AString::String("".into())
-        } else if s.chars().all(|c| c.is_ascii() && is_astring_char(c as u8)) {
-            AString::Atom(s)
+impl TryFrom<String> for AString {
+    type Error = ();
+
+    fn try_from(s: String) -> Result<Self, ()> {
+        if let Ok(atom) = Atom::try_from(s.clone()) {
+            Ok(AString::Atom(atom))
+        } else if let Ok(string) = IString::try_from(s) {
+            Ok(AString::String(string))
         } else {
-            AString::String(s.into())
+            Err(())
         }
     }
 }
@@ -186,7 +305,7 @@ impl TryFrom<AString> for String {
 
     fn try_from(value: AString) -> Result<Self, Self::Error> {
         match value {
-            AString::Atom(string) => Ok(string),
+            AString::Atom(string) => Ok(string.0),
             AString::String(istring) => String::try_from(istring),
         }
     }
@@ -195,7 +314,7 @@ impl TryFrom<AString> for String {
 impl Encode for AString {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            AString::Atom(atom) => writer.write_all(atom.as_bytes()),
+            AString::Atom(atom) => writer.write_all(atom.0.as_bytes()),
             AString::String(imap_str) => imap_str.encode(writer),
         }
     }
@@ -317,7 +436,10 @@ impl Encode for Text {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Charset(pub(crate) String);
+pub enum Charset {
+    Atom(Atom),
+    Quoted(Quoted),
+}
 
 impl TryFrom<&str> for Charset {
     type Error = ();
@@ -331,8 +453,12 @@ impl TryFrom<String> for Charset {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            Ok(Charset(value))
+        // Try Atom variant ...
+        if let Ok(atom) = Atom::try_from(value.clone()) {
+            // TODO(perf)
+            Ok(Charset::Atom(atom))
+        } else if let Ok(quoted) = Quoted::try_from(value) {
+            Ok(Charset::Quoted(quoted))
         } else {
             Err(())
         }
@@ -341,16 +467,9 @@ impl TryFrom<String> for Charset {
 
 impl std::fmt::Display for Charset {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        if self.0.is_empty() {
-            write!(f, "\"\"")
-        } else if self // TODO: don't check every time...
-            .0
-            .chars()
-            .all(|c| c.is_ascii() && is_atom_char(c as u8))
-        {
-            write!(f, "{}", self.0)
-        } else {
-            write!(f, "\"{}\"", &escape_quoted(&self.0))
+        match self {
+            Charset::Atom(atom) => write!(f, "{}", atom),
+            Charset::Quoted(quoted) => write!(f, "{}", quoted),
         }
     }
 }
@@ -367,7 +486,27 @@ impl Encode for Charset {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct atm<'a>(pub(crate) &'a str);
+pub(crate) struct atm<'a>(&'a str);
+
+impl<'a> TryFrom<&'a str> for atm<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if value.bytes().all(is_astring_char) {
+            Ok(atm(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> Deref for atm<'a> {
+    type Target = &'a str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl<'a> atm<'a> {
     pub fn to_owned(&self) -> Atom {
@@ -385,8 +524,8 @@ pub(crate) enum istr<'a> {
 impl<'a> istr<'a> {
     pub fn to_owned(&self) -> IString {
         match self {
-            istr::Literal(bytes) => IString::Literal(bytes.to_vec()),
-            istr::Quoted(cowstr) => IString::Quoted(cowstr.to_string()),
+            istr::Literal(bytes) => IString::Literal(NonZeroBytes(bytes.to_vec())),
+            istr::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
         }
     }
 }
@@ -404,14 +543,14 @@ impl<'a> nstr<'a> {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum astr<'a> {
-    Atom(&'a str),
+    Atom(atm<'a>),
     String(istr<'a>),
 }
 
 impl<'a> astr<'a> {
     pub fn to_owned(&self) -> AString {
         match self {
-            astr::Atom(str) => AString::Atom(str.to_string()),
+            astr::Atom(atom) => AString::Atom(atom.to_owned()),
             astr::String(istr) => AString::String(istr.to_owned()),
         }
     }
@@ -433,15 +572,18 @@ mod test {
 
     #[test]
     fn test_conversion() {
-        assert_eq!(IString::from("AAA"), IString::Quoted("AAA".into()).into());
         assert_eq!(
-            IString::from("\"AAA"),
-            IString::Quoted("\"AAA".into()).into()
+            IString::try_from("AAA").unwrap(),
+            IString::Quoted("AAA".try_into().unwrap()).into()
+        );
+        assert_eq!(
+            IString::try_from("\"AAA").unwrap(),
+            IString::Quoted("\"AAA".try_into().unwrap()).into()
         );
 
         assert_ne!(
-            IString::from("\"AAA"),
-            IString::Quoted("\\\"AAA".into()).into()
+            IString::try_from("\"AAA").unwrap(),
+            IString::Quoted("\\\"AAA".try_into().unwrap()).into()
         );
     }
 

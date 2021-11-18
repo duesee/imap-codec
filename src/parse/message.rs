@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use abnf_core::streaming::SP;
 use nom::{
     branch::alt,
@@ -136,6 +138,6 @@ fn msg_att_static(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
 /// uniqueid = nz-number
 ///
 /// Note: Strictly ascending
-fn uniqueid(input: &[u8]) -> IResult<&[u8], u32> {
+fn uniqueid(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
     nz_number(input)
 }

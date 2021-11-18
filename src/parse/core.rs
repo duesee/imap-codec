@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::from_utf8};
+use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF_relaxed as CRLF, DQUOTE};
 use nom::{
@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, txt, Charset, Tag},
+    types::core::{astr, atm, istr, nstr, txt, Charset, Quoted, Tag},
     utils::unescape_quoted,
 };
 
@@ -29,7 +29,7 @@ pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
 ///
 /// nz-number = digit-nz *DIGIT
-pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
+pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
     let (remaining, number) = number(input)?;
 
     // This changes the grammar slightly, but I belief it is not important
@@ -40,7 +40,7 @@ pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], u32> {
         )));
     }
 
-    Ok((remaining, number))
+    Ok((remaining, NonZeroU32::try_from(number).unwrap()))
 }
 
 // 1-9
@@ -143,7 +143,10 @@ pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             // Note: this is safe, because is_astring_char enforces
             //       that the string only contains ASCII characters
-            astr::Atom(unsafe { std::str::from_utf8_unchecked(bytes) })
+            // TODO(perf): atm::try_from tests all bytes again
+            astr::Atom(unsafe {
+                atm::try_from(std::str::from_utf8_unchecked(bytes)).unwrap_unchecked()
+            })
         }),
         map(string, astr::String),
     ))(input)
@@ -183,7 +186,12 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    Ok((remaining, atm(std::str::from_utf8(parsed_atom).unwrap()))) // FIXME(perf): use from_utf8_unchecked
+    // Note: this is safe, because is_atom_char enforces
+    //       that the string only contains ASCII characters
+    // TODO(perf): atm::try_from tests all bytes again
+    Ok((remaining, unsafe {
+        atm::try_from(std::str::from_utf8_unchecked(parsed_atom)).unwrap_unchecked()
+    }))
 }
 
 // ----- nstring ----- nil or string
@@ -244,8 +252,10 @@ fn is_base64_char(i: u8) -> bool {
 /// errata id: 261
 pub(crate) fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
     alt((
-        map(atom, |val| Charset(val.0.to_string())),
-        map(quoted, |cow| Charset(cow.to_string())),
+        map(atom, |atom| Charset::Atom(atom.to_owned())),
+        map(quoted, |cow| {
+            Charset::Quoted(Quoted::try_from(cow.to_string()).unwrap())
+        }),
     ))(input)
 }
 
@@ -261,6 +271,8 @@ pub(crate) fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use assert_matches::assert_matches;
 
     use super::*;
@@ -271,11 +283,11 @@ mod test {
         assert!(atom(b"").is_err());
 
         let (rem, val) = atom(b"a(").unwrap();
-        assert_eq!(val, atm("a"));
+        assert_eq!(val, "a".try_into().unwrap());
         assert_eq!(rem, b"(");
 
         let (rem, val) = atom(b"xxx yyy").unwrap();
-        assert_eq!(val, atm("xxx"));
+        assert_eq!(val, "xxx".try_into().unwrap());
         assert_eq!(rem, b" yyy");
     }
 

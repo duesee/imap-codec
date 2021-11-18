@@ -1,4 +1,8 @@
-use std::{convert::TryFrom, io::Write};
+use std::{
+    convert::{TryFrom, TryInto},
+    io::Write,
+    ops::Deref,
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -13,8 +17,41 @@ use crate::{
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ListCharString(String);
+
+impl TryFrom<&str> for ListCharString {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.to_string().try_into()
+    }
+}
+
+impl TryFrom<String> for ListCharString {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if !value.is_empty() && value.bytes().all(is_list_char) {
+            Ok(ListCharString(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl Deref for ListCharString {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListMailbox {
-    Token(String),
+    Token(ListCharString),
     String(IString),
 }
 
@@ -27,21 +64,25 @@ impl Encode for ListMailbox {
     }
 }
 
-impl From<&str> for ListMailbox {
-    fn from(s: &str) -> Self {
-        s.to_string().into()
+impl TryFrom<&str> for ListMailbox {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, ()> {
+        s.to_string().try_into()
     }
 }
 
-impl From<String> for ListMailbox {
-    fn from(s: String) -> Self {
-        if s.is_empty() {
-            ListMailbox::String(IString::Quoted(s))
-        } else if s.chars().all(|c| c.is_ascii() && is_list_char(c as u8)) {
-            ListMailbox::Token(s)
+impl TryFrom<String> for ListMailbox {
+    type Error = ();
+
+    fn try_from(s: String) -> Result<Self, ()> {
+        Ok(if s.is_empty() {
+            ListMailbox::String(IString::Quoted(s.try_into().map_err(|_| ())?))
+        } else if let Ok(lcs) = ListCharString::try_from(s.clone()) {
+            ListMailbox::Token(lcs)
         } else {
-            ListMailbox::String(s.into())
-        }
+            ListMailbox::String(s.try_into().map_err(|_| ())?)
+        })
     }
 }
 
@@ -51,7 +92,7 @@ impl TryFrom<Mailbox> for String {
     fn try_from(value: Mailbox) -> Result<Self, Self::Error> {
         match value {
             Mailbox::Inbox => Ok("INBOX".to_string()),
-            Mailbox::Other(astring) => String::try_from(astring),
+            Mailbox::Other(MailboxOther(astring)) => String::try_from(astring),
         }
     }
 }
@@ -61,7 +102,7 @@ impl TryFrom<ListMailbox> for String {
 
     fn try_from(value: ListMailbox) -> Result<Self, Self::Error> {
         match value {
-            ListMailbox::Token(string) => Ok(string),
+            ListMailbox::Token(string) => Ok(string.0),
             ListMailbox::String(istring) => String::try_from(istring),
         }
     }
@@ -111,31 +152,81 @@ impl TryFrom<ListMailbox> for String {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mailbox {
     Inbox,
-    // FIXME: prevent `Mailbox::Other("Inbox")`?
-    Other(AString),
+    Other(MailboxOther),
+}
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MailboxOther(AString);
+
+impl TryFrom<AString> for MailboxOther {
+    type Error = ();
+
+    fn try_from(mailbox: AString) -> Result<Self, Self::Error> {
+        match mailbox {
+            AString::Atom(ref str) => {
+                if str.to_lowercase() == "inbox" {
+                    Err(())
+                } else {
+                    Ok(MailboxOther(mailbox))
+                }
+            }
+            AString::String(ref imap_str) => match imap_str {
+                IString::Quoted(ref str) => {
+                    if str.to_lowercase() == "inbox" {
+                        Err(())
+                    } else {
+                        Ok(MailboxOther(mailbox))
+                    }
+                }
+                IString::Literal(bytes) => {
+                    // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
+                    if let Ok(str) = std::str::from_utf8(bytes) {
+                        // After the conversion we ignore the case...
+                        if str.to_lowercase() == "inbox" {
+                            // ...and return the Inbox variant.
+                            Err(())
+                        } else {
+                            Ok(MailboxOther(mailbox))
+                        }
+                    } else {
+                        // ... If not, it must be something else.
+                        Ok(MailboxOther(mailbox))
+                    }
+                }
+            },
+        }
+    }
 }
 
 impl Encode for Mailbox {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => writer.write_all(b"INBOX"),
-            Mailbox::Other(a_str) => a_str.encode(writer),
+            Mailbox::Other(MailboxOther(a_str)) => a_str.encode(writer),
         }
     }
 }
 
-impl From<&str> for Mailbox {
-    fn from(s: &str) -> Self {
-        s.to_string().into()
+impl TryFrom<&str> for Mailbox {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, ()> {
+        s.to_string().try_into()
     }
 }
 
-impl From<String> for Mailbox {
-    fn from(s: String) -> Self {
+impl TryFrom<String> for Mailbox {
+    type Error = ();
+
+    fn try_from(s: String) -> Result<Self, ()> {
         if s.to_lowercase() == "inbox" {
-            Mailbox::Inbox
+            Ok(Mailbox::Inbox)
         } else {
-            Mailbox::Other(s.into())
+            let astr = AString::try_from(s)?;
+            let other = MailboxOther::try_from(astr)?;
+
+            Ok(Mailbox::Other(other))
         }
     }
 }

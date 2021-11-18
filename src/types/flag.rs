@@ -57,7 +57,7 @@ pub enum Flag {
     Keyword(Atom),
 
     // ----- Others -----
-    Extension(Atom),
+    Extension(Atom), // FIXME(misuse): How to treat Extension(Atom("Recent"))
 }
 
 impl std::fmt::Display for Flag {

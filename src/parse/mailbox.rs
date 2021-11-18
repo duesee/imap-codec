@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use abnf_core::streaming::{DQUOTE, SP};
 use nom::{
     branch::alt,
@@ -17,9 +19,8 @@ use crate::{
         status::status_att_list,
     },
     types::{
-        core::{astr, istr},
         flag::FlagNameAttribute,
-        mailbox::{ListMailbox, Mailbox},
+        mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
         response::Data,
     },
 };
@@ -30,7 +31,10 @@ pub(crate) fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
         map(take_while1(is_list_char), |bytes: &[u8]| {
             // Note: this is safe, because is_list_char enforces
             //       that the string only contains ASCII characters
-            ListMailbox::Token(unsafe { String::from_utf8_unchecked(bytes.to_vec()) })
+            ListMailbox::Token(
+                ListCharString::try_from(unsafe { String::from_utf8_unchecked(bytes.to_vec()) })
+                    .unwrap(),
+            ) // Safe to unwrap
         }),
         map(string, |istr| ListMailbox::String(istr.to_owned())),
     ))(input)
@@ -56,43 +60,12 @@ pub(crate) fn is_list_wildcards(i: u8) -> bool {
 ///
 /// mailbox = "INBOX" / astring
 pub(crate) fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
-    let (remaining, mailbox) = astring(input)?;
-
-    let mailbox = match mailbox {
-        astr::Atom(str) => {
-            if str.to_lowercase() == "inbox" {
-                Mailbox::Inbox
-            } else {
-                Mailbox::Other(mailbox.to_owned())
-            }
+    map(astring, |astr| {
+        match MailboxOther::try_from(astr.to_owned()) {
+            Ok(other) => Mailbox::Other(other),
+            Err(_) => Mailbox::Inbox,
         }
-        astr::String(ref imap_str) => match imap_str {
-            istr::Quoted(ref str) => {
-                if str.to_lowercase() == "inbox" {
-                    Mailbox::Inbox
-                } else {
-                    Mailbox::Other(mailbox.to_owned())
-                }
-            }
-            istr::Literal(bytes) => {
-                // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                if let Ok(str) = std::str::from_utf8(bytes) {
-                    // After the conversion we ignore the case...
-                    if str.to_lowercase() == "inbox" {
-                        // ...and return the Inbox variant.
-                        Mailbox::Inbox
-                    } else {
-                        Mailbox::Other(mailbox.to_owned())
-                    }
-                } else {
-                    // ... If not, it must be something else.
-                    Mailbox::Other(mailbox.to_owned())
-                }
-            }
-        },
-    };
-
-    Ok((remaining, mailbox))
+    })(input)
 }
 
 /// mailbox-data = "FLAGS" SP flag-list /

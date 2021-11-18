@@ -84,6 +84,8 @@ fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use super::*;
 
     #[test]
@@ -113,15 +115,18 @@ mod test {
         assert!(seq_range(b"0:1?").is_err());
 
         assert_eq!(
-            (SeqNo::Value(1), SeqNo::Value(2)),
+            (
+                SeqNo::Value(1.try_into().unwrap()),
+                SeqNo::Value(2.try_into().unwrap())
+            ),
             seq_range(b"1:2?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Value(1), SeqNo::Largest),
+            (SeqNo::Value(1.try_into().unwrap()), SeqNo::Largest),
             seq_range(b"1:*?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Largest, SeqNo::Value(10)),
+            (SeqNo::Largest, SeqNo::Value(10.try_into().unwrap())),
             seq_range(b"*:10?").unwrap().1
         );
     }

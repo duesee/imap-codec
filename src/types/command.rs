@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     codec::Encode,
     types::{
-        core::{AString, Atom, Charset, Tag},
+        core::{AString, Atom, Charset, NonEmptyVec, NonZeroBytes, Tag},
         datetime::{MyDateTime, MyNaiveDate},
         fetch_attributes::MacroOrFetchAttributes,
         flag::{Flag, StoreResponse, StoreType},
@@ -64,101 +64,163 @@ impl Command {
         )
     }
 
-    pub fn login<U: Into<AString>, P: Into<AString>>(username: U, password: P) -> Command {
-        Command::new(
+    pub fn login<U: TryInto<AString>, P: TryInto<AString>>(
+        username: U,
+        password: P,
+    ) -> Result<Command, ()> {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Login {
-                username: username.into(), // FIXME(misuse): this should be TryInto. Fix in AString
-                password: password.into(), // FIXME(misuse): this should be TryInto. Fix in AString
+                username: username.try_into().map_err(|_| ())?,
+                password: password.try_into().map_err(|_| ())?,
             },
-        )
+        ))
     }
 
-    pub fn select(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Select { mailbox })
+    pub fn select<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Select {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn examine(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Examine { mailbox })
+    pub fn examine<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Examine {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn create(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Create { mailbox })
+    pub fn create<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Create {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn delete(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Delete { mailbox })
+    pub fn delete<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Delete {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn rename(mailbox: Mailbox, new_mailbox: Mailbox) -> Command {
-        Command::new(
+    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Command, ()>
+    where
+        M1: TryInto<Mailbox>,
+        M2: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Rename {
-                mailbox,
-                new_mailbox,
+                mailbox: mailbox.try_into().map_err(|_| ())?,
+                new_mailbox: new_mailbox.try_into().map_err(|_| ())?,
             },
-        )
+        ))
     }
 
-    pub fn subscribe(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Subscribe { mailbox })
+    pub fn subscribe<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Subscribe {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn unsubscribe(mailbox: Mailbox) -> Command {
-        Command::new(gen_tag(), CommandBody::Unsubscribe { mailbox })
+    pub fn unsubscribe<M>(mailbox: M) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Unsubscribe {
+                mailbox: mailbox.try_into()?,
+            },
+        ))
     }
 
-    pub fn list<A: Into<Mailbox>, B: Into<ListMailbox>>(
+    pub fn list<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
         reference: A,
         mailbox_wildcard: B,
-    ) -> Command {
-        Command::new(
+    ) -> Result<Command, ()> {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::List {
-                reference: reference.into(),
-                mailbox_wildcard: mailbox_wildcard.into(),
+                reference: reference.try_into().map_err(|_| ())?,
+                mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
             },
-        )
+        ))
     }
 
-    pub fn lsub<A: Into<Mailbox>, B: Into<ListMailbox>>(
+    pub fn lsub<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
         reference: A,
         mailbox_wildcard: B,
-    ) -> Command {
-        Command::new(
+    ) -> Result<Command, ()> {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Lsub {
-                reference: reference.into(),
-                mailbox_wildcard: mailbox_wildcard.into(),
+                reference: reference.try_into().map_err(|_| ())?,
+                mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
             },
-        )
+        ))
     }
 
-    pub fn status<M: Into<Mailbox>>(mailbox: M, attributes: Vec<StatusAttribute>) -> Command {
-        Command::new(
+    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Command, M::Error>
+    where
+        M: TryInto<Mailbox>,
+    {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Status {
-                mailbox: mailbox.into(),
+                mailbox: mailbox.try_into()?,
                 attributes,
             },
-        )
+        ))
     }
 
-    pub fn append<M: Into<Mailbox>>(
+    pub fn append<M, D>(
         mailbox: M,
         flags: Vec<Flag>,
         date: Option<MyDateTime>,
-        message: Vec<u8>,
-    ) -> Command {
-        Command::new(
+        message: D,
+    ) -> Result<Command, ()>
+    where
+        M: TryInto<Mailbox>,
+        D: TryInto<NonZeroBytes>,
+    {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Append {
-                mailbox: mailbox.into(),
+                mailbox: mailbox.try_into().map_err(|_| ())?,
                 flags,
                 date,
-                message,
+                message: message.try_into().map_err(|_| ())?,
             },
-        )
+        ))
     }
 
     pub fn check() -> Command {
@@ -173,15 +235,18 @@ impl Command {
         Command::new(gen_tag(), CommandBody::Expunge)
     }
 
-    pub fn search(charset: Option<String>, criteria: SearchKey, uid: bool) -> Command {
-        Command::new(
+    pub fn search<C>(charset: C, criteria: SearchKey, uid: bool) -> Result<Command, C::Error>
+    where
+        C: TryInto<Option<Charset>>,
+    {
+        Ok(Command::new(
             gen_tag(),
             CommandBody::Search {
-                charset: charset.map(Charset),
+                charset: charset.try_into()?,
                 criteria,
                 uid,
             },
-        )
+        ))
     }
 
     pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command, S::Error>
@@ -225,18 +290,16 @@ impl Command {
         ))
     }
 
-    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, S::Error>
+    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, ()>
     where
         S: TryInto<SequenceSet>,
-        M: Into<Mailbox>,
+        M: TryInto<Mailbox>,
     {
-        let sequence_set = sequence_set.try_into()?;
-
         Ok(Command::new(
             gen_tag(),
             CommandBody::Copy {
-                sequence_set,
-                mailbox: mailbox.into(),
+                sequence_set: sequence_set.try_into().map_err(|_| ())?,
+                mailbox: mailbox.try_into().map_err(|_| ())?,
                 uid,
             },
         ))
@@ -246,8 +309,16 @@ impl Command {
         Command::new(gen_tag(), CommandBody::Idle)
     }
 
-    pub fn enable(capabilities: Vec<Capability>) -> Command {
-        Command::new(gen_tag(), CommandBody::Enable { capabilities })
+    pub fn enable<C>(capabilities: C) -> Result<Command, C::Error>
+    where
+        C: TryInto<NonEmptyVec<Capability>>,
+    {
+        Ok(Command::new(
+            gen_tag(),
+            CommandBody::Enable {
+                capabilities: capabilities.try_into()?,
+            },
+        ))
     }
 
     pub fn name(&self) -> &'static str {
@@ -1044,7 +1115,7 @@ pub enum CommandBody {
         mailbox: Mailbox,
         flags: Vec<Flag>,
         date: Option<MyDateTime>,
-        message: Vec<u8>,
+        message: NonZeroBytes,
     },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
@@ -1257,7 +1328,7 @@ pub enum CommandBody {
         sequence_set: SequenceSet,
         kind: StoreType,
         response: StoreResponse,
-        flags: Vec<Flag>,
+        flags: Vec<Flag>, // FIXME(misuse): must not accept "\*" or "\Recent"
         uid: bool,
     },
 
@@ -1383,7 +1454,9 @@ pub enum CommandBody {
     Idle,
 
     /// ----- Enable Extension (https://tools.ietf.org/html/rfc5161)
-    Enable { capabilities: Vec<Capability> },
+    Enable {
+        capabilities: NonEmptyVec<Capability>,
+    },
 
     /// ----- Compress Extension (https://tools.ietf.org/html/rfc4978) -----
     Compress { algorithm: CompressionAlgorithm },
@@ -1699,7 +1772,7 @@ pub enum SearchKey {
     //     and multiple search keys.
     //
     // See also the corresponding `search` parser.
-    And(Vec<SearchKey>),
+    And(NonEmptyVec<SearchKey>),
 
     /// Messages with message sequence numbers corresponding to the
     /// specified message sequence number set.
@@ -1958,7 +2031,7 @@ mod test {
             datetime::MyDateTime,
             fetch_attributes::{FetchAttribute, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
-            mailbox::{ListMailbox, Mailbox},
+            mailbox::ListMailbox,
             AuthMechanism,
         },
     };
@@ -1974,37 +2047,45 @@ mod test {
             Command::authenticate(AuthMechanism::Login, None),
             Command::authenticate(AuthMechanism::Plain, Some(b"XXXXXXXX")),
             Command::authenticate(AuthMechanism::Login, Some(b"YYYYYYYY")),
-            Command::login("alice", "I_am_an_atom"),
-            Command::login("alice", "I am \\ \"quoted\""),
-            Command::login("alice", "I am a literal²"),
+            Command::login("alice", "I_am_an_atom").unwrap(),
+            Command::login("alice", "I am \\ \"quoted\"").unwrap(),
+            Command::login("alice", "I am a literal²").unwrap(),
             Command::login(
-                AString::Atom("alice".into()),
-                AString::String(crate::types::core::IString::Literal(vec![0xff, 0xff, 0xff])),
-            ),
-            Command::select(Mailbox::Inbox),
-            Command::select(Mailbox::Other("atom".into())),
-            Command::select(Mailbox::Other("C:\\".into())),
-            Command::select(Mailbox::Other("²".into())),
-            Command::select(Mailbox::Other("Trash".into())),
-            Command::examine(Mailbox::Inbox),
-            Command::examine(Mailbox::Other("atom".into())),
-            Command::examine(Mailbox::Other("C:\\".into())),
-            Command::examine(Mailbox::Other("²".into())),
-            Command::examine(Mailbox::Other("Trash".into())),
-            Command::create(Mailbox::Inbox),
-            Command::delete(Mailbox::Inbox),
-            Command::rename(Mailbox::Inbox, Mailbox::Inbox),
-            Command::subscribe(Mailbox::Inbox),
-            Command::unsubscribe(Mailbox::Inbox),
-            Command::list(Mailbox::Inbox, "test"),
-            Command::list(Mailbox::Inbox, ListMailbox::Token("test".into())),
+                AString::Atom("alice".try_into().unwrap()),
+                AString::String(crate::types::core::IString::Literal(
+                    vec![0xff, 0xff, 0xff].try_into().unwrap(),
+                )),
+            )
+            .unwrap(),
+            Command::select("inbox").unwrap(),
+            Command::select("atom").unwrap(),
+            Command::select("C:\\").unwrap(),
+            Command::select("²").unwrap(),
+            Command::select("Trash").unwrap(),
+            Command::examine("inbox").unwrap(),
+            Command::examine("atom").unwrap(),
+            Command::examine("C:\\").unwrap(),
+            Command::examine("²").unwrap(),
+            Command::examine("Trash").unwrap(),
+            Command::create("inBoX").unwrap(),
+            Command::delete("inBOX").unwrap(),
+            Command::rename("iNBoS", "INboX").unwrap(),
+            Command::subscribe("inbox").unwrap(),
+            Command::unsubscribe("INBOX").unwrap(),
+            Command::list("iNbOx", "test").unwrap(),
+            Command::list("inbox", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
             Command::lsub(
-                Mailbox::Inbox,
-                ListMailbox::String(IString::Quoted("\x7f".into())),
-            ),
-            Command::list("inBoX", ListMailbox::Token("test".into())),
-            Command::lsub("INBOX", ListMailbox::String(IString::Quoted("\x7f".into()))),
-            Command::status("inbox", vec![StatusAttribute::Messages]),
+                "inbox",
+                ListMailbox::String(IString::Quoted("\x7f".try_into().unwrap())),
+            )
+            .unwrap(),
+            Command::list("inBoX", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
+            Command::lsub(
+                "INBOX",
+                ListMailbox::String(IString::Quoted("\x7f".try_into().unwrap())),
+            )
+            .unwrap(),
+            Command::status("inbox", vec![StatusAttribute::Messages]).unwrap(),
             Command::append(
                 "inbox",
                 vec![],
@@ -2012,7 +2093,8 @@ mod test {
                     DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
                 )),
                 vec![0xff, 0xff, 0xff],
-            ),
+            )
+            .unwrap(),
             Command::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
@@ -2020,33 +2102,49 @@ mod test {
                     DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
                 )),
                 vec![0xff, 0xff, 0xff],
-            ),
+            )
+            .unwrap(),
             Command::check(),
             Command::close(),
             Command::expunge(),
             Command::search(
                 None,
-                SearchKey::And(vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]),
+                SearchKey::And(
+                    vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
+                        .try_into()
+                        .unwrap(),
+                ),
                 false,
-            ),
+            )
+            .unwrap(),
             Command::search(
                 None,
-                SearchKey::And(vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]),
+                SearchKey::And(
+                    vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
+                        .try_into()
+                        .unwrap(),
+                ),
                 true,
-            ),
+            )
+            .unwrap(),
             //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
-            Command::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
-            Command::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
+            Command::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true).unwrap(),
+            Command::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true).unwrap(),
             Command::search(
                 None,
                 SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
                 true,
-            ),
+            )
+            .unwrap(),
             Command::fetch(
                 "1",
                 vec![FetchAttribute::BodyExt {
                     partial: None,
-                    section: Some(Section::Part(Part(vec![1, 1]))), // TODO: Part must be non-zero.
+                    section: Some(Section::Part(Part(
+                        vec![1.try_into().unwrap(), 1.try_into().unwrap()]
+                            .try_into()
+                            .unwrap(),
+                    ))),
                     peek: true,
                 }],
                 false,

@@ -1,6 +1,7 @@
 use std::{
     convert::{TryFrom, TryInto},
     io::Write,
+    num::NonZeroU32,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -29,7 +30,7 @@ impl Encode for SequenceSet {
 }
 
 impl<'a> SequenceSet {
-    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = u32> + 'a {
+    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
         match strategy {
             Strategy::Naive { largest } => SequenceSetIterNaive {
                 iter: self.0.iter(),
@@ -41,23 +42,23 @@ impl<'a> SequenceSet {
 }
 
 pub enum Strategy {
-    Naive { largest: u32 },
+    Naive { largest: NonZeroU32 },
 }
 
 pub struct SequenceSetIterNaive<'a> {
     iter: core::slice::Iter<'a, Sequence>,
     active_range: Option<std::ops::RangeInclusive<u32>>,
-    largest: u32,
+    largest: NonZeroU32,
 }
 
 impl<'a> Iterator for SequenceSetIterNaive<'a> {
-    type Item = u32;
+    type Item = NonZeroU32;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(ref mut range) = self.active_range {
                 if let Some(seq_or_uid) = range.next() {
-                    return Some(seq_or_uid);
+                    return Some(NonZeroU32::try_from(seq_or_uid).unwrap());
                 } else {
                     self.active_range = None;
                 }
@@ -71,7 +72,7 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
                     Sequence::Range(from, to) => {
                         let from = from.expand(self.largest);
                         let to = to.expand(self.largest);
-                        self.active_range = Some(from..=to);
+                        self.active_range = Some(u32::from(from)..=u32::from(to));
                     }
                 },
                 None => return None,
@@ -97,12 +98,12 @@ impl Encode for Sequence {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum SeqNo {
-    Value(u32),
+    Value(NonZeroU32),
     Largest,
 }
 
 impl SeqNo {
-    pub fn expand(&self, largest: u32) -> u32 {
+    pub fn expand(&self, largest: NonZeroU32) -> NonZeroU32 {
         match self {
             SeqNo::Value(value) => *value,
             SeqNo::Largest => largest,
@@ -144,7 +145,10 @@ impl TryFrom<String> for SequenceSet {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryFrom;
+    use std::{
+        convert::{TryFrom, TryInto},
+        num::NonZeroU32,
+    };
 
     use super::{SeqNo, Sequence, Strategy};
     use crate::{codec::Encode, types::sequence::SequenceSet};
@@ -152,11 +156,14 @@ mod test {
     #[test]
     fn test_sequence_serialize() {
         let tests = [
-            (b"1".as_ref(), Sequence::Single(SeqNo::Value(1))),
-            (b"*".as_ref(), Sequence::Single(SeqNo::Largest)), // TODO: is this a valid sequence?
+            (
+                b"1".as_ref(),
+                Sequence::Single(SeqNo::Value(1.try_into().unwrap())),
+            ),
+            (b"*".as_ref(), Sequence::Single(SeqNo::Largest)),
             (
                 b"1:*".as_ref(),
-                Sequence::Range(SeqNo::Value(1), SeqNo::Largest),
+                Sequence::Range(SeqNo::Value(1.try_into().unwrap()), SeqNo::Largest),
             ),
         ];
 
@@ -170,32 +177,44 @@ mod test {
     #[test]
     fn test_to_sequence() {
         let tests = &[
-            ("1", SequenceSet(vec![Sequence::Single(SeqNo::Value(1))])),
+            (
+                "1",
+                SequenceSet(vec![Sequence::Single(SeqNo::Value(1.try_into().unwrap()))]),
+            ),
             (
                 "1,2,3",
                 SequenceSet(vec![
-                    Sequence::Single(SeqNo::Value(1)),
-                    Sequence::Single(SeqNo::Value(2)),
-                    Sequence::Single(SeqNo::Value(3)),
+                    Sequence::Single(SeqNo::Value(1.try_into().unwrap())),
+                    Sequence::Single(SeqNo::Value(2.try_into().unwrap())),
+                    Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
                 ]),
             ),
             ("*", SequenceSet(vec![Sequence::Single(SeqNo::Largest)])),
             (
                 "1:2",
-                SequenceSet(vec![Sequence::Range(SeqNo::Value(1), SeqNo::Value(2))]),
+                SequenceSet(vec![Sequence::Range(
+                    SeqNo::Value(1.try_into().unwrap()),
+                    SeqNo::Value(2.try_into().unwrap()),
+                )]),
             ),
             (
                 "1:2,3",
                 SequenceSet(vec![
-                    Sequence::Range(SeqNo::Value(1), SeqNo::Value(2)),
-                    Sequence::Single(SeqNo::Value(3)),
+                    Sequence::Range(
+                        SeqNo::Value(1.try_into().unwrap()),
+                        SeqNo::Value(2.try_into().unwrap()),
+                    ),
+                    Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
                 ]),
             ),
             (
                 "1:2,3,*",
                 SequenceSet(vec![
-                    Sequence::Range(SeqNo::Value(1), SeqNo::Value(2)),
-                    Sequence::Single(SeqNo::Value(3)),
+                    Sequence::Range(
+                        SeqNo::Value(1.try_into().unwrap()),
+                        SeqNo::Value(2.try_into().unwrap()),
+                    ),
+                    Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
                     Sequence::Single(SeqNo::Largest),
                 ]),
             ),
@@ -209,18 +228,32 @@ mod test {
 
     #[test]
     fn test_sequence_set_iter() {
-        let tests = &[
+        let tests = vec![
             ("*", vec![3]),
             ("1:*", vec![1, 2, 3]),
             ("5,1:*,2:*", vec![5, 1, 2, 3, 2, 3]),
             ("*:2", vec![]),
             ("*:*", vec![3]),
             ("4:6,*", vec![4, 5, 6, 3]),
-        ];
+        ]
+        .into_iter()
+        .map(|(raw, vec)| {
+            (
+                raw,
+                vec.into_iter()
+                    .map(|num| num.try_into().unwrap())
+                    .collect::<Vec<NonZeroU32>>(),
+            )
+        })
+        .collect::<Vec<(&str, Vec<NonZeroU32>)>>();
 
-        for (test, expected) in tests.into_iter() {
-            let seq_set = SequenceSet::try_from(*test).unwrap();
-            let got: Vec<u32> = seq_set.iter(Strategy::Naive { largest: 3 }).collect();
+        for (test, expected) in tests {
+            let seq_set = SequenceSet::try_from(test).unwrap();
+            let got: Vec<NonZeroU32> = seq_set
+                .iter(Strategy::Naive {
+                    largest: 3.try_into().unwrap(),
+                })
+                .collect();
             assert_eq!(*expected, got);
         }
     }

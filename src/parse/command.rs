@@ -1,3 +1,5 @@
+use std::convert::{TryFrom, TryInto};
+
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
 use base64::decode as b64decode;
 use nom::{
@@ -23,7 +25,7 @@ use crate::{
     },
     types::{
         command::{Command, CommandBody, SearchKey},
-        core::astr,
+        core::{astr, NonEmptyVec, NonZeroBytes},
         fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes},
         flag::{Flag, StoreResponse, StoreType},
         AuthMechanism,
@@ -113,7 +115,7 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
             mailbox,
             flags: flags.unwrap_or_default(),
             date: date_time,
-            message: literal.to_vec(),
+            message: NonZeroBytes::try_from(literal).unwrap(), // Safe to unwrap
         },
     ))
 }
@@ -260,7 +262,12 @@ fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     let (remaining, (_, capabilities)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Enable { capabilities }))
+    Ok((
+        remaining,
+        CommandBody::Enable {
+            capabilities: capabilities.try_into().unwrap(),
+        },
+    ))
 }
 
 /// compress = "COMPRESS" SP algorithm
@@ -616,7 +623,7 @@ fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let criteria = match criteria.len() {
         0 => unreachable!(),
         1 => criteria[0].clone(),
-        _ => SearchKey::And(criteria),
+        _ => SearchKey::And(NonEmptyVec::try_from(criteria).unwrap()), // Safe to unwrap
     };
 
     Ok((
@@ -795,7 +802,7 @@ fn search_key_limited<'a>(
                 |val| match val.len() {
                     0 => unreachable!(),
                     1 => val[0].clone(),
-                    _ => SearchKey::And(val),
+                    _ => SearchKey::And(NonEmptyVec::try_from(val).unwrap()), // Safe to unwrap
                 },
             ),
         )),
@@ -804,7 +811,7 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
+    use std::{convert::TryInto, num::NonZeroU32};
 
     use super::*;
     use crate::types::{
@@ -860,7 +867,7 @@ mod test {
             ),
             (
                 FetchAttribute::BodyExt {
-                    partial: Some((42, 1337)),
+                    partial: Some((42, NonZeroU32::try_from(1337).unwrap())),
                     peek: true,
                     section: Some(Section::Text(None)),
                 },
@@ -889,7 +896,7 @@ mod test {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: Uid(SequenceSetData(vec![Single(Value(5))])),
+                criteria: Uid(SequenceSetData(vec![Single(Value(5.try_into().unwrap()))])),
                 uid: false,
             }
         );
@@ -898,16 +905,24 @@ mod test {
         let expected = CommandBody::Search {
             charset: None,
             criteria: And(vec![
-                Uid(SequenceSetData(vec![Single(Value(5))])),
+                Uid(SequenceSetData(vec![Single(Value(5.try_into().unwrap()))])),
                 Or(
-                    Box::new(Uid(SequenceSetData(vec![Single(Value(5))]))),
+                    Box::new(Uid(SequenceSetData(vec![Single(Value(
+                        5.try_into().unwrap(),
+                    ))]))),
                     Box::new(And(vec![
-                        Uid(SequenceSetData(vec![Single(Value(1))])),
-                        Uid(SequenceSetData(vec![Single(Value(2))])),
-                    ])),
+                        Uid(SequenceSetData(vec![Single(Value(1.try_into().unwrap()))])),
+                        Uid(SequenceSetData(vec![Single(Value(2.try_into().unwrap()))])),
+                    ]
+                    .try_into()
+                    .unwrap())),
                 ),
-                Not(Box::new(Uid(SequenceSetData(vec![Single(Value(5))])))),
-            ]),
+                Not(Box::new(Uid(SequenceSetData(vec![Single(Value(
+                    5.try_into().unwrap(),
+                ))])))),
+            ]
+            .try_into()
+            .unwrap()),
             uid: false,
         };
         assert_eq!(val, expected);
@@ -932,6 +947,8 @@ mod test {
                         Capability::Other("UTF8=ACCEPT".try_into().unwrap()),
                         Capability::Enable
                     ]
+                    .try_into()
+                    .unwrap()
                 }
             ),
             got

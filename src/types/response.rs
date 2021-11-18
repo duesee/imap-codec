@@ -1,6 +1,6 @@
 //! # 7. Server Responses
 
-use std::{convert::TryInto, io::Write};
+use std::{convert::TryInto, io::Write, num::NonZeroU32};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -362,7 +362,7 @@ pub enum Data {
     /// search criteria.  For SEARCH, these are message sequence numbers;
     /// for UID SEARCH, these are unique identifiers.  Each number is
     /// delimited by a space.
-    Search(Vec<u32>),
+    Search(Vec<NonZeroU32>),
 
     /// ### 7.2.6.  FLAGS Response
     ///
@@ -458,7 +458,7 @@ pub enum Data {
     ///   response MAY be sent during a UID command.
     ///
     /// The update from the EXPUNGE response MUST be recorded by the client.
-    Expunge(u32),
+    Expunge(NonZeroU32),
 
     /// ### 7.4.2. FETCH Response
     ///
@@ -469,7 +469,7 @@ pub enum Data {
     /// flag updates).
     Fetch {
         /// Message SEQ or UID
-        seq_or_uid: u32,
+        seq_or_uid: NonZeroU32,
         /// Message data
         attributes: Vec<MessageAttribute>,
     },
@@ -577,11 +577,11 @@ pub enum StatusAttributeValue {
 
     /// The next unique identifier value of the mailbox.  Refer to
     /// section 2.3.1.1 for more information.
-    UidNext(u32),
+    UidNext(NonZeroU32),
 
     /// The unique identifier validity value of the mailbox.  Refer to
     /// section 2.3.1.1 for more information.
-    UidValidity(u32),
+    UidValidity(NonZeroU32),
 
     /// The number of messages which do not have the \Seen flag set.
     Unseen(u32),
@@ -737,19 +737,19 @@ pub enum Code {
     /// Followed by a decimal number, indicates the next unique
     /// identifier value.  Refer to section 2.3.1.1 for more
     /// information.
-    UidNext(u32),
+    UidNext(NonZeroU32),
 
     /// `UIDVALIDITY`
     ///
     /// Followed by a decimal number, indicates the unique identifier
     /// validity value.  Refer to section 2.3.1.1 for more information.
-    UidValidity(u32),
+    UidValidity(NonZeroU32),
 
     /// `UNSEEN`
     ///
     /// Followed by a decimal number, indicates the number of the first
     /// message without the \Seen flag set.
-    Unseen(u32),
+    Unseen(NonZeroU32),
 
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
@@ -960,7 +960,7 @@ pub enum MessageAttribute {
     /// A number expressing the unique identifier of the message.
     ///
     /// `UID`
-    Uid(u32),
+    Uid(NonZeroU32),
 }
 
 impl Encode for MessageAttribute {
@@ -1123,14 +1123,22 @@ mod test {
                 Data::List {
                     items: vec![FlagNameAttribute::Noselect],
                     delimiter: Some('/'),
-                    mailbox: "bbb".into(),
+                    mailbox: "bbb".try_into().unwrap(),
                 },
                 b"* LIST (\\Noselect) \"/\" bbb\r\n",
             ),
-            (Data::Search(vec![1, 2, 3, 42]), b"* SEARCH 1 2 3 42\r\n"),
+            (
+                Data::Search(vec![
+                    1.try_into().unwrap(),
+                    2.try_into().unwrap(),
+                    3.try_into().unwrap(),
+                    42.try_into().unwrap(),
+                ]),
+                b"* SEARCH 1 2 3 42\r\n",
+            ),
             (Data::Exists(42), b"* 42 EXISTS\r\n"),
             (Data::Recent(12345), b"* 12345 RECENT\r\n"),
-            (Data::Expunge(123), b"* 123 EXPUNGE\r\n"),
+            (Data::Expunge(123.try_into().unwrap()), b"* 123 EXPUNGE\r\n"),
         ];
 
         for (parsed, serialized) in tests.into_iter() {

@@ -1,11 +1,15 @@
-use std::io::Write;
+use std::{io::Write, num::NonZeroU32};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, types::core::AString, utils::join_serializable};
+use crate::{
+    codec::Encode,
+    types::core::{AString, NonEmptyVec},
+    utils::join_serializable,
+};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
@@ -136,7 +140,7 @@ pub enum FetchAttribute {
         ///    HEADER.FIELDS.NOT part specifier is calculated after
         ///    subsetting the header.
         ///
-        partial: Option<(u32, u32)>,
+        partial: Option<(u32, NonZeroU32)>,
         /// Defines, wheather BODY or BODY.PEEK should be used.
         ///
         /// `BODY[...]` implicitly sets the `\Seen` flag where `BODY.PEEK[...]` does not.
@@ -253,8 +257,8 @@ impl Encode for FetchAttribute {
 pub enum PartSpecifier {
     PartNumber(u32),
     Header,
-    HeaderFields(Vec<AString>),
-    HeaderFieldsNot(Vec<AString>),
+    HeaderFields(NonEmptyVec<AString>),
+    HeaderFieldsNot(NonEmptyVec<AString>),
     Mime,
     Text,
 }
@@ -297,11 +301,11 @@ pub enum Section {
 
     /// The subset returned by HEADER.FIELDS contains only those header fields with a field-name that
     /// matches one of the names in the list.
-    HeaderFields(Option<Part>, Vec<AString>),
+    HeaderFields(Option<Part>, NonEmptyVec<AString>), // TODO: what if none matches?
 
     /// Similarly, the subset returned by HEADER.FIELDS.NOT contains only the header fields
     /// with a non-matching field-name.
-    HeaderFieldsNot(Option<Part>, Vec<AString>),
+    HeaderFieldsNot(Option<Part>, NonEmptyVec<AString>), // TODO: what if none matches?
 
     /// The TEXT part specifier refers to the text body of the message, omitting the [RFC-2822] header.
     Text(Option<Part>),
@@ -362,9 +366,15 @@ impl Encode for Section {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Part(pub Vec<u32>);
+pub struct Part(pub NonEmptyVec<NonZeroU32>);
 
 impl Encode for u32 {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{}", self)
+    }
+}
+
+impl Encode for NonZeroU32 {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }

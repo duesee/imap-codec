@@ -72,8 +72,10 @@ fn addr_host(input: &[u8]) -> IResult<&[u8], nstr> {
 
 #[cfg(test)]
 mod test {
+    use std::convert::{TryFrom, TryInto};
+
     use super::*;
-    use crate::types::core::{IString, NString};
+    use crate::types::core::{IString, NString, NonZeroBytes};
 
     #[test]
     fn test_address() {
@@ -82,8 +84,10 @@ mod test {
             val,
             Address::new(
                 NString(None),
-                NString(Some(IString::Literal(b"xxx".to_vec()))),
-                NString(Some(IString::Quoted(String::from("xxx")))),
+                NString(Some(IString::Literal(
+                    NonZeroBytes::try_from(b"xxx".as_ref()).unwrap()
+                ))),
+                NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
                 NString(None),
             )
         );
