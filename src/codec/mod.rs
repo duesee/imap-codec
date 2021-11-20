@@ -1,7 +1,7 @@
 use std::{io::Write, num::NonZeroU32};
 
 use base64::encode as b64encode;
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use chrono::{DateTime, FixedOffset};
 
 use crate::{
     codec::utils::{join_serializable, List1AttributeValueOrNil, List1OrNil},
@@ -521,13 +521,7 @@ impl Encode for SeqNo {
 
 impl Encode for MyNaiveDate {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
-    }
-}
-
-impl Encode for NaiveDate {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "\"{}\"", self.format("%d-%b-%Y"))
+        write!(writer, "\"{}\"", self.0.format("%d-%b-%Y"))
     }
 }
 
