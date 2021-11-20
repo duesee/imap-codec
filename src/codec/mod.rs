@@ -302,7 +302,7 @@ impl Encode for AuthMechanismOther {
 impl Encode for AString {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            AString::Atom(atom) => writer.write_all(atom.0.as_bytes()), // FIXME: use encode
+            AString::Atom(atom) => atom.encode(writer),
             AString::String(imap_str) => imap_str.encode(writer),
         }
     }
