@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    core::{IString, NString, Number},
+    core::{IString, NString},
     envelope::Envelope,
 };
 
@@ -35,7 +35,7 @@ pub struct BasicFields {
     ///
     /// Note that this size is the size in its transfer encoding
     /// and not the resulting size after any decoding.
-    pub size: Number,
+    pub size: u32,
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -117,7 +117,7 @@ pub enum SpecificFields {
         /// body structure,
         body_structure: Box<BodyStructure>,
         /// and size in text lines of the encapsulated message.
-        number_of_lines: Number,
+        number_of_lines: u32,
     },
 
     /// # Example (not in RFC)
@@ -151,7 +151,7 @@ pub enum SpecificFields {
     Text {
         subtype: IString,
         /// the size of the body in text lines.
-        number_of_lines: Number,
+        number_of_lines: u32,
     },
 }
 

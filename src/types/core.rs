@@ -96,8 +96,6 @@ impl Display for Atom {
 // A number consists of one or more digit characters, and
 // represents a numeric value.
 
-pub type Number = u32;
-
 // ## 4.3. String
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
