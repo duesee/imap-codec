@@ -10,7 +10,7 @@ use arbitrary::Arbitrary;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    core::{AString, Atom, Charset, NonEmptyVec, NonZeroBytes, Tag},
+    core::{AString, Atom, Charset, Literal, NonEmptyVec, Tag},
     datetime::{MyDateTime, MyNaiveDate},
     fetch_attributes::MacroOrFetchAttributes,
     flag::{Flag, StoreResponse, StoreType},
@@ -205,7 +205,7 @@ impl Command {
     ) -> Result<Command, ()>
     where
         M: TryInto<Mailbox>,
-        D: TryInto<NonZeroBytes>,
+        D: TryInto<Literal>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -1101,7 +1101,7 @@ pub enum CommandBody {
         mailbox: Mailbox,
         flags: Vec<Flag>,
         date: Option<MyDateTime>,
-        message: NonZeroBytes,
+        message: Literal,
     },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----

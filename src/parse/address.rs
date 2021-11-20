@@ -75,7 +75,7 @@ mod test {
     use std::convert::{TryFrom, TryInto};
 
     use super::*;
-    use crate::types::core::{IString, NString, NonZeroBytes};
+    use crate::types::core::{IString, Literal, NString};
 
     #[test]
     fn test_address() {
@@ -85,7 +85,7 @@ mod test {
             Address::new(
                 NString(None),
                 NString(Some(IString::Literal(
-                    NonZeroBytes::try_from(b"xxx".as_ref()).unwrap()
+                    Literal::try_from(b"xxx".as_ref()).unwrap()
                 ))),
                 NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
                 NString(None),

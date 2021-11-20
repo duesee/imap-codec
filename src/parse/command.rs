@@ -24,7 +24,7 @@ use crate::{
     },
     types::{
         command::{Command, CommandBody, SearchKey},
-        core::{astr, NonEmptyVec, NonZeroBytes},
+        core::{astr, Literal, NonEmptyVec},
         fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes},
         flag::{Flag, StoreResponse, StoreType},
         AuthMechanism,
@@ -114,7 +114,7 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
             mailbox,
             flags: flags.unwrap_or_default(),
             date: date_time,
-            message: NonZeroBytes::try_from(literal).unwrap(), // Safe to unwrap
+            message: Literal::try_from(literal).unwrap(), // Safe to unwrap
         },
     ))
 }

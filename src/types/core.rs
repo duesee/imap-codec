@@ -102,9 +102,9 @@ pub type Number = u32;
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NonZeroBytes(Vec<u8>);
+pub struct Literal(Vec<u8>);
 
-impl TryFrom<&[u8]> for NonZeroBytes {
+impl TryFrom<&[u8]> for Literal {
     type Error = ();
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -112,19 +112,19 @@ impl TryFrom<&[u8]> for NonZeroBytes {
     }
 }
 
-impl TryFrom<Vec<u8>> for NonZeroBytes {
+impl TryFrom<Vec<u8>> for Literal {
     type Error = ();
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.iter().all(|b| *b != 0) {
-            Ok(NonZeroBytes(value))
+            Ok(Literal(value))
         } else {
             Err(())
         }
     }
 }
 
-impl Deref for NonZeroBytes {
+impl Deref for Literal {
     type Target = Vec<u8>;
 
     fn deref(&self) -> &Self::Target {
@@ -153,7 +153,7 @@ pub enum IString {
     /// Note: Even if the octet count is 0, a client transmitting a
     /// literal MUST wait to receive a command continuation request.
     ///
-    Literal(NonZeroBytes),
+    Literal(Literal),
     /// The quoted string form is an alternative that avoids the overhead of
     /// processing a literal at the cost of limitations of characters which may be used.
     ///
@@ -219,7 +219,7 @@ impl TryFrom<String> for IString {
             let bytes = s.into_bytes();
 
             if bytes.iter().all(|b| *b != 0x00) {
-                Ok(IString::Literal(NonZeroBytes(bytes)))
+                Ok(IString::Literal(Literal(bytes)))
             } else {
                 Err(())
             }
@@ -480,7 +480,7 @@ pub(crate) enum istr<'a> {
 impl<'a> istr<'a> {
     pub fn to_owned(&self) -> IString {
         match self {
-            istr::Literal(bytes) => IString::Literal(NonZeroBytes(bytes.to_vec())),
+            istr::Literal(bytes) => IString::Literal(Literal(bytes.to_vec())),
             istr::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
         }
     }
