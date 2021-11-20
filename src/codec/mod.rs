@@ -1119,14 +1119,6 @@ impl Encode for Continuation {
     }
 }
 
-// ----- Unused -----
-
-impl Encode for u32 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
-    }
-}
-
 pub(crate) mod utils {
     use std::io::Write;
 
