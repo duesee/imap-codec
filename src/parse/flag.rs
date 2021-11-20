@@ -11,7 +11,7 @@ use nom::{
 use crate::{
     parse::core::atom,
     types::{
-        core::atm,
+        core::AtomRef,
         flag::{Flag, FlagNameAttribute},
     },
 };
@@ -110,6 +110,6 @@ fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
 /// except as defined by future standard or standards-track revisions of this specification.
 ///
 /// flag-extension = "\" atom
-fn flag_extension(input: &[u8]) -> IResult<&[u8], atm> {
+fn flag_extension(input: &[u8]) -> IResult<&[u8], AtomRef> {
     preceded(tag(b"\\"), atom)(input)
 }

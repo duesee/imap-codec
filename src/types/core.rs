@@ -442,21 +442,21 @@ impl std::fmt::Display for Charset {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct atm<'a>(&'a str);
+pub(crate) struct AtomRef<'a>(&'a str);
 
-impl<'a> TryFrom<&'a str> for atm<'a> {
+impl<'a> TryFrom<&'a str> for AtomRef<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if value.bytes().all(is_astring_char) {
-            Ok(atm(value))
+            Ok(AtomRef(value))
         } else {
             Err(())
         }
     }
 }
 
-impl<'a> Deref for atm<'a> {
+impl<'a> Deref for AtomRef<'a> {
     type Target = &'a str;
 
     fn deref(&self) -> &Self::Target {
@@ -464,7 +464,7 @@ impl<'a> Deref for atm<'a> {
     }
 }
 
-impl<'a> atm<'a> {
+impl<'a> AtomRef<'a> {
     pub fn to_owned(&self) -> Atom {
         Atom(self.0.to_string())
     }
@@ -499,7 +499,7 @@ impl<'a> NStringRef<'a> {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum astr<'a> {
-    Atom(atm<'a>),
+    Atom(AtomRef<'a>),
     String(IStringRef<'a>),
 }
 

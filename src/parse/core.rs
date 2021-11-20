@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, txt, Charset, IStringRef, NStringRef, Quoted, Tag},
+    types::core::{astr, txt, AtomRef, Charset, IStringRef, NStringRef, Quoted, Tag},
     utils::unescape_quoted,
 };
 
@@ -147,7 +147,7 @@ pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
             // Note: this is safe, because is_astring_char enforces
             //       that the string only contains ASCII characters
             // TODO(perf): atm::try_from tests all bytes again
-            astr::Atom(atm::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
+            astr::Atom(AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
         }),
         map(string, astr::String),
     ))(input)
@@ -182,7 +182,7 @@ pub(crate) fn is_resp_specials(i: u8) -> bool {
 }
 
 /// atom = 1*ATOM-CHAR
-pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
+pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], AtomRef> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
@@ -192,7 +192,7 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
     // TODO(perf): atm::try_from tests all bytes again
     Ok((
         remaining,
-        atm::try_from(unsafe { std::str::from_utf8_unchecked(parsed_atom) }).unwrap(),
+        AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(parsed_atom) }).unwrap(),
     ))
 }
 
