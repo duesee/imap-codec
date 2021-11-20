@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, nstr, txt, Charset, Quoted, Tag},
+    types::core::{astr, atm, istr, txt, Charset, NStringRef, Quoted, Tag},
     utils::unescape_quoted,
 };
 
@@ -196,10 +196,10 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], atm> {
 // ----- nstring ----- nil or string
 
 /// nstring = string / nil
-pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], nstr> {
+pub(crate) fn nstring(input: &[u8]) -> IResult<&[u8], NStringRef> {
     alt((
-        map(string, |item| nstr(Some(item))),
-        map(nil, |_| nstr(None)),
+        map(string, |item| NStringRef(Some(item))),
+        map(nil, |_| NStringRef(None)),
     ))(input)
 }
 

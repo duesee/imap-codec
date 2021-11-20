@@ -488,9 +488,9 @@ impl<'a> istr<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) struct nstr<'a>(pub Option<istr<'a>>);
+pub(crate) struct NStringRef<'a>(pub Option<istr<'a>>);
 
-impl<'a> nstr<'a> {
+impl<'a> NStringRef<'a> {
     pub fn to_owned(&self) -> NString {
         NString(self.0.as_ref().map(|inner| inner.to_owned()))
     }

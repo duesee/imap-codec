@@ -18,7 +18,7 @@ use crate::{
             BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
             SpecificFields,
         },
-        core::{istr, nstr},
+        core::{istr, NStringRef},
     },
 };
 
@@ -233,13 +233,13 @@ fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(istr, istr)>> {
 
 #[inline]
 /// body-fld-id = nstring
-fn body_fld_id(input: &[u8]) -> IResult<&[u8], nstr> {
+fn body_fld_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
 /// body-fld-desc = nstring
-fn body_fld_desc(input: &[u8]) -> IResult<&[u8], nstr> {
+fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
@@ -334,7 +334,7 @@ fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
 
 #[inline]
 /// body-fld-md5 = nstring
-fn body_fld_md5(input: &[u8]) -> IResult<&[u8], nstr> {
+fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
@@ -366,7 +366,7 @@ fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
 
 #[inline]
 /// body-fld-loc = nstring
-fn body_fld_loc(input: &[u8]) -> IResult<&[u8], nstr> {
+fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
