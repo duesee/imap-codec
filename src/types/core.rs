@@ -26,30 +26,6 @@ use crate::{
     utils::escape_quoted,
 };
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
-
-impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
-    type Error = ();
-
-    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            Err(())
-        } else {
-            Ok(NonEmptyVec(value))
-        }
-    }
-}
-
-impl<T> Deref for NonEmptyVec<T> {
-    type Target = Vec<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.
@@ -98,6 +74,74 @@ impl Display for Atom {
 
 // ## 4.3. String
 
+/// A string is in one of two forms: either literal or quoted string.
+///
+/// The empty string is represented as either "" (a quoted string
+/// with zero characters between double quotes) or as {0} followed
+/// by CRLF (a literal with an octet count of 0).
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum IString {
+    /// A literal is a sequence of zero or more octets (including CR and
+    /// LF), prefix-quoted with an octet count in the form of an open
+    /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
+    /// In the case of literals transmitted from server to client, the
+    /// CRLF is immediately followed by the octet data.  In the case of
+    /// literals transmitted from client to server, the client MUST wait
+    /// to receive a command continuation request (...) before sending
+    /// the octet data (and the remainder of the command).
+    ///
+    /// Note: Even if the octet count is 0, a client transmitting a
+    /// literal MUST wait to receive a command continuation request.
+    ///
+    Literal(Literal),
+    /// The quoted string form is an alternative that avoids the overhead of
+    /// processing a literal at the cost of limitations of characters which may be used.
+    ///
+    /// A quoted string is a sequence of zero or more 7-bit characters,
+    /// excluding CR and LF, with double quote (<">) characters at each end.
+    ///
+    Quoted(Quoted),
+}
+
+impl TryFrom<&str> for IString {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, ()> {
+        s.to_string().try_into()
+    }
+}
+
+impl TryFrom<String> for IString {
+    type Error = ();
+
+    fn try_from(s: String) -> Result<Self, ()> {
+        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
+            Ok(IString::Quoted(Quoted(s)))
+        } else {
+            let bytes = s.into_bytes();
+
+            if bytes.iter().all(|b| *b != 0x00) {
+                Ok(IString::Literal(Literal(bytes)))
+            } else {
+                Err(())
+            }
+        }
+    }
+}
+
+impl TryFrom<IString> for String {
+    type Error = FromUtf8Error;
+
+    fn try_from(value: IString) -> Result<Self, Self::Error> {
+        match value {
+            IString::Quoted(utf8) => Ok(utf8.0),
+            IString::Literal(bytes) => String::from_utf8(bytes.0),
+        }
+    }
+}
+
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal(Vec<u8>);
@@ -128,37 +172,6 @@ impl Deref for Literal {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
-}
-
-/// A string is in one of two forms: either literal or quoted string.
-///
-/// The empty string is represented as either "" (a quoted string
-/// with zero characters between double quotes) or as {0} followed
-/// by CRLF (a literal with an octet count of 0).
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum IString {
-    /// A literal is a sequence of zero or more octets (including CR and
-    /// LF), prefix-quoted with an octet count in the form of an open
-    /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
-    /// In the case of literals transmitted from server to client, the
-    /// CRLF is immediately followed by the octet data.  In the case of
-    /// literals transmitted from client to server, the client MUST wait
-    /// to receive a command continuation request (...) before sending
-    /// the octet data (and the remainder of the command).
-    ///
-    /// Note: Even if the octet count is 0, a client transmitting a
-    /// literal MUST wait to receive a command continuation request.
-    ///
-    Literal(Literal),
-    /// The quoted string form is an alternative that avoids the overhead of
-    /// processing a literal at the cost of limitations of characters which may be used.
-    ///
-    /// A quoted string is a sequence of zero or more 7-bit characters,
-    /// excluding CR and LF, with double quote (<">) characters at each end.
-    ///
-    Quoted(Quoted),
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -196,43 +209,6 @@ impl Deref for Quoted {
 impl Display for Quoted {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "\"{}\"", escape_quoted(&self.0))
-    }
-}
-
-impl TryFrom<&str> for IString {
-    type Error = ();
-
-    fn try_from(s: &str) -> Result<Self, ()> {
-        s.to_string().try_into()
-    }
-}
-
-impl TryFrom<String> for IString {
-    type Error = ();
-
-    fn try_from(s: String) -> Result<Self, ()> {
-        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            Ok(IString::Quoted(Quoted(s)))
-        } else {
-            let bytes = s.into_bytes();
-
-            if bytes.iter().all(|b| *b != 0x00) {
-                Ok(IString::Literal(Literal(bytes)))
-            } else {
-                Err(())
-            }
-        }
-    }
-}
-
-impl TryFrom<IString> for String {
-    type Error = FromUtf8Error;
-
-    fn try_from(value: IString) -> Result<Self, Self::Error> {
-        match value {
-            IString::Quoted(utf8) => Ok(utf8.0),
-            IString::Literal(bytes) => String::from_utf8(bytes.0),
-        }
     }
 }
 
@@ -517,6 +493,30 @@ pub struct txt<'a>(pub(crate) &'a str);
 impl<'a> txt<'a> {
     pub fn to_owned(&self) -> Text {
         Text(self.0.to_string())
+    }
+}
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+
+impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
+    type Error = ();
+
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            Err(())
+        } else {
+            Ok(NonEmptyVec(value))
+        }
+    }
+}
+
+impl<T> Deref for NonEmptyVec<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
