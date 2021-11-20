@@ -1,13 +1,11 @@
 // ### 2.3.2. Flags Message Attribute
 
-use std::io::Write;
-
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, types::core::Atom};
+use crate::types::core::Atom;
 
 /// A list of zero or more named tokens associated with the message.  A
 /// flag is set by its addition to this list, and is cleared by its
@@ -86,12 +84,6 @@ impl std::fmt::Display for Flag {
     }
 }
 
-impl Encode for Flag {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
-    }
-}
-
 /// Four name attributes are defined.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -136,12 +128,6 @@ impl std::fmt::Display for FlagNameAttribute {
             Self::Unmarked => write!(f, "\\Unmarked"),
             Self::Extension(atom) => write!(f, "\\{}", atom),
         }
-    }
-}
-
-impl Encode for FlagNameAttribute {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
     }
 }
 

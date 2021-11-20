@@ -1,7 +1,6 @@
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{Display, Formatter},
-    io::Write,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -9,7 +8,7 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, types::core::Atom};
+use crate::types::core::Atom;
 
 pub mod address;
 pub mod body;
@@ -48,19 +47,9 @@ impl<'a> From<Atom> for AuthMechanism {
     }
 }
 
-impl Encode for AuthMechanism {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match &self {
-            AuthMechanism::Plain => writer.write_all(b"PLAIN"),
-            AuthMechanism::Login => writer.write_all(b"LOGIN"),
-            AuthMechanism::Other(AuthMechanismOther(atom)) => atom.encode(writer),
-        }
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthMechanismOther(Atom);
+pub struct AuthMechanismOther(pub(crate) Atom);
 
 impl<'a> TryFrom<&'a str> for AuthMechanismOther {
     type Error = ();
@@ -89,12 +78,6 @@ impl<'a> TryFrom<Atom> for AuthMechanismOther {
     }
 }
 
-impl Encode for AuthMechanismOther {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
-    }
-}
-
 impl Display for AuthMechanismOther {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
@@ -106,12 +89,4 @@ impl Display for AuthMechanismOther {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CompressionAlgorithm {
     Deflate,
-}
-
-impl Encode for CompressionAlgorithm {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
-        }
-    }
 }

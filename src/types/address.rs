@@ -1,22 +1,20 @@
-use std::io::Write;
-
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, types::core::NString};
+use crate::types::core::NString;
 
 /// An address structure describes an electronic mail address.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address {
     /// Personal name
-    name: NString,
+    pub(crate) name: NString,
     /// At-domain-list (source route)
-    adl: NString,
+    pub(crate) adl: NString,
     /// Mailbox name
-    mailbox: NString,
+    pub(crate) mailbox: NString,
     /// Host name
-    host: NString,
+    pub(crate) host: NString,
 }
 
 impl Address {
@@ -27,21 +25,5 @@ impl Address {
             mailbox,
             host,
         }
-    }
-}
-
-impl Encode for Address {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(b"(")?;
-        self.name.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.adl.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.mailbox.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.host.encode(writer)?;
-        writer.write_all(b")")?;
-
-        Ok(())
     }
 }

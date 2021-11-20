@@ -2,27 +2,22 @@
 //!
 //! see https://tools.ietf.org/html/rfc3501#section-6
 
-use std::{convert::TryInto, io::Write};
+use std::convert::TryInto;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-use base64::encode as b64encode;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    codec::Encode,
-    types::{
-        core::{AString, Atom, Charset, NonEmptyVec, NonZeroBytes, Tag},
-        datetime::{MyDateTime, MyNaiveDate},
-        fetch_attributes::MacroOrFetchAttributes,
-        flag::{Flag, StoreResponse, StoreType},
-        mailbox::{ListMailbox, Mailbox},
-        response::Capability,
-        sequence::SequenceSet,
-        AuthMechanism, CompressionAlgorithm,
-    },
-    utils::join_serializable,
+use crate::types::{
+    core::{AString, Atom, Charset, NonEmptyVec, NonZeroBytes, Tag},
+    datetime::{MyDateTime, MyNaiveDate},
+    fetch_attributes::MacroOrFetchAttributes,
+    flag::{Flag, StoreResponse, StoreType},
+    mailbox::{ListMailbox, Mailbox},
+    response::Capability,
+    sequence::SequenceSet,
+    AuthMechanism, CompressionAlgorithm,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -323,15 +318,6 @@ impl Command {
 
     pub fn name(&self) -> &'static str {
         self.body.name()
-    }
-}
-
-impl Encode for Command {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.tag.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.body.encode(writer)?;
-        writer.write_all(b"\r\n")
     }
 }
 
@@ -1498,240 +1484,6 @@ impl CommandBody {
     }
 }
 
-impl Encode for CommandBody {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            CommandBody::Capability => writer.write_all(b"CAPABILITY"),
-            CommandBody::Noop => writer.write_all(b"NOOP"),
-            CommandBody::Logout => writer.write_all(b"LOGOUT"),
-            CommandBody::StartTLS => writer.write_all(b"STARTTLS"),
-            CommandBody::Authenticate {
-                mechanism,
-                initial_response,
-            } => {
-                writer.write_all(b"AUTHENTICATE")?;
-                writer.write_all(b" ")?;
-                mechanism.encode(writer)?;
-
-                if let Some(ir) = initial_response {
-                    writer.write_all(b" ")?;
-
-                    // RFC 4959 (https://datatracker.ietf.org/doc/html/rfc4959#section-3)
-                    // "To send a zero-length initial response, the client MUST send a single pad character ("=").
-                    // This indicates that the response is present, but is a zero-length string."
-                    if ir.is_empty() {
-                        writer.write_all(b"=")?;
-                    } else {
-                        writer.write_all(b64encode(ir).as_bytes())?;
-                    };
-                };
-
-                Ok(())
-            }
-            CommandBody::Login { username, password } => {
-                writer.write_all(b"LOGIN")?;
-                writer.write_all(b" ")?;
-                username.encode(writer)?;
-                writer.write_all(b" ")?;
-                password.encode(writer)
-            }
-            CommandBody::Select { mailbox } => {
-                writer.write_all(b"SELECT")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Examine { mailbox } => {
-                writer.write_all(b"EXAMINE")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Create { mailbox } => {
-                writer.write_all(b"CREATE")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Delete { mailbox } => {
-                writer.write_all(b"DELETE")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Rename {
-                mailbox,
-                new_mailbox,
-            } => {
-                writer.write_all(b"RENAME")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
-                writer.write_all(b" ")?;
-                new_mailbox.encode(writer)
-            }
-            CommandBody::Subscribe { mailbox } => {
-                writer.write_all(b"SUBSCRIBE")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Unsubscribe { mailbox } => {
-                writer.write_all(b"UNSUBSCRIBE")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::List {
-                reference,
-                mailbox_wildcard,
-            } => {
-                writer.write_all(b"LIST")?;
-                writer.write_all(b" ")?;
-                reference.encode(writer)?;
-                writer.write_all(b" ")?;
-                mailbox_wildcard.encode(writer)
-            }
-            CommandBody::Lsub {
-                reference,
-                mailbox_wildcard,
-            } => {
-                writer.write_all(b"LSUB")?;
-                writer.write_all(b" ")?;
-                reference.encode(writer)?;
-                writer.write_all(b" ")?;
-                mailbox_wildcard.encode(writer)
-            }
-            CommandBody::Status {
-                mailbox,
-                attributes,
-            } => {
-                writer.write_all(b"STATUS")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
-                writer.write_all(b" ")?;
-                writer.write_all(b"(")?;
-                join_serializable(attributes, b" ", writer)?;
-                writer.write_all(b")")
-            }
-            CommandBody::Append {
-                mailbox,
-                flags,
-                date,
-                message,
-            } => {
-                writer.write_all(b"APPEND")?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
-
-                if !flags.is_empty() {
-                    writer.write_all(b" ")?;
-                    writer.write_all(b"(")?;
-                    join_serializable(flags, b" ", writer)?;
-                    writer.write_all(b")")?;
-                }
-
-                if let Some(date) = date {
-                    writer.write_all(b" ")?;
-                    date.encode(writer)?;
-                }
-
-                writer.write_all(b" ")?;
-                writer.write_all(format!("{{{}}}\r\n", message.len()).as_bytes())?;
-                writer.write_all(message)
-            }
-            CommandBody::Check => writer.write_all(b"CHECK"),
-            CommandBody::Close => writer.write_all(b"CLOSE"),
-            CommandBody::Expunge => writer.write_all(b"EXPUNGE"),
-            CommandBody::Search {
-                charset,
-                criteria,
-                uid,
-            } => {
-                if *uid {
-                    writer.write_all(b"UID SEARCH")?;
-                } else {
-                    writer.write_all(b"SEARCH")?;
-                }
-                if let Some(charset) = charset {
-                    writer.write_all(b" ")?;
-                    write!(writer, "CHARSET {}", charset)?;
-                }
-                writer.write_all(b" ")?;
-                if let SearchKey::And(search_keys) = criteria {
-                    join_serializable(search_keys, b" ", writer) // TODO: use List1?
-                } else {
-                    criteria.encode(writer)
-                }
-            }
-            CommandBody::Fetch {
-                sequence_set,
-                attributes,
-                uid,
-            } => {
-                if *uid {
-                    writer.write_all(b"UID FETCH ")?;
-                } else {
-                    writer.write_all(b"FETCH ")?;
-                }
-
-                sequence_set.encode(writer)?;
-                writer.write_all(b" ")?;
-                attributes.encode(writer)
-            }
-            CommandBody::Store {
-                sequence_set,
-                kind,
-                response,
-                flags,
-                uid,
-            } => {
-                if *uid {
-                    writer.write_all(b"UID STORE ")?;
-                } else {
-                    writer.write_all(b"STORE ")?;
-                }
-
-                sequence_set.encode(writer)?;
-                writer.write_all(b" ")?;
-
-                match kind {
-                    StoreType::Add => writer.write_all(b"+")?,
-                    StoreType::Remove => writer.write_all(b"-")?,
-                    StoreType::Replace => {}
-                }
-
-                writer.write_all(b"FLAGS")?;
-
-                match response {
-                    StoreResponse::Answer => {}
-                    StoreResponse::Silent => writer.write_all(b".SILENT")?,
-                }
-
-                writer.write_all(b" (")?;
-                join_serializable(flags, b" ", writer)?;
-                writer.write_all(b")")
-            }
-            CommandBody::Copy {
-                sequence_set,
-                mailbox,
-                uid,
-            } => {
-                if *uid {
-                    writer.write_all(b"UID COPY ")?;
-                } else {
-                    writer.write_all(b"COPY ")?;
-                }
-                sequence_set.encode(writer)?;
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)
-            }
-            CommandBody::Idle => writer.write_all(b"IDLE"),
-            CommandBody::Enable { capabilities } => {
-                writer.write_all(b"ENABLE ")?;
-                join_serializable(capabilities, b" ", writer)
-            }
-            CommandBody::Compress { algorithm } => {
-                writer.write_all(b"COMPRESS ")?;
-                algorithm.encode(writer)
-            }
-        }
-    }
-}
-
 /// The currently defined status data items that can be requested.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -1751,18 +1503,6 @@ pub enum StatusAttribute {
 
     /// The number of messages which do not have the \Seen flag set.
     Unseen,
-}
-
-impl Encode for StatusAttribute {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            StatusAttribute::Messages => writer.write_all(b"MESSAGES"),
-            StatusAttribute::Recent => writer.write_all(b"RECENT"),
-            StatusAttribute::UidNext => writer.write_all(b"UIDNEXT"),
-            StatusAttribute::UidValidity => writer.write_all(b"UIDVALIDITY"),
-            StatusAttribute::Unseen => writer.write_all(b"UNSEEN"),
-        }
-    }
 }
 
 /// The defined search keys.
@@ -1913,115 +1653,6 @@ pub enum SearchKey {
 
     /// Messages that do not have the \Seen flag set.
     Unseen,
-}
-
-impl Encode for SearchKey {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            SearchKey::All => writer.write_all(b"ALL"),
-            SearchKey::Answered => writer.write_all(b"ANSWERED"),
-            SearchKey::Bcc(astring) => {
-                writer.write_all(b"BCC ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Before(date) => {
-                writer.write_all(b"BEFORE ")?;
-                date.encode(writer)
-            }
-            SearchKey::Body(astring) => {
-                writer.write_all(b"BODY ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Cc(astring) => {
-                writer.write_all(b"CC ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Deleted => writer.write_all(b"DELETED"),
-            SearchKey::Flagged => writer.write_all(b"FLAGGED"),
-            SearchKey::From(astring) => {
-                writer.write_all(b"FROM ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Keyword(flag_keyword) => {
-                writer.write_all(b"KEYWORD ")?;
-                flag_keyword.encode(writer)
-            }
-            SearchKey::New => writer.write_all(b"NEW"),
-            SearchKey::Old => writer.write_all(b"OLD"),
-            SearchKey::On(date) => {
-                writer.write_all(b"ON ")?;
-                date.encode(writer)
-            }
-            SearchKey::Recent => writer.write_all(b"RECENT"),
-            SearchKey::Seen => writer.write_all(b"SEEN"),
-            SearchKey::Since(date) => {
-                writer.write_all(b"SINCE ")?;
-                date.encode(writer)
-            }
-            SearchKey::Subject(astring) => {
-                writer.write_all(b"SUBJECT ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Text(astring) => {
-                writer.write_all(b"TEXT ")?;
-                astring.encode(writer)
-            }
-            SearchKey::To(astring) => {
-                writer.write_all(b"TO ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Unanswered => writer.write_all(b"UNANSWERED"),
-            SearchKey::Undeleted => writer.write_all(b"UNDELETED"),
-            SearchKey::Unflagged => writer.write_all(b"UNFLAGGED"),
-            SearchKey::Unkeyword(flag_keyword) => {
-                writer.write_all(b"UNKEYWORD ")?;
-                flag_keyword.encode(writer)
-            }
-            SearchKey::Unseen => writer.write_all(b"UNSEEN"),
-            SearchKey::Draft => writer.write_all(b"DRAFT"),
-            SearchKey::Header(header_fld_name, astring) => {
-                writer.write_all(b"HEADER ")?;
-                header_fld_name.encode(writer)?;
-                writer.write_all(b" ")?;
-                astring.encode(writer)
-            }
-            SearchKey::Larger(number) => write!(writer, "LARGER {}", number),
-            SearchKey::Not(search_key) => {
-                writer.write_all(b"NOT ")?;
-                search_key.encode(writer)
-            }
-            SearchKey::Or(search_key_a, search_key_b) => {
-                writer.write_all(b"OR ")?;
-                search_key_a.encode(writer)?;
-                writer.write_all(b" ")?;
-                search_key_b.encode(writer)
-            }
-            SearchKey::SentBefore(date) => {
-                writer.write_all(b"SENTBEFORE ")?;
-                date.encode(writer)
-            }
-            SearchKey::SentOn(date) => {
-                writer.write_all(b"SENTON ")?;
-                date.encode(writer)
-            }
-            SearchKey::SentSince(date) => {
-                writer.write_all(b"SENTSINCE ")?;
-                date.encode(writer)
-            }
-            SearchKey::Smaller(number) => write!(writer, "SMALLER {}", number),
-            SearchKey::Uid(sequence_set) => {
-                writer.write_all(b"UID ")?;
-                sequence_set.encode(writer)
-            }
-            SearchKey::Undraft => writer.write_all(b"UNDRAFT"),
-            SearchKey::SequenceSet(sequence_set) => sequence_set.encode(writer),
-            SearchKey::And(search_keys) => {
-                writer.write_all(b"(")?;
-                join_serializable(search_keys, b" ", writer)?;
-                writer.write_all(b")")
-            }
-        }
-    }
 }
 
 #[cfg(test)]

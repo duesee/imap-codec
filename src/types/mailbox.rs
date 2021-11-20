@@ -1,6 +1,5 @@
 use std::{
     convert::{TryFrom, TryInto},
-    io::Write,
     ops::Deref,
 };
 
@@ -10,7 +9,6 @@ use arbitrary::Arbitrary;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    codec::Encode,
     parse::mailbox::is_list_char,
     types::core::{AString, IString},
 };
@@ -53,15 +51,6 @@ impl Deref for ListCharString {
 pub enum ListMailbox {
     Token(ListCharString),
     String(IString),
-}
-
-impl Encode for ListMailbox {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            ListMailbox::Token(str) => writer.write_all(str.as_bytes()),
-            ListMailbox::String(imap_str) => imap_str.encode(writer),
-        }
-    }
 }
 
 impl TryFrom<&str> for ListMailbox {
@@ -157,7 +146,7 @@ pub enum Mailbox {
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MailboxOther(AString);
+pub struct MailboxOther(pub(crate) AString);
 
 impl TryFrom<AString> for MailboxOther {
     type Error = ();
@@ -195,15 +184,6 @@ impl TryFrom<AString> for MailboxOther {
                     }
                 }
             },
-        }
-    }
-}
-
-impl Encode for Mailbox {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Mailbox::Inbox => writer.write_all(b"INBOX"),
-            Mailbox::Other(MailboxOther(a_str)) => a_str.encode(writer),
         }
     }
 }

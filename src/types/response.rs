@@ -1,6 +1,6 @@
 //! # 7. Server Responses
 
-use std::{convert::TryInto, io::Write, num::NonZeroU32};
+use std::{convert::TryInto, num::NonZeroU32};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -8,7 +8,7 @@ use arbitrary::Arbitrary;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    codec::Encode,
+    codec::utils::join,
     types::{
         body::BodyStructure,
         core::{Atom, Charset, NString, Tag, Text},
@@ -19,7 +19,6 @@ use crate::{
         mailbox::Mailbox,
         AuthMechanism, CompressionAlgorithm,
     },
-    utils::{escape_quoted, join, join_serializable},
 };
 
 /// Server responses are in three forms.
@@ -40,16 +39,6 @@ pub enum Response {
     /// of an incomplete client command and readiness for the remainder of
     /// the command.
     Continuation(Continuation),
-}
-
-impl Encode for Response {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Response::Status(status) => status.encode(writer),
-            Response::Data(data) => data.encode(writer),
-            Response::Continuation(continuation) => continuation.encode(writer),
-        }
-    }
 }
 
 /// ## 7.1. Server Responses - Status Responses
@@ -208,39 +197,6 @@ impl Status {
             code,
             text: text.try_into()?,
         })
-    }
-}
-
-impl Encode for Status {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        fn format_status(
-            tag: &Option<Tag>,
-            status: &str,
-            code: &Option<Code>,
-            comment: &Text,
-            writer: &mut impl Write,
-        ) -> std::io::Result<()> {
-            match tag {
-                Some(tag) => tag.encode(writer)?,
-                None => writer.write_all(b"*")?,
-            }
-            writer.write_all(b" ")?;
-            writer.write_all(status.as_bytes())?;
-            writer.write_all(b" ")?;
-            if let Some(code) = code {
-                write!(writer, "[{}] ", code)?;
-            }
-            comment.encode(writer)?;
-            writer.write_all(b"\r\n")
-        }
-
-        match self {
-            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, writer),
-            Status::No { tag, code, text } => format_status(tag, "NO", code, text, writer),
-            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, writer),
-            Status::PreAuth { code, text } => format_status(&None, "PREAUTH", code, text, writer),
-            Status::Bye { code, text } => format_status(&None, "BYE", code, text, writer),
-        }
     }
 }
 
@@ -478,93 +434,6 @@ pub enum Data {
     Enabled { capabilities: Vec<Capability> },
 }
 
-impl Encode for Data {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Data::Capability(caps) => {
-                writer.write_all(b"* CAPABILITY ")?;
-                join_serializable(caps, b" ", writer)?;
-            }
-            Data::List {
-                items,
-                delimiter,
-                mailbox,
-            } => {
-                writer.write_all(b"* LIST (")?;
-                join_serializable(items, b" ", writer)?;
-                writer.write_all(b") ")?;
-
-                if let Some(delimiter) = delimiter {
-                    // TODO: newtype Delimiter?
-                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
-                } else {
-                    writer.write_all(b"NIL")?;
-                }
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
-            }
-            Data::Lsub {
-                items,
-                delimiter,
-                mailbox,
-            } => {
-                writer.write_all(b"* LSUB (")?;
-                join_serializable(items, b" ", writer)?;
-                writer.write_all(b") ")?;
-
-                if let Some(delimiter) = delimiter {
-                    // TODO: newtype Delimiter?
-                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
-                } else {
-                    writer.write_all(b"NIL")?;
-                }
-                writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
-            }
-            Data::Status {
-                mailbox,
-                attributes,
-            } => {
-                writer.write_all(b"* STATUS ")?;
-                mailbox.encode(writer)?;
-                writer.write_all(b" (")?;
-                join_serializable(attributes, b" ", writer)?;
-                writer.write_all(b")")?;
-            }
-            Data::Search(seqs) => {
-                if seqs.is_empty() {
-                    writer.write_all(b"* SEARCH")?;
-                } else {
-                    writer.write_all(b"* SEARCH ")?;
-                    join_serializable(seqs, b" ", writer)?;
-                }
-            }
-            Data::Flags(flags) => {
-                writer.write_all(b"* FLAGS (")?;
-                join_serializable(flags, b" ", writer)?;
-                writer.write_all(b")")?;
-            }
-            Data::Exists(count) => write!(writer, "* {} EXISTS", count)?,
-            Data::Recent(count) => write!(writer, "* {} RECENT", count)?,
-            Data::Expunge(msg) => write!(writer, "* {} EXPUNGE", msg)?,
-            Data::Fetch {
-                seq_or_uid,
-                attributes,
-            } => {
-                write!(writer, "* {} FETCH (", seq_or_uid)?;
-                join_serializable(attributes, b" ", writer)?;
-                writer.write_all(b")")?;
-            }
-            Data::Enabled { capabilities } => {
-                write!(writer, "* ENABLED ")?;
-                join_serializable(capabilities, b" ", writer)?;
-            }
-        }
-
-        writer.write_all(b"\r\n")
-    }
-}
-
 /// The currently defined status data items.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -596,12 +465,6 @@ impl std::fmt::Display for StatusAttributeValue {
             Self::UidValidity(identifier) => write!(f, "UIDVALIDITY {}", identifier),
             Self::Unseen(count) => write!(f, "UNSEEN {}", count),
         }
-    }
-}
-
-impl Encode for StatusAttributeValue {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
     }
 }
 
@@ -640,19 +503,6 @@ impl Continuation {
 
     pub fn base64(data: &[u8]) -> Self {
         Continuation::Base64(data.to_owned())
-    }
-}
-
-impl Encode for Continuation {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Continuation::Basic { code, text } => match code {
-                Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
-                None => write!(writer, "+ {}\r\n", text),
-            },
-            // TODO: Is this correct when data is empty?
-            Continuation::Base64(data) => write!(writer, "+ {}\r\n", base64::encode(data)),
-        }
     }
 }
 
@@ -802,12 +652,6 @@ impl std::fmt::Display for Code {
     }
 }
 
-impl Encode for Code {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
-    }
-}
-
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -854,12 +698,6 @@ impl std::fmt::Display for Capability {
             },
             Other(atom) => write!(f, "{}", atom),
         }
-    }
-}
-
-impl Encode for Capability {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
     }
 }
 
@@ -964,72 +802,12 @@ pub enum MessageAttribute {
     Uid(NonZeroU32),
 }
 
-impl Encode for MessageAttribute {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use MessageAttribute::*;
-
-        match self {
-            BodyExt {
-                section,
-                origin,
-                data,
-            } => {
-                writer.write_all(b"BODY[")?;
-                if let Some(section) = section {
-                    section.encode(writer)?;
-                }
-                writer.write_all(b"]")?;
-                if let Some(origin) = origin {
-                    write!(writer, "<{}>", origin)?;
-                }
-                writer.write_all(b" ")?;
-                data.encode(writer)
-            }
-            // FIXME: do not return body-ext-1part and body-ext-mpart here
-            Body(body) => {
-                writer.write_all(b"BODY ")?;
-                body.encode(writer)
-            }
-            BodyStructure(body) => {
-                writer.write_all(b"BODYSTRUCTURE ")?;
-                body.encode(writer)
-            }
-            Envelope(envelope) => {
-                writer.write_all(b"ENVELOPE ")?;
-                envelope.encode(writer)
-            }
-            Flags(flags) => {
-                writer.write_all(b"FLAGS (")?;
-                join_serializable(flags, b" ", writer)?;
-                writer.write_all(b")")
-            }
-            InternalDate(datetime) => {
-                writer.write_all(b"INTERNALDATE ")?;
-                datetime.encode(writer)
-            }
-            Rfc822(nstring) => {
-                writer.write_all(b"RFC822 ")?;
-                nstring.encode(writer)
-            }
-            Rfc822Header(nstring) => {
-                writer.write_all(b"RFC822.HEADER ")?;
-                nstring.encode(writer)
-            }
-            Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
-            Rfc822Text(nstring) => {
-                writer.write_all(b"RFC822.TEXT ")?;
-                nstring.encode(writer)
-            }
-            Uid(uid) => write!(writer, "UID {}", uid),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::convert::TryFrom;
 
     use super::*;
+    use crate::codec::Encode;
 
     #[test]
     fn test_status() {

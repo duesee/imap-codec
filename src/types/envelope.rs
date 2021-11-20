@@ -1,13 +1,7 @@
-use std::io::Write;
-
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    codec::Encode,
-    types::{address::Address, core::NString},
-    List1OrNil,
-};
+use crate::types::{address::Address, core::NString};
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,
@@ -70,30 +64,4 @@ pub struct Envelope {
     pub bcc: Vec<Address>,      // encode as nil if empty?
     pub in_reply_to: NString,   // TODO: must not be empty string
     pub message_id: NString,    // TODO: must not be empty string
-}
-
-impl Encode for Envelope {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(b"(")?;
-        self.date.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.subject.encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.from, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.sender, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.reply_to, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.to, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.cc, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        List1OrNil(&self.bcc, b"").encode(writer)?;
-        writer.write_all(b" ")?;
-        self.in_reply_to.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.message_id.encode(writer)?;
-        writer.write_all(b")")
-    }
 }

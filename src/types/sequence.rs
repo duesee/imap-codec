@@ -1,6 +1,5 @@
 use std::{
     convert::{TryFrom, TryInto},
-    io::Write,
     num::NonZeroU32,
 };
 
@@ -9,7 +8,7 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, parse::sequence::sequence_set, utils::join_serializable};
+use crate::parse::sequence::sequence_set;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -22,12 +21,6 @@ pub enum Sequence {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SequenceSet(pub(crate) Vec<Sequence>);
-
-impl Encode for SequenceSet {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(&self.0, b",", writer)
-    }
-}
 
 impl<'a> SequenceSet {
     pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
@@ -81,19 +74,6 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
     }
 }
 
-impl Encode for Sequence {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Sequence::Single(seq_no) => seq_no.encode(writer),
-            Sequence::Range(from, to) => {
-                from.encode(writer)?;
-                writer.write_all(b":")?;
-                to.encode(writer)
-            }
-        }
-    }
-}
-
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
@@ -107,15 +87,6 @@ impl SeqNo {
         match self {
             SeqNo::Value(value) => *value,
             SeqNo::Largest => largest,
-        }
-    }
-}
-
-impl Encode for SeqNo {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            SeqNo::Value(number) => write!(writer, "{}", number),
-            SeqNo::Largest => writer.write_all(b"*"),
         }
     }
 }

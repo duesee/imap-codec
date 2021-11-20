@@ -11,7 +11,6 @@ use std::{
     convert::{TryFrom, TryInto},
     fmt,
     fmt::{Debug, Display, Formatter},
-    io::Write,
     ops::Deref,
     string::FromUtf8Error,
 };
@@ -23,7 +22,6 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    codec::Encode,
     parse::core::{is_astring_char, is_atom_char, is_text_char},
     utils::escape_quoted,
 };
@@ -57,7 +55,7 @@ impl<T> Deref for NonEmptyVec<T> {
 /// An atom consists of one or more non-special characters.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Atom(String);
+pub struct Atom(pub(crate) String);
 
 impl TryFrom<&str> for Atom {
     type Error = ();
@@ -90,12 +88,6 @@ impl Deref for Atom {
 impl Display for Atom {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(&self.0, f)
-    }
-}
-
-impl Encode for Atom {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
     }
 }
 
@@ -173,7 +165,7 @@ pub enum IString {
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Quoted(String);
+pub struct Quoted(pub(crate) String);
 
 impl TryFrom<&str> for Quoted {
     type Error = ();
@@ -246,30 +238,9 @@ impl TryFrom<IString> for String {
     }
 }
 
-impl Encode for IString {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Self::Literal(val) => {
-                write!(writer, "{{{}}}\r\n", val.len())?;
-                writer.write_all(val)
-            }
-            Self::Quoted(val) => write!(writer, "\"{}\"", escape_quoted(&val.0)),
-        }
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NString(pub Option<IString>);
-
-impl Encode for NString {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match &self.0 {
-            Some(imap_str) => imap_str.encode(writer),
-            None => writer.write_all(b"NIL"),
-        }
-    }
-}
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -308,15 +279,6 @@ impl TryFrom<AString> for String {
         match value {
             AString::Atom(string) => Ok(string.0),
             AString::String(istring) => String::try_from(istring),
-        }
-    }
-}
-
-impl Encode for AString {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            AString::Atom(atom) => writer.write_all(atom.0.as_bytes()),
-            AString::String(imap_str) => imap_str.encode(writer),
         }
     }
 }
@@ -403,12 +365,6 @@ impl std::fmt::Display for Tag {
     }
 }
 
-impl Encode for Tag {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text(pub(crate) String);
@@ -438,12 +394,6 @@ impl TryFrom<String> for Text {
 impl std::fmt::Display for Text {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl Encode for Text {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
     }
 }
 
@@ -485,14 +435,6 @@ impl std::fmt::Display for Charset {
             Charset::Atom(atom) => write!(f, "{}", atom),
             Charset::Quoted(quoted) => write!(f, "{}", quoted),
         }
-    }
-}
-
-impl Encode for Charset {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        // FIXME(perf): conversion calls should not
-        //              be requires for serialization.
-        writer.write_all(self.to_string().as_bytes())
     }
 }
 
@@ -583,6 +525,7 @@ impl<'a> txt<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::codec::Encode;
 
     #[test]
     fn test_conversion() {

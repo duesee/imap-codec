@@ -1,15 +1,11 @@
-use std::{io::Write, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    codec::Encode,
-    types::core::{AString, NonEmptyVec},
-    utils::join_serializable,
-};
+use crate::types::core::{AString, NonEmptyVec};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
@@ -40,16 +36,6 @@ impl Macro {
     }
 }
 
-impl Encode for Macro {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Macro::All => writer.write_all(b"ALL"),
-            Macro::Fast => writer.write_all(b"FAST"),
-            Macro::Full => writer.write_all(b"FULL"),
-        }
-    }
-}
-
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -57,23 +43,6 @@ impl Encode for Macro {
 pub enum MacroOrFetchAttributes {
     Macro(Macro),
     FetchAttributes(Vec<FetchAttribute>),
-}
-
-impl Encode for MacroOrFetchAttributes {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            MacroOrFetchAttributes::Macro(m) => m.encode(writer),
-            MacroOrFetchAttributes::FetchAttributes(attributes) => {
-                if attributes.len() == 1 {
-                    attributes[0].encode(writer)
-                } else {
-                    writer.write_all(b"(")?;
-                    join_serializable(attributes.as_slice(), b" ", writer)?;
-                    writer.write_all(b")")
-                }
-            }
-        }
-    }
 }
 
 impl From<Macro> for MacroOrFetchAttributes {
@@ -200,43 +169,6 @@ pub enum FetchAttribute {
     Uid,
 }
 
-impl Encode for FetchAttribute {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            FetchAttribute::Body => writer.write_all(b"BODY"),
-            FetchAttribute::BodyExt {
-                section,
-                partial,
-                peek,
-            } => {
-                if *peek {
-                    writer.write_all(b"BODY.PEEK[")?;
-                } else {
-                    writer.write_all(b"BODY[")?;
-                }
-                if let Some(section) = section {
-                    section.encode(writer)?;
-                }
-                writer.write_all(b"]")?;
-                if let Some((a, b)) = partial {
-                    write!(writer, "<{}.{}>", a, b)?;
-                }
-
-                Ok(())
-            }
-            FetchAttribute::BodyStructure => writer.write_all(b"BODYSTRUCTURE"),
-            FetchAttribute::Envelope => writer.write_all(b"ENVELOPE"),
-            FetchAttribute::Flags => writer.write_all(b"FLAGS"),
-            FetchAttribute::InternalDate => writer.write_all(b"INTERNALDATE"),
-            FetchAttribute::Rfc822 => writer.write_all(b"RFC822"),
-            FetchAttribute::Rfc822Header => writer.write_all(b"RFC822.HEADER"),
-            FetchAttribute::Rfc822Size => writer.write_all(b"RFC822.SIZE"),
-            FetchAttribute::Rfc822Text => writer.write_all(b"RFC822.TEXT"),
-            FetchAttribute::Uid => writer.write_all(b"UID"),
-        }
-    }
-}
-
 /// A part specifier is either a part number or one of the following:
 /// `HEADER`, `HEADER.FIELDS`, `HEADER.FIELDS.NOT`, `MIME`, and `TEXT`.
 ///
@@ -315,73 +247,7 @@ pub enum Section {
     Mime(Part),
 }
 
-impl Encode for Section {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Section::Part(part) => part.encode(writer),
-            Section::Header(maybe_part) => match maybe_part {
-                Some(part) => {
-                    part.encode(writer)?;
-                    writer.write_all(b".HEADER")
-                }
-                None => writer.write_all(b"HEADER"),
-            },
-            Section::HeaderFields(maybe_part, header_list) => {
-                match maybe_part {
-                    Some(part) => {
-                        part.encode(writer)?;
-                        writer.write_all(b".HEADER.FIELDS (")?;
-                    }
-                    None => writer.write_all(b"HEADER.FIELDS (")?,
-                };
-                join_serializable(header_list, b" ", writer)?;
-                writer.write_all(b")")
-            }
-            Section::HeaderFieldsNot(maybe_part, header_list) => {
-                match maybe_part {
-                    Some(part) => {
-                        part.encode(writer)?;
-                        writer.write_all(b".HEADER.FIELDS.NOT (")?;
-                    }
-                    None => writer.write_all(b"HEADER.FIElDS.NOT (")?,
-                };
-                join_serializable(header_list, b" ", writer)?;
-                writer.write_all(b")")
-            }
-            Section::Text(maybe_part) => match maybe_part {
-                Some(part) => {
-                    part.encode(writer)?;
-                    writer.write_all(b".TEXT")
-                }
-                None => writer.write_all(b"TEXT"),
-            },
-            Section::Mime(part) => {
-                part.encode(writer)?;
-                writer.write_all(b".MIME")
-            }
-        }
-    }
-}
-
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Part(pub NonEmptyVec<NonZeroU32>);
-
-impl Encode for u32 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
-    }
-}
-
-impl Encode for NonZeroU32 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
-    }
-}
-
-impl Encode for Part {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(&self.0, b".", writer)
-    }
-}

@@ -1,15 +1,9 @@
-use std::io::Write;
-
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    codec::Encode,
-    types::{
-        core::{IString, NString, Number},
-        envelope::Envelope,
-    },
-    List1AttributeValueOrNil, List1OrNil,
+use crate::types::{
+    core::{IString, NString, Number},
+    envelope::Envelope,
 };
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -19,48 +13,6 @@ pub struct Body {
     pub basic: BasicFields,
     /// Type-specific fields
     pub specific: SpecificFields,
-}
-
-impl Encode for Body {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self.specific {
-            SpecificFields::Basic {
-                ref type_,
-                ref subtype,
-            } => {
-                type_.encode(writer)?;
-                writer.write_all(b" ")?;
-                subtype.encode(writer)?;
-                writer.write_all(b" ")?;
-                self.basic.encode(writer)
-            }
-            SpecificFields::Message {
-                ref envelope,
-                ref body_structure,
-                number_of_lines,
-            } => {
-                writer.write_all(b"\"MESSAGE\" \"RFC822\" ")?;
-                self.basic.encode(writer)?;
-                writer.write_all(b" ")?;
-                envelope.encode(writer)?;
-                writer.write_all(b" ")?;
-                body_structure.encode(writer)?;
-                writer.write_all(b" ")?;
-                write!(writer, "{}", number_of_lines)
-            }
-            SpecificFields::Text {
-                ref subtype,
-                number_of_lines,
-            } => {
-                writer.write_all(b"\"TEXT\" ")?;
-                subtype.encode(writer)?;
-                writer.write_all(b" ")?;
-                self.basic.encode(writer)?;
-                writer.write_all(b" ")?;
-                write!(writer, "{}", number_of_lines)
-            }
-        }
-    }
 }
 
 /// The basic fields of a non-multipart body part.
@@ -84,20 +36,6 @@ pub struct BasicFields {
     /// Note that this size is the size in its transfer encoding
     /// and not the resulting size after any decoding.
     pub size: Number,
-}
-
-impl Encode for BasicFields {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
-        writer.write_all(b" ")?;
-        self.id.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.description.encode(writer)?;
-        writer.write_all(b" ")?;
-        self.content_transfer_encoding.encode(writer)?;
-        writer.write_all(b" ")?;
-        write!(writer, "{}", self.size)
-    }
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -294,38 +232,6 @@ pub enum BodyStructure {
     },
 }
 
-impl Encode for BodyStructure {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(b"(")?;
-        match self {
-            BodyStructure::Single { body, extension } => {
-                body.encode(writer)?;
-                if let Some(extension) = extension {
-                    writer.write_all(b" ")?;
-                    extension.encode(writer)?;
-                }
-            }
-            BodyStructure::Multi {
-                bodies,
-                subtype,
-                extension_data,
-            } => {
-                for body in bodies {
-                    body.encode(writer)?;
-                }
-                writer.write_all(b" ")?;
-                subtype.encode(writer)?;
-
-                if let Some(extension) = extension_data {
-                    writer.write_all(b" ")?;
-                    extension.encode(writer)?;
-                }
-            }
-        }
-        writer.write_all(b")")
-    }
-}
-
 /// The extension data of a non-multipart body part are in the following order:
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -345,43 +251,6 @@ pub struct SinglePartExtensionData {
     pub location: Option<NString>,
 
     pub extension: Vec<u8>,
-}
-
-impl Encode for SinglePartExtensionData {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.md5.encode(writer)?;
-        if let Some(ref dsp) = self.disposition {
-            writer.write_all(b" ")?;
-
-            match dsp {
-                Some((s, param)) => {
-                    writer.write_all(b"(")?;
-                    s.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(&param).encode(writer)?;
-                    writer.write_all(b")")?;
-                }
-                None => writer.write_all(b"NIL")?,
-            }
-
-            if let Some(ref lang) = self.language {
-                writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
-
-                if let Some(ref loc) = self.location {
-                    writer.write_all(b" ")?;
-                    loc.encode(writer)?;
-
-                    if !self.extension.is_empty() {
-                        //writer.write_all(b" ")?; // TODO: Extension includes the SP for now, as it is unparsed.
-                        writer.write_all(&self.extension)?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
 /// The extension data of a multipart body part are in the following order:
@@ -428,42 +297,4 @@ pub struct MultiPartExtensionData {
     pub location: Option<NString>,
 
     pub extension: Vec<u8>,
-}
-
-impl Encode for MultiPartExtensionData {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
-
-        if let Some(ref dsp) = self.disposition {
-            writer.write_all(b" ")?;
-
-            match dsp {
-                Some((s, param)) => {
-                    writer.write_all(b"(")?;
-                    s.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(&param).encode(writer)?;
-                    writer.write_all(b")")?;
-                }
-                None => writer.write_all(b"NIL")?,
-            }
-
-            if let Some(ref lang) = self.language {
-                writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
-
-                if let Some(ref loc) = self.location {
-                    writer.write_all(b" ")?;
-                    loc.encode(writer)?;
-
-                    if !self.extension.is_empty() {
-                        //writer.write_all(b" "); // TODO: Extension includes the SP for now, as it is unparsed.
-                        writer.write_all(&self.extension)?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
