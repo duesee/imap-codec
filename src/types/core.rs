@@ -472,23 +472,23 @@ impl<'a> atm<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) enum istr<'a> {
+pub(crate) enum IStringRef<'a> {
     Literal(&'a [u8]), // FIXME(misuse): must be non-zero
     Quoted(Cow<'a, str>),
 }
 
-impl<'a> istr<'a> {
+impl<'a> IStringRef<'a> {
     pub fn to_owned(&self) -> IString {
         match self {
-            istr::Literal(bytes) => IString::Literal(Literal(bytes.to_vec())),
-            istr::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
+            IStringRef::Literal(bytes) => IString::Literal(Literal(bytes.to_vec())),
+            IStringRef::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
         }
     }
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) struct NStringRef<'a>(pub Option<istr<'a>>);
+pub(crate) struct NStringRef<'a>(pub Option<IStringRef<'a>>);
 
 impl<'a> NStringRef<'a> {
     pub fn to_owned(&self) -> NString {
@@ -500,7 +500,7 @@ impl<'a> NStringRef<'a> {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum astr<'a> {
     Atom(atm<'a>),
-    String(istr<'a>),
+    String(IStringRef<'a>),
 }
 
 impl<'a> astr<'a> {

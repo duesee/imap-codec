@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, atm, istr, txt, Charset, NStringRef, Quoted, Tag},
+    types::core::{astr, atm, txt, Charset, IStringRef, NStringRef, Quoted, Tag},
     utils::unescape_quoted,
 };
 
@@ -53,8 +53,11 @@ pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
 // ----- string -----
 
 /// string = quoted / literal
-pub(crate) fn string(input: &[u8]) -> IResult<&[u8], istr> {
-    alt((map(quoted, istr::Quoted), map(literal, istr::Literal)))(input)
+pub(crate) fn string(input: &[u8]) -> IResult<&[u8], IStringRef> {
+    alt((
+        map(quoted, IStringRef::Quoted),
+        map(literal, IStringRef::Literal),
+    ))(input)
 }
 
 /// quoted = DQUOTE *QUOTED-CHAR DQUOTE

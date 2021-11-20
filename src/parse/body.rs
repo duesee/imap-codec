@@ -18,7 +18,7 @@ use crate::{
             BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
             SpecificFields,
         },
-        core::{istr, NStringRef},
+        core::{IStringRef, NStringRef},
     },
 };
 
@@ -213,7 +213,7 @@ fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
 }
 
 /// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
-fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(istr, istr)>> {
+fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRef)>> {
     let mut parser = alt((
         delimited(
             tag(b"("),
@@ -251,7 +251,7 @@ fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
 /// body-fld-enc = string
 ///
 /// TODO: why the special case?
-fn body_fld_enc(input: &[u8]) -> IResult<&[u8], istr> {
+fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IStringRef> {
     string(input)
 }
 
@@ -339,7 +339,9 @@ fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NStringRef> {
 }
 
 /// body-fld-dsp = "(" string SP body-fld-param ")" / nil
-fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(istr, Vec<(istr, istr)>)>> {
+fn body_fld_dsp(
+    input: &[u8],
+) -> IResult<&[u8], Option<(IStringRef, Vec<(IStringRef, IStringRef)>)>> {
     alt((
         delimited(
             tag(b"("),
@@ -354,7 +356,7 @@ fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(istr, Vec<(istr, istr)>)
 }
 
 /// body-fld-lang = nstring / "(" string *(SP string) ")"
-fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<istr>> {
+fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
     alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -526,7 +528,7 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-fn media_basic(input: &[u8]) -> IResult<&[u8], (istr, istr)> {
+fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
     let mut parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -538,7 +540,7 @@ fn media_basic(input: &[u8]) -> IResult<&[u8], (istr, istr)> {
 /// media-subtype = string
 ///
 /// Defined in [MIME-IMT]
-fn media_subtype(input: &[u8]) -> IResult<&[u8], istr> {
+fn media_subtype(input: &[u8]) -> IResult<&[u8], IStringRef> {
     string(input)
 }
 
@@ -561,7 +563,7 @@ fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-fn media_text(input: &[u8]) -> IResult<&[u8], istr> {
+fn media_text(input: &[u8]) -> IResult<&[u8], IStringRef> {
     let mut parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;
