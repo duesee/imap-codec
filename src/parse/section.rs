@@ -13,7 +13,7 @@ use nom::{
 use crate::{
     parse::core::{astring, nz_number},
     types::{
-        core::{astr, AString, NonEmptyVec},
+        core::{AString, AStringRef, NonEmptyVec},
         fetch_attributes::{Part, PartSpecifier, Section},
     },
 };
@@ -117,7 +117,7 @@ fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 }
 
 /// header-list = "(" header-fld-name *(SP header-fld-name) ")"
-fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<astr>> {
+fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AStringRef>> {
     map(
         delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
         |vec| NonEmptyVec::try_from(vec).unwrap(),
@@ -126,6 +126,6 @@ fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<astr>> {
 
 #[inline]
 /// header-fld-name = astring
-pub(crate) fn header_fld_name(input: &[u8]) -> IResult<&[u8], astr> {
+pub(crate) fn header_fld_name(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }

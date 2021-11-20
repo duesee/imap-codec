@@ -24,7 +24,7 @@ use crate::{
     },
     types::{
         command::{Command, CommandBody, SearchKey},
-        core::{astr, Literal, NonEmptyVec},
+        core::{AStringRef, Literal, NonEmptyVec},
         fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes},
         flag::{Flag, StoreResponse, StoreType},
         AuthMechanism,
@@ -332,13 +332,13 @@ fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 #[inline]
 /// userid = astring
-fn userid(input: &[u8]) -> IResult<&[u8], astr> {
+fn userid(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }
 
 #[inline]
 /// password = astring
-fn password(input: &[u8]) -> IResult<&[u8], astr> {
+fn password(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }
 

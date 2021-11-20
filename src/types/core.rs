@@ -498,16 +498,16 @@ impl<'a> NStringRef<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) enum astr<'a> {
+pub(crate) enum AStringRef<'a> {
     Atom(AtomRef<'a>),
     String(IStringRef<'a>),
 }
 
-impl<'a> astr<'a> {
+impl<'a> AStringRef<'a> {
     pub fn to_owned(&self) -> AString {
         match self {
-            astr::Atom(atom) => AString::Atom(atom.to_owned()),
-            astr::String(istr) => AString::String(istr.to_owned()),
+            AStringRef::Atom(atom) => AString::Atom(atom.to_owned()),
+            AStringRef::String(istr) => AString::String(istr.to_owned()),
         }
     }
 }

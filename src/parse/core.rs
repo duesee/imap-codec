@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{astr, txt, AtomRef, Charset, IStringRef, NStringRef, Quoted, Tag},
+    types::core::{txt, AStringRef, AtomRef, Charset, IStringRef, NStringRef, Quoted, Tag},
     utils::unescape_quoted,
 };
 
@@ -141,15 +141,17 @@ fn is_char8(i: u8) -> bool {
 // ----- astring ----- atom (roughly) or string
 
 /// astring = 1*ASTRING-CHAR / string
-pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], astr> {
+pub(crate) fn astring(input: &[u8]) -> IResult<&[u8], AStringRef> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             // Note: this is safe, because is_astring_char enforces
             //       that the string only contains ASCII characters
             // TODO(perf): atm::try_from tests all bytes again
-            astr::Atom(AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
+            AStringRef::Atom(
+                AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap(),
+            )
         }),
-        map(string, astr::String),
+        map(string, AStringRef::String),
     ))(input)
 }
 
