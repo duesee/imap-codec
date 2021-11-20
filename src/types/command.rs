@@ -22,7 +22,7 @@ use crate::{
         sequence::SequenceSet,
         AuthMechanism, CompressionAlgorithm,
     },
-    utils::{gen_tag, join_serializable},
+    utils::join_serializable,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -39,24 +39,24 @@ impl Command {
     }
 
     pub fn capability() -> Command {
-        Command::new(gen_tag(), CommandBody::Capability)
+        Command::new(Tag::random(), CommandBody::Capability)
     }
 
     pub fn noop() -> Command {
-        Command::new(gen_tag(), CommandBody::Noop)
+        Command::new(Tag::random(), CommandBody::Noop)
     }
 
     pub fn logout() -> Command {
-        Command::new(gen_tag(), CommandBody::Logout)
+        Command::new(Tag::random(), CommandBody::Logout)
     }
 
     pub fn starttls() -> Command {
-        Command::new(gen_tag(), CommandBody::StartTLS)
+        Command::new(Tag::random(), CommandBody::StartTLS)
     }
 
     pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&[u8]>) -> Command {
         Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Authenticate {
                 mechanism,
                 initial_response: initial_response.map(|bytes| bytes.to_vec()),
@@ -69,7 +69,7 @@ impl Command {
         password: P,
     ) -> Result<Command, ()> {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Login {
                 username: username.try_into().map_err(|_| ())?,
                 password: password.try_into().map_err(|_| ())?,
@@ -82,7 +82,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Select {
                 mailbox: mailbox.try_into()?,
             },
@@ -94,7 +94,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Examine {
                 mailbox: mailbox.try_into()?,
             },
@@ -106,7 +106,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Create {
                 mailbox: mailbox.try_into()?,
             },
@@ -118,7 +118,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Delete {
                 mailbox: mailbox.try_into()?,
             },
@@ -131,7 +131,7 @@ impl Command {
         M2: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Rename {
                 mailbox: mailbox.try_into().map_err(|_| ())?,
                 new_mailbox: new_mailbox.try_into().map_err(|_| ())?,
@@ -144,7 +144,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Subscribe {
                 mailbox: mailbox.try_into()?,
             },
@@ -156,7 +156,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Unsubscribe {
                 mailbox: mailbox.try_into()?,
             },
@@ -168,7 +168,7 @@ impl Command {
         mailbox_wildcard: B,
     ) -> Result<Command, ()> {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::List {
                 reference: reference.try_into().map_err(|_| ())?,
                 mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
@@ -181,7 +181,7 @@ impl Command {
         mailbox_wildcard: B,
     ) -> Result<Command, ()> {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Lsub {
                 reference: reference.try_into().map_err(|_| ())?,
                 mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
@@ -194,7 +194,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Status {
                 mailbox: mailbox.try_into()?,
                 attributes,
@@ -213,7 +213,7 @@ impl Command {
         D: TryInto<NonZeroBytes>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Append {
                 mailbox: mailbox.try_into().map_err(|_| ())?,
                 flags,
@@ -224,15 +224,15 @@ impl Command {
     }
 
     pub fn check() -> Command {
-        Command::new(gen_tag(), CommandBody::Check)
+        Command::new(Tag::random(), CommandBody::Check)
     }
 
     pub fn close() -> Command {
-        Command::new(gen_tag(), CommandBody::Close)
+        Command::new(Tag::random(), CommandBody::Close)
     }
 
     pub fn expunge() -> Command {
-        Command::new(gen_tag(), CommandBody::Expunge)
+        Command::new(Tag::random(), CommandBody::Expunge)
     }
 
     pub fn search<C>(charset: C, criteria: SearchKey, uid: bool) -> Result<Command, C::Error>
@@ -240,7 +240,7 @@ impl Command {
         C: TryInto<Option<Charset>>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Search {
                 charset: charset.try_into()?,
                 criteria,
@@ -257,7 +257,7 @@ impl Command {
         let sequence_set = sequence_set.try_into()?;
 
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Fetch {
                 sequence_set,
                 attributes: attributes.into(),
@@ -279,7 +279,7 @@ impl Command {
         let sequence_set = sequence_set.try_into()?;
 
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Store {
                 sequence_set,
                 kind,
@@ -296,7 +296,7 @@ impl Command {
         M: TryInto<Mailbox>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Copy {
                 sequence_set: sequence_set.try_into().map_err(|_| ())?,
                 mailbox: mailbox.try_into().map_err(|_| ())?,
@@ -306,7 +306,7 @@ impl Command {
     }
 
     pub fn idle() -> Command {
-        Command::new(gen_tag(), CommandBody::Idle)
+        Command::new(Tag::random(), CommandBody::Idle)
     }
 
     pub fn enable<C>(capabilities: C) -> Result<Command, C::Error>
@@ -314,7 +314,7 @@ impl Command {
         C: TryInto<NonEmptyVec<Capability>>,
     {
         Ok(Command::new(
-            gen_tag(),
+            Tag::random(),
             CommandBody::Enable {
                 capabilities: capabilities.try_into()?,
             },

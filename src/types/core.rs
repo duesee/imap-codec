@@ -18,6 +18,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -363,6 +364,19 @@ impl Encode for AString {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag(pub(crate) String);
 
+impl Tag {
+    pub fn random() -> Self {
+        let mut rng = thread_rng();
+        let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
+
+        Self(unsafe { String::from_utf8_unchecked(buffer.to_vec()) })
+    }
+
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+')
+    }
+}
+
 impl TryFrom<&str> for Tag {
     type Error = ();
 
@@ -375,7 +389,7 @@ impl TryFrom<String> for Tag {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+') {
+        if Tag::verify(&value) {
             Ok(Tag(value))
         } else {
             Err(())

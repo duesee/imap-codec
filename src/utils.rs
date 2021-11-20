@@ -1,19 +1,6 @@
-use std::{borrow::Cow, io::Write, iter};
+use std::{borrow::Cow, io::Write};
 
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
-
-use crate::{codec::Encode, types::core::Tag};
-
-pub(crate) fn gen_tag() -> Tag {
-    let mut rng = thread_rng();
-    let tag: String = iter::repeat(())
-        .map(|()| rng.sample(Alphanumeric))
-        .map(char::from)
-        .take(8)
-        .collect();
-
-    Tag(tag)
-}
+use crate::codec::Encode;
 
 pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
     elements
