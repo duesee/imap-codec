@@ -11,6 +11,7 @@ pub mod command;
 pub mod core;
 pub mod datetime;
 pub mod envelope;
+pub mod fetch_attributes;
 pub mod flag;
 pub mod mailbox;
 pub mod message;
