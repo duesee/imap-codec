@@ -17,6 +17,7 @@ use crate::types::{
     mailbox::{ListMailbox, Mailbox},
     response::Capability,
     sequence::SequenceSet,
+    status::StatusAttribute,
     AuthMechanism, CompressionAlgorithm,
 };
 
@@ -1484,27 +1485,6 @@ impl CommandBody {
     }
 }
 
-/// The currently defined status data items that can be requested.
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StatusAttribute {
-    /// The number of messages in the mailbox.
-    Messages,
-
-    /// The number of messages with the \Recent flag set.
-    Recent,
-
-    /// The next unique identifier value of the mailbox.
-    UidNext,
-
-    /// The unique identifier validity value of the mailbox.
-    UidValidity,
-
-    /// The number of messages which do not have the \Seen flag set.
-    Unseen,
-}
-
 /// The defined search keys.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1664,12 +1644,13 @@ mod test {
     use crate::{
         codec::Encode,
         types::{
-            command::{Command, CommandBody, SearchKey, StatusAttribute},
+            command::{Command, CommandBody, SearchKey},
             core::{AString, IString, Tag},
             datetime::MyDateTime,
             fetch_attributes::{FetchAttribute, Macro, Part, Section},
             flag::{Flag, StoreResponse, StoreType},
             mailbox::ListMailbox,
+            status::StatusAttribute,
             AuthMechanism,
         },
     };
