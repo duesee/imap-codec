@@ -740,8 +740,9 @@ mod test {
 
     use super::*;
     use crate::types::{
-        fetch_attributes::{FetchAttribute, Section},
+        fetch_attributes::FetchAttribute,
         response::Capability,
+        section::Section,
         sequence::{SeqNo, Sequence, SequenceSet as SequenceSetData},
     };
 

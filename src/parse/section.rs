@@ -14,7 +14,7 @@ use crate::{
     parse::core::{astring, nz_number},
     types::{
         core::{AString, AStringRef, NonEmptyVec},
-        fetch_attributes::{Part, PartSpecifier, Section},
+        section::{Part, PartSpecifier, Section},
     },
 };
 
