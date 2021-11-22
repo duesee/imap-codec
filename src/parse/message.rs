@@ -19,7 +19,7 @@ use crate::{
         flag::flag_fetch,
         section::section,
     },
-    types::response::{Data, FetchAttributeValue},
+    types::{fetch_attributes::FetchAttributeValue, response::Data},
 };
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))

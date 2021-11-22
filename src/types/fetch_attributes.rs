@@ -5,7 +5,10 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::types::section::Section;
+use crate::types::{
+    body::BodyStructure, core::NString, datetime::MyDateTime, envelope::Envelope, flag::Flag,
+    section::Section,
+};
 
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
@@ -167,4 +170,105 @@ pub enum FetchAttribute {
     ///
     /// The unique identifier for the message.
     Uid,
+}
+
+/// The current data items are:
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FetchAttributeValue {
+    /// A form of BODYSTRUCTURE without extension data.
+    ///
+    /// `BODY`
+    Body(BodyStructure),
+
+    /// A string expressing the body contents of the specified section.
+    /// The string SHOULD be interpreted by the client according to the
+    /// content transfer encoding, body type, and subtype.
+    ///
+    /// If the origin octet is specified, this string is a substring of
+    /// the entire body contents, starting at that origin octet.  This
+    /// means that BODY[]<0> MAY be truncated, but BODY[] is NEVER
+    /// truncated.
+    ///
+    ///    Note: The origin octet facility MUST NOT be used by a server
+    ///    in a FETCH response unless the client specifically requested
+    ///    it by means of a FETCH of a BODY[<section>]<<partial>> data
+    ///    item.
+    ///
+    /// 8-bit textual data is permitted if a [CHARSET] identifier is
+    /// part of the body parameter parenthesized list for this section.
+    /// Note that headers (part specifiers HEADER or MIME, or the
+    /// header portion of a MESSAGE/RFC822 part), MUST be 7-bit; 8-bit
+    /// characters are not permitted in headers.  Note also that the
+    /// [RFC-2822] delimiting blank line between the header and the
+    /// body is not affected by header line subsetting; the blank line
+    /// is always included as part of header data, except in the case
+    /// of a message which has no body and no blank line.
+    ///
+    /// Non-textual data such as binary data MUST be transfer encoded
+    /// into a textual form, such as BASE64, prior to being sent to the
+    /// client.  To derive the original binary data, the client MUST
+    /// decode the transfer encoded string.
+    ///
+    /// `BODY[<section>]<<origin octet>>`
+    BodyExt {
+        section: Option<Section>,
+        origin: Option<u32>,
+        data: NString,
+    },
+
+    /// A parenthesized list that describes the [MIME-IMB] body
+    /// structure of a message.  This is computed by the server by
+    /// parsing the [MIME-IMB] header fields, defaulting various fields
+    /// as necessary.
+    ///
+    /// `BODYSTRUCTURE`
+    BodyStructure(BodyStructure),
+
+    /// A parenthesized list that describes the envelope structure of a
+    /// message.  This is computed by the server by parsing the
+    /// [RFC-2822] header into the component parts, defaulting various
+    /// fields as necessary.
+    ///
+    /// `ENVELOPE`
+    Envelope(Envelope),
+
+    /// A parenthesized list of flags that are set for this message.
+    ///
+    /// `FLAGS`
+    Flags(Vec<Flag>),
+
+    /// A string representing the internal date of the message.
+    ///
+    /// `INTERNALDATE`
+    InternalDate(MyDateTime),
+
+    /// Equivalent to BODY[].
+    ///
+    /// `RFC822`
+    Rfc822(NString),
+
+    /// Equivalent to BODY[HEADER].  Note that this did not result in
+    /// \Seen being set, because RFC822.HEADER response data occurs as
+    /// a result of a FETCH of RFC822.HEADER.  BODY[HEADER] response
+    /// data occurs as a result of a FETCH of BODY[HEADER] (which sets
+    /// \Seen) or BODY.PEEK[HEADER] (which does not set \Seen).
+    ///
+    /// `RFC822.HEADER`
+    Rfc822Header(NString),
+
+    /// A number expressing the [RFC-2822] size of the message.
+    ///
+    /// `RFC822.SIZE`
+    Rfc822Size(u32),
+
+    /// Equivalent to BODY[TEXT].
+    ///
+    /// `RFC822.TEXT`
+    Rfc822Text(NString),
+
+    /// A number expressing the unique identifier of the message.
+    ///
+    /// `UID`
+    Uid(NonZeroU32),
 }
