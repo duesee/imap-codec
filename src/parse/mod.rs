@@ -14,7 +14,6 @@ pub mod envelope;
 pub mod fetch_attributes;
 pub mod flag;
 pub mod mailbox;
-pub mod message;
 pub mod response;
 pub mod section;
 pub mod sequence;

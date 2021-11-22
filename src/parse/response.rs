@@ -14,9 +14,9 @@ use crate::{
     parse::{
         algorithm, auth_type,
         core::{atom, base64, charset, is_text_char, nz_number, tag_imap, text},
+        fetch_attributes::msg_att,
         flag::flag_perm,
         mailbox::mailbox_data,
-        message::message_data,
     },
     types::{
         core::txt,
@@ -385,6 +385,22 @@ fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
             text: text.to_owned(),
         }
     }))
+}
+
+/// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
+fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
+    let (remaining, seq_or_uid) = terminated(nz_number, SP)(input)?;
+
+    alt((
+        map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq_or_uid)),
+        map(
+            tuple((tag_no_case(b"FETCH"), SP, msg_att)),
+            move |(_, _, attributes)| Data::Fetch {
+                seq_or_uid,
+                attributes,
+            },
+        ),
+    ))(remaining)
 }
 
 // ----- EXTENSIONS -----
