@@ -428,7 +428,7 @@ pub enum Data {
         /// Message SEQ or UID
         seq_or_uid: NonZeroU32,
         /// Message data
-        attributes: Vec<MessageAttribute>,
+        attributes: Vec<FetchAttributeValue>,
     },
 
     /// ----- ENABLE Extension (RFC 5161) -----
@@ -671,7 +671,7 @@ impl std::fmt::Display for Capability {
 /// The current data items are:
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MessageAttribute {
+pub enum FetchAttributeValue {
     /// A form of BODYSTRUCTURE without extension data.
     ///
     /// `BODY`

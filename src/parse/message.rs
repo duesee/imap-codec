@@ -19,7 +19,7 @@ use crate::{
         flag::flag_fetch,
         section::section,
     },
-    types::response::{Data, MessageAttribute},
+    types::response::{Data, FetchAttributeValue},
 };
 
 /// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
@@ -41,7 +41,7 @@ pub(crate) fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 /// msg-att = "("
 ///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///           ")"
-fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<MessageAttribute>> {
+fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<FetchAttributeValue>> {
     delimited(
         tag(b"("),
         separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
@@ -52,7 +52,7 @@ fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<MessageAttribute>> {
 /// msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"
 ///
 /// Note: MAY change for a message
-fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
+fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         SP,
@@ -63,7 +63,7 @@ fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
 
     Ok((
         remaining,
-        MessageAttribute::Flags(flags.unwrap_or_default()),
+        FetchAttributeValue::Flags(flags.unwrap_or_default()),
     ))
 }
 
@@ -76,42 +76,42 @@ fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
 ///                  "UID" SP uniqueid
 ///
 /// Note: MUST NOT change for a message
-fn msg_att_static(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
+fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), SP, envelope)),
-            |(_, _, envelope)| MessageAttribute::Envelope(envelope),
+            |(_, _, envelope)| FetchAttributeValue::Envelope(envelope),
         ),
         map(
             tuple((tag_no_case(b"INTERNALDATE"), SP, date_time)),
-            |(_, _, date_time)| MessageAttribute::InternalDate(date_time),
+            |(_, _, date_time)| FetchAttributeValue::InternalDate(date_time),
         ),
         alt((
             map(
                 tuple((tag_no_case(b"RFC822.HEADER"), SP, nstring)),
-                |(_, _, nstring)| MessageAttribute::Rfc822Header(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring.to_owned()),
             ),
             map(
                 tuple((tag_no_case(b"RFC822.TEXT"), SP, nstring)),
-                |(_, _, nstring)| MessageAttribute::Rfc822Text(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring.to_owned()),
             ),
             map(
                 tuple((tag_no_case(b"RFC822"), SP, nstring)),
-                |(_, _, nstring)| MessageAttribute::Rfc822(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring.to_owned()),
             ),
         )),
         map(
             tuple((tag_no_case(b"RFC822.SIZE"), SP, number)),
-            |(_, _, num)| MessageAttribute::Rfc822Size(num),
+            |(_, _, num)| FetchAttributeValue::Rfc822Size(num),
         ),
         alt((
             map(
                 tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body(8))),
-                |(_, _, body)| MessageAttribute::BodyStructure(body),
+                |(_, _, body)| FetchAttributeValue::BodyStructure(body),
             ),
             map(
                 tuple((tag_no_case(b"BODY"), SP, body(8))),
-                |(_, _, body)| MessageAttribute::Body(body),
+                |(_, _, body)| FetchAttributeValue::Body(body),
             ),
         )),
         map(
@@ -122,14 +122,14 @@ fn msg_att_static(input: &[u8]) -> IResult<&[u8], MessageAttribute> {
                 SP,
                 nstring,
             )),
-            |(_, section, origin, _, data)| MessageAttribute::BodyExt {
+            |(_, section, origin, _, data)| FetchAttributeValue::BodyExt {
                 section,
                 origin,
                 data: data.to_owned(),
             },
         ),
         map(tuple((tag_no_case(b"UID"), SP, uniqueid)), |(_, _, uid)| {
-            MessageAttribute::Uid(uid)
+            FetchAttributeValue::Uid(uid)
         }),
     ))(input)
 }

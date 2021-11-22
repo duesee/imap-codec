@@ -18,7 +18,7 @@ use crate::{
         fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes},
         flag::{Flag, FlagNameAttribute, StoreResponse, StoreType},
         mailbox::{ListMailbox, Mailbox, MailboxOther},
-        response::{Capability, Code, Continuation, Data, MessageAttribute, Response, Status},
+        response::{Capability, Code, Continuation, Data, FetchAttributeValue, Response, Status},
         section::{Part, Section},
         sequence::{SeqNo, Sequence, SequenceSet},
         status_attributes::{StatusAttribute, StatusAttributeValue},
@@ -818,9 +818,9 @@ impl Encode for StatusAttributeValue {
     }
 }
 
-impl Encode for MessageAttribute {
+impl Encode for FetchAttributeValue {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use MessageAttribute::*;
+        use FetchAttributeValue::*;
 
         match self {
             BodyExt {
