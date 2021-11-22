@@ -10,7 +10,7 @@ use nom::{
 
 use crate::{
     parse::core::{number, nz_number},
-    types::status::{StatusAttribute, StatusAttributeValue},
+    types::status_attributes::{StatusAttribute, StatusAttributeValue},
 };
 
 /// status-att = "MESSAGES" / "RECENT" / "UIDNEXT" / "UIDVALIDITY" / "UNSEEN"

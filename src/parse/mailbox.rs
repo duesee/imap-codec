@@ -16,7 +16,7 @@ use crate::{
             astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
         },
         flag::{flag_list, mbx_list_flags},
-        status::status_att_list,
+        status_attributes::status_att_list,
     },
     types::{
         flag::FlagNameAttribute,

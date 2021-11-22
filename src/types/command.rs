@@ -17,7 +17,7 @@ use crate::types::{
     mailbox::{ListMailbox, Mailbox},
     response::Capability,
     sequence::SequenceSet,
-    status::StatusAttribute,
+    status_attributes::StatusAttribute,
     AuthMechanism, CompressionAlgorithm,
 };
 
@@ -1651,7 +1651,7 @@ mod test {
             flag::{Flag, StoreResponse, StoreType},
             mailbox::ListMailbox,
             section::{Part, Section},
-            status::StatusAttribute,
+            status_attributes::StatusAttribute,
             AuthMechanism,
         },
     };

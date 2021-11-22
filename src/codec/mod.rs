@@ -21,7 +21,7 @@ use crate::{
         response::{Capability, Code, Continuation, Data, MessageAttribute, Response, Status},
         section::{Part, Section},
         sequence::{SeqNo, Sequence, SequenceSet},
-        status::{StatusAttribute, StatusAttributeValue},
+        status_attributes::{StatusAttribute, StatusAttributeValue},
         AuthMechanism, AuthMechanismOther, CompressionAlgorithm,
     },
     utils::escape_quoted,

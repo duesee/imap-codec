@@ -18,7 +18,7 @@ pub mod message;
 pub mod response;
 pub mod section;
 pub mod sequence;
-pub mod status;
+pub mod status_attributes;
 
 // ----- Unsorted IMAP parsers -----
 

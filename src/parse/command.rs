@@ -21,7 +21,7 @@ use crate::{
         response::capability,
         section::header_fld_name,
         sequence::sequence_set,
-        status::status_att,
+        status_attributes::status_att,
     },
     types::{
         command::{Command, CommandBody, SearchKey},

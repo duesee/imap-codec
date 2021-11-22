@@ -17,7 +17,7 @@ use crate::{
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
         section::Section,
-        status::StatusAttributeValue,
+        status_attributes::StatusAttributeValue,
         AuthMechanism, CompressionAlgorithm,
     },
 };

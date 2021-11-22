@@ -22,7 +22,7 @@ pub mod mailbox;
 pub mod response;
 pub mod section;
 pub mod sequence;
-pub mod status;
+pub mod status_attributes;
 
 /// Note: Defined by [SASL]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
