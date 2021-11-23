@@ -489,6 +489,10 @@ impl<'a> AtomRef<'a> {
         value.bytes().all(is_astring_char)
     }
 
+    pub unsafe fn from_str_unchecked(value: &'a str) -> AtomRef<'a> {
+        Self(value)
+    }
+
     pub fn to_owned(&self) -> Atom {
         Atom(self.0.to_string())
     }

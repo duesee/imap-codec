@@ -193,13 +193,12 @@ pub(crate) fn atom(input: &[u8]) -> IResult<&[u8], AtomRef> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    // Note: this is safe, because is_atom_char enforces
-    //       that the string only contains ASCII characters
-    // TODO(perf): atm::try_from tests all bytes again
-    Ok((
-        remaining,
-        AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(parsed_atom) }).unwrap(),
-    ))
+    // Note(Unsafe): this is safe, because is_atom_char enforces
+    //               that the string is always UTF8 and contains
+    //               only the allowed characters.
+    Ok((remaining, unsafe {
+        AtomRef::from_str_unchecked(std::str::from_utf8_unchecked(parsed_atom))
+    }))
 }
 
 // ----- nstring ----- nil or string
