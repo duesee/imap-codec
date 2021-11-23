@@ -519,8 +519,10 @@ impl<'a> NStringRef<'a> {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum AStringRef<'a> {
-    Atom(AtomRef<'a>),
-    String(IStringRef<'a>),
+    // FIXME(misuse): Variant should not contain `Atom`, but something like `AtomExt` ...
+    //                `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
+    Atom(AtomRef<'a>),      // 1*ASTRING-CHAR /
+    String(IStringRef<'a>), // string
 }
 
 impl<'a> AStringRef<'a> {
