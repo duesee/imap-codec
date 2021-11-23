@@ -115,7 +115,7 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
             mailbox,
             flags: flags.unwrap_or_default(),
             date: date_time,
-            message: Literal::try_from(literal).unwrap(), // Safe to unwrap
+            message: Literal::from(&literal),
         },
     ))
 }

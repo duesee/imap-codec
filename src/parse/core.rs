@@ -13,7 +13,9 @@ use nom::{
 
 use crate::{
     parse::mailbox::is_list_wildcards,
-    types::core::{txt, AStringRef, AtomRef, Charset, IStringRef, NStringRef, Quoted, Tag},
+    types::core::{
+        txt, AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, Tag,
+    },
     utils::unescape_quoted,
 };
 
@@ -114,8 +116,7 @@ fn is_quoted_specials(byte: u8) -> bool {
 
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
-// FIXME(misuse): should be `literal` (non-zero-bytes)
-pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
+pub(crate) fn literal<'a>(input: &'a [u8]) -> IResult<&'a [u8], LiteralRef<'a>> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
     let (remaining, data) = take(number)(remaining)?;
@@ -127,7 +128,7 @@ pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
         ))); // TODO(verify): use `Failure` or `Error`?
     }
 
-    Ok((remaining, data))
+    Ok((remaining, unsafe { LiteralRef::from_bytes_unchecked(data) }))
 }
 
 #[inline]
@@ -360,7 +361,7 @@ mod test {
 
         let (rem, val) = literal(b"{3}\r\n123xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, b"123");
+        assert_eq!(val, LiteralRef::from_bytes(b"123").unwrap());
     }
 
     #[test]

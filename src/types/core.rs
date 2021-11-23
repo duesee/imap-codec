@@ -146,20 +146,58 @@ impl TryFrom<IString> for String {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal(Vec<u8>);
 
-impl TryFrom<&[u8]> for Literal {
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LiteralRef<'a>(&'a [u8]);
+
+impl<'a> LiteralRef<'a> {
+    pub fn verify(bytes: &[u8]) -> bool {
+        bytes.iter().all(|byte| *byte != 0)
+    }
+
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<LiteralRef<'a>, ()> {
+        if Self::verify(bytes) {
+            Ok(Self(bytes))
+        } else {
+            Err(())
+        }
+    }
+
+    pub unsafe fn from_bytes_unchecked(bytes: &'a [u8]) -> LiteralRef<'a> {
+        Self(bytes)
+    }
+}
+
+// Literal --> LiteralRef
+
+impl<'a> From<&'a Literal> for LiteralRef<'a> {
+    fn from(value: &'a Literal) -> LiteralRef<'a> {
+        LiteralRef(&value.0)
+    }
+}
+
+// LiteralRef --> Literal
+
+impl<'a> From<&LiteralRef<'a>> for Literal {
+    fn from(value: &LiteralRef<'a>) -> Literal {
+        Literal(value.0.to_owned())
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for LiteralRef<'a> {
     type Error = ();
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        value.to_vec().try_into()
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        LiteralRef::from_bytes(bytes)
     }
 }
 
 impl TryFrom<Vec<u8>> for Literal {
     type Error = ();
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.iter().all(|b| *b != 0) {
-            Ok(Literal(value))
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        if LiteralRef::verify(&bytes) {
+            Ok(Literal(bytes))
         } else {
             Err(())
         }
@@ -167,7 +205,15 @@ impl TryFrom<Vec<u8>> for Literal {
 }
 
 impl Deref for Literal {
-    type Target = Vec<u8>;
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> Deref for LiteralRef<'a> {
+    type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -447,14 +493,14 @@ impl<'a> AtomRef<'a> {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum IStringRef<'a> {
-    Literal(&'a [u8]), // FIXME(misuse): must be non-zero
+    Literal(LiteralRef<'a>),
     Quoted(Cow<'a, str>),
 }
 
 impl<'a> IStringRef<'a> {
     pub fn to_owned(&self) -> IString {
         match self {
-            IStringRef::Literal(bytes) => IString::Literal(Literal(bytes.to_vec())),
+            IStringRef::Literal(literal_ref) => IString::Literal(Literal::from(literal_ref)),
             IStringRef::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
         }
     }

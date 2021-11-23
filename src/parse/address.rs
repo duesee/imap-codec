@@ -85,7 +85,7 @@ mod test {
             Address::new(
                 NString(None),
                 NString(Some(IString::Literal(
-                    Literal::try_from(b"xxx".as_ref()).unwrap()
+                    Literal::try_from(b"xxx".to_vec()).unwrap()
                 ))),
                 NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
                 NString(None),
