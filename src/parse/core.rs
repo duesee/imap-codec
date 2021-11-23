@@ -34,15 +34,16 @@ pub(crate) fn number(input: &[u8]) -> IResult<&[u8], u32> {
 pub(crate) fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
     let (remaining, number) = number(input)?;
 
-    // This changes the grammar slightly, but I belief it is not important
-    if number == 0 {
-        return Err(nom::Err::Error(nom::error::make_error(
-            input,
-            nom::error::ErrorKind::Verify, // TODO(verify): use `Failure` or `Error`?
-        )));
+    match NonZeroU32::new(number) {
+        Some(number) => Ok((remaining, number)),
+        None => {
+            // TODO(verify): use `Failure` or `Error`?
+            Err(nom::Err::Error(nom::error::make_error(
+                input,
+                nom::error::ErrorKind::Verify,
+            )))
+        }
     }
-
-    Ok((remaining, NonZeroU32::try_from(number).unwrap()))
 }
 
 // 1-9
