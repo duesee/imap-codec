@@ -486,7 +486,7 @@ impl<'a> Deref for AtomRef<'a> {
 
 impl<'a> AtomRef<'a> {
     pub fn verify(value: &str) -> bool {
-        value.bytes().all(is_astring_char)
+        !value.is_empty() && value.bytes().all(is_astring_char)
     }
 
     pub unsafe fn from_str_unchecked(value: &'a str) -> AtomRef<'a> {
