@@ -468,7 +468,7 @@ impl<'a> TryFrom<&'a str> for AtomRef<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if value.bytes().all(is_astring_char) {
+        if AtomRef::verify(value) {
             Ok(AtomRef(value))
         } else {
             Err(())
@@ -485,6 +485,10 @@ impl<'a> Deref for AtomRef<'a> {
 }
 
 impl<'a> AtomRef<'a> {
+    pub fn verify(value: &str) -> bool {
+        value.bytes().all(is_astring_char)
+    }
+
     pub fn to_owned(&self) -> Atom {
         Atom(self.0.to_string())
     }
