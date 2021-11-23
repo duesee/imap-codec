@@ -22,7 +22,7 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    parse::core::{is_astring_char, is_atom_char, is_text_char},
+    parse::core::{is_astring_char, is_atom_char, is_char8, is_text_char},
     utils::escape_quoted,
 };
 
@@ -152,7 +152,7 @@ pub struct LiteralRef<'a>(&'a [u8]);
 
 impl<'a> LiteralRef<'a> {
     pub fn verify(bytes: &[u8]) -> bool {
-        bytes.iter().all(|byte| *byte != 0)
+        bytes.iter().cloned().all(is_char8)
     }
 
     pub fn from_bytes(bytes: &'a [u8]) -> Result<LiteralRef<'a>, ()> {

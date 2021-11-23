@@ -122,21 +122,23 @@ pub(crate) fn literal<'a>(input: &'a [u8]) -> IResult<&'a [u8], LiteralRef<'a>> 
 
     let (remaining, data) = take(number)(remaining)?;
 
-    if !data.iter().cloned().all(is_char8) {
-        return Err(nom::Err::Error(nom::error::Error::new(
-            remaining,
-            ErrorKind::Verify,
-        ))); // TODO(verify): use `Failure` or `Error`?
+    match LiteralRef::from_bytes(data) {
+        Ok(literal_ref) => Ok((remaining, literal_ref)),
+        Err(_) => {
+            // TODO(verify): use `Failure` or `Error`?
+            Err(nom::Err::Error(nom::error::Error::new(
+                remaining,
+                ErrorKind::Verify,
+            )))
+        }
     }
-
-    Ok((remaining, unsafe { LiteralRef::from_bytes_unchecked(data) }))
 }
 
 #[inline]
 /// Any OCTET except NUL, %x00
 ///
 /// CHAR8 = %x01-ff
-fn is_char8(i: u8) -> bool {
+pub(crate) fn is_char8(i: u8) -> bool {
     i != 0
 }
 
