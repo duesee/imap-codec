@@ -12,7 +12,7 @@ use crate::{
             SpecificFields,
         },
         command::{Command, CommandBody, SearchKey},
-        core::{AString, Atom, Charset, IString, NString, Tag, Text},
+        core::{AString, Atom, Charset, IString, Literal, NString, Quoted, Tag, Text},
         datetime::{MyDateTime, MyNaiveDate},
         envelope::Envelope,
         fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
@@ -316,12 +316,22 @@ impl Encode for Atom {
 impl Encode for IString {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Self::Literal(val) => {
-                write!(writer, "{{{}}}\r\n", val.len())?;
-                writer.write_all(val)
-            }
-            Self::Quoted(val) => write!(writer, "\"{}\"", escape_quoted(&val.0)), // FIXME: use encode
+            Self::Literal(val) => val.encode(writer),
+            Self::Quoted(val) => val.encode(writer),
         }
+    }
+}
+
+impl Encode for Literal {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "{{{}}}\r\n", self.len())?;
+        writer.write_all(&self)
+    }
+}
+
+impl Encode for Quoted {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        write!(writer, "\"{}\"", escape_quoted(&self.0))
     }
 }
 
@@ -375,9 +385,10 @@ impl Encode for MyDateTime {
 
 impl Encode for Charset {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        // FIXME(perf): conversion calls should not
-        //              be requires for serialization.
-        writer.write_all(self.to_string().as_bytes())
+        match self {
+            Charset::Atom(atom) => atom.encode(writer),
+            Charset::Quoted(quoted) => quoted.encode(writer),
+        }
     }
 }
 
