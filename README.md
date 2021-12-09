@@ -12,11 +12,11 @@ The three entry points are `greeting` (to parse the first message from a server)
 
 The type system is used to enforce correctness and make the library misuse resistant. It should not be possible to construct messages, which would violate the IMAP specification.
 
-Fuzzing (via [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz)) and (soon) property-based tests are used to uncover parsing and serialization bugs. For example, the library is fuzz-tested never to produce a message it can not parse itself. Additionally, many real-world IMAP traces (including all examples and the sample trace from the IMAP RFC) are decoded and encoded correctly.
+Fuzzing (via [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz)) and property-based tests are used to uncover parsing and serialization bugs. For example, the library is fuzz-tested never to produce a message it can not parse itself. Additionally, many real-world IMAP traces (including all examples and the sample trace from the IMAP RFC) are decoded and encoded correctly.
 
 Every parser works in streaming mode, i.e., all parsers will return `Incomplete` when there is not enough data to make a final decision, and no command or response will ever be truncated.
 
-This is (probably) the most complete IMAP implementation in Rust available. Only [tokio-imap](https://github.com/djc/tokio-imap), which you should also check out, provides a comparative amount of features. However, it does not implement the server-side. (Please tell me if there is another one!)
+This is the most complete IMAP implementation in Rust available. Only [tokio-imap](https://github.com/djc/tokio-imap) provides a comparative amount of features. However, it does not implement the server-side. (Please tell me if there is another one!)
 
 # Usage
 
