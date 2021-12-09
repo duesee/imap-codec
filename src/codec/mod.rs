@@ -627,7 +627,7 @@ impl Encode for Section {
                         part.encode(writer)?;
                         writer.write_all(b".HEADER.FIELDS.NOT (")?;
                     }
-                    None => writer.write_all(b"HEADER.FIElDS.NOT (")?,
+                    None => writer.write_all(b"HEADER.FIELDS.NOT (")?,
                 };
                 join_serializable(header_list, b" ", writer)?;
                 writer.write_all(b")")
