@@ -40,3 +40,9 @@ name = "command_to_bytes_and_back"
 path = "fuzz_targets/command_to_bytes_and_back.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "response_to_bytes_and_back"
+path = "fuzz_targets/response_to_bytes_and_back.rs"
+test = false
+doc = false
