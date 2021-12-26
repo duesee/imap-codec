@@ -14,7 +14,8 @@ use nom::{
 use crate::{
     parse::mailbox::is_list_wildcards,
     types::core::{
-        txt, AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, Tag,
+        txt, AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, QuotedChar,
+        Tag,
     },
     utils::unescape_quoted,
 };
@@ -87,26 +88,29 @@ fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
 }
 
 /// QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
-pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], char> {
-    alt((
-        map(
-            take_while_m_n(1, 1, is_any_text_char_except_quoted_specials),
-            |bytes: &[u8]| {
-                assert_eq!(bytes.len(), 1);
-                bytes[0] as char
-            },
-        ),
-        map(
-            tuple((tag("\\"), take_while_m_n(1, 1, is_quoted_specials))),
-            |(_, bytes): (_, &[u8])| {
-                assert_eq!(bytes.len(), 1);
-                bytes[0] as char
-            },
-        ),
-    ))(input)
+pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
+    map(
+        alt((
+            map(
+                take_while_m_n(1, 1, is_any_text_char_except_quoted_specials),
+                |bytes: &[u8]| {
+                    assert_eq!(bytes.len(), 1);
+                    bytes[0] as char
+                },
+            ),
+            map(
+                tuple((tag("\\"), take_while_m_n(1, 1, is_quoted_specials))),
+                |(_, bytes): (_, &[u8])| {
+                    assert_eq!(bytes.len(), 1);
+                    bytes[0] as char
+                },
+            ),
+        )),
+        |c| QuotedChar(c),
+    )(input)
 }
 
-fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
+pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
     is_text_char(byte) && !is_quoted_specials(byte)
 }
 
@@ -333,7 +337,7 @@ mod test {
     fn test_quoted_char() {
         let (rem, val) = quoted_char(b"\\\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, '"');
+        assert_eq!(val, QuotedChar('"'));
     }
 
     #[test]

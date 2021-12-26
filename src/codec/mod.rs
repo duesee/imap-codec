@@ -12,7 +12,7 @@ use crate::{
             SpecificFields,
         },
         command::{Command, CommandBody, SearchKey},
-        core::{AString, Atom, Charset, IString, Literal, NString, Quoted, Tag, Text},
+        core::{AString, Atom, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text},
         datetime::{MyDateTime, MyNaiveDate},
         envelope::Envelope,
         fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
@@ -747,8 +747,9 @@ impl Encode for Data {
                 writer.write_all(b") ")?;
 
                 if let Some(delimiter) = delimiter {
-                    // TODO: newtype Delimiter?
-                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
+                    writer.write_all(b"\"")?;
+                    delimiter.encode(writer)?;
+                    writer.write_all(b"\"")?;
                 } else {
                     writer.write_all(b"NIL")?;
                 }
@@ -765,8 +766,9 @@ impl Encode for Data {
                 writer.write_all(b") ")?;
 
                 if let Some(delimiter) = delimiter {
-                    // TODO: newtype Delimiter?
-                    write!(writer, "\"{}\"", escape_quoted(&delimiter.to_string()))?;
+                    writer.write_all(b"\"")?;
+                    delimiter.encode(writer)?;
+                    writer.write_all(b"\"")?;
                 } else {
                     writer.write_all(b"NIL")?;
                 }
@@ -824,6 +826,16 @@ impl Encode for Data {
 impl Encode for FlagNameAttribute {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
+    }
+}
+
+impl Encode for QuotedChar {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self.0 {
+            '\\' => writer.write_all(b"\\\\"),
+            '"' => writer.write_all(b"\\\""),
+            other => writer.write_all(&[other as u8]),
+        }
     }
 }
 

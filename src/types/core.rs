@@ -22,7 +22,10 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    parse::core::{is_astring_char, is_atom_char, is_char8, is_text_char},
+    parse::core::{
+        is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8,
+        is_text_char,
+    },
     utils::escape_quoted,
 };
 
@@ -415,6 +418,32 @@ impl TryFrom<String> for Text {
 impl std::fmt::Display for Text {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct QuotedChar(pub(crate) char);
+
+impl QuotedChar {
+    pub fn verify(input: char) -> bool {
+        if input.is_ascii() {
+            is_any_text_char_except_quoted_specials(input as u8) || input == '\\' || input == '"'
+        } else {
+            false
+        }
+    }
+}
+
+impl TryFrom<char> for QuotedChar {
+    type Error = ();
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        if Self::verify(value) {
+            Ok(QuotedChar(value))
+        } else {
+            Err(())
+        }
     }
 }
 

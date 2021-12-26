@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     codec::utils::join,
     types::{
-        core::{Atom, Charset, NonEmptyVec, Tag, Text},
+        core::{Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
         fetch_attributes::FetchAttributeValue,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
@@ -278,7 +278,7 @@ pub enum Data {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
         /// Hierarchy delimiter
-        delimiter: Option<char>,
+        delimiter: Option<QuotedChar>,
         /// Name
         mailbox: Mailbox,
     },
@@ -293,7 +293,7 @@ pub enum Data {
         /// Name attributes
         items: Vec<FlagNameAttribute>,
         /// Hierarchy delimiter
-        delimiter: Option<char>,
+        delimiter: Option<QuotedChar>,
         /// Name
         mailbox: Mailbox,
     },
@@ -772,7 +772,7 @@ mod test {
             (
                 Data::List {
                     items: vec![FlagNameAttribute::Noselect],
-                    delimiter: Some('/'),
+                    delimiter: Some(QuotedChar::try_from('/').unwrap()),
                     mailbox: "bbb".try_into().unwrap(),
                 },
                 b"* LIST (\\Noselect) \"/\" bbb\r\n",

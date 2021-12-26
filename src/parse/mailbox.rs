@@ -19,6 +19,7 @@ use crate::{
         status_attributes::status_att_list,
     },
     types::{
+        core::QuotedChar,
         flag::FlagNameAttribute,
         mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
         response::Data,
@@ -130,7 +131,7 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 ///                mailbox
 fn mailbox_list(
     input: &[u8],
-) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<char>, Mailbox)> {
+) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
     let mut parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         SP,
