@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::{convert::TryFrom, num::NonZeroU32};
 
 use abnf_core::streaming::SP;
 use nom::{
@@ -19,7 +19,10 @@ use crate::{
         flag::flag_fetch,
         section::section,
     },
-    types::fetch_attributes::{FetchAttribute, FetchAttributeValue},
+    types::{
+        core::NonEmptyVec,
+        fetch_attributes::{FetchAttribute, FetchAttributeValue},
+    },
 };
 
 /// fetch-att = "ENVELOPE" /
@@ -80,10 +83,13 @@ pub(crate) fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
 /// msg-att = "("
 ///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///           ")"
-pub(crate) fn msg_att(input: &[u8]) -> IResult<&[u8], Vec<FetchAttributeValue>> {
+pub(crate) fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>> {
     delimited(
         tag(b"("),
-        separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
+        map(
+            separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
+            |attrs| NonEmptyVec::try_from(attrs).unwrap(),
+        ),
         tag(b")"),
     )(input)
 }

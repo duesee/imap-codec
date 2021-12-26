@@ -428,7 +428,7 @@ pub enum Data {
         /// Message SEQ or UID
         seq_or_uid: NonZeroU32,
         /// Message data
-        attributes: Vec<FetchAttributeValue>,
+        attributes: NonEmptyVec<FetchAttributeValue>,
     },
 
     /// ----- ENABLE Extension (RFC 5161) -----
