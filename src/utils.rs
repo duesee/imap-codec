@@ -34,17 +34,44 @@ mod test {
 
     #[test]
     fn test_escape_quoted() {
-        assert_eq!(escape_quoted("alice"), "alice");
-        assert_eq!(escape_quoted("\\alice\\"), "\\\\alice\\\\");
-        assert_eq!(escape_quoted("alice\""), "alice\\\"");
-        assert_eq!(escape_quoted(r#"\alice\ ""#), r#"\\alice\\ \""#);
+        let tests = [
+            ("", ""),
+            ("\\", "\\\\"),
+            ("\"", "\\\""),
+            ("alice", "alice"),
+            ("\\alice\\", "\\\\alice\\\\"),
+            ("alice\"", "alice\\\""),
+            (r#"\alice\ ""#, r#"\\alice\\ \""#),
+        ];
+
+        for (test, expected) in tests {
+            let got = escape_quoted(test);
+            assert_eq!(expected, got);
+        }
     }
 
     #[test]
     fn test_unescape_quoted() {
-        assert_eq!(unescape_quoted("alice"), "alice");
-        assert_eq!(unescape_quoted("\\\\alice\\\\"), "\\alice\\");
-        assert_eq!(unescape_quoted("alice\\\""), "alice\"");
-        assert_eq!(unescape_quoted(r#"\\alice\\ \""#), r#"\alice\ ""#);
+        let tests = [
+            ("", ""),
+            ("\\\\", "\\"),
+            ("\\\"", "\""),
+            ("alice", "alice"),
+            ("\\\\alice\\\\", "\\alice\\"),
+            ("alice\\\"", "alice\""),
+            (r#"\\alice\\ \""#, r#"\alice\ ""#),
+        ];
+
+        for (test, expected) in tests {
+            let got = unescape_quoted(test);
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_that_unescape_is_inverse_of_escape() {
+        let input = "\\\"\\¹²³abc_*:;059^$%§!\""; // TODO: use QuickCheck or something similar
+
+        assert_eq!(input, unescape_quoted(escape_quoted(input).as_ref()));
     }
 }
