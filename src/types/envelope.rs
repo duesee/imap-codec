@@ -1,3 +1,5 @@
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -51,6 +53,7 @@ use crate::types::{address::Address, core::NString};
 ///    From header.  Therefore, the from, sender, and reply-to
 ///    members in the envelope can not be NIL.
 /// TODO: many invariants here...
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Envelope {

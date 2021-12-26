@@ -5,7 +5,7 @@ use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::types::{
     command::SearchKey,
-    core::{AString, Atom, Literal, NonEmptyVec, Quoted, Tag},
+    core::{AString, Atom, Literal, NonEmptyVec, Quoted, Tag, Text},
     datetime::{MyDateTime, MyNaiveDate},
     mailbox::{ListCharString, Mailbox},
     sequence::SequenceSet,
@@ -44,6 +44,7 @@ macro_rules! implement_tryfrom_t {
 implement_tryfrom! { Atom, String }
 implement_tryfrom! { Quoted, String }
 implement_tryfrom! { Tag, String }
+implement_tryfrom! { Text, String }
 implement_tryfrom! { ListCharString, String }
 implement_tryfrom! { Mailbox, String }
 implement_tryfrom! { AuthMechanismOther, String }

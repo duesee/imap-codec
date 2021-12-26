@@ -1,3 +1,5 @@
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
@@ -6,6 +8,7 @@ use crate::types::{
     envelope::Envelope,
 };
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Body {
@@ -16,6 +19,7 @@ pub struct Body {
 }
 
 /// The basic fields of a non-multipart body part.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BasicFields {
@@ -38,6 +42,7 @@ pub struct BasicFields {
     pub size: u32,
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SpecificFields {
@@ -155,6 +160,7 @@ pub enum SpecificFields {
     },
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BodyStructure {
@@ -233,6 +239,7 @@ pub enum BodyStructure {
 }
 
 /// The extension data of a non-multipart body part are in the following order:
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SinglePartExtensionData {
@@ -267,6 +274,7 @@ pub struct SinglePartExtensionData {
 ///           | extension multipart data
 /// )
 /// ```
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiPartExtensionData {

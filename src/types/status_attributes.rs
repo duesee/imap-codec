@@ -27,6 +27,7 @@ pub enum StatusAttribute {
 }
 
 /// The currently defined status data items.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StatusAttributeValue {

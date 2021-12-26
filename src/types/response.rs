@@ -20,6 +20,7 @@ use crate::{
 };
 
 /// Server responses are in three forms.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response {
@@ -45,6 +46,7 @@ pub enum Response {
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [ResponseCode](ResponseCode).)
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Status {
@@ -199,6 +201,7 @@ impl Status {
 }
 
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Data {
@@ -450,6 +453,7 @@ pub enum Data {
 /// command, follows the octets of the literal.  If there are any
 /// additional command arguments, the literal octets are followed by a
 /// space and those arguments.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continuation {
@@ -478,6 +482,7 @@ impl Continuation {
 /// information.
 ///
 /// The currently defined response codes are:
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Code {
