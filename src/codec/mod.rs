@@ -808,8 +808,12 @@ impl Encode for Data {
                 writer.write_all(b")")?;
             }
             Data::Enabled { capabilities } => {
-                write!(writer, "* ENABLED ")?;
-                join_serializable(capabilities, b" ", writer)?;
+                write!(writer, "* ENABLED")?;
+
+                for cap in capabilities {
+                    writer.write_all(b" ")?;
+                    cap.encode(writer)?;
+                }
             }
         }
 

@@ -5,7 +5,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, map_res, opt, value},
-    multi::{many1, separated_list1},
+    multi::{many0, separated_list1},
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
@@ -407,7 +407,7 @@ fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 
 /// enable-data = "ENABLED" *(SP capability)
 fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
-    let mut parser = tuple((tag_no_case(b"ENABLED"), many1(preceded(SP, capability))));
+    let mut parser = tuple((tag_no_case(b"ENABLED"), many0(preceded(SP, capability))));
 
     let (remaining, (_, capabilities)) = parser(input)?;
 
