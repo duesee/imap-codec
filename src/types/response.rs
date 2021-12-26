@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     codec::utils::join,
     types::{
-        core::{Atom, Charset, Tag, Text},
+        core::{Atom, Charset, NonEmptyVec, Tag, Text},
         fetch_attributes::FetchAttributeValue,
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
@@ -255,7 +255,7 @@ pub enum Data {
     /// OK response as part of a successful authentication.  It is
     /// unnecessary for a client to send a separate CAPABILITY command if
     /// it recognizes these automatic capabilities.
-    Capability(Vec<Capability>),
+    Capability(NonEmptyVec<Capability>),
 
     /// ### 7.2.2. LIST Response
     ///
@@ -509,7 +509,7 @@ pub enum Code {
     /// capabilities list.  This makes it unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes this
     /// response.
-    Capability(Vec<Capability>), // FIXME(misuse): List must contain IMAP4REV1
+    Capability(NonEmptyVec<Capability>), // FIXME(misuse): List must contain IMAP4REV1
 
     /// `PARSE`
     ///
@@ -585,8 +585,11 @@ pub enum Code {
 }
 
 impl Code {
-    pub fn capability(caps: &[Capability]) -> Self {
-        Code::Capability(caps.to_vec())
+    pub fn capability<C>(caps: C) -> Result<Self, C::Error>
+    where
+        C: TryInto<NonEmptyVec<Capability>>,
+    {
+        Ok(Code::Capability(caps.try_into()?))
     }
 }
 
@@ -763,7 +766,7 @@ mod test {
     fn test_data() {
         let tests: Vec<(_, &[u8])> = vec![
             (
-                Data::Capability(vec![Capability::Imap4Rev1]),
+                Data::Capability(NonEmptyVec::try_from(vec![Capability::Imap4Rev1]).unwrap()),
                 b"* CAPABILITY IMAP4REV1\r\n",
             ),
             (

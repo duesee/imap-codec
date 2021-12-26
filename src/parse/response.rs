@@ -1,4 +1,4 @@
-use std::str::from_utf8;
+use std::{convert::TryFrom, str::from_utf8};
 
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
 use nom::{
@@ -19,7 +19,7 @@ use crate::{
         mailbox::mailbox_data,
     },
     types::{
-        core::txt,
+        core::{txt, NonEmptyVec},
         response::{Capability, Code, Continuation, Data, Response, Status},
     },
 };
@@ -170,7 +170,7 @@ fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
 ///
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
-fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
+fn capability_data(input: &[u8]) -> IResult<&[u8], NonEmptyVec<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
         SP,
@@ -179,7 +179,7 @@ fn capability_data(input: &[u8]) -> IResult<&[u8], Vec<Capability>> {
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    Ok((rem, caps))
+    Ok((rem, NonEmptyVec::try_from(caps).unwrap()))
 }
 
 /// capability = ("AUTH=" auth-type) /
