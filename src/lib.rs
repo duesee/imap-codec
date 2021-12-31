@@ -1,3 +1,5 @@
+#![deny(missing_debug_implementations)]
+
 use codec::Encode;
 
 #[cfg(feature = "arbitrary")]

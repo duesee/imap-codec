@@ -34,10 +34,12 @@ impl<'a> SequenceSet {
     }
 }
 
+#[derive(Debug)]
 pub enum Strategy {
     Naive { largest: NonZeroU32 },
 }
 
+#[derive(Debug)]
 pub struct SequenceSetIterNaive<'a> {
     iter: core::slice::Iter<'a, Sequence>,
     active_range: Option<std::ops::RangeInclusive<u32>>,
