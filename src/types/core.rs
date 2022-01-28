@@ -166,6 +166,13 @@ impl<'a> LiteralRef<'a> {
         }
     }
 
+    /// Create a literal from a byte sequence without checking
+    /// that it to conforms to IMAP's literal specification.
+    ///
+    /// # Safety
+    ///
+    /// Call this function only when you are sure that the byte sequence
+    /// is a valid literal, i.e., that it does not contain 0x00.
     pub unsafe fn from_bytes_unchecked(bytes: &'a [u8]) -> LiteralRef<'a> {
         Self(bytes)
     }
@@ -219,7 +226,7 @@ impl<'a> Deref for LiteralRef<'a> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.0
     }
 }
 

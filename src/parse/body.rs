@@ -278,16 +278,12 @@ fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
 ///
 /// TODO: this is insane... define macro?
 fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
-    let mut rem;
-    let md5;
     let mut dsp = None;
     let mut lang = None;
     let mut loc = None;
     let mut ext = Vec::new();
 
-    let (rem_, md5_) = body_fld_md5(input)?;
-    rem = rem_;
-    md5 = md5_;
+    let (mut rem, md5) = body_fld_md5(input)?;
 
     let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
     if let Some(dsp_) = dsp_ {
@@ -460,16 +456,12 @@ fn body_type_mpart_limited(
 ///
 /// TODO: this is insane, too... define macro?
 fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
-    let mut rem;
-    let param;
     let mut dsp = None;
     let mut lang = None;
     let mut loc = None;
     let mut ext = Vec::new();
 
-    let (rem_, param_) = body_fld_param(input)?;
-    rem = rem_;
-    param = param_;
+    let (mut rem, param) = body_fld_param(input)?;
 
     let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
     if let Some(dsp_) = dsp_ {

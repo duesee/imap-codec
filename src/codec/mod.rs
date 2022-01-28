@@ -325,7 +325,7 @@ impl Encode for IString {
 impl Encode for Literal {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{{{}}}\r\n", self.len())?;
-        writer.write_all(&self)
+        writer.write_all(self)
     }
 }
 
@@ -1056,7 +1056,7 @@ impl Encode for SinglePartExtensionData {
                     writer.write_all(b"(")?;
                     s.encode(writer)?;
                     writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(&param).encode(writer)?;
+                    List1AttributeValueOrNil(param).encode(writer)?;
                     writer.write_all(b")")?;
                 }
                 None => writer.write_all(b"NIL")?,
@@ -1094,7 +1094,7 @@ impl Encode for MultiPartExtensionData {
                     writer.write_all(b"(")?;
                     s.encode(writer)?;
                     writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(&param).encode(writer)?;
+                    List1AttributeValueOrNil(param).encode(writer)?;
                     writer.write_all(b")")?;
                 }
                 None => writer.write_all(b"NIL")?,

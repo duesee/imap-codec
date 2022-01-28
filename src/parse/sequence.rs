@@ -42,7 +42,7 @@ pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
                 map(seq_number, Sequence::Single),
             )),
         ),
-        |sequence_set| SequenceSet(sequence_set),
+        SequenceSet,
     )(input)
 }
 

@@ -106,7 +106,7 @@ pub(crate) fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        |c| QuotedChar(c),
+        QuotedChar,
     )(input)
 }
 
@@ -121,7 +121,7 @@ fn is_quoted_specials(byte: u8) -> bool {
 
 /// literal = "{" number "}" CRLF *CHAR8
 ///             ; Number represents the number of CHAR8s
-pub(crate) fn literal<'a>(input: &'a [u8]) -> IResult<&'a [u8], LiteralRef<'a>> {
+pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], LiteralRef<'_>> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
     let (remaining, data) = take(number)(remaining)?;

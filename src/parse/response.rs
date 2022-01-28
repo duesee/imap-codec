@@ -251,7 +251,7 @@ fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
                 code,
                 text: text.to_owned(),
             }),
-            map(base64, |str| Continuation::Base64(str.to_owned())),
+            map(base64, Continuation::Base64),
         )),
         CRLF,
     ));
