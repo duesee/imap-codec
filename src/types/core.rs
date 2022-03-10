@@ -429,7 +429,7 @@ impl std::fmt::Display for Text {
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct QuotedChar(pub(crate) char);
 
 impl QuotedChar {
