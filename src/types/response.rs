@@ -444,6 +444,19 @@ impl Data {
     }
 
     // TODO: implement other methods
+
+    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Data, ()>
+    where
+        I: TryInto<NonZeroU32>,
+        A: TryInto<NonEmptyVec<FetchAttributeValue>>,
+    {
+        Ok(Data::Fetch {
+            seq_or_uid: seq_or_uid.try_into().map_err(|_| ())?, // TODO: better error
+            attributes: attributes.try_into().map_err(|_| ())?, // TODO: better error
+        })
+    }
+
+    // TODO: implement other methods
 }
 
 /// ## 7.5. Server Responses - Command Continuation Request
@@ -814,7 +827,8 @@ mod test {
 
     #[test]
     fn test_data_constructors() {
-        let _caps = Data::capability(vec![Capability::Enable]).unwrap();
+        let _ = Data::capability(vec![Capability::Enable]).unwrap();
+        let _ = Data::fetch(1, vec![FetchAttributeValue::Rfc822Size(123)]).unwrap();
     }
 
     #[test]
