@@ -435,6 +435,17 @@ pub enum Data {
     Enabled { capabilities: Vec<Capability> },
 }
 
+impl Data {
+    pub fn capability<C>(caps: C) -> Result<Data, C::Error>
+    where
+        C: TryInto<NonEmptyVec<Capability>>,
+    {
+        Ok(Data::Capability(caps.try_into()?))
+    }
+
+    // TODO: implement other methods
+}
+
 /// ## 7.5. Server Responses - Command Continuation Request
 ///
 /// The command continuation request response is indicated by a "+" token
@@ -799,6 +810,11 @@ mod test {
             // FIXME:
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
         }
+    }
+
+    #[test]
+    fn test_data_constructors() {
+        let _caps = Data::capability(vec![Capability::Enable]).unwrap();
     }
 
     #[test]
