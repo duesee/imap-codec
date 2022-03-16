@@ -124,6 +124,19 @@ fn is_quoted_specials(byte: u8) -> bool {
 pub(crate) fn literal(input: &[u8]) -> IResult<&[u8], LiteralRef<'_>> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
+    // Signal that an continuation request is required.
+    // TODO: There are some issues with this ...
+    //       * The return type is ad-hoc and does not tell *how* many bytes are about to be send
+    //       * It doesn't capture the case when there is something in the buffer already.
+    //         This is basically good for us, but there could be issues with servers violating the
+    //         IMAP protocol and sending data right away.
+    if remaining.is_empty() {
+        return Err(nom::Err::Failure(nom::error::Error::new(
+            remaining,
+            ErrorKind::Fix, // TODO
+        )));
+    }
+
     let (remaining, data) = take(number)(remaining)?;
 
     match LiteralRef::from_bytes(data) {
