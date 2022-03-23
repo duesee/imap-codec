@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// status-att = "MESSAGES" / "RECENT" / "UIDNEXT" / "UIDVALIDITY" / "UNSEEN"
-pub(crate) fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
+pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
     alt((
         value(StatusAttribute::Messages, tag_no_case(b"MESSAGES")),
         value(StatusAttribute::Recent, tag_no_case(b"RECENT")),
@@ -26,7 +26,7 @@ pub(crate) fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
 
 /// ; errata id: 261
 /// status-att-list = status-att-val *(SP status-att-val)
-pub(crate) fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusAttributeValue>> {
+pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusAttributeValue>> {
     separated_list1(SP, status_att_val)(input)
 }
 

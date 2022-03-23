@@ -11,6 +11,7 @@ edition = "2018"
 [features]
 default = []
 serdex  = ["serde", "chrono/serde"]
+nomx = []
 
 [dependencies]
 arbitrary = { version = "1", optional = true, features = ["derive"] }

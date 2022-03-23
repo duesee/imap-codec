@@ -21,7 +21,7 @@ use crate::{
 ///        flag-extension
 ///
 /// Note: Does not include "\Recent"
-pub(crate) fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
+pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((
         value(Flag::Answered, tag_no_case(b"\\Answered")),
         value(Flag::Flagged, tag_no_case(b"\\Flagged")),
@@ -34,12 +34,12 @@ pub(crate) fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
 }
 
 /// flag-fetch = flag / "\Recent"
-pub(crate) fn flag_fetch(input: &[u8]) -> IResult<&[u8], Flag> {
+pub fn flag_fetch(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((flag, value(Flag::Recent, tag_no_case(b"\\Recent"))))(input)
 }
 
 /// flag-perm = flag / "\*"
-pub(crate) fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
+pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((flag, value(Flag::Permanent, tag(b"\\*"))))(input)
 }
 
@@ -50,7 +50,7 @@ fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
 }
 
 /// flag-list = "(" [flag *(SP flag)] ")"
-pub(crate) fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
+pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
     delimited(tag(b"("), separated_list0(SP, flag), tag(b")"))(input)
 }
 
@@ -59,7 +59,7 @@ pub(crate) fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
 ///
 /// Note: ABNF enforces that sflag is not used more than once.
 ///       We parse any flag and check for multiple occurrences of sflag later.
-pub(crate) fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
+pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) = separated_list1(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
 
     let sflag_count = flags

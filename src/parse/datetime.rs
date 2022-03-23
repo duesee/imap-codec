@@ -13,7 +13,7 @@ use nom::{
 use crate::types::datetime::{MyDateTime, MyNaiveDate};
 
 /// date = date-text / DQUOTE date-text DQUOTE
-pub(crate) fn date(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
+pub fn date(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
@@ -76,7 +76,7 @@ fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 }
 
 /// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
-pub(crate) fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
+pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
     let mut parser = delimited(
         DQUOTE,
         tuple((

@@ -24,7 +24,7 @@ pub mod status_attributes;
 /// auth-type = atom
 ///
 /// Note: Defined by [SASL]
-pub(crate) fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
+pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let (rem, mechanism) = atom(input)?;
 
     Ok((rem, mechanism.to_owned().into()))
