@@ -19,7 +19,7 @@ use crate::{
 };
 
 /// section = "[" [section-spec] "]"
-pub(crate) fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
+pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
     delimited(tag(b"["), opt(section_spec), tag(b"]"))(input)
 }
 

@@ -27,7 +27,7 @@ use crate::{
 };
 
 /// list-mailbox = 1*list-char / string
-pub(crate) fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
+pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
             // Note: this is safe, because is_list_char enforces
@@ -42,12 +42,12 @@ pub(crate) fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
 }
 
 /// list-char = ATOM-CHAR / list-wildcards / resp-specials
-pub(crate) fn is_list_char(i: u8) -> bool {
+pub fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
 /// list-wildcards = "%" / "*"
-pub(crate) fn is_list_wildcards(i: u8) -> bool {
+pub fn is_list_wildcards(i: u8) -> bool {
     i == b'%' || i == b'*'
 }
 
@@ -60,7 +60,7 @@ pub(crate) fn is_list_wildcards(i: u8) -> bool {
 /// Refer to section 5.1 for further semantic details of mailbox names.
 ///
 /// mailbox = "INBOX" / astring
-pub(crate) fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
+pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     map(astring, |astr| {
         match MailboxOther::try_from(astr.to_owned()) {
             Ok(other) => Mailbox::Other(other),
@@ -76,7 +76,7 @@ pub(crate) fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
 ///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                number SP "EXISTS" /
 ///                number SP "RECENT"
-pub(crate) fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
+pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     alt((
         map(
             tuple((tag_no_case(b"FLAGS"), SP, flag_list)),

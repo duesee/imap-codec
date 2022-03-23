@@ -28,7 +28,7 @@ use crate::{
 ///            env-in-reply-to SP
 ///            env-message-id
 ///            ")"
-pub(crate) fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
+pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     let mut parser = delimited(
         tag(b"("),
         tuple((

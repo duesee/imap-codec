@@ -32,7 +32,7 @@ use crate::{
 /// sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))
 ///
 /// TODO: Why the errata?
-pub(crate) fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
+pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
     map(
         separated_list1(
             tag(b","),
