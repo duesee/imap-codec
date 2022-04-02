@@ -44,10 +44,17 @@ fn split_trace(trace: &[u8]) -> impl Iterator<Item = (Who, &[u8])> {
 
 fn test_lines_of_trace(trace: &[u8]) {
     for (who, line) in split_trace(trace) {
+        // Replace last "\n" with "\r\n".
+        let line = {
+            let mut line = line[..line.len().saturating_sub(1)].to_vec();
+            line.extend_from_slice(b"\r\n");
+            line
+        };
+
         match who {
             Who::Client => {
-                println!("C:          {}", String::from_utf8_lossy(line).trim());
-                let (rem, parsed) = command(line).unwrap();
+                println!("C:          {}", String::from_utf8_lossy(&line).trim());
+                let (rem, parsed) = command(&line).unwrap();
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
                 let mut serialized = Vec::new();
@@ -62,8 +69,8 @@ fn test_lines_of_trace(trace: &[u8]) {
                 println!()
             }
             Who::Server => {
-                println!("S:          {}", String::from_utf8_lossy(line).trim());
-                let (rem, parsed) = response(line).unwrap();
+                println!("S:          {}", String::from_utf8_lossy(&line).trim());
+                let (rem, parsed) = response(&line).unwrap();
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
                 let mut serialized = Vec::new();

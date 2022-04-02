@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
+use abnf_core::streaming::{CRLF, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
