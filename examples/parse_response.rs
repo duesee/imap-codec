@@ -39,7 +39,7 @@ fn main() -> std::io::Result<()> {
 
             let mut line = String::new();
             std::io::stdin().read_line(&mut line)?;
-            line
+            line.replace("\n", "\r\n")
         };
 
         if line.trim() == "exit" {
