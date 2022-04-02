@@ -11,7 +11,7 @@ use nom::{
 };
 
 #[cfg(feature = "ext_idle")]
-use crate::extensions::rfc2177::parse::idle_1;
+use crate::extensions::rfc2177::parse::idle;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::parse::compress;
 #[cfg(feature = "ext_enable")]
@@ -102,7 +102,7 @@ pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         subscribe,
         unsubscribe,
         #[cfg(feature = "ext_idle")]
-        idle_1,
+        idle,
         #[cfg(feature = "ext_enable")]
         // Note: The formal syntax defines ENABLE in command-any, but describes it to
         // be allowed in the authenticated state only. I will use the authenticated state.
@@ -271,7 +271,7 @@ pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
-        map(authenticate_1, |(mechanism, initial_response)| {
+        map(authenticate, |(mechanism, initial_response)| {
             CommandBody::Authenticate {
                 mechanism,
                 initial_response,
@@ -312,18 +312,19 @@ pub fn password(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }
 
-/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)`
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
 ///
 /// ```text
-/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64) // TODO: why the "="?
+///                                            Added by SASL-IR
+///                                            |
+///                                            vvvvvvvvvvvvvvvvvvv
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64)
 ///                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ///                |
-///                This is parsed here. Interpreted as `Command` (CRLF is parsed by upper command parser)
-///                                            ^^^^^^^^^^^^^^^^^^^
-///                                            |
-///                                            Added by SASL-IR (RFC RFC 4959)
+///                This is parsed here.
+///                CRLF is parsed by upper command parser.
 /// ```
-pub fn authenticate_1(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
+pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
     let mut parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
         SP,
@@ -338,17 +339,17 @@ pub fn authenticate_1(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec
     Ok((remaining, (auth_type, raw_data)))
 }
 
-/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)`
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
 ///
 /// ```text
-/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64)
-///                                                                vvvvvvvvvvvvvv
-///                                                                |
-///                                                                This is parsed here. (Because this
-///                                                                is not parsed through command, CRLF
-///                                                                must be parsed additionally.)
+/// authenticate = base64 CRLF
+///                vvvvvvvvvvvv
+///                |
+///                This is parsed here.
+///                CRLF is additionally parsed in this parser.
+///                FIXME: Multiline base64 currently does not work.
 /// ```
-pub fn authenticate_2(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
     terminated(base64, CRLF)(input) // FIXME: many0 deleted
 }
 
