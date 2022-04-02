@@ -18,13 +18,13 @@ use crate::{
     },
 };
 
-/// section = "[" [section-spec] "]"
+/// `section = "[" [section-spec] "]"`
 pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {
     delimited(tag(b"["), opt(section_spec), tag(b"]"))(input)
 }
 
-/// section-spec = section-msgtext / (section-part ["." section-text])
-fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
+/// `section-spec = section-msgtext / (section-part ["." section-text])`
+pub fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
     alt((
         map(section_msgtext, |part_specifier| match part_specifier {
             PartSpecifier::PartNumber(_) => unreachable!(),
@@ -58,10 +58,10 @@ fn section_spec(input: &[u8]) -> IResult<&[u8], Section> {
     ))(input)
 }
 
-/// Top-level or MESSAGE/RFC822 part
+/// `section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"`
 ///
-/// section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"
-fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
+/// Top-level or MESSAGE/RFC822 part
+pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
@@ -97,27 +97,27 @@ fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 }
 
 #[inline]
-/// Body part nesting
+/// `section-part = nz-number *("." nz-number)`
 ///
-/// section-part = nz-number *("." nz-number)
-fn section_part(input: &[u8]) -> IResult<&[u8], NonEmptyVec<NonZeroU32>> {
+/// Body part nesting
+pub fn section_part(input: &[u8]) -> IResult<&[u8], NonEmptyVec<NonZeroU32>> {
     map(separated_list1(tag(b"."), nz_number), |vec| {
         NonEmptyVec::try_from(vec).unwrap()
     })(input)
 }
 
-/// Text other than actual body part (headers, etc.)
+/// `section-text = section-msgtext / "MIME"`
 ///
-/// section-text = section-msgtext / "MIME"
-fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
+/// Text other than actual body part (headers, etc.)
+pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     alt((
         section_msgtext,
         value(PartSpecifier::Mime, tag_no_case(b"MIME")),
     ))(input)
 }
 
-/// header-list = "(" header-fld-name *(SP header-fld-name) ")"
-fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AStringRef>> {
+/// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
+pub fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AStringRef>> {
     map(
         delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
         |vec| NonEmptyVec::try_from(vec).unwrap(),
@@ -125,7 +125,7 @@ fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AStringRef>> {
 }
 
 #[inline]
-/// header-fld-name = astring
-pub(crate) fn header_fld_name(input: &[u8]) -> IResult<&[u8], AStringRef> {
+/// `header-fld-name = astring`
+pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }

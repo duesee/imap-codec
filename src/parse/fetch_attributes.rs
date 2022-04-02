@@ -25,14 +25,14 @@ use crate::{
     },
 };
 
-/// fetch-att = "ENVELOPE" /
-///             "FLAGS" /
-///             "INTERNALDATE" /
-///             "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
-///             "BODY" ["STRUCTURE"] /
-///             "UID" /
-///             "BODY" section ["<" number "." nz-number ">"] /
-///             "BODY.PEEK" section ["<" number "." nz-number ">"]
+/// `fetch-att = "ENVELOPE" /
+///              "FLAGS" /
+///              "INTERNALDATE" /
+///              "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
+///              "BODY" ["STRUCTURE"] /
+///              "UID" /
+///              "BODY" section ["<" number "." nz-number ">"] /
+///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
 pub fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
     alt((
         value(FetchAttribute::Envelope, tag_no_case(b"ENVELOPE")),
@@ -80,9 +80,9 @@ pub fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
     ))(input)
 }
 
-/// msg-att = "("
-///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
-///           ")"
+/// `msg-att = "("
+///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
+///            ")"`
 pub fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>> {
     delimited(
         tag(b"("),
@@ -94,10 +94,10 @@ pub fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>>
     )(input)
 }
 
-/// msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"
+/// `msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"`
 ///
 /// Note: MAY change for a message
-fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         SP,
@@ -112,16 +112,16 @@ fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
     ))
 }
 
-/// msg-att-static = "ENVELOPE" SP envelope /
-///                  "INTERNALDATE" SP date-time /
-///                  "RFC822" [".HEADER" / ".TEXT"] SP nstring /
-///                  "RFC822.SIZE" SP number /
-///                  "BODY" ["STRUCTURE"] SP body /
-///                  "BODY" section ["<" number ">"] SP nstring /
-///                  "UID" SP uniqueid
+/// `msg-att-static = "ENVELOPE" SP envelope /
+///                   "INTERNALDATE" SP date-time /
+///                   "RFC822" [".HEADER" / ".TEXT"] SP nstring /
+///                   "RFC822.SIZE" SP number /
+///                   "BODY" ["STRUCTURE"] SP body /
+///                   "BODY" section ["<" number ">"] SP nstring /
+///                   "UID" SP uniqueid`
 ///
 /// Note: MUST NOT change for a message
-fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), SP, envelope)),
@@ -180,9 +180,9 @@ fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
 }
 
 #[inline]
-/// uniqueid = nz-number
+/// `uniqueid = nz-number`
 ///
 /// Note: Strictly ascending
-fn uniqueid(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
+pub fn uniqueid(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
     nz_number(input)
 }

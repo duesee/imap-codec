@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use abnf_core::streaming::{CRLF_relaxed as CRLF, SP};
 use nom::{
@@ -10,15 +10,20 @@ use nom::{
     IResult,
 };
 
+#[cfg(feature = "ext_idle")]
+use crate::extensions::rfc2177::parse::idle_1;
+#[cfg(feature = "ext_compress")]
+use crate::extensions::rfc4987::parse::compress;
+#[cfg(feature = "ext_enable")]
+use crate::extensions::rfc5161::parse::enable;
 use crate::{
     parse::{
-        algorithm, auth_type,
+        auth_type,
         core::{astring, atom, base64, charset, literal, number, tag_imap},
         datetime::{date, date_time},
         fetch_attributes::fetch_att,
         flag::{flag, flag_list},
         mailbox::{list_mailbox, mailbox},
-        response::capability,
         section::header_fld_name,
         sequence::sequence_set,
         status_attributes::status_att,
@@ -32,10 +37,12 @@ use crate::{
     },
 };
 
-/// command = tag SP (command-any /
-///                   command-auth /
-///                   command-nonauth /
-///                   command-select) CRLF
+/// `command = tag SP (
+///                     command-any /
+///                     command-auth /
+///                     command-nonauth /
+///                     command-select
+///                   ) CRLF`
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_imap,
@@ -49,12 +56,12 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     Ok((remaining, Command::new(tag, command_body)))
 }
 
-/// # Command Any
+// # Command Any
 
-/// command-any = "CAPABILITY" / "LOGOUT" / "NOOP" / x-command
+/// `command-any = "CAPABILITY" / "LOGOUT" / "NOOP" / x-command`
 ///
 /// Note: Valid in all states
-fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Capability, tag_no_case(b"CAPABILITY")),
         value(CommandBody::Logout, tag_no_case(b"LOGOUT")),
@@ -63,18 +70,25 @@ fn command_any(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))(input)
 }
 
-/// # Command Auth
+// # Command Auth
 
-/// command-auth = append / create / delete /
-///                examine / list / lsub /
-///                rename / select / status /
-///                subscribe / unsubscribe /
-///                idle ; RFC 2177
-///                enable ; RFC 5161
-///                compress ; RFC 4978
+/// `command-auth = append /
+///                 create /
+///                 delete /
+///                 examine /
+///                 list /
+///                 lsub /
+///                 rename /
+///                 select /
+///                 status /
+///                 subscribe /
+///                 unsubscribe /
+///                 idle ; RFC 2177
+///                 enable ; RFC 5161
+///                 compress ; RFC 4978`
 ///
 /// Note: Valid only in Authenticated or Selected state
-fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     alt((
         append,
         create,
@@ -87,16 +101,19 @@ fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         status,
         subscribe,
         unsubscribe,
-        idle, // RFC 2177
-        // The formal syntax defines ENABLE in command-any, but describes it to
+        #[cfg(feature = "ext_idle")]
+        idle_1,
+        #[cfg(feature = "ext_enable")]
+        // Note: The formal syntax defines ENABLE in command-any, but describes it to
         // be allowed in the authenticated state only. I will use the authenticated state.
-        enable,   // RFC 5161
-        compress, // RFC 4978
+        enable,
+        #[cfg(feature = "ext_compress")]
+        compress,
     ))(input)
 }
 
-/// append = "APPEND" SP mailbox [SP flag-list] [SP date-time] SP literal
-fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `append = "APPEND" SP mailbox [SP flag-list] [SP date-time] SP literal`
+pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"APPEND"),
         SP,
@@ -120,10 +137,10 @@ fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// create = "CREATE" SP mailbox
+/// `create = "CREATE" SP mailbox`
 ///
 /// Note: Use of INBOX gives a NO error
-fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"CREATE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -131,10 +148,10 @@ fn create(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Create { mailbox }))
 }
 
-/// delete = "DELETE" SP mailbox
+/// `delete = "DELETE" SP mailbox`
 ///
 /// Note: Use of INBOX gives a NO error
-fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"DELETE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -142,8 +159,8 @@ fn delete(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Delete { mailbox }))
 }
 
-/// examine = "EXAMINE" SP mailbox
-fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `examine = "EXAMINE" SP mailbox`
+pub fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"EXAMINE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -151,8 +168,8 @@ fn examine(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Examine { mailbox }))
 }
 
-/// list = "LIST" SP mailbox SP list-mailbox
-fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `list = "LIST" SP mailbox SP list-mailbox`
+pub fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LIST"), SP, mailbox, SP, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
@@ -166,8 +183,8 @@ fn list(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// lsub = "LSUB" SP mailbox SP list-mailbox
-fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `lsub = "LSUB" SP mailbox SP list-mailbox`
+pub fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LSUB"), SP, mailbox, SP, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
@@ -181,10 +198,10 @@ fn lsub(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// rename = "RENAME" SP mailbox SP mailbox
+/// `rename = "RENAME" SP mailbox SP mailbox`
 ///
 /// Note: Use of INBOX as a destination gives a NO error
-fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"RENAME"), SP, mailbox, SP, mailbox));
 
     let (remaining, (_, _, mailbox, _, new_mailbox)) = parser(input)?;
@@ -198,8 +215,8 @@ fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// select = "SELECT" SP mailbox
-fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `select = "SELECT" SP mailbox`
+pub fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"SELECT"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -207,8 +224,8 @@ fn select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Select { mailbox }))
 }
 
-/// status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"
-fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
+pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"STATUS"),
         SP,
@@ -228,8 +245,8 @@ fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// subscribe = "SUBSCRIBE" SP mailbox
-fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `subscribe = "SUBSCRIBE" SP mailbox`
+pub fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"SUBSCRIBE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -237,8 +254,8 @@ fn subscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Subscribe { mailbox }))
 }
 
-/// unsubscribe = "UNSUBSCRIBE" SP mailbox
-fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `unsubscribe = "UNSUBSCRIBE" SP mailbox`
+pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"UNSUBSCRIBE"), SP, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -246,63 +263,15 @@ fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Unsubscribe { mailbox }))
 }
 
-/// idle = "IDLE" CRLF "DONE"
-///        ^^^^^^^^^^^
-///        |
-///        parsed as command (CRLF is consumed in upper command parser)
-///
-/// Valid only in Authenticated or Selected state
-fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    value(CommandBody::Idle, tag_no_case("IDLE"))(input)
-}
+// # Command NonAuth
 
-/// command-any =/ "ENABLE" 1*(SP capability)
-fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case("ENABLE"), many1(preceded(SP, capability))));
-
-    let (remaining, (_, capabilities)) = parser(input)?;
-
-    Ok((
-        remaining,
-        CommandBody::Enable {
-            capabilities: capabilities.try_into().unwrap(),
-        },
-    ))
-}
-
-/// compress = "COMPRESS" SP algorithm
-pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    map(preceded(tag_no_case("COMPRESS "), algorithm), |algorithm| {
-        CommandBody::Compress { algorithm }
-    })(input)
-}
-
-/// This parser must be executed *instead* of the command parser
-/// when the server is in the IDLE state.
-///
-/// idle = "IDLE" CRLF "DONE"
-///                    ^^^^^^
-///                    |
-///                    applied as separate parser (CRLF is not consumed through the command
-///                                                parser and must be consumed here)
-/// TODO: just interpret as command?
-pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
-    let mut parser = value((), tuple((tag_no_case("DONE"), CRLF)));
-
-    let (remaining, parsed_idle_done) = parser(input)?;
-
-    Ok((remaining, parsed_idle_done))
-}
-
-/// # Command NonAuth
-
-/// command-nonauth = login / authenticate / "STARTTLS"
+/// `command-nonauth = login / authenticate / "STARTTLS"`
 ///
 /// Note: Valid only when in Not Authenticated state
-fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
-        map(authenticate, |(mechanism, initial_response)| {
+        map(authenticate_1, |(mechanism, initial_response)| {
             CommandBody::Authenticate {
                 mechanism,
                 initial_response,
@@ -316,8 +285,8 @@ fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, parsed_command_nonauth))
 }
 
-/// login = "LOGIN" SP userid SP password
-fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `login = "LOGIN" SP userid SP password`
+pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LOGIN"), SP, userid, SP, password));
 
     let (remaining, (_, _, username, _, password)) = parser(input)?;
@@ -332,27 +301,29 @@ fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
 }
 
 #[inline]
-/// userid = astring
-fn userid(input: &[u8]) -> IResult<&[u8], AStringRef> {
+/// `userid = astring`
+pub fn userid(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }
 
 #[inline]
-/// password = astring
-fn password(input: &[u8]) -> IResult<&[u8], AStringRef> {
+/// `password = astring`
+pub fn password(input: &[u8]) -> IResult<&[u8], AStringRef> {
     astring(input)
 }
 
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)`
+///
 /// ```text
-///                Interpreted as Command (CRLF is parsed by upper command parser)
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64) // TODO: why the "="?
+///                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ///                |
-///                vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64)
+///                This is parsed here. Interpreted as `Command` (CRLF is parsed by upper command parser)
 ///                                            ^^^^^^^^^^^^^^^^^^^
 ///                                            |
 ///                                            Added by SASL-IR (RFC RFC 4959)
 /// ```
-fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
+pub fn authenticate_1(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
     let mut parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
         SP,
@@ -367,28 +338,33 @@ fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)
     Ok((remaining, (auth_type, raw_data)))
 }
 
-/// Use this parser instead of command when doing authentication.
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)`
 ///
 /// ```text
-///                                                                Parsed here (because this is not parsed through command,
-///                                                                             CRLF must be parsed additionally)
-///                                                                |
+/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64)
 ///                                                                vvvvvvvvvvvvvv
-/// authenticate = "AUTHENTICATE" SP auth-type [SP (base64 / "=")] *(CRLF base64) // TODO: why the "="?
-///                                            ^^^^^^^^^^^^^^^^^^^
-///                                            |
-///                                            Added by SASL-IR (RFC RFC 4959)
+///                                                                |
+///                                                                This is parsed here. (Because this
+///                                                                is not parsed through command, CRLF
+///                                                                must be parsed additionally.)
 /// ```
-pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+pub fn authenticate_2(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
     terminated(base64, CRLF)(input) // FIXME: many0 deleted
 }
 
-/// # Command Select
+// # Command Select
 
-/// command-select = "CHECK" / "CLOSE" / "EXPUNGE" / copy / fetch / store / uid / search
+/// `command-select = "CHECK" /
+///                   "CLOSE" /
+///                   "EXPUNGE" /
+///                   copy /
+///                   fetch /
+///                   store /
+///                   uid /
+///                   search`
 ///
 /// Note: Valid only when in Selected state
-fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
@@ -401,8 +377,8 @@ fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))(input)
 }
 
-/// copy = "COPY" SP sequence-set SP mailbox
-fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `copy = "COPY" SP sequence-set SP mailbox`
+pub fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"COPY"), SP, sequence_set, SP, mailbox));
 
     let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
@@ -417,11 +393,11 @@ fn copy(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// fetch = "FETCH" SP sequence-set SP ("ALL" /
-///                                     "FULL" /
-///                                     "FAST" /
-///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
-fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `fetch = "FETCH" SP sequence-set SP ("ALL" /
+///                                      "FULL" /
+///                                      "FAST" /
+///                                      fetch-att / "(" fetch-att *(SP fetch-att) ")")`
+pub fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"FETCH"),
         SP,
@@ -462,8 +438,8 @@ fn fetch(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// store = "STORE" SP sequence-set SP store-att-flags
-fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
+/// `store = "STORE" SP sequence-set SP store-att-flags`
+pub fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"STORE"), SP, sequence_set, SP, store_att_flags));
 
     let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
@@ -480,8 +456,8 @@ fn store(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-/// store-att-flags = (["+" / "-"] "FLAGS" [".SILENT"]) SP (flag-list / (flag *(SP flag)))
-fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Vec<Flag>)> {
+/// `store-att-flags = (["+" / "-"] "FLAGS" [".SILENT"]) SP (flag-list / (flag *(SP flag)))`
+pub fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Vec<Flag>)> {
     let mut parser = tuple((
         tuple((
             map(
@@ -509,10 +485,10 @@ fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse, Ve
     Ok((remaining, (store_type, store_response, flag_list)))
 }
 
-/// uid = "UID" SP (copy / fetch / search / store)
+/// `uid = "UID" SP (copy / fetch / search / store)`
 ///
 /// Note: Unique identifiers used instead of message sequence numbers
-fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"UID"), SP, alt((copy, fetch, search, store))));
 
     let (remaining, (_, _, mut cmd)) = parser(input)?;
@@ -528,12 +504,12 @@ fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((remaining, cmd))
 }
 
-/// search = "SEARCH" [SP "CHARSET" SP charset] 1*(SP search-key)
+/// `search = "SEARCH" [SP "CHARSET" SP charset] 1*(SP search-key)`
 ///
-/// Note: CHARSET argument to MUST be registered with IANA
+/// Note: CHARSET argument MUST be registered with IANA
 ///
 /// errata id: 261
-fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"SEARCH"),
         opt(map(
@@ -561,50 +537,51 @@ fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
+/// `search-key = "ALL" /
+///               "ANSWERED" /
+///               "BCC" SP astring /
+///               "BEFORE" SP date /
+///               "BODY" SP astring /
+///               "CC" SP astring /
+///               "DELETED" /
+///               "FLAGGED" /
+///               "FROM" SP astring /
+///               "KEYWORD" SP flag-keyword /
+///               "NEW" /
+///               "OLD" /
+///               "ON" SP date /
+///               "RECENT" /
+///               "SEEN" /
+///               "SINCE" SP date /
+///               "SUBJECT" SP astring /
+///               "TEXT" SP astring /
+///               "TO" SP astring /
+///               "UNANSWERED" /
+///               "UNDELETED" /
+///               "UNFLAGGED" /
+///               "UNKEYWORD" SP flag-keyword /
+///               "UNSEEN" /
+///                 ; Above this line were in [IMAP2]
+///               "DRAFT" /
+///               "HEADER" SP header-fld-name SP astring /
+///               "LARGER" SP number /
+///               "NOT" SP search-key /
+///               "OR" SP search-key SP search-key /
+///               "SENTBEFORE" SP date /
+///               "SENTON" SP date /
+///               "SENTSINCE" SP date /
+///               "SMALLER" SP number /
+///               "UID" SP sequence-set /
+///               "UNDRAFT" /
+///               sequence-set /
+///               "(" search-key *(SP search-key) ")"`
+///
 /// This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], SearchKey> {
+pub fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], SearchKey> {
     move |input: &[u8]| search_key_limited(input, remaining_recursions)
 }
 
-/// search-key = "ALL" /
-///              "ANSWERED" /
-///              "BCC" SP astring /
-///              "BEFORE" SP date /
-///              "BODY" SP astring /
-///              "CC" SP astring /
-///              "DELETED" /
-///              "FLAGGED" /
-///              "FROM" SP astring /
-///              "KEYWORD" SP flag-keyword /
-///              "NEW" /
-///              "OLD" /
-///              "ON" SP date /
-///              "RECENT" /
-///              "SEEN" /
-///              "SINCE" SP date /
-///              "SUBJECT" SP astring /
-///              "TEXT" SP astring /
-///              "TO" SP astring /
-///              "UNANSWERED" /
-///              "UNDELETED" /
-///              "UNFLAGGED" /
-///              "UNKEYWORD" SP flag-keyword /
-///              "UNSEEN" /
-///                ; Above this line were in [IMAP2]
-///              "DRAFT" /
-///              "HEADER" SP header-fld-name SP astring /
-///              "LARGER" SP number /
-///              "NOT" SP search-key /
-///              "OR" SP search-key SP search-key /
-///              "SENTBEFORE" SP date /
-///              "SENTON" SP date /
-///              "SENTSINCE" SP date /
-///              "SMALLER" SP number /
-///              "UID" SP sequence-set /
-///              "UNDRAFT" /
-///              sequence-set /
-///              "(" search-key *(SP search-key) ")"
 fn search_key_limited<'a>(
     input: &'a [u8],
     remaining_recursion: usize,
@@ -741,7 +718,6 @@ mod test {
     use super::*;
     use crate::types::{
         fetch_attributes::FetchAttribute,
-        response::Capability,
         section::Section,
         sequence::{SeqNo, Sequence, SequenceSet as SequenceSetData},
     };
@@ -863,7 +839,10 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "ext_enable")]
     fn test_enable() {
+        use crate::types::response::Capability;
+
         let got = command(b"A123 enable UTF8=ACCEPT ENABLE\r\n").unwrap().1;
         assert_eq!(
             Command::new(

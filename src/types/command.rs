@@ -9,16 +9,19 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_compress")]
+use crate::extensions::rfc4987::types::CompressionAlgorithm;
+#[cfg(feature = "ext_enable")]
+use crate::types::response::Capability;
 use crate::types::{
     core::{AString, Atom, Charset, Literal, NonEmptyVec, Tag},
     datetime::{MyDateTime, MyNaiveDate},
     fetch_attributes::MacroOrFetchAttributes,
     flag::{Flag, StoreResponse, StoreType},
     mailbox::{ListMailbox, Mailbox},
-    response::Capability,
     sequence::SequenceSet,
     status_attributes::StatusAttribute,
-    AuthMechanism, CompressionAlgorithm,
+    AuthMechanism,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -301,10 +304,12 @@ impl Command {
         ))
     }
 
+    #[cfg(feature = "ext_idle")]
     pub fn idle() -> Command {
         Command::new(Tag::random(), CommandBody::Idle)
     }
 
+    #[cfg(feature = "ext_enable")]
     pub fn enable<C>(capabilities: C) -> Result<Command, C::Error>
     where
         C: TryInto<NonEmptyVec<Capability>>,
@@ -315,6 +320,11 @@ impl Command {
                 capabilities: capabilities.try_into()?,
             },
         ))
+    }
+
+    #[cfg(feature = "ext_compress")]
+    pub fn compress(algorithm: CompressionAlgorithm) -> Command {
+        Command::new(Tag::random(), CommandBody::Compress { algorithm })
     }
 
     pub fn name(&self) -> &'static str {
@@ -1437,15 +1447,15 @@ pub enum CommandBody {
     // send any such untagged responses, unless the client requested it
     // by issuing the associated experimental command.
     //X,
-    /// ----- Idle Extension (https://tools.ietf.org/html/rfc2177) -----
+    #[cfg(feature = "ext_idle")]
     Idle,
 
-    /// ----- Enable Extension (https://tools.ietf.org/html/rfc5161)
+    #[cfg(feature = "ext_enable")]
     Enable {
         capabilities: NonEmptyVec<Capability>,
     },
 
-    /// ----- Compress Extension (https://tools.ietf.org/html/rfc4978) -----
+    #[cfg(feature = "ext_compress")]
     Compress { algorithm: CompressionAlgorithm },
 }
 
@@ -1478,8 +1488,11 @@ impl CommandBody {
             Fetch { .. } => "FETCH",
             Store { .. } => "STORE",
             Copy { .. } => "COPY",
+            #[cfg(feature = "ext_idle")]
             Idle => "IDLE",
+            #[cfg(feature = "ext_enable")]
             Enable { .. } => "ENABLE",
+            #[cfg(feature = "ext_compress")]
             Compress { .. } => "COMPRESS",
         }
     }
@@ -1641,6 +1654,10 @@ mod test {
 
     use chrono::DateTime;
 
+    #[cfg(feature = "ext_enable")]
+    use crate::extensions::rfc4987::types::CompressionAlgorithm;
+    #[cfg(feature = "ext_enable")]
+    use crate::types::response::Capability;
     use crate::{
         codec::Encode,
         types::{
@@ -1789,7 +1806,12 @@ mod test {
             .unwrap(),
             Command::copy("1", "inbox", false).unwrap(),
             Command::copy("1337", "archive", true).unwrap(),
+            #[cfg(feature = "ext_idle")]
             Command::idle(),
+            #[cfg(feature = "ext_enable")]
+            Command::enable(vec![Capability::Enable]).unwrap(),
+            #[cfg(feature = "ext_compress")]
+            Command::compress(CompressionAlgorithm::Deflate),
         ];
 
         for cmd in cmds.iter() {

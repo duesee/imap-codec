@@ -22,7 +22,7 @@ use crate::{
     },
 };
 
-/// body = "(" (body-type-1part / body-type-mpart) ")"
+/// `body = "(" (body-type-1part / body-type-mpart) ")"`
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
@@ -55,9 +55,12 @@ fn body_limited<'a>(
     )(input)
 }
 
-/// body-type-1part = (body-type-basic /
-///                    body-type-msg /
-///                    body-type-text) [SP body-ext-1part]
+/// `body-type-1part = (
+///                     body-type-basic /
+///                     body-type-msg /
+///                     body-type-text
+///                    )
+///                    [SP body-ext-1part]`
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed.
@@ -91,10 +94,10 @@ fn body_type_1part_limited<'a>(
     ))
 }
 
-/// body-type-basic = media-basic SP body-fields
+/// `body-type-basic = media-basic SP body-fields`
 ///
 /// MESSAGE subtype MUST NOT be "RFC822"
-fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
+pub fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
     let mut parser = tuple((media_basic, SP, body_fields));
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
@@ -111,11 +114,11 @@ fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)
     ))
 }
 
-/// body-type-msg = media-message SP
+/// `body-type-msg = media-message SP
 ///                 body-fields SP
 ///                 envelope SP
 ///                 body SP
-///                 body-fld-lines
+///                 body-fld-lines`
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
@@ -160,8 +163,10 @@ fn body_type_msg_limited<'a>(
     ))
 }
 
-/// body-type-text = media-text SP body-fields SP body-fld-lines
-fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
+/// `body-type-text = media-text SP
+///                   body-fields SP
+///                   body-fld-lines`
+pub fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)> {
     let mut parser = tuple((media_text, SP, body_fields, SP, body_fld_lines));
 
     let (remaining, (subtype, _, basic, _, number_of_lines)) = parser(input)?;
@@ -178,10 +183,12 @@ fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFields)>
     ))
 }
 
-/// body-fields = body-fld-param SP body-fld-id SP
-///               body-fld-desc SP body-fld-enc SP
-///               body-fld-octets
-fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
+/// `body-fields = body-fld-param SP
+///                body-fld-id SP
+///                body-fld-desc SP
+///                body-fld-enc SP
+///                body-fld-octets`
+pub fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     let mut parser = tuple((
         body_fld_param,
         SP,
@@ -212,8 +219,11 @@ fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     ))
 }
 
-/// body-fld-param = "(" string SP string *(SP string SP string) ")" / nil
-fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRef)>> {
+/// `body-fld-param = "("
+///                   string SP
+///                   string *(SP string SP string)
+///                   ")" / nil`
+pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRef)>> {
     let mut parser = alt((
         delimited(
             tag(b"("),
@@ -232,52 +242,60 @@ fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRef)>>
 }
 
 #[inline]
-/// body-fld-id = nstring
-fn body_fld_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `body-fld-id = nstring`
+pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// body-fld-desc = nstring
-fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `body-fld-desc = nstring`
+pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// body-fld-enc = (DQUOTE ("7BIT" / "8BIT" / "BINARY" / "BASE64"/ "QUOTED-PRINTABLE") DQUOTE) / string
+/// `body-fld-enc = (
+///                   DQUOTE (
+///                     "7BIT" /
+///                     "8BIT" /
+///                     "BINARY" /
+///                     "BASE64"/
+///                     "QUOTED-PRINTABLE"
+///                   ) DQUOTE
+///                 ) / string`
 ///
 /// Simplified...
 ///
-/// body-fld-enc = string
+/// `body-fld-enc = string`
 ///
 /// TODO: why the special case?
-fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IStringRef> {
     string(input)
 }
 
 #[inline]
-/// body-fld-octets = number
-fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
+/// `body-fld-octets = number`
+pub fn body_fld_octets(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
 
 #[inline]
-/// body-fld-lines = number
-fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
+/// `body-fld-lines = number`
+pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
 
-/// body-ext-1part = body-fld-md5
-///                  [SP body-fld-dsp
-///                    [SP body-fld-lang
-///                      [SP body-fld-loc *(SP body-extension)]
-///                    ]
-///                  ]
+/// `body-ext-1part = body-fld-md5
+///                   [SP body-fld-dsp
+///                     [SP body-fld-lang
+///                       [SP body-fld-loc *(SP body-extension)]
+///                     ]
+///                   ]`
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
 /// TODO: this is insane... define macro?
-fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
+pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     let mut dsp = None;
     let mut lang = None;
     let mut loc = None;
@@ -329,13 +347,13 @@ fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
 }
 
 #[inline]
-/// body-fld-md5 = nstring
-fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `body-fld-md5 = nstring`
+pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
-/// body-fld-dsp = "(" string SP body-fld-param ")" / nil
-fn body_fld_dsp(
+/// `body-fld-dsp = "(" string SP body-fld-param ")" / nil`
+pub fn body_fld_dsp(
     input: &[u8],
 ) -> IResult<&[u8], Option<(IStringRef, Vec<(IStringRef, IStringRef)>)>> {
     alt((
@@ -351,8 +369,8 @@ fn body_fld_dsp(
     ))(input)
 }
 
-/// body-fld-lang = nstring / "(" string *(SP string) ")"
-fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
+/// `body-fld-lang = nstring / "(" string *(SP string) ")"`
+pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
     alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -363,24 +381,26 @@ fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
 }
 
 #[inline]
-/// body-fld-loc = nstring
-fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `body-fld-loc = nstring`
+pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
+/// `body-extension = nstring /
+///                   number /
+///                   "(" body-extension *(SP body-extension) ")"`
+///
 /// Future expansion.
 ///
 /// Client implementations MUST accept body-extension fields.
 /// Server implementations MUST NOT generate body-extension fields except as defined by
 /// future standard or standards-track revisions of this specification.
 ///
-/// body-extension = nstring / number / "(" body-extension *(SP body-extension) ")"
-///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
 ///
 /// TODO: This recognizes extension data and returns &[u8].
-fn body_extension(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
+pub fn body_extension(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     move |input: &[u8]| body_extension_limited(input, remaining_recursions)
 }
 
@@ -411,7 +431,7 @@ fn body_extension_limited<'a>(
 
 // ---
 
-/// body-type-mpart = 1*body SP media-subtype [SP body-ext-mpart]
+/// `body-type-mpart = 1*body SP media-subtype [SP body-ext-mpart]`
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed.
@@ -445,17 +465,17 @@ fn body_type_mpart_limited(
     ))
 }
 
-/// body-ext-mpart = body-fld-param
-///                  [SP body-fld-dsp
-///                    [SP body-fld-lang
-///                      [SP body-fld-loc *(SP body-extension)]
-///                    ]
-///                  ]
+/// `body-ext-mpart = body-fld-param
+///                   [SP body-fld-dsp
+///                     [SP body-fld-lang
+///                       [SP body-fld-loc *(SP body-extension)]
+///                     ]
+///                   ]`
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
 /// TODO: this is insane, too... define macro?
-fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
+pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     let mut dsp = None;
     let mut lang = None;
     let mut loc = None;
@@ -511,16 +531,26 @@ fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 
 // ---
 
-/// media-basic = ((DQUOTE ("APPLICATION" / "AUDIO" / "IMAGE" / "MESSAGE" / "VIDEO") DQUOTE) / string) SP media-subtype
+/// `media-basic = (
+///                  ( DQUOTE
+///                    (
+///                      "APPLICATION" /
+///                      "AUDIO" /
+///                      "IMAGE" /
+///                      "MESSAGE" /
+///                      "VIDEO"
+///                    ) DQUOTE
+///                  ) / string
+///                ) SP media-subtype`
 ///
 /// Simplified...
 ///
-/// media-basic = string SP media-subtype
+/// `media-basic = string SP media-subtype`
 ///
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
+pub fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
     let mut parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -529,33 +559,34 @@ fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
 }
 
 #[inline]
-/// media-subtype = string
+/// `media-subtype = string`
 ///
 /// Defined in [MIME-IMT]
-fn media_subtype(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn media_subtype(input: &[u8]) -> IResult<&[u8], IStringRef> {
     string(input)
 }
 
 #[inline]
-/// media-message = DQUOTE "MESSAGE" DQUOTE SP DQUOTE "RFC822" DQUOTE
+/// `media-message = DQUOTE "MESSAGE" DQUOTE SP
+///                  DQUOTE "RFC822" DQUOTE`
 ///
 /// Simplified:
 ///
-/// media-message = "\"MESSAGE\" \"RFC822\""
+/// `media-message = "\"MESSAGE\" \"RFC822\""`
 ///
 /// Defined in [MIME-IMT]
 ///
 /// "message" "rfc822" basic specific-for-message-rfc822 extension
-fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
+pub fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
     tag_no_case(b"\"MESSAGE\" \"RFC822\"")(input)
 }
 
-/// media-text = DQUOTE "TEXT" DQUOTE SP media-subtype
+/// `media-text = DQUOTE "TEXT" DQUOTE SP media-subtype`
 ///
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-fn media_text(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn media_text(input: &[u8]) -> IResult<&[u8], IStringRef> {
     let mut parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;

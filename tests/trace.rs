@@ -515,6 +515,7 @@ S: a006 OK LOGOUT completed
 }
 
 #[test]
+#[cfg(feature = "ext_enable")]
 fn test_transcript_from_rfc5161() {
     let trace = br#"C: t1 CAPABILITY
 S: * CAPABILITY IMAP4rev1 ID LITERAL+ ENABLE X-GOOD-IDEA

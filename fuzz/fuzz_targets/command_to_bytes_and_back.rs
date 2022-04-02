@@ -1,12 +1,14 @@
 #![no_main]
 
+#[cfg(feature = "ext_enable")]
+use imap_codec::response::Capability;
+
 use imap_codec::{
     codec::Encode,
     parse::command::command,
     types::{
         command::{Command, CommandBody},
         flag::Flag,
-        response::Capability,
     },
 };
 use libfuzzer_sys::fuzz_target;
@@ -24,6 +26,7 @@ fn ignore_flags(flags: &Vec<Flag>) -> bool {
     })
 }
 
+#[cfg(feature = "ext_enable")]
 fn ignore_capabilities(capabilities: &Vec<Capability>) -> bool {
     capabilities
         .iter()
@@ -50,6 +53,7 @@ fuzz_target!(|test: Command| {
         CommandBody::Append { flags, .. } if ignore_flags(flags) => {
             // TODO
         }
+        #[cfg(feature = "ext_enable")]
         CommandBody::Enable { capabilities, .. } if ignore_capabilities(capabilities) => {
             // TODO
         }

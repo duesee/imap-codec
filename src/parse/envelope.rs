@@ -16,18 +16,18 @@ use crate::{
     types::{address::Address, core::NStringRef, envelope::Envelope},
 };
 
-/// envelope = "("
-///            env-date SP
-///            env-subject SP
-///            env-from SP
-///            env-sender SP
-///            env-reply-to SP
-///            env-to SP
-///            env-cc SP
-///            env-bcc SP
-///            env-in-reply-to SP
-///            env-message-id
-///            ")"
+/// `envelope = "("
+///             env-date SP
+///             env-subject SP
+///             env-from SP
+///             env-sender SP
+///             env-reply-to SP
+///             env-to SP
+///             env-cc SP
+///             env-bcc SP
+///             env-in-reply-to SP
+///             env-message-id
+///             ")"`
 pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     let mut parser = delimited(
         tag(b"("),
@@ -98,59 +98,59 @@ pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
 }
 
 #[inline]
-/// env-date = nstring
-fn env_date(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `env-date = nstring`
+pub fn env_date(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// env-subject = nstring
-fn env_subject(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `env-subject = nstring`
+pub fn env_subject(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
-/// env-from = "(" 1*address ")" / nil
-fn env_from(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-from = "(" 1*address ")" / nil`
+pub fn env_from(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
     ))(input)
 }
 
-/// env-sender = "(" 1*address ")" / nil
-fn env_sender(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-sender = "(" 1*address ")" / nil`
+pub fn env_sender(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
     ))(input)
 }
 
-/// env-reply-to = "(" 1*address ")" / nil
-fn env_reply_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-reply-to = "(" 1*address ")" / nil`
+pub fn env_reply_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
     ))(input)
 }
 
-/// env-to = "(" 1*address ")" / nil
-fn env_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-to = "(" 1*address ")" / nil`
+pub fn env_to(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
     ))(input)
 }
 
-/// env-cc = "(" 1*address ")" / nil
-fn env_cc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-cc = "(" 1*address ")" / nil`
+pub fn env_cc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
     ))(input)
 }
 
-/// env-bcc = "(" 1*address ")" / nil
-fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
+/// `env-bcc = "(" 1*address ")" / nil`
+pub fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -158,13 +158,13 @@ fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
 }
 
 #[inline]
-/// env-in-reply-to = nstring
-fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `env-in-reply-to = nstring`
+pub fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// env-message-id = nstring
-fn env_message_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
+/// `env-message-id = nstring`
+pub fn env_message_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }

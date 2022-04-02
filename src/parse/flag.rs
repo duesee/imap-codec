@@ -16,9 +16,13 @@ use crate::{
     },
 };
 
-/// flag = "\Answered" / "\Flagged" / "\Deleted" / "\Seen" / "\Draft" /
-///        flag-keyword /
-///        flag-extension
+/// `flag = "\Answered" /
+///         "\Flagged" /
+///         "\Deleted" /
+///         "\Seen" /
+///         "\Draft" /
+///         flag-keyword /
+///         flag-extension`
 ///
 /// Note: Does not include "\Recent"
 pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
@@ -33,29 +37,29 @@ pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
     ))(input)
 }
 
-/// flag-fetch = flag / "\Recent"
+/// `flag-fetch = flag / "\Recent"`
 pub fn flag_fetch(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((flag, value(Flag::Recent, tag_no_case(b"\\Recent"))))(input)
 }
 
-/// flag-perm = flag / "\*"
+/// `flag-perm = flag / "\*"`
 pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((flag, value(Flag::Permanent, tag(b"\\*"))))(input)
 }
 
 #[inline]
-/// flag-keyword = atom
-fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
+/// `flag-keyword = atom`
+pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
     map(atom, |a| Flag::Keyword(a.to_owned()))(input)
 }
 
-/// flag-list = "(" [flag *(SP flag)] ")"
+/// `flag-list = "(" [flag *(SP flag)] ")"`
 pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
     delimited(tag(b"("), separated_list0(SP, flag), tag(b")"))(input)
 }
 
-/// mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
-///                                       mbx-list-oflag *(SP mbx-list-oflag)
+/// `mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
+///                                        mbx-list-oflag *(SP mbx-list-oflag)`
 ///
 /// Note: ABNF enforces that sflag is not used more than once.
 ///       We parse any flag and check for multiple occurrences of sflag later.
@@ -77,10 +81,10 @@ pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     Ok((remaining, flags))
 }
 
-/// Other flags; multiple possible per LIST response
+/// `mbx-list-oflag = "\Noinferiors" / flag-extension`
 ///
-/// mbx-list-oflag = "\Noinferiors" / flag-extension
-fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
+/// Other flags; multiple possible per LIST response
+pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     alt((
         value(
             FlagNameAttribute::Noinferiors,
@@ -92,10 +96,10 @@ fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     ))(input)
 }
 
-/// Selectability flags; only one per LIST response
+/// `mbx-list-sflag = "\Noselect" / "\Marked" / "\Unmarked"`
 ///
-/// mbx-list-sflag = "\Noselect" / "\Marked" / "\Unmarked"
-fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
+/// Selectability flags; only one per LIST response
+pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     alt((
         value(FlagNameAttribute::Noselect, tag_no_case(b"\\Noselect")),
         value(FlagNameAttribute::Marked, tag_no_case(b"\\Marked")),
@@ -103,13 +107,13 @@ fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     ))(input)
 }
 
+/// `flag-extension = "\" atom`
+///
 /// Future expansion.
 ///
 /// Client implementations MUST accept flag-extension flags.
 /// Server implementations MUST NOT generate flag-extension flags
 /// except as defined by future standard or standards-track revisions of this specification.
-///
-/// flag-extension = "\" atom
-fn flag_extension(input: &[u8]) -> IResult<&[u8], AtomRef> {
+pub fn flag_extension(input: &[u8]) -> IResult<&[u8], AtomRef> {
     preceded(tag(b"\\"), atom)(input)
 }

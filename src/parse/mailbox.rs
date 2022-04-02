@@ -26,7 +26,7 @@ use crate::{
     },
 };
 
-/// list-mailbox = 1*list-char / string
+/// `list-mailbox = 1*list-char / string`
 pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
@@ -41,16 +41,18 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     ))(input)
 }
 
-/// list-char = ATOM-CHAR / list-wildcards / resp-specials
+/// `list-char = ATOM-CHAR / list-wildcards / resp-specials`
 pub fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
-/// list-wildcards = "%" / "*"
+/// `list-wildcards = "%" / "*"`
 pub fn is_list_wildcards(i: u8) -> bool {
     i == b'%' || i == b'*'
 }
 
+/// `mailbox = "INBOX" / astring`
+///
 /// INBOX is case-insensitive. All case variants of INBOX (e.g., "iNbOx")
 /// MUST be interpreted as INBOX not as an astring.
 ///
@@ -58,8 +60,6 @@ pub fn is_list_wildcards(i: u8) -> bool {
 /// "I" "N" "B" "O" "X" is considered to be INBOX and not an astring.
 ///
 /// Refer to section 5.1 for further semantic details of mailbox names.
-///
-/// mailbox = "INBOX" / astring
 pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     map(astring, |astr| {
         match MailboxOther::try_from(astr.to_owned()) {
@@ -69,13 +69,13 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
     })(input)
 }
 
-/// mailbox-data = "FLAGS" SP flag-list /
-///                "LIST" SP mailbox-list /
-///                "LSUB" SP mailbox-list /
-///                "SEARCH" *(SP nz-number) /
-///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
-///                number SP "EXISTS" /
-///                number SP "RECENT"
+/// `mailbox-data = "FLAGS" SP flag-list /
+///                 "LIST" SP mailbox-list /
+///                 "LSUB" SP mailbox-list /
+///                 "SEARCH" *(SP nz-number) /
+///                 "STATUS" SP mailbox SP "(" [status-att-list] ")" /
+///                 number SP "EXISTS" /
+///                 number SP "RECENT"`
 pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     alt((
         map(
@@ -126,10 +126,10 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
     ))(input)
 }
 
-/// mailbox-list = "(" [mbx-list-flags] ")" SP
-///                (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
-///                mailbox
-fn mailbox_list(
+/// `mailbox-list = "(" [mbx-list-flags] ")" SP
+///                 (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
+///                 mailbox`
+pub fn mailbox_list(
     input: &[u8],
 ) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
     let mut parser = tuple((

@@ -499,7 +499,7 @@ impl std::fmt::Display for Charset {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct AtomRef<'a>(&'a str);
+pub struct AtomRef<'a>(&'a str);
 
 impl<'a> TryFrom<&'a str> for AtomRef<'a> {
     type Error = ();
@@ -537,7 +537,7 @@ impl<'a> AtomRef<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) enum IStringRef<'a> {
+pub enum IStringRef<'a> {
     Literal(LiteralRef<'a>),
     Quoted(Cow<'a, str>),
 }
@@ -553,7 +553,7 @@ impl<'a> IStringRef<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) struct NStringRef<'a>(pub Option<IStringRef<'a>>);
+pub struct NStringRef<'a>(pub Option<IStringRef<'a>>);
 
 impl<'a> NStringRef<'a> {
     pub fn to_owned(&self) -> NString {
@@ -563,7 +563,7 @@ impl<'a> NStringRef<'a> {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) enum AStringRef<'a> {
+pub enum AStringRef<'a> {
     // FIXME(misuse): Variant should not contain `Atom`, but something like `AtomExt` ...
     //                `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
     Atom(AtomRef<'a>),      // 1*ASTRING-CHAR /

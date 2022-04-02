@@ -1,9 +1,6 @@
-use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
+use nom::IResult;
 
-use crate::{
-    parse::core::atom,
-    types::{AuthMechanism, CompressionAlgorithm},
-};
+use crate::{parse::core::atom, types::AuthMechanism};
 
 pub mod address;
 pub mod body;
@@ -21,18 +18,13 @@ pub mod status_attributes;
 
 // ----- Unsorted IMAP parsers -----
 
-/// auth-type = atom
+/// `auth-type = atom`
 ///
 /// Note: Defined by [SASL]
 pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let (rem, mechanism) = atom(input)?;
 
     Ok((rem, mechanism.to_owned().into()))
-}
-
-/// algorithm = "DEFLATE"
-pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
-    value(CompressionAlgorithm::Deflate, tag_no_case("DEFLATE"))(input)
 }
 
 #[cfg(test)]

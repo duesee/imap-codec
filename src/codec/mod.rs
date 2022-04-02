@@ -22,7 +22,7 @@ use crate::{
         section::{Part, Section},
         sequence::{SeqNo, Sequence, SequenceSet},
         status_attributes::{StatusAttribute, StatusAttributeValue},
-        AuthMechanism, AuthMechanismOther, CompressionAlgorithm,
+        AuthMechanism, AuthMechanismOther,
     },
     utils::escape_quoted,
 };
@@ -269,11 +269,14 @@ impl Encode for CommandBody {
                 writer.write_all(b" ")?;
                 mailbox.encode(writer)
             }
+            #[cfg(feature = "ext_idle")]
             CommandBody::Idle => writer.write_all(b"IDLE"),
+            #[cfg(feature = "ext_enable")]
             CommandBody::Enable { capabilities } => {
                 writer.write_all(b"ENABLE ")?;
                 join_serializable(capabilities, b" ", writer)
             }
+            #[cfg(feature = "ext_compress")]
             CommandBody::Compress { algorithm } => {
                 writer.write_all(b"COMPRESS ")?;
                 algorithm.encode(writer)
@@ -665,14 +668,6 @@ impl Encode for Capability {
     }
 }
 
-impl Encode for CompressionAlgorithm {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
-        }
-    }
-}
-
 // ----- Responses -----
 
 impl Encode for Response {
@@ -809,6 +804,7 @@ impl Encode for Data {
                 join_serializable(attributes, b" ", writer)?;
                 writer.write_all(b")")?;
             }
+            #[cfg(feature = "ext_enable")]
             Data::Enabled { capabilities } => {
                 write!(writer, "* ENABLED")?;
 

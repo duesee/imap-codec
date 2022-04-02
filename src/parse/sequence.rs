@@ -12,6 +12,10 @@ use crate::{
     types::sequence::{SeqNo, Sequence, SequenceSet},
 };
 
+/// `sequence-set = (seq-number / seq-range) ["," sequence-set]`
+///
+/// Note: See errata id: 261 TODO: Why the errata?
+///
 /// Set of seq-number values, regardless of order.
 /// Servers MAY coalesce overlaps and/or execute the sequence in any order.
 ///
@@ -24,14 +28,10 @@ use crate::{
 /// 10,9,8,7,6,5,4,5,6,7 and MAY be reordered and
 /// overlap coalesced to be 4,5,6,7,8,9,10.
 ///
-/// ; errata id: 261
-/// sequence-set = (seq-number / seq-range) ["," sequence-set]
-///
 /// Simplified:
 ///
-/// sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))
+/// `sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))`
 ///
-/// TODO: Why the errata?
 pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
     map(
         separated_list1(
@@ -46,15 +46,15 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
     )(input)
 }
 
+/// `seq-range = seq-number ":" seq-number`
+///
 /// Two seq-number values and all values between these two regardless of order.
 ///
 /// Example: 2:4 and 4:2 are equivalent and indicate values 2, 3, and 4.
 ///
 /// Example: a unique identifier sequence range of 3291:* includes the UID
 ///          of the last message in the mailbox, even if that value is less than 3291.
-///
-/// seq-range = seq-number ":" seq-number
-fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
+pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
     let mut parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
@@ -62,6 +62,8 @@ fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
     Ok((remaining, (from, to)))
 }
 
+/// `seq-number = nz-number / "*"`
+///
 /// Message sequence number (COPY, FETCH, STORE commands) or unique
 /// identifier (UID COPY, UID FETCH, UID STORE commands).
 ///
@@ -73,9 +75,7 @@ fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
 /// The server should respond with a tagged BAD response to a command that uses a message
 /// sequence number greater than the number of messages in the selected mailbox.
 /// This includes "*" if the selected mailbox is empty.
-///
-/// seq-number = nz-number / "*"
-fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
+pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
     alt((
         map(nz_number, SeqNo::Value),
         value(SeqNo::Largest, tag(b"*")),

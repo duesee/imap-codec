@@ -12,13 +12,13 @@ use nom::{
 
 use crate::types::datetime::{MyDateTime, MyNaiveDate};
 
-/// date = date-text / DQUOTE date-text DQUOTE
+/// `date = date-text / DQUOTE date-text DQUOTE`
 pub fn date(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
-/// date-text = date-day "-" date-month "-" date-year
-fn date_text(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
+/// `date-text = date-day "-" date-month "-" date-year`
+pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
@@ -29,17 +29,17 @@ fn date_text(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
     ))
 }
 
-/// Day of month
+/// `date-day = 1*2DIGIT`
 ///
-/// date-day = 1*2DIGIT
-fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
+/// Day of month
+pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     digit_1_2(input)
 }
 
-/// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
+/// `date-month = "Jan" / "Feb" / "Mar" / "Apr" /
 ///              "May" / "Jun" / "Jul" / "Aug" /
-///              "Sep" / "Oct" / "Nov" / "Dec"
-fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
+///              "Sep" / "Oct" / "Nov" / "Dec"`
+pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
         value(1, tag_no_case(b"Jan")),
         value(2, tag_no_case(b"Feb")),
@@ -56,15 +56,15 @@ fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     ))(input)
 }
 
-/// date-year = 4DIGIT
-fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
+/// `date-year = 4DIGIT`
+pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     digit_4(input)
 }
 
-/// Hours minutes seconds
+/// `time = 2DIGIT ":" 2DIGIT ":" 2DIGIT`
 ///
-/// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
-fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
+/// Hours minutes seconds
+pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
@@ -75,7 +75,10 @@ fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     ))
 }
 
-/// date-time = DQUOTE date-day-fixed "-" date-month "-" date-year SP time SP zone DQUOTE
+/// `date-time = DQUOTE
+///              date-day-fixed "-" date-month "-" date-year SP
+///              time SP zone
+///              DQUOTE`
 pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
     let mut parser = delimited(
         DQUOTE,
@@ -118,10 +121,10 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
     }
 }
 
-/// Fixed-format version of date-day
+/// `date-day-fixed = (SP DIGIT) / 2DIGIT`
 ///
-/// date-day-fixed = (SP DIGIT) / 2DIGIT
-fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
+/// Fixed-format version of date-day
+pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
         map(preceded(SP, take_while_m_n(1, 1, is_DIGIT)), |bytes| {
             bytes[0] - b'0'
@@ -130,15 +133,15 @@ fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     ))(input)
 }
 
+/// `zone = ("+" / "-") 4DIGIT`
+///
 /// Signed four-digit value of hhmm representing
 /// hours and minutes east of Greenwich (that is,
 /// the amount that the given time differs from
 /// Universal Time).  Subtracting the timezone
 /// from the given time will give the UT form.
 /// The Universal Time zone is "+0000".
-///
-/// zone = ("+" / "-") 4DIGIT
-fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
+pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;

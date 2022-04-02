@@ -85,10 +85,3 @@ impl Display for AuthMechanismOther {
         self.0.fmt(f)
     }
 }
-
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum CompressionAlgorithm {
-    Deflate,
-}

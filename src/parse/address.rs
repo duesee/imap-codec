@@ -10,10 +10,12 @@ use crate::{
     types::{address::Address, core::NStringRef},
 };
 
-/// address = "(" addr-name SP
-///               addr-adl SP
-///               addr-mailbox SP
-///               addr-host ")"
+/// `address = "("
+///             addr-name SP
+///             addr-adl SP
+///             addr-mailbox SP
+///             addr-host
+///             ")"`
 pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
     let mut parser = delimited(
         tag(b"("),
@@ -35,38 +37,38 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 }
 
 #[inline]
-/// addr-name = nstring
+/// `addr-name = nstring`
 ///
 /// If non-NIL, holds phrase from [RFC-2822]
 /// mailbox after removing [RFC-2822] quoting
-fn addr_name(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_name(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// addr-adl = nstring
+/// `addr-adl = nstring`
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
-fn addr_adl(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// addr-mailbox = nstring
+/// `addr-mailbox = nstring`
 ///
 /// NIL indicates end of [RFC-2822] group;
 /// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
 /// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
-fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 
 #[inline]
-/// addr-host = nstring
+/// `addr-host = nstring`
 ///
 /// NIL indicates [RFC-2822] group syntax.
 /// Otherwise, holds [RFC-2822] domain name
-fn addr_host(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_host(input: &[u8]) -> IResult<&[u8], NStringRef> {
     nstring(input)
 }
 

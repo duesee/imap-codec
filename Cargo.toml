@@ -13,6 +13,16 @@ default = []
 serdex  = ["serde", "chrono/serde"]
 nomx = []
 
+# IMAP Extensions
+ext_idle = []
+ext_enable = []
+ext_compress = []
+
+# ext_mailbox_referrals = ["ext_referrals"] # TODO
+# ext_login_referrals = ["ext_referrals"]   # TODO
+# ext_referrals = []                        # TODO
+# ext_saslir = []                           # TODO
+
 [dependencies]
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 base64 = "0.13"

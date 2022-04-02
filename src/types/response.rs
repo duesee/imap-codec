@@ -7,6 +7,8 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_compress")]
+use crate::extensions::rfc4987::types::CompressionAlgorithm;
 use crate::{
     codec::utils::join,
     types::{
@@ -15,7 +17,7 @@ use crate::{
         flag::{Flag, FlagNameAttribute},
         mailbox::Mailbox,
         status_attributes::StatusAttributeValue,
-        AuthMechanism, CompressionAlgorithm,
+        AuthMechanism,
     },
 };
 
@@ -431,7 +433,7 @@ pub enum Data {
         attributes: NonEmptyVec<FetchAttributeValue>,
     },
 
-    /// ----- ENABLE Extension (RFC 5161) -----
+    #[cfg(feature = "ext_enable")]
     Enabled { capabilities: Vec<Capability> },
 }
 
@@ -604,7 +606,7 @@ pub enum Code {
     /// IMAP4 Login Referrals (RFC 2221)
     Referral(String), // TODO: the imap url is more complicated than that...
 
-    // The IMAP COMPRESS Extension (RFC 4978)
+    #[cfg(feature = "ext_compress")]
     CompressionActive,
 }
 
@@ -643,6 +645,7 @@ impl std::fmt::Display for Code {
             },
             // RFC 2221
             Code::Referral(url) => write!(f, "REFERRAL {}", url),
+            #[cfg(feature = "ext_compress")]
             Code::CompressionActive => write!(f, "COMPRESSIONACTIVE"),
         }
     }
@@ -657,13 +660,17 @@ pub enum Capability {
     LoginDisabled,
     StartTls,
     // ---
-    Idle,             // RFC 2177
+    #[cfg(feature = "ext_idle")]
+    Idle, // RFC 2177
     MailboxReferrals, // RFC 2193
     LoginReferrals,   // RFC 2221
     SaslIr,           // RFC 4959
-    Enable,           // RFC 5161
-    // RFC 4978
-    Compress { algorithm: CompressionAlgorithm },
+    #[cfg(feature = "ext_enable")]
+    Enable, // RFC 5161
+    #[cfg(feature = "ext_compress")]
+    Compress {
+        algorithm: CompressionAlgorithm,
+    },
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
@@ -684,11 +691,14 @@ impl std::fmt::Display for Capability {
             },
             LoginDisabled => write!(f, "LOGINDISABLED"),
             StartTls => write!(f, "STARTTLS"),
-            Idle => write!(f, "IDLE"),
             MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
             LoginReferrals => write!(f, "LOGIN-REFERRALS"),
             SaslIr => write!(f, "SASL-IR"),
+            #[cfg(feature = "ext_idle")]
+            Idle => write!(f, "IDLE"),
+            #[cfg(feature = "ext_enable")]
             Enable => write!(f, "ENABLE"),
+            #[cfg(feature = "ext_compress")]
             Compress { algorithm } => match algorithm {
                 CompressionAlgorithm::Deflate => write!(f, "COMPRESS=DEFLATE"),
             },
@@ -827,7 +837,7 @@ mod test {
 
     #[test]
     fn test_data_constructors() {
-        let _ = Data::capability(vec![Capability::Enable]).unwrap();
+        let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
         let _ = Data::fetch(1, vec![FetchAttributeValue::Rfc822Size(123)]).unwrap();
     }
 

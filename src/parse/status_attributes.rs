@@ -13,7 +13,11 @@ use crate::{
     types::status_attributes::{StatusAttribute, StatusAttributeValue},
 };
 
-/// status-att = "MESSAGES" / "RECENT" / "UIDNEXT" / "UIDVALIDITY" / "UNSEEN"
+/// `status-att = "MESSAGES" /
+///               "RECENT" /
+///               "UIDNEXT" /
+///               "UIDVALIDITY" /
+///               "UNSEEN"`
 pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
     alt((
         value(StatusAttribute::Messages, tag_no_case(b"MESSAGES")),
@@ -24,18 +28,20 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
     ))(input)
 }
 
-/// ; errata id: 261
-/// status-att-list = status-att-val *(SP status-att-val)
+/// `status-att-list = status-att-val *(SP status-att-val)`
+///
+/// Note: See errata id: 261
 pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusAttributeValue>> {
     separated_list1(SP, status_att_val)(input)
 }
 
-/// ; errata id: 261
-/// status-att-val  = ("MESSAGES" SP number) /
-///                   ("RECENT" SP number) /
-///                   ("UIDNEXT" SP nz-number) /
-///                   ("UIDVALIDITY" SP nz-number) /
-///                   ("UNSEEN" SP number)
+/// `status-att-val  = ("MESSAGES" SP number) /
+///                    ("RECENT" SP number) /
+///                    ("UIDNEXT" SP nz-number) /
+///                    ("UIDVALIDITY" SP nz-number) /
+///                    ("UNSEEN" SP number)`
+///
+/// Note: See errata id: 261
 fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusAttributeValue> {
     alt((
         map(
