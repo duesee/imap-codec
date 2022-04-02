@@ -1,6 +1,6 @@
 //! Client Commands
 //!
-//! see https://tools.ietf.org/html/rfc3501#section-6
+//! see <https://tools.ietf.org/html/rfc3501#section-6>
 
 use std::convert::TryInto;
 

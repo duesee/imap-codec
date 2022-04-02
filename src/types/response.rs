@@ -47,7 +47,7 @@ pub enum Response {
 /// Status responses are OK, NO, BAD, PREAUTH and BYE.
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
-/// Status responses MAY include an OPTIONAL "response code" (see [ResponseCode](ResponseCode).)
+/// Status responses MAY include an OPTIONAL "response code" (see [`Code`](crate::types::response::Code).)
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
