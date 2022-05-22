@@ -788,7 +788,7 @@ mod test {
             constructed.encode(&mut out).unwrap();
 
             assert_eq!(out, serialized.to_vec());
-            // FIXME
+            // FIXME(#30)
             //assert_eq!(
             //    <Status as Codec>::deserialize(serialized).unwrap().1,
             //    parsed
@@ -830,7 +830,7 @@ mod test {
             let mut out = Vec::new();
             parsed.encode(&mut out).unwrap();
             assert_eq!(out, serialized.to_vec());
-            // FIXME:
+            // FIXME(#30):
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
         }
     }
@@ -856,7 +856,7 @@ mod test {
             let mut out = Vec::new();
             constructed.encode(&mut out).unwrap();
             assert_eq!(out, serialized.to_vec());
-            // FIXME:
+            // FIXME(#30):
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
         }
     }

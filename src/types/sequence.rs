@@ -97,7 +97,7 @@ impl TryFrom<&str> for SequenceSet {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        // FIXME: turn incomplete parser to complete?
+        // TODO: turn incomplete parser to complete?
         let blocker = format!("{}|", value);
 
         if let Ok((b"|", sequence)) = sequence_set(blocker.as_bytes()) {

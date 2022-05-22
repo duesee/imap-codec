@@ -3,33 +3,33 @@
 use imap_codec::{
     codec::Encode,
     parse::response::response,
-    types::response::{Status, Response, Data},
+    types::response::{Data, Response, Status},
 };
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Response| {
     if matches!(test, Response::Continuation(_)) {
-        // TODO
+        // FIXME(#30)
         return;
     }
 
     if matches!(test, Response::Status(Status::PreAuth { .. })) {
-        // TODO
+        // FIXME(#30)
         return;
     }
 
     if matches!(test, Response::Data(Data::Flags(..))) {
-        // TODO
+        // FIXME(#30)
         return;
     }
 
     if matches!(test, Response::Data(Data::List { .. })) {
-        // TODO
+        // FIXME(#30)
         return;
     }
 
     if matches!(test, Response::Data(Data::Lsub { .. })) {
-        // TODO
+        // FIXME(#30)
         return;
     }
 

@@ -11,7 +11,7 @@ use crate::types::core::Atom;
 /// flag is set by its addition to this list, and is cleared by its
 /// removal.  There are two types of flags in IMAP4rev1. A flag of either
 /// type can be permanent or session-only.
-/// FIXME: this struct is not very usable currently...
+/// TODO(#7): this struct is not very usable currently...
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -55,7 +55,7 @@ pub enum Flag {
     Keyword(Atom),
 
     // ----- Others -----
-    Extension(Atom), // FIXME(misuse): How to treat Extension(Atom("Recent"))
+    Extension(Atom), // FIXME(#32): How to treat Extension(Atom("Recent"))
 }
 
 impl std::fmt::Display for Flag {

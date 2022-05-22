@@ -70,7 +70,7 @@ mod test {
 
     #[test]
     fn test_that_unescape_is_inverse_of_escape() {
-        let input = "\\\"\\¹²³abc_*:;059^$%§!\""; // TODO: use QuickCheck or something similar
+        let input = "\\\"\\¹²³abc_*:;059^$%§!\""; // FIXME(#30): use QuickCheck or something similar
 
         assert_eq!(input, unescape_quoted(escape_quoted(input).as_ref()));
     }

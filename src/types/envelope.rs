@@ -52,19 +52,19 @@ use crate::types::{address::Address, core::NString};
 ///    Note: [RFC-2822] requires that all messages have a valid
 ///    From header.  Therefore, the from, sender, and reply-to
 ///    members in the envelope can not be NIL.
-/// TODO: many invariants here...
+/// TODO(#31): many invariants here...
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Envelope {
-    pub date: NString, // TODO: must not be empty string
+    pub date: NString, // TODO(#31): must not be empty string
     pub subject: NString,
     pub from: Vec<Address>,     // encode as nil if empty?
-    pub sender: Vec<Address>,   // TODO: set to from if absent or empty
-    pub reply_to: Vec<Address>, // TODO: set to from if absent or empty
+    pub sender: Vec<Address>,   // TODO(#31): set to from if absent or empty
+    pub reply_to: Vec<Address>, // TODO(#31): set to from if absent or empty
     pub to: Vec<Address>,       // encode as nil if empty?
     pub cc: Vec<Address>,       // encode as nil if empty?
     pub bcc: Vec<Address>,      // encode as nil if empty?
-    pub in_reply_to: NString,   // TODO: must not be empty string
-    pub message_id: NString,    // TODO: must not be empty string
+    pub in_reply_to: NString,   // TODO(#31): must not be empty string
+    pub message_id: NString,    // TODO(#31): must not be empty string
 }

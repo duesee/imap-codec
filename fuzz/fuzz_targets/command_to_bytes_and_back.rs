@@ -2,7 +2,6 @@
 
 #[cfg(feature = "ext_enable")]
 use imap_codec::response::Capability;
-
 use imap_codec::{
     codec::Encode,
     parse::command::command,
@@ -48,14 +47,14 @@ fuzz_target!(|test: Command| {
 
     match &test.body {
         CommandBody::Store { flags, .. } if ignore_flags(flags) => {
-            // TODO
+            // FIXME(#30)
         }
         CommandBody::Append { flags, .. } if ignore_flags(flags) => {
-            // TODO
+            // FIXME(#30)
         }
         #[cfg(feature = "ext_enable")]
         CommandBody::Enable { capabilities, .. } if ignore_capabilities(capabilities) => {
-            // TODO
+            // FIXME(#30)
         }
         _ => {
             let (rem, parsed) = command(&buffer).unwrap();

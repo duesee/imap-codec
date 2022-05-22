@@ -60,7 +60,7 @@ impl<'a> Arbitrary<'a> for SearchKey {
         use crate::types::sequence::SequenceSet as SequenceSetData;
 
         let search_keys = &[
-            // And(NonEmptyVec::<SearchKey>::arbitrary(u)?), // TODO
+            // And(NonEmptyVec::<SearchKey>::arbitrary(u)?), // FIXME(#30)
             SequenceSet(SequenceSetData::arbitrary(u)?),
             All,
             Answered,
@@ -76,10 +76,10 @@ impl<'a> Arbitrary<'a> for SearchKey {
             Keyword(Atom::arbitrary(u)?),
             Larger(u32::arbitrary(u)?),
             New,
-            // Not(Box::<SearchKey>::arbitrary(u)?), // TODO
+            // Not(Box::<SearchKey>::arbitrary(u)?), // FIXME(#30)
             Old,
             On(MyNaiveDate::arbitrary(u)?),
-            // Or(Box::<SearchKey>::arbitrary(u)?, Box::<SearchKey>::arbitrary(u)?), // TODO
+            // Or(Box::<SearchKey>::arbitrary(u)?, Box::<SearchKey>::arbitrary(u)?), // FIXME(#30)
             Recent,
             Seen,
             SentBefore(MyNaiveDate::arbitrary(u)?),
@@ -105,7 +105,7 @@ impl<'a> Arbitrary<'a> for SearchKey {
 
 impl<'a> Arbitrary<'a> for MyDateTime {
     fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // TODO: make arbitrary :-)
+        // FIXME(#30): make arbitrary :-)
 
         let local_datetime = NaiveDateTime::new(
             NaiveDate::from_ymd(1985, 2, 1),
@@ -122,7 +122,7 @@ impl<'a> Arbitrary<'a> for MyDateTime {
 
 impl<'a> Arbitrary<'a> for MyNaiveDate {
     fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // TODO: make arbitrary!
+        // FIXME(#30): make arbitrary!
 
         Ok(MyNaiveDate(NaiveDate::from_ymd_opt(2020, 2, 1).unwrap()))
     }
