@@ -1,39 +1,5 @@
-[package]
-name = "imap-codec"
-description = "Low-level IMAP Parser and Serializer"
-keywords = ["email", "imap", "parser", "codec"]
-version = "0.5.0"
-authors = ["Damian Poddebniak <poddebniak@fh-muenster.de>"]
-repository = "https://github.com/duesee/imap-codec"
-license = "MIT OR Apache-2.0"
-edition = "2018"
-
-[features]
-default = []
-serdex  = ["serde", "chrono/serde"]
-nomx = []
-
-# IMAP Extensions
-ext_idle = []
-ext_enable = []
-ext_compress = []
-
-# ext_mailbox_referrals = ["ext_referrals"] # TODO
-# ext_login_referrals = ["ext_referrals"]   # TODO
-# ext_referrals = []                        # TODO
-# ext_saslir = []                           # TODO
-
-[dependencies]
-arbitrary = { version = "1", optional = true, features = ["derive"] }
-base64 = "0.13"
-chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-nom = "6"
-abnf-core = "0.4"
-rand = "0.8"
-
-# Optional
-serde = { version = "1.0", features = ["derive"], optional = true }
-
-[dev-dependencies]
-assert_matches = "1.4"
-ansi_term = "0.12"
+[workspace]
+members = [
+    "imap-codec",
+    "imap-types",
+]
