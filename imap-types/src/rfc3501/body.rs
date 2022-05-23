@@ -11,29 +11,29 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Body {
+pub struct Body<'a> {
     /// Basic fields
-    pub basic: BasicFields,
+    pub basic: BasicFields<'a>,
     /// Type-specific fields
-    pub specific: SpecificFields,
+    pub specific: SpecificFields<'a>,
 }
 
 /// The basic fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BasicFields {
+pub struct BasicFields<'a> {
     /// List of attribute/value pairs ([MIME-IMB].)
-    pub parameter_list: Vec<(IString, IString)>,
+    pub parameter_list: Vec<(IString<'a>, IString<'a>)>,
 
     /// Content id ([MIME-IMB].)
-    pub id: NString,
+    pub id: NString<'a>,
 
     /// Content description ([MIME-IMB].)
-    pub description: NString,
+    pub description: NString<'a>,
 
     /// Content transfer encoding ([MIME-IMB].)
-    pub content_transfer_encoding: IString,
+    pub content_transfer_encoding: IString<'a>,
 
     /// Size of the body in octets.
     ///
@@ -45,7 +45,7 @@ pub struct BasicFields {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum SpecificFields {
+pub enum SpecificFields<'a> {
     /// # Example (not in RFC)
     ///
     /// Single application/{voodoo, unknown, whatever, meh} is represented as "basic"
@@ -70,10 +70,10 @@ pub enum SpecificFields {
     /// ```
     Basic {
         /// A string giving the content media type name as defined in [MIME-IMB].
-        type_: IString,
+        type_: IString<'a>,
 
         /// A string giving the content subtype name as defined in [MIME-IMB].
-        subtype: IString,
+        subtype: IString<'a>,
     },
 
     /// # Example (not in RFC)
@@ -118,9 +118,9 @@ pub enum SpecificFields {
     /// A body type of type MESSAGE and subtype RFC822 contains, immediately after the basic fields,
     Message {
         /// the envelope structure,
-        envelope: Envelope,
+        envelope: Envelope<'a>,
         /// body structure,
-        body_structure: Box<BodyStructure>,
+        body_structure: Box<BodyStructure<'a>>,
         /// and size in text lines of the encapsulated message.
         number_of_lines: u32,
     },
@@ -154,7 +154,7 @@ pub enum SpecificFields {
     ///
     /// A body type of type TEXT contains, immediately after the basic fields,
     Text {
-        subtype: IString,
+        subtype: IString<'a>,
         /// the size of the body in text lines.
         number_of_lines: u32,
     },
@@ -163,7 +163,7 @@ pub enum SpecificFields {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BodyStructure {
+pub enum BodyStructure<'a> {
     /// For example, a simple text message of 48 lines and 2279 octets
     /// can have a body structure of:
     ///
@@ -171,7 +171,7 @@ pub enum BodyStructure {
     /// ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 2279 48)
     /// ```
     Single {
-        body: Body,
+        body: Body<'a>,
         /// Extension data
         ///
         /// Extension data is never returned with the BODY fetch,
@@ -181,7 +181,7 @@ pub enum BodyStructure {
         /// Any following extension data are not yet defined in this
         /// version of the protocol, and would be as described above under
         /// multipart extension data.
-        extension: Option<SinglePartExtensionData>,
+        extension: Option<SinglePartExtensionData<'a>>,
     },
 
     /// Multiple parts are indicated by parenthesis nesting.  Instead
@@ -232,9 +232,9 @@ pub enum BodyStructure {
     /// )
     /// ```
     Multi {
-        bodies: Vec<BodyStructure>,
-        subtype: IString,
-        extension_data: Option<MultiPartExtensionData>,
+        bodies: Vec<BodyStructure<'a>>,
+        subtype: IString<'a>,
+        extension_data: Option<MultiPartExtensionData<'a>>,
     },
 }
 
@@ -242,20 +242,20 @@ pub enum BodyStructure {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SinglePartExtensionData {
+pub struct SinglePartExtensionData<'a> {
     /// A string giving the body MD5 value as defined in [MD5].
-    pub md5: NString,
+    pub md5: NString<'a>,
 
     /// A parenthesized list with the same content and function as
     /// the body disposition for a multipart body part.
-    pub disposition: Option<Option<(IString, Vec<(IString, IString)>)>>,
+    pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
 
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IString>>,
+    pub language: Option<Vec<IString<'a>>>,
 
     /// A string list giving the body content URI as defined in [LOCATION].
-    pub location: Option<NString>,
+    pub location: Option<NString<'a>>,
 
     pub extension: Vec<u8>,
 }
@@ -277,32 +277,32 @@ pub struct SinglePartExtensionData {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MultiPartExtensionData {
+pub struct MultiPartExtensionData<'a> {
     /// `body parameter parenthesized list`
     ///
     /// A parenthesized list of attribute/value pairs [e.g., ("foo"
     /// "bar" "baz" "rag") where "bar" is the value of "foo", and
     /// "rag" is the value of "baz"] as defined in [MIME-IMB].
-    pub parameter_list: Vec<(IString, IString)>,
+    pub parameter_list: Vec<(IString<'a>, IString<'a>)>,
 
     /// `body disposition`
     ///
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
     /// attribute/value pairs as defined in [DISPOSITION].
-    pub disposition: Option<Option<(IString, Vec<(IString, IString)>)>>,
+    pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
 
     /// `body language`
     ///
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IString>>,
+    pub language: Option<Vec<IString<'a>>>,
 
     /// `body location`
     ///
     /// A string list giving the body content URI as defined in
     /// [LOCATION].
-    pub location: Option<NString>,
+    pub location: Option<NString<'a>>,
 
     pub extension: Vec<u8>,
 }

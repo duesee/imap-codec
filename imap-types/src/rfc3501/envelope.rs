@@ -56,15 +56,15 @@ use crate::{address::Address, core::NString};
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Envelope {
-    pub date: NString, // TODO(#31): must not be empty string
-    pub subject: NString,
-    pub from: Vec<Address>,     // encode as nil if empty?
-    pub sender: Vec<Address>,   // TODO(#31): set to from if absent or empty
-    pub reply_to: Vec<Address>, // TODO(#31): set to from if absent or empty
-    pub to: Vec<Address>,       // encode as nil if empty?
-    pub cc: Vec<Address>,       // encode as nil if empty?
-    pub bcc: Vec<Address>,      // encode as nil if empty?
-    pub in_reply_to: NString,   // TODO(#31): must not be empty string
-    pub message_id: NString,    // TODO(#31): must not be empty string
+pub struct Envelope<'a> {
+    pub date: NString<'a>, // TODO(#31): must not be empty string
+    pub subject: NString<'a>,
+    pub from: Vec<Address<'a>>,     // encode as nil if empty?
+    pub sender: Vec<Address<'a>>,   // TODO(#31): set to from if absent or empty
+    pub reply_to: Vec<Address<'a>>, // TODO(#31): set to from if absent or empty
+    pub to: Vec<Address<'a>>,       // encode as nil if empty?
+    pub cc: Vec<Address<'a>>,       // encode as nil if empty?
+    pub bcc: Vec<Address<'a>>,      // encode as nil if empty?
+    pub in_reply_to: NString<'a>,   // TODO(#31): must not be empty string
+    pub message_id: NString<'a>,    // TODO(#31): must not be empty string
 }

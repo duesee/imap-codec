@@ -1,6 +1,6 @@
 use abnf_core::streaming::SP;
 use imap_types::{
-    core::AtomRef,
+    core::Atom,
     flag::{Flag, FlagNameAttribute},
 };
 use nom::{
@@ -112,6 +112,6 @@ pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
 /// Client implementations MUST accept flag-extension flags.
 /// Server implementations MUST NOT generate flag-extension flags
 /// except as defined by future standard or standards-track revisions of this specification.
-pub fn flag_extension(input: &[u8]) -> IResult<&[u8], AtomRef> {
+pub fn flag_extension(input: &[u8]) -> IResult<&[u8], Atom> {
     preceded(tag(b"\\"), atom)(input)
 }

@@ -48,23 +48,15 @@ impl Deref for ListCharString {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ListMailbox {
+pub enum ListMailbox<'a> {
     Token(ListCharString),
-    String(IString),
+    String(IString<'a>),
 }
 
-impl TryFrom<&str> for ListMailbox {
+impl<'a> TryFrom<&'a str> for ListMailbox<'a> {
     type Error = ();
 
-    fn try_from(s: &str) -> Result<Self, ()> {
-        s.to_string().try_into()
-    }
-}
-
-impl TryFrom<String> for ListMailbox {
-    type Error = ();
-
-    fn try_from(s: String) -> Result<Self, ()> {
+    fn try_from(s: &'a str) -> Result<Self, ()> {
         Ok(if s.is_empty() {
             ListMailbox::String(IString::Quoted(s.try_into().map_err(|_| ())?))
         } else if let Ok(lcs) = ListCharString::try_from(s.clone()) {
@@ -75,25 +67,17 @@ impl TryFrom<String> for ListMailbox {
     }
 }
 
-impl TryFrom<Mailbox> for String {
-    type Error = std::string::FromUtf8Error;
+impl<'a> TryFrom<String> for ListMailbox<'a> {
+    type Error = ();
 
-    fn try_from(value: Mailbox) -> Result<Self, Self::Error> {
-        match value {
-            Mailbox::Inbox => Ok("INBOX".to_string()),
-            Mailbox::Other(MailboxOther(astring)) => String::try_from(astring),
-        }
-    }
-}
-
-impl TryFrom<ListMailbox> for String {
-    type Error = std::string::FromUtf8Error;
-
-    fn try_from(value: ListMailbox) -> Result<Self, Self::Error> {
-        match value {
-            ListMailbox::Token(string) => Ok(string.0),
-            ListMailbox::String(istring) => String::try_from(istring),
-        }
+    fn try_from(s: String) -> Result<Self, ()> {
+        Ok(if s.is_empty() {
+            ListMailbox::String(IString::Quoted(s.try_into().map_err(|_| ())?))
+        } else if let Ok(lcs) = ListCharString::try_from(s.clone()) {
+            ListMailbox::Token(lcs)
+        } else {
+            ListMailbox::String(s.try_into().map_err(|_| ())?)
+        })
     }
 }
 
@@ -139,25 +123,27 @@ impl TryFrom<ListMailbox> for String {
 ///    when used in that convention.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Mailbox {
+pub enum Mailbox<'a> {
     Inbox,
-    Other(MailboxOther),
+    Other(MailboxOther<'a>),
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MailboxOther(pub(crate) AString);
+pub struct MailboxOther<'a> {
+    pub(crate) inner: AString<'a>,
+}
 
-impl TryFrom<AString> for MailboxOther {
+impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     type Error = ();
 
-    fn try_from(mailbox: AString) -> Result<Self, Self::Error> {
+    fn try_from(mailbox: AString<'a>) -> Result<Self, Self::Error> {
         match mailbox {
             AString::Atom(ref str) => {
                 if str.to_lowercase() == "inbox" {
                     Err(())
                 } else {
-                    Ok(MailboxOther(mailbox))
+                    Ok(MailboxOther { inner: mailbox })
                 }
             }
             AString::String(ref imap_str) => match imap_str {
@@ -165,7 +151,7 @@ impl TryFrom<AString> for MailboxOther {
                     if str.to_lowercase() == "inbox" {
                         Err(())
                     } else {
-                        Ok(MailboxOther(mailbox))
+                        Ok(MailboxOther { inner: mailbox })
                     }
                 }
                 IString::Literal(bytes) => {
@@ -176,11 +162,11 @@ impl TryFrom<AString> for MailboxOther {
                             // ...and return the Inbox variant.
                             Err(())
                         } else {
-                            Ok(MailboxOther(mailbox))
+                            Ok(MailboxOther { inner: mailbox })
                         }
                     } else {
                         // ... If not, it must be something else.
-                        Ok(MailboxOther(mailbox))
+                        Ok(MailboxOther { inner: mailbox })
                     }
                 }
             },
@@ -188,15 +174,22 @@ impl TryFrom<AString> for MailboxOther {
     }
 }
 
-impl TryFrom<&str> for Mailbox {
+impl<'a> TryFrom<&'a str> for Mailbox<'a> {
     type Error = ();
 
-    fn try_from(s: &str) -> Result<Self, ()> {
-        s.to_string().try_into()
+    fn try_from(value: &'a str) -> Result<Self, ()> {
+        if value.to_lowercase() == "inbox" {
+            Ok(Mailbox::Inbox)
+        } else {
+            let astr = AString::try_from(value)?;
+            let other = MailboxOther::try_from(astr)?;
+
+            Ok(Mailbox::Other(other))
+        }
     }
 }
 
-impl TryFrom<String> for Mailbox {
+impl<'a> TryFrom<String> for Mailbox<'a> {
     type Error = ();
 
     fn try_from(s: String) -> Result<Self, ()> {

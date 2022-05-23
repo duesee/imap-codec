@@ -4,7 +4,7 @@ use imap_types::{
         BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
         SpecificFields,
     },
-    core::{IStringRef, NStringRef},
+    core::{IString, NString},
 };
 use nom::{
     branch::alt,
@@ -221,7 +221,7 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
 ///                   string SP
 ///                   string *(SP string SP string)
 ///                   ")" / nil`
-pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRef)>> {
+pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IString, IString)>> {
     let mut parser = alt((
         delimited(
             tag(b"("),
@@ -241,13 +241,13 @@ pub fn body_fld_param(input: &[u8]) -> IResult<&[u8], Vec<(IStringRef, IStringRe
 
 #[inline]
 /// `body-fld-id = nstring`
-pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn body_fld_id(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `body-fld-desc = nstring`
-pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -267,7 +267,7 @@ pub fn body_fld_desc(input: &[u8]) -> IResult<&[u8], NStringRef> {
 /// `body-fld-enc = string`
 ///
 /// TODO: why the special case?
-pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn body_fld_enc(input: &[u8]) -> IResult<&[u8], IString> {
     string(input)
 }
 
@@ -346,14 +346,12 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
 
 #[inline]
 /// `body-fld-md5 = nstring`
-pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 /// `body-fld-dsp = "(" string SP body-fld-param ")" / nil`
-pub fn body_fld_dsp(
-    input: &[u8],
-) -> IResult<&[u8], Option<(IStringRef, Vec<(IStringRef, IStringRef)>)>> {
+pub fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
     alt((
         delimited(
             tag(b"("),
@@ -368,7 +366,7 @@ pub fn body_fld_dsp(
 }
 
 /// `body-fld-lang = nstring / "(" string *(SP string) ")"`
-pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
+pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IString>> {
     alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -380,7 +378,7 @@ pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IStringRef>> {
 
 #[inline]
 /// `body-fld-loc = nstring`
-pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -548,7 +546,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-pub fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
+pub fn media_basic(input: &[u8]) -> IResult<&[u8], (IString, IString)> {
     let mut parser = tuple((string, SP, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -560,7 +558,7 @@ pub fn media_basic(input: &[u8]) -> IResult<&[u8], (IStringRef, IStringRef)> {
 /// `media-subtype = string`
 ///
 /// Defined in [MIME-IMT]
-pub fn media_subtype(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn media_subtype(input: &[u8]) -> IResult<&[u8], IString> {
     string(input)
 }
 
@@ -584,7 +582,7 @@ pub fn media_message(input: &[u8]) -> IResult<&[u8], &[u8]> {
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-pub fn media_text(input: &[u8]) -> IResult<&[u8], IStringRef> {
+pub fn media_text(input: &[u8]) -> IResult<&[u8], IString> {
     let mut parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;

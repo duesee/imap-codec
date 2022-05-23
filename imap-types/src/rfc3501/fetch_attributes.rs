@@ -43,19 +43,19 @@ impl Macro {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MacroOrFetchAttributes {
+pub enum MacroOrFetchAttributes<'a> {
     Macro(Macro),
-    FetchAttributes(Vec<FetchAttribute>),
+    FetchAttributes(Vec<FetchAttribute<'a>>),
 }
 
-impl From<Macro> for MacroOrFetchAttributes {
+impl<'a> From<Macro> for MacroOrFetchAttributes<'a> {
     fn from(m: Macro) -> Self {
         MacroOrFetchAttributes::Macro(m)
     }
 }
 
-impl From<Vec<FetchAttribute>> for MacroOrFetchAttributes {
-    fn from(attributes: Vec<FetchAttribute>) -> Self {
+impl<'a> From<Vec<FetchAttribute<'a>>> for MacroOrFetchAttributes<'a> {
+    fn from(attributes: Vec<FetchAttribute<'a>>) -> Self {
         MacroOrFetchAttributes::FetchAttributes(attributes)
     }
 }
@@ -64,7 +64,7 @@ impl From<Vec<FetchAttribute>> for MacroOrFetchAttributes {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FetchAttribute {
+pub enum FetchAttribute<'a> {
     /// `BODY`
     ///
     /// Non-extensible form of `BODYSTRUCTURE`.
@@ -91,7 +91,7 @@ pub enum FetchAttribute {
         ///
         /// A part of type MESSAGE/RFC822 also has nested part numbers,
         /// referring to parts of the MESSAGE part's body.
-        section: Option<Section>,
+        section: Option<Section<'a>>,
         /// It is possible to fetch a substring of the designated text.
         /// This is done by appending an open angle bracket ("<"), the
         /// octet position of the first desired octet, a period, the
@@ -176,11 +176,11 @@ pub enum FetchAttribute {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FetchAttributeValue {
+pub enum FetchAttributeValue<'a> {
     /// A form of BODYSTRUCTURE without extension data.
     ///
     /// `BODY`
-    Body(BodyStructure),
+    Body(BodyStructure<'a>),
 
     /// A string expressing the body contents of the specified section.
     /// The string SHOULD be interpreted by the client according to the
@@ -213,9 +213,9 @@ pub enum FetchAttributeValue {
     ///
     /// `BODY[<section>]<<origin octet>>`
     BodyExt {
-        section: Option<Section>,
+        section: Option<Section<'a>>,
         origin: Option<u32>,
-        data: NString,
+        data: NString<'a>,
     },
 
     /// A parenthesized list that describes the [MIME-IMB] body
@@ -224,7 +224,7 @@ pub enum FetchAttributeValue {
     /// as necessary.
     ///
     /// `BODYSTRUCTURE`
-    BodyStructure(BodyStructure),
+    BodyStructure(BodyStructure<'a>),
 
     /// A parenthesized list that describes the envelope structure of a
     /// message.  This is computed by the server by parsing the
@@ -232,12 +232,12 @@ pub enum FetchAttributeValue {
     /// fields as necessary.
     ///
     /// `ENVELOPE`
-    Envelope(Envelope),
+    Envelope(Envelope<'a>),
 
     /// A parenthesized list of flags that are set for this message.
     ///
     /// `FLAGS`
-    Flags(Vec<Flag>),
+    Flags(Vec<Flag<'a>>),
 
     /// A string representing the internal date of the message.
     ///
@@ -247,7 +247,7 @@ pub enum FetchAttributeValue {
     /// Equivalent to BODY[].
     ///
     /// `RFC822`
-    Rfc822(NString),
+    Rfc822(NString<'a>),
 
     /// Equivalent to BODY[HEADER].  Note that this did not result in
     /// \Seen being set, because RFC822.HEADER response data occurs as
@@ -256,7 +256,7 @@ pub enum FetchAttributeValue {
     /// \Seen) or BODY.PEEK[HEADER] (which does not set \Seen).
     ///
     /// `RFC822.HEADER`
-    Rfc822Header(NString),
+    Rfc822Header(NString<'a>),
 
     /// A number expressing the [RFC-2822] size of the message.
     ///
@@ -266,7 +266,7 @@ pub enum FetchAttributeValue {
     /// Equivalent to BODY[TEXT].
     ///
     /// `RFC822.TEXT`
-    Rfc822Text(NString),
+    Rfc822Text(NString<'a>),
 
     /// A number expressing the unique identifier of the message.
     ///
