@@ -9,19 +9,24 @@ use crate::core::NString;
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Address {
+pub struct Address<'a> {
     /// Personal name
-    pub(crate) name: NString,
+    pub(crate) name: NString<'a>,
     /// At-domain-list (source route)
-    pub(crate) adl: NString,
+    pub(crate) adl: NString<'a>,
     /// Mailbox name
-    pub(crate) mailbox: NString,
+    pub(crate) mailbox: NString<'a>,
     /// Host name
-    pub(crate) host: NString,
+    pub(crate) host: NString<'a>,
 }
 
-impl Address {
-    pub fn new(name: NString, adl: NString, mailbox: NString, host: NString) -> Address {
+impl<'a> Address<'a> {
+    pub fn new(
+        name: NString<'a>,
+        adl: NString<'a>,
+        mailbox: NString<'a>,
+        host: NString<'a>,
+    ) -> Address<'a> {
         Address {
             name,
             adl,

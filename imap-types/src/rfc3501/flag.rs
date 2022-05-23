@@ -15,7 +15,7 @@ use crate::core::Atom;
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Flag {
+pub enum Flag<'a> {
     // ----- System -----
     //
     // A system flag is a flag name that is pre-defined in this
@@ -42,7 +42,7 @@ pub enum Flag {
     Recent,
 
     // ----- Selectability -----
-    NameAttribute(FlagNameAttribute),
+    NameAttribute(FlagNameAttribute<'a>),
 
     // ----- Keyword -----
     /// Indicates that it is possible to create new keywords by
@@ -52,13 +52,13 @@ pub enum Flag {
     /// begin with "\".  Servers MAY permit the client to define new keywords
     /// in the mailbox (see the description of the PERMANENTFLAGS response
     /// code for more information).
-    Keyword(Atom),
+    Keyword(Atom<'a>),
 
     // ----- Others -----
-    Extension(Atom), // FIXME(#32): How to treat Extension(Atom("Recent"))
+    Extension(Atom<'a>), // FIXME(#32): How to treat Extension(Atom("Recent"))
 }
 
-impl std::fmt::Display for Flag {
+impl<'a> std::fmt::Display for Flag<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             // ----- System -----
@@ -88,7 +88,7 @@ impl std::fmt::Display for Flag {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FlagNameAttribute {
+pub enum FlagNameAttribute<'a> {
     /// It is not possible for any child levels of hierarchy to exist
     /// under this name; no child levels exist now and none can be
     /// created in the future. (`\Noinferiors`)
@@ -107,10 +107,10 @@ pub enum FlagNameAttribute {
     Unmarked,
 
     /// Note: extension flags must also be accepted here...
-    Extension(Atom),
+    Extension(Atom<'a>),
 }
 
-impl FlagNameAttribute {
+impl<'a> FlagNameAttribute<'a> {
     pub fn is_selectability(&self) -> bool {
         matches!(
             self,
@@ -119,7 +119,7 @@ impl FlagNameAttribute {
     }
 }
 
-impl std::fmt::Display for FlagNameAttribute {
+impl<'a> std::fmt::Display for FlagNameAttribute<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             Self::Noinferiors => write!(f, "\\Noinferiors"),

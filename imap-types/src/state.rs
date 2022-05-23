@@ -61,7 +61,7 @@ use crate::mailbox::Mailbox;
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
-pub enum State {
+pub enum State<'a> {
     /// ## 3.1. Not Authenticated State
     ///
     /// In the not authenticated state, the client MUST supply
@@ -85,7 +85,7 @@ pub enum State {
     /// In a selected state, a mailbox has been selected to access.
     /// This state is entered when a mailbox has been successfully
     /// selected.
-    Selected(Mailbox),
+    Selected(Mailbox<'a>),
 
     /// ## 3.4. Logout State
     ///
@@ -113,5 +113,5 @@ pub enum State {
     IdleAuthenticated(String),
 
     /// Extension IDLE
-    IdleSelected(String, Mailbox),
+    IdleSelected(String, Mailbox<'a>),
 }

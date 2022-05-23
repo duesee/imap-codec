@@ -54,18 +54,18 @@ use crate::core::{AString, NonEmptyVec};
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Section {
+pub enum Section<'a> {
     Part(Part),
 
     Header(Option<Part>),
 
     /// The subset returned by HEADER.FIELDS contains only those header fields with a field-name that
     /// matches one of the names in the list.
-    HeaderFields(Option<Part>, NonEmptyVec<AString>), // TODO: what if none matches?
+    HeaderFields(Option<Part>, NonEmptyVec<AString<'a>>), // TODO: what if none matches?
 
     /// Similarly, the subset returned by HEADER.FIELDS.NOT contains only the header fields
     /// with a non-matching field-name.
-    HeaderFieldsNot(Option<Part>, NonEmptyVec<AString>), // TODO: what if none matches?
+    HeaderFieldsNot(Option<Part>, NonEmptyVec<AString<'a>>), // TODO: what if none matches?
 
     /// The TEXT part specifier refers to the text body of the message, omitting the [RFC-2822] header.
     Text(Option<Part>),
@@ -96,11 +96,11 @@ pub struct Part(pub NonEmptyVec<NonZeroU32>);
 /// line.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PartSpecifier {
+pub enum PartSpecifier<'a> {
     PartNumber(u32),
     Header,
-    HeaderFields(NonEmptyVec<AString>),
-    HeaderFieldsNot(NonEmptyVec<AString>),
+    HeaderFields(NonEmptyVec<AString<'a>>),
+    HeaderFieldsNot(NonEmptyVec<AString<'a>>),
     Mime,
     Text,
 }

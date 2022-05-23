@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use imap_types::core::{
-    AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, QuotedChar, Tag, Text,
+    AString, Atom, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
 };
 use nom::{
     branch::alt,
@@ -53,18 +53,15 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
 // ----- string -----
 
 /// `string = quoted / literal`
-pub fn string(input: &[u8]) -> IResult<&[u8], IStringRef> {
-    alt((
-        map(quoted, IStringRef::Quoted),
-        map(literal, IStringRef::Literal),
-    ))(input)
+pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
+    alt((map(quoted, IString::Quoted), map(literal, IString::Literal)))(input)
 }
 
 /// `quoted = DQUOTE *QUOTED-CHAR DQUOTE`
 ///
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
-pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
+pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
     let mut parser = tuple((
         DQUOTE,
         map_res(
@@ -80,7 +77,9 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Cow<str>> {
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    Ok((remaining, unescape_quoted(quoted)))
+    Ok((remaining, unsafe {
+        Quoted::new_unchecked(unescape_quoted(quoted))
+    }))
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
@@ -119,7 +118,7 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// `literal = "{" number "}" CRLF *CHAR8`
 ///
 /// Number represents the number of CHAR8s
-pub fn literal(input: &[u8]) -> IResult<&[u8], LiteralRef<'_>> {
+pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
     // Signal that an continuation request is required.
@@ -137,8 +136,8 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], LiteralRef<'_>> {
 
     let (remaining, data) = take(number)(remaining)?;
 
-    match LiteralRef::from_bytes(data) {
-        Ok(literal_ref) => Ok((remaining, literal_ref)),
+    match Literal::try_from(data) {
+        Ok(literal) => Ok((remaining, literal)),
         Err(_) => {
             // TODO(verify): use `Failure` or `Error`?
             Err(nom::Err::Error(nom::error::Error::new(
@@ -160,17 +159,15 @@ pub fn is_char8(i: u8) -> bool {
 // ----- astring ----- atom (roughly) or string
 
 /// `astring = 1*ASTRING-CHAR / string`
-pub fn astring(input: &[u8]) -> IResult<&[u8], AStringRef> {
+pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             // Note: this is safe, because is_astring_char enforces
             //       that the string only contains ASCII characters
             // TODO(perf): atm::try_from tests all bytes again
-            AStringRef::Atom(
-                AtomRef::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap(),
-            )
+            AString::Atom(Atom::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
         }),
-        map(string, AStringRef::String),
+        map(string, AString::String),
     ))(input)
 }
 
@@ -203,7 +200,7 @@ pub fn is_resp_specials(i: u8) -> bool {
 }
 
 /// `atom = 1*ATOM-CHAR`
-pub fn atom(input: &[u8]) -> IResult<&[u8], AtomRef> {
+pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
@@ -212,17 +209,17 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], AtomRef> {
     //               that the string is always UTF8 and contains
     //               only the allowed characters.
     Ok((remaining, unsafe {
-        AtomRef::from_str_unchecked(std::str::from_utf8_unchecked(parsed_atom))
+        Atom::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(parsed_atom)))
     }))
 }
 
 // ----- nstring ----- nil or string
 
 /// `nstring = string / nil`
-pub fn nstring(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
     alt((
-        map(string, |item| NStringRef(Some(item))),
-        map(nil, |_| NStringRef(None)),
+        map(string, |item| NString(Some(item))),
+        map(nil, |_| NString(None)),
     ))(input)
 }
 
@@ -240,7 +237,7 @@ pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
         // Note: is_text_char makes sure that the sequence of bytes
         //       is always valid ASCII. Thus, it is also valid UTF-8.
         unsafe {
-            Text::unchecked(std::str::from_utf8_unchecked(bytes))
+            Text::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
         })(input)
 }
 
@@ -300,6 +297,7 @@ mod test {
     use std::convert::TryInto;
 
     use assert_matches::assert_matches;
+    use imap_types::core::Quoted;
 
     use super::*;
 
@@ -321,7 +319,7 @@ mod test {
     fn test_quoted() {
         let (rem, val) = quoted(br#""Hello"???"#).unwrap();
         assert_eq!(rem, b"???");
-        assert_eq!(val, "Hello");
+        assert_eq!(val, Quoted::try_from("Hello").unwrap());
 
         // Allowed escapes...
         assert!(quoted(br#""Hello \" "???"#).is_ok());
@@ -337,7 +335,7 @@ mod test {
         // Should it be this (Hello \"World\") ...
         //assert_eq!(val, r#"Hello \"World\""#);
         // ... or this (Hello "World")?
-        assert_eq!(val, r#"Hello "World""#); // fails
+        assert_eq!(val, Quoted::try_from("Hello \"World\"").unwrap());
 
         // Test Incomplete
         assert_matches!(quoted(br#""#), Err(nom::Err::Incomplete(_)));
@@ -382,7 +380,7 @@ mod test {
 
         let (rem, val) = literal(b"{3}\r\n123xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, LiteralRef::from_bytes(b"123").unwrap());
+        assert_eq!(val, Literal::try_from(b"123".as_slice()).unwrap());
     }
 
     #[test]

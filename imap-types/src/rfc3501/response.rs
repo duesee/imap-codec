@@ -32,7 +32,7 @@ pub enum Response<'a> {
     /// token "*" instead of a tag. Untagged status responses indicate server
     /// greeting, or server status that does not indicate the completion of a
     /// command (for example, an impending system shutdown alert).
-    Data(Data),
+    Data(Data<'a>),
     /// Command continuation request responses use the token "+" instead of a
     /// tag.  These responses are sent by the server to indicate acceptance
     /// of an incomplete client command and readiness for the remainder of
@@ -66,7 +66,7 @@ pub enum Status<'a> {
         /// yet authenticated and that a LOGIN command is needed.
         tag: Option<Tag<'a>>,
         /// Response code (optional)
-        code: Option<Code>,
+        code: Option<Code<'a>>,
         /// Human-readable text (must be at least 1 character!)
         text: Text<'a>,
     },
@@ -80,7 +80,7 @@ pub enum Status<'a> {
         /// command can still complete successfully.
         tag: Option<Tag<'a>>,
         /// Response code (optional)
-        code: Option<Code>,
+        code: Option<Code<'a>>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
         text: Text<'a>,
     },
@@ -96,7 +96,7 @@ pub enum Status<'a> {
         /// server failure.
         tag: Option<Tag<'a>>,
         /// Response code (optional)
-        code: Option<Code>,
+        code: Option<Code<'a>>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
         text: Text<'a>,
     },
@@ -109,7 +109,7 @@ pub enum Status<'a> {
     /// no LOGIN command is needed.
     PreAuth {
         /// Response code (optional)
-        code: Option<Code>,
+        code: Option<Code<'a>>,
         /// Human-readable text (must be at least 1 character!)
         text: Text<'a>,
     },
@@ -145,7 +145,7 @@ pub enum Status<'a> {
     /// or completion responses are read and processed.
     Bye {
         /// Response code (optional)
-        code: Option<Code>,
+        code: Option<Code<'a>>,
         /// The human-readable text MAY be displayed to the user in a status
         /// report by the client. (must be at least 1 character!)
         text: Text<'a>,
@@ -153,7 +153,7 @@ pub enum Status<'a> {
 }
 
 impl<'a> Status<'a> {
-    pub fn greeting(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn greeting(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Ok {
             tag: None,
             code,
@@ -161,7 +161,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Ok {
             tag,
             code,
@@ -169,7 +169,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn no(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn no(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::No {
             tag,
             code,
@@ -177,7 +177,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Bad {
             tag,
             code,
@@ -185,14 +185,14 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn preauth(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::PreAuth {
             code,
             text: text.try_into()?,
         })
     }
 
-    pub fn bye(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Bye {
             code,
             text: text.try_into()?,
@@ -204,7 +204,7 @@ impl<'a> Status<'a> {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Data {
+pub enum Data<'a> {
     // ## 7.2. Server Responses - Server and Mailbox Status
     //
     // These responses are always untagged.  This is how server and mailbox
@@ -255,7 +255,7 @@ pub enum Data {
     /// OK response as part of a successful authentication.  It is
     /// unnecessary for a client to send a separate CAPABILITY command if
     /// it recognizes these automatic capabilities.
-    Capability(NonEmptyVec<Capability>),
+    Capability(NonEmptyVec<Capability<'a>>),
 
     /// ### 7.2.2. LIST Response
     ///
@@ -276,11 +276,11 @@ pub enum Data {
     /// argument for commands, such as SELECT, that accept mailbox names.
     List {
         /// Name attributes
-        items: Vec<FlagNameAttribute>,
+        items: Vec<FlagNameAttribute<'a>>,
         /// Hierarchy delimiter
         delimiter: Option<QuotedChar>,
         /// Name
-        mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
     },
 
     /// ### 7.2.3. LSUB Response
@@ -291,11 +291,11 @@ pub enum Data {
     /// data is identical in format to the LIST response.
     Lsub {
         /// Name attributes
-        items: Vec<FlagNameAttribute>,
+        items: Vec<FlagNameAttribute<'a>>,
         /// Hierarchy delimiter
         delimiter: Option<QuotedChar>,
         /// Name
-        mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
     },
 
     /// ### 7.2.4 STATUS Response
@@ -305,7 +305,7 @@ pub enum Data {
     /// the requested mailbox status information.
     Status {
         /// Name
-        mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
         /// Status parenthesized list
         attributes: Vec<StatusAttributeValue>,
     },
@@ -332,7 +332,7 @@ pub enum Data {
     /// depending on server implementation.
     ///
     /// The update from the FLAGS response MUST be recorded by the client.
-    Flags(Vec<Flag>),
+    Flags(Vec<Flag<'a>>),
 
     // ## 7.3. Server Responses - Mailbox Size
     //
@@ -428,27 +428,27 @@ pub enum Data {
         /// Message SEQ or UID
         seq_or_uid: NonZeroU32,
         /// Message data
-        attributes: NonEmptyVec<FetchAttributeValue>,
+        attributes: NonEmptyVec<FetchAttributeValue<'a>>,
     },
 
     #[cfg(feature = "ext_enable")]
-    Enabled { capabilities: Vec<Capability> },
+    Enabled { capabilities: Vec<Capability<'a>> },
 }
 
-impl Data {
-    pub fn capability<C>(caps: C) -> Result<Data, C::Error>
+impl<'a> Data<'a> {
+    pub fn capability<C>(caps: C) -> Result<Data<'a>, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability>>,
+        C: TryInto<NonEmptyVec<Capability<'a>>>,
     {
         Ok(Data::Capability(caps.try_into()?))
     }
 
     // TODO: implement other methods
 
-    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Data, ()>
+    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Data<'a>, ()>
     where
         I: TryInto<NonZeroU32>,
-        A: TryInto<NonEmptyVec<FetchAttributeValue>>,
+        A: TryInto<NonEmptyVec<FetchAttributeValue<'a>>>,
     {
         Ok(Data::Fetch {
             seq_or_uid: seq_or_uid.try_into().map_err(|_| ())?, // TODO: better error
@@ -481,12 +481,15 @@ impl Data {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continuation<'a> {
-    Basic { code: Option<Code>, text: Text<'a> },
+    Basic {
+        code: Option<Code<'a>>,
+        text: Text<'a>,
+    },
     Base64(Vec<u8>),
 }
 
 impl<'a> Continuation<'a> {
-    pub fn basic(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
+    pub fn basic(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Continuation::Basic {
             code,
             text: text.try_into()?,
@@ -509,7 +512,7 @@ impl<'a> Continuation<'a> {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Code {
+pub enum Code<'a> {
     /// `ALERT`
     ///
     /// The human-readable text contains a special alert that MUST be
@@ -524,7 +527,7 @@ pub enum Code {
     /// this implementation.  If the optional list of charsets is
     /// given, this lists the charsets that are supported by this
     /// implementation.
-    BadCharset(Vec<Charset>),
+    BadCharset(Vec<Charset<'a>>),
 
     /// `CAPABILITY`
     ///
@@ -533,7 +536,7 @@ pub enum Code {
     /// capabilities list.  This makes it unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes this
     /// response.
-    Capability(NonEmptyVec<Capability>), // FIXME(misuse): List must contain IMAP4REV1
+    Capability(NonEmptyVec<Capability<'a>>), // FIXME(misuse): List must contain IMAP4REV1
 
     /// `PARSE`
     ///
@@ -554,7 +557,7 @@ pub enum Code {
     /// The PERMANENTFLAGS list can also include the special flag \*,
     /// which indicates that it is possible to create new keywords by
     /// attempting to store those flags in the mailbox.
-    PermanentFlags(Vec<Flag>),
+    PermanentFlags(Vec<Flag<'a>>),
 
     /// `READ-ONLY`
     ///
@@ -599,7 +602,7 @@ pub enum Code {
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
     /// SHOULD ignore response codes that they do not recognize.
-    Other(Atom, Option<String>),
+    Other(Atom<'a>, Option<String>),
 
     /// IMAP4 Login Referrals (RFC 2221)
     Referral(String), // TODO: the imap url is more complicated than that...
@@ -608,16 +611,16 @@ pub enum Code {
     CompressionActive,
 }
 
-impl Code {
+impl<'a> Code<'a> {
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability>>,
+        C: TryInto<NonEmptyVec<Capability<'a>>>,
     {
         Ok(Code::Capability(caps.try_into()?))
     }
 }
 
-impl std::fmt::Display for Code {
+impl<'a> std::fmt::Display for Code<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Code::Alert => write!(f, "ALERT"),
@@ -652,9 +655,9 @@ impl std::fmt::Display for Code {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Capability {
+pub enum Capability<'a> {
     Imap4Rev1,
-    Auth(AuthMechanism),
+    Auth(AuthMechanism<'a>),
     LoginDisabled,
     StartTls,
     // ---
@@ -673,10 +676,10 @@ pub enum Capability {
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
     // FIXME: case-sensitive when compared
-    Other(Atom),
+    Other(Atom<'a>),
 }
 
-impl std::fmt::Display for Capability {
+impl<'a> std::fmt::Display for Capability<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         use Capability::*;
 

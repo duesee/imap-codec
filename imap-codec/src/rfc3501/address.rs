@@ -1,5 +1,5 @@
 use abnf_core::streaming::SP;
-use imap_types::{address::Address, core::NStringRef};
+use imap_types::{address::Address, core::NString};
 use nom::{
     bytes::streaming::tag,
     sequence::{delimited, tuple},
@@ -39,7 +39,7 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 ///
 /// If non-NIL, holds phrase from [RFC-2822]
 /// mailbox after removing [RFC-2822] quoting
-pub fn addr_name(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_name(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -47,7 +47,7 @@ pub fn addr_name(input: &[u8]) -> IResult<&[u8], NStringRef> {
 /// `addr-adl = nstring`
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
-pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -57,7 +57,7 @@ pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NStringRef> {
 /// NIL indicates end of [RFC-2822] group;
 /// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
 /// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
-pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -66,7 +66,7 @@ pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NStringRef> {
 ///
 /// NIL indicates [RFC-2822] group syntax.
 /// Otherwise, holds [RFC-2822] domain name
-pub fn addr_host(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn addr_host(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 

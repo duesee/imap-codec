@@ -41,19 +41,19 @@ macro_rules! implement_tryfrom_t {
     };
 }
 
-implement_tryfrom! { Atom, String }
-implement_tryfrom! { Quoted, String }
+implement_tryfrom! { Atom<'a>, String }
+implement_tryfrom! { Quoted<'a>, String }
 implement_tryfrom! { Tag<'a>, String }
 implement_tryfrom! { Text<'a>, String }
 implement_tryfrom! { ListCharString, String }
 implement_tryfrom! { QuotedChar, char }
-implement_tryfrom! { Mailbox, String }
-implement_tryfrom! { AuthMechanismOther, String }
+implement_tryfrom! { Mailbox<'a>, String }
+implement_tryfrom! { AuthMechanismOther<'a>, String }
 implement_tryfrom! { SequenceSet, String }
-implement_tryfrom! { Literal, Vec<u8> }
+implement_tryfrom! { Literal<'a>, Vec<u8> }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
-impl<'a> Arbitrary<'a> for SearchKey {
+impl<'a> Arbitrary<'a> for SearchKey<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         use SearchKey::*;
 

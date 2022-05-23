@@ -7,12 +7,9 @@
 //! using "astring" syntax may be either an atom or a string.
 
 use std::{
-    borrow::Cow,
-    convert::{TryFrom, TryInto},
-    fmt,
-    fmt::{Debug, Display, Formatter},
+    borrow::{Borrow, Cow},
+    convert::TryFrom,
     ops::Deref,
-    string::FromUtf8Error,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -21,12 +18,8 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(feature = "serdex")]
 use serde::{Deserialize, Serialize};
 
-use crate::utils::{
-    escape_quoted,
-    indicators::{
-        is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8,
-        is_text_char,
-    },
+use crate::utils::indicators::{
+    is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
 };
 
 // ## 4.1. Atom
@@ -34,39 +27,57 @@ use crate::utils::{
 /// An atom consists of one or more non-special characters.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Atom(pub(crate) String);
+pub struct Atom<'a> {
+    inner: Cow<'a, str>,
+}
 
-impl TryFrom<&str> for Atom {
-    type Error = ();
+impl<'a> Atom<'a> {
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(is_atom_char)
+    }
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Atom::try_from(value.to_string())
+    pub fn inner(&self) -> &Cow<'a, str> {
+        &self.inner
+    }
+
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Atom<'a> {
+        Atom { inner }
     }
 }
 
-impl TryFrom<String> for Atom {
+impl<'a> TryFrom<&'a str> for Atom<'a> {
     type Error = ();
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if !value.is_empty() && value.bytes().all(is_atom_char) {
-            Ok(Atom(value))
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Atom::verify(value) {
+            Ok(Atom {
+                inner: Cow::Borrowed(value),
+            })
         } else {
             Err(())
         }
     }
 }
 
-impl Deref for Atom {
-    type Target = String;
+impl<'a> TryFrom<String> for Atom<'a> {
+    type Error = ();
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if Atom::verify(&value) {
+            Ok(Atom {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
     }
 }
 
-impl Display for Atom {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(&self.0, f)
+impl<'a> Deref for Atom<'a> {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.borrow()
     }
 }
 
@@ -85,7 +96,7 @@ impl Display for Atom {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum IString {
+pub enum IString<'a> {
     /// A literal is a sequence of zero or more octets (including CR and
     /// LF), prefix-quoted with an octet count in the form of an open
     /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
@@ -98,72 +109,61 @@ pub enum IString {
     /// Note: Even if the octet count is 0, a client transmitting a
     /// literal MUST wait to receive a command continuation request.
     ///
-    Literal(Literal),
+    Literal(Literal<'a>),
     /// The quoted string form is an alternative that avoids the overhead of
     /// processing a literal at the cost of limitations of characters which may be used.
     ///
     /// A quoted string is a sequence of zero or more 7-bit characters,
     /// excluding CR and LF, with double quote (<">) characters at each end.
     ///
-    Quoted(Quoted),
+    Quoted(Quoted<'a>),
 }
 
-impl TryFrom<&str> for IString {
+impl<'a> TryFrom<&'a str> for IString<'a> {
     type Error = ();
 
-    fn try_from(s: &str) -> Result<Self, ()> {
-        s.to_string().try_into()
+    fn try_from(value: &'a str) -> Result<Self, ()> {
+        if let Ok(quoted) = Quoted::try_from(value) {
+            return Ok(IString::Quoted(quoted));
+        }
+
+        if let Ok(literal) = Literal::try_from(value.as_bytes()) {
+            return Ok(IString::Literal(literal));
+        }
+
+        Err(())
     }
 }
 
-impl TryFrom<String> for IString {
+impl<'a> TryFrom<String> for IString<'a> {
     type Error = ();
 
-    fn try_from(s: String) -> Result<Self, ()> {
-        if s.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            Ok(IString::Quoted(Quoted(s)))
-        } else {
-            let bytes = s.into_bytes();
-
-            if bytes.iter().all(|b| *b != 0x00) {
-                Ok(IString::Literal(Literal(bytes)))
-            } else {
-                Err(())
-            }
+    fn try_from(value: String) -> Result<Self, ()> {
+        if let Ok(quoted) = Quoted::try_from(value.clone()) {
+            return Ok(IString::Quoted(quoted));
         }
-    }
-}
 
-impl TryFrom<IString> for String {
-    type Error = FromUtf8Error;
-
-    fn try_from(value: IString) -> Result<Self, Self::Error> {
-        match value {
-            IString::Quoted(utf8) => Ok(utf8.0),
-            IString::Literal(bytes) => String::from_utf8(bytes.0),
+        if let Ok(literal) = Literal::try_from(value.into_bytes()) {
+            return Ok(IString::Literal(literal));
         }
+
+        Err(())
     }
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Literal(Vec<u8>);
+pub struct Literal<'a> {
+    inner: Cow<'a, [u8]>,
+}
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LiteralRef<'a>(&'a [u8]);
-
-impl<'a> LiteralRef<'a> {
+impl<'a> Literal<'a> {
     pub fn verify(bytes: &[u8]) -> bool {
-        bytes.iter().cloned().all(is_char8)
+        bytes.iter().all(|b| is_char8(*b))
     }
 
-    pub fn from_bytes(bytes: &'a [u8]) -> Result<LiteralRef<'a>, ()> {
-        if Self::verify(bytes) {
-            Ok(Self(bytes))
-        } else {
-            Err(())
-        }
+    pub fn inner(&self) -> &Cow<'a, [u8]> {
+        &self.inner
     }
 
     /// Create a literal from a byte sequence without checking
@@ -173,129 +173,134 @@ impl<'a> LiteralRef<'a> {
     ///
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
-    pub unsafe fn from_bytes_unchecked(bytes: &'a [u8]) -> LiteralRef<'a> {
-        Self(bytes)
+    pub unsafe fn new_unchecked(inner: Cow<'a, [u8]>) -> Literal<'a> {
+        Literal { inner }
     }
 }
 
-// Literal --> LiteralRef
-
-impl<'a> From<&'a Literal> for LiteralRef<'a> {
-    fn from(value: &'a Literal) -> LiteralRef<'a> {
-        LiteralRef(&value.0)
-    }
-}
-
-// LiteralRef --> Literal
-
-impl<'a> From<&LiteralRef<'a>> for Literal {
-    fn from(value: &LiteralRef<'a>) -> Literal {
-        Literal(value.0.to_owned())
-    }
-}
-
-impl<'a> TryFrom<&'a [u8]> for LiteralRef<'a> {
+impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
     type Error = ();
 
-    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        LiteralRef::from_bytes(bytes)
-    }
-}
-
-impl TryFrom<Vec<u8>> for Literal {
-    type Error = ();
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        if LiteralRef::verify(&bytes) {
-            Ok(Literal(bytes))
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        if Literal::verify(value) {
+            Ok(Literal {
+                inner: Cow::Borrowed(value),
+            })
         } else {
             Err(())
         }
     }
 }
 
-impl Deref for Literal {
-    type Target = [u8];
+impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
+    type Error = ();
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if Literal::verify(&value) {
+            Ok(Literal {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
     }
 }
 
-impl<'a> Deref for LiteralRef<'a> {
+impl<'a> Deref for Literal<'a> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        self.0
+        &self.inner
     }
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Quoted(pub(crate) String);
+pub struct Quoted<'a> {
+    inner: Cow<'a, str>,
+}
 
-impl TryFrom<&str> for Quoted {
-    type Error = ();
+impl<'a> Quoted<'a> {
+    pub fn verify(value: &str) -> bool {
+        value.chars().all(|c| c.is_ascii() && is_text_char(c as u8))
+    }
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        value.to_string().try_into()
+    pub fn inner(&self) -> &Cow<'a, str> {
+        &self.inner
+    }
+
+    /// Create a quoted from a string without checking
+    /// that it to conforms to IMAP's quoted specification.
+    ///
+    /// # Safety
+    ///
+    /// Call this function only when you are sure that the str
+    /// is a valid quoted.
+    pub unsafe fn new_unchecked(value: Cow<'a, str>) -> Quoted<'a> {
+        Quoted { inner: value }
     }
 }
 
-impl TryFrom<String> for Quoted {
+impl<'a> TryFrom<&'a str> for Quoted<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Quoted::verify(value) {
+            Ok(Quoted {
+                inner: Cow::Borrowed(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> TryFrom<String> for Quoted<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.chars().all(|c| c.is_ascii() && is_text_char(c as u8)) {
-            Ok(Quoted(value))
+        if Quoted::verify(&value) {
+            Ok(Quoted {
+                inner: Cow::Owned(value),
+            })
         } else {
             Err(())
         }
     }
 }
 
-impl Deref for Quoted {
-    type Target = String;
+impl<'a> Deref for Quoted<'a> {
+    type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Display for Quoted {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "\"{}\"", escape_quoted(&self.0))
+        self.inner.as_ref()
     }
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NString(pub Option<IString>);
+// This wrapper is merely used for formatting.
+// The inner value can be public.
+pub struct NString<'a>(pub Option<IString<'a>>);
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AString {
-    Atom(Atom),
-    String(IString),
+pub enum AString<'a> {
+    // FIXME(misuse): Variant should not contain `Atom`, but something like `AtomExt` ...
+    //                `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
+    Atom(Atom<'a>),      // 1*ASTRING-CHAR /
+    String(IString<'a>), // string
 }
 
-impl TryFrom<&str> for AString {
+impl<'a> TryFrom<&'a str> for AString<'a> {
     type Error = ();
 
-    fn try_from(s: &str) -> Result<Self, ()> {
-        s.to_string().try_into()
-    }
-}
-
-impl TryFrom<String> for AString {
-    type Error = ();
-
-    fn try_from(s: String) -> Result<Self, ()> {
-        if let Ok(atom) = Atom::try_from(s.clone()) {
+    fn try_from(value: &'a str) -> Result<Self, ()> {
+        if let Ok(atom) = Atom::try_from(value) {
             Ok(AString::Atom(atom))
-        } else if let Ok(string) = IString::try_from(s) {
+        } else if let Ok(string) = IString::try_from(value) {
             Ok(AString::String(string))
         } else {
             Err(())
@@ -303,13 +308,16 @@ impl TryFrom<String> for AString {
     }
 }
 
-impl TryFrom<AString> for String {
-    type Error = std::string::FromUtf8Error;
+impl<'a> TryFrom<String> for AString<'a> {
+    type Error = ();
 
-    fn try_from(value: AString) -> Result<Self, Self::Error> {
-        match value {
-            AString::Atom(string) => Ok(string.0),
-            AString::String(istring) => String::try_from(istring),
+    fn try_from(value: String) -> Result<Self, ()> {
+        if let Ok(atom) = Atom::try_from(value.clone()) {
+            Ok(AString::Atom(atom))
+        } else if let Ok(string) = IString::try_from(value) {
+            Ok(AString::String(string))
+        } else {
+            Err(())
         }
     }
 }
@@ -356,27 +364,27 @@ impl TryFrom<AString> for String {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a> {
-    pub(crate) inner: Cow<'a, str>,
+    inner: Cow<'a, str>,
 }
 
 impl<'a> Tag<'a> {
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+')
+    }
+
+    pub fn inner(&self) -> &Cow<'a, str> {
+        &self.inner
+    }
+
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Tag<'a> {
+        Tag { inner }
+    }
+
     pub fn random() -> Self {
         let mut rng = thread_rng();
         let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
 
-        Tag {
-            inner: Cow::Owned(unsafe { String::from_utf8_unchecked(buffer.to_vec()) }),
-        }
-    }
-
-    pub unsafe fn unchecked(value: &'a str) -> Tag<'a> {
-        Tag {
-            inner: Cow::Borrowed(value),
-        }
-    }
-
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+')
+        unsafe { Tag::new_unchecked(Cow::Owned(String::from_utf8_unchecked(buffer.to_vec()))) }
     }
 }
 
@@ -408,16 +416,10 @@ impl<'a> TryFrom<String> for Tag<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for Tag<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.inner)
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a> {
-    pub(crate) inner: Cow<'a, str>,
+    inner: Cow<'a, str>,
 }
 
 impl<'a> Text<'a> {
@@ -425,10 +427,12 @@ impl<'a> Text<'a> {
         !value.is_empty() && value.bytes().all(is_text_char)
     }
 
-    pub unsafe fn unchecked(value: &'a str) -> Text<'a> {
-        Text {
-            inner: Cow::Borrowed(value),
-        }
+    pub fn inner(&self) -> &Cow<'a, str> {
+        &self.inner
+    }
+
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Text<'a> {
+        Text { inner }
     }
 }
 
@@ -460,15 +464,11 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for Text<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.inner)
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
-pub struct QuotedChar(pub(crate) char);
+pub struct QuotedChar {
+    inner: char,
+}
 
 impl QuotedChar {
     pub fn verify(input: char) -> bool {
@@ -478,6 +478,14 @@ impl QuotedChar {
             false
         }
     }
+
+    pub fn inner(&self) -> &char {
+        &self.inner
+    }
+
+    pub unsafe fn new_unchecked(inner: char) -> QuotedChar {
+        QuotedChar { inner }
+    }
 }
 
 impl TryFrom<char> for QuotedChar {
@@ -485,7 +493,7 @@ impl TryFrom<char> for QuotedChar {
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         if Self::verify(value) {
-            Ok(QuotedChar(value))
+            Ok(QuotedChar { inner: value })
         } else {
             Err(())
         }
@@ -495,26 +503,16 @@ impl TryFrom<char> for QuotedChar {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Charset {
-    Atom(Atom),
-    Quoted(Quoted),
+pub enum Charset<'a> {
+    Atom(Atom<'a>),
+    Quoted(Quoted<'a>),
 }
 
-impl TryFrom<&str> for Charset {
+impl<'a> TryFrom<&'a str> for Charset<'a> {
     type Error = ();
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Charset::try_from(value.to_string())
-    }
-}
-
-impl TryFrom<String> for Charset {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        // Try Atom variant ...
-        if let Ok(atom) = Atom::try_from(value.clone()) {
-            // TODO(perf)
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if let Ok(atom) = Atom::try_from(value) {
             Ok(Charset::Atom(atom))
         } else if let Ok(quoted) = Quoted::try_from(value) {
             Ok(Charset::Quoted(quoted))
@@ -524,125 +522,56 @@ impl TryFrom<String> for Charset {
     }
 }
 
-impl std::fmt::Display for Charset {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Charset::Atom(atom) => write!(f, "{}", atom),
-            Charset::Quoted(quoted) => write!(f, "{}", quoted),
-        }
-    }
-}
-
-// ----- "Referenced types" used for non-allocating code -----
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AtomRef<'a>(&'a str);
-
-impl<'a> TryFrom<&'a str> for AtomRef<'a> {
+impl<'a> TryFrom<String> for Charset<'a> {
     type Error = ();
 
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if AtomRef::verify(value) {
-            Ok(AtomRef(value))
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if let Ok(atom) = Atom::try_from(value.clone()) {
+            Ok(Charset::Atom(atom))
+        } else if let Ok(quoted) = Quoted::try_from(value) {
+            Ok(Charset::Quoted(quoted))
         } else {
             Err(())
-        }
-    }
-}
-
-impl<'a> Deref for AtomRef<'a> {
-    type Target = &'a str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> AtomRef<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(is_astring_char)
-    }
-
-    pub unsafe fn from_str_unchecked(value: &'a str) -> AtomRef<'a> {
-        Self(value)
-    }
-
-    pub fn to_owned(&self) -> Atom {
-        Atom(self.0.to_string())
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub enum IStringRef<'a> {
-    Literal(LiteralRef<'a>),
-    Quoted(Cow<'a, str>),
-}
-
-impl<'a> IStringRef<'a> {
-    pub fn to_owned(&self) -> IString {
-        match self {
-            IStringRef::Literal(literal_ref) => IString::Literal(Literal::from(literal_ref)),
-            IStringRef::Quoted(cowstr) => IString::Quoted(Quoted(cowstr.to_string())),
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct NStringRef<'a>(pub Option<IStringRef<'a>>);
-
-impl<'a> NStringRef<'a> {
-    pub fn to_owned(&self) -> NString {
-        NString(self.0.as_ref().map(|inner| inner.to_owned()))
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub enum AStringRef<'a> {
-    // FIXME(misuse): Variant should not contain `Atom`, but something like `AtomExt` ...
-    //                `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
-    Atom(AtomRef<'a>),      // 1*ASTRING-CHAR /
-    String(IStringRef<'a>), // string
-}
-
-impl<'a> AStringRef<'a> {
-    pub fn to_owned(&self) -> AString {
-        match self {
-            AStringRef::Atom(atom) => AString::Atom(atom.to_owned()),
-            AStringRef::String(istr) => AString::String(istr.to_owned()),
         }
     }
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+pub struct NonEmptyVec<T> {
+    inner: Vec<T>,
+}
+
+impl<T> NonEmptyVec<T> {
+    pub unsafe fn new_unchecked(inner: Vec<T>) -> NonEmptyVec<T> {
+        NonEmptyVec { inner }
+    }
+}
 
 impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     type Error = ();
 
-    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
-        if value.is_empty() {
+    fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
+        if inner.is_empty() {
             Err(())
         } else {
-            Ok(NonEmptyVec(value))
+            Ok(NonEmptyVec { inner })
         }
     }
 }
 
 impl<T> Deref for NonEmptyVec<T> {
-    type Target = Vec<T>;
+    type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use super::*;
     use crate::codec::Encode;
 

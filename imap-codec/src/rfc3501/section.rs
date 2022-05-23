@@ -1,8 +1,8 @@
-use std::{convert::TryFrom, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 use abnf_core::streaming::SP;
 use imap_types::{
-    core::{AString, AStringRef, NonEmptyVec},
+    core::{AString, NonEmptyVec},
     section::{Part, PartSpecifier, Section},
 };
 use nom::{
@@ -63,31 +63,11 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
     alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
-            |(_, _, header_list)| {
-                PartSpecifier::HeaderFieldsNot(
-                    NonEmptyVec::try_from(
-                        header_list
-                            .iter()
-                            .map(|item| item.to_owned())
-                            .collect::<Vec<AString>>(),
-                    )
-                    .unwrap(),
-                )
-            },
+            |(_, _, header_list)| PartSpecifier::HeaderFieldsNot(header_list),
         ),
         map(
             tuple((tag_no_case(b"HEADER.FIELDS"), SP, header_list)),
-            |(_, _, header_list)| {
-                PartSpecifier::HeaderFields(
-                    NonEmptyVec::try_from(
-                        header_list
-                            .iter()
-                            .map(|item| item.to_owned())
-                            .collect::<Vec<AString>>(),
-                    )
-                    .unwrap(),
-                )
-            },
+            |(_, _, header_list)| PartSpecifier::HeaderFields(header_list),
         ),
         value(PartSpecifier::Header, tag_no_case(b"HEADER")),
         value(PartSpecifier::Text, tag_no_case(b"TEXT")),
@@ -99,8 +79,8 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 ///
 /// Body part nesting
 pub fn section_part(input: &[u8]) -> IResult<&[u8], NonEmptyVec<NonZeroU32>> {
-    map(separated_list1(tag(b"."), nz_number), |vec| {
-        NonEmptyVec::try_from(vec).unwrap()
+    map(separated_list1(tag(b"."), nz_number), |vec| unsafe {
+        NonEmptyVec::new_unchecked(vec)
     })(input)
 }
 
@@ -115,15 +95,15 @@ pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 }
 
 /// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
-pub fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AStringRef>> {
+pub fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AString>> {
     map(
         delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
-        |vec| NonEmptyVec::try_from(vec).unwrap(),
+        |vec| unsafe { NonEmptyVec::new_unchecked(vec) },
     )(input)
 }
 
 #[inline]
 /// `header-fld-name = astring`
-pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], AStringRef> {
+pub fn header_fld_name(input: &[u8]) -> IResult<&[u8], AString> {
     astring(input)
 }

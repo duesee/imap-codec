@@ -1,9 +1,7 @@
-use std::convert::TryFrom;
-
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     command::{Command, CommandBody, SearchKey},
-    core::{AStringRef, Literal, NonEmptyVec},
+    core::{AString, Literal, NonEmptyVec},
     fetch_attributes::{Macro, MacroOrFetchAttributes},
     flag::{Flag, StoreResponse, StoreType},
     AuthMechanism,
@@ -130,7 +128,7 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
             mailbox,
             flags: flags.unwrap_or_default(),
             date: date_time,
-            message: Literal::from(&literal),
+            message: Literal::from(literal),
         },
     ))
 }
@@ -300,13 +298,13 @@ pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 #[inline]
 /// `userid = astring`
-pub fn userid(input: &[u8]) -> IResult<&[u8], AStringRef> {
+pub fn userid(input: &[u8]) -> IResult<&[u8], AString> {
     astring(input)
 }
 
 #[inline]
 /// `password = astring`
-pub fn password(input: &[u8]) -> IResult<&[u8], AStringRef> {
+pub fn password(input: &[u8]) -> IResult<&[u8], AString> {
     astring(input)
 }
 
@@ -523,7 +521,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let criteria = match criteria.len() {
         0 => unreachable!(),
         1 => criteria[0].clone(),
-        _ => SearchKey::And(NonEmptyVec::try_from(criteria).unwrap()), // Safe to unwrap
+        _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(criteria) }),
     };
 
     Ok((
@@ -703,7 +701,7 @@ fn search_key_limited<'a>(
                 |val| match val.len() {
                     0 => unreachable!(),
                     1 => val[0].clone(),
-                    _ => SearchKey::And(NonEmptyVec::try_from(val).unwrap()), // Safe to unwrap
+                    _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(val) }), // Safe to unwrap
                 },
             ),
         )),
@@ -712,7 +710,10 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod test {
-    use std::{convert::TryInto, num::NonZeroU32};
+    use std::{
+        convert::{TryFrom, TryInto},
+        num::NonZeroU32,
+    };
 
     use imap_types::{
         fetch_attributes::FetchAttribute,

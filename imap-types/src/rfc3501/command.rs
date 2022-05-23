@@ -29,11 +29,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command<'a> {
     pub tag: Tag<'a>,
-    pub body: CommandBody,
+    pub body: CommandBody<'a>,
 }
 
 impl<'a> Command<'a> {
-    pub fn new(tag: Tag<'a>, kind: CommandBody) -> Self {
+    pub fn new(tag: Tag<'a>, kind: CommandBody<'a>) -> Self {
         Self { tag, body: kind }
     }
 
@@ -53,7 +53,10 @@ impl<'a> Command<'a> {
         Command::new(Tag::random(), CommandBody::StartTLS)
     }
 
-    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&[u8]>) -> Command<'a> {
+    pub fn authenticate(
+        mechanism: AuthMechanism<'a>,
+        initial_response: Option<&[u8]>,
+    ) -> Command<'a> {
         Command::new(
             Tag::random(),
             CommandBody::Authenticate {
@@ -63,7 +66,7 @@ impl<'a> Command<'a> {
         )
     }
 
-    pub fn login<U: TryInto<AString>, P: TryInto<AString>>(
+    pub fn login<U: TryInto<AString<'a>>, P: TryInto<AString<'a>>>(
         username: U,
         password: P,
     ) -> Result<Command<'a>, ()> {
@@ -78,7 +81,7 @@ impl<'a> Command<'a> {
 
     pub fn select<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -90,7 +93,7 @@ impl<'a> Command<'a> {
 
     pub fn examine<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -102,7 +105,7 @@ impl<'a> Command<'a> {
 
     pub fn create<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -114,7 +117,7 @@ impl<'a> Command<'a> {
 
     pub fn delete<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -126,8 +129,8 @@ impl<'a> Command<'a> {
 
     pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Command<'a>, ()>
     where
-        M1: TryInto<Mailbox>,
-        M2: TryInto<Mailbox>,
+        M1: TryInto<Mailbox<'a>>,
+        M2: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -140,7 +143,7 @@ impl<'a> Command<'a> {
 
     pub fn subscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -152,7 +155,7 @@ impl<'a> Command<'a> {
 
     pub fn unsubscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -162,7 +165,7 @@ impl<'a> Command<'a> {
         ))
     }
 
-    pub fn list<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
+    pub fn list<A: TryInto<Mailbox<'a>>, B: TryInto<ListMailbox<'a>>>(
         reference: A,
         mailbox_wildcard: B,
     ) -> Result<Command<'a>, ()> {
@@ -175,7 +178,7 @@ impl<'a> Command<'a> {
         ))
     }
 
-    pub fn lsub<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
+    pub fn lsub<A: TryInto<Mailbox<'a>>, B: TryInto<ListMailbox<'a>>>(
         reference: A,
         mailbox_wildcard: B,
     ) -> Result<Command<'a>, ()> {
@@ -190,7 +193,7 @@ impl<'a> Command<'a> {
 
     pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Command<'a>, M::Error>
     where
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -203,13 +206,13 @@ impl<'a> Command<'a> {
 
     pub fn append<M, D>(
         mailbox: M,
-        flags: Vec<Flag>,
+        flags: Vec<Flag<'a>>,
         date: Option<MyDateTime>,
         message: D,
     ) -> Result<Command<'a>, ()>
     where
-        M: TryInto<Mailbox>,
-        D: TryInto<Literal>,
+        M: TryInto<Mailbox<'a>>,
+        D: TryInto<Literal<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -234,9 +237,13 @@ impl<'a> Command<'a> {
         Command::new(Tag::random(), CommandBody::Expunge)
     }
 
-    pub fn search<C>(charset: C, criteria: SearchKey, uid: bool) -> Result<Command<'a>, C::Error>
+    pub fn search<C>(
+        charset: C,
+        criteria: SearchKey<'a>,
+        uid: bool,
+    ) -> Result<Command<'a>, C::Error>
     where
-        C: TryInto<Option<Charset>>,
+        C: TryInto<Option<Charset<'a>>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -251,7 +258,7 @@ impl<'a> Command<'a> {
     pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command<'a>, S::Error>
     where
         S: TryInto<SequenceSet>,
-        I: Into<MacroOrFetchAttributes>,
+        I: Into<MacroOrFetchAttributes<'a>>,
     {
         let sequence_set = sequence_set.try_into()?;
 
@@ -269,7 +276,7 @@ impl<'a> Command<'a> {
         sequence_set: S,
         kind: StoreType,
         response: StoreResponse,
-        flags: Vec<Flag>,
+        flags: Vec<Flag<'a>>,
         uid: bool,
     ) -> Result<Command<'a>, S::Error>
     where
@@ -292,7 +299,7 @@ impl<'a> Command<'a> {
     pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command<'a>, ()>
     where
         S: TryInto<SequenceSet>,
-        M: TryInto<Mailbox>,
+        M: TryInto<Mailbox<'a>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -312,7 +319,7 @@ impl<'a> Command<'a> {
     #[cfg(feature = "ext_enable")]
     pub fn enable<C>(capabilities: C) -> Result<Command<'a>, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability>>,
+        C: TryInto<NonEmptyVec<Capability<'a>>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -335,7 +342,7 @@ impl<'a> Command<'a> {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum CommandBody {
+pub enum CommandBody<'a> {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
     /// ### 6.1.1.  CAPABILITY Command
     ///
@@ -522,7 +529,7 @@ pub enum CommandBody {
     /// during the authentication exchange is interpreted by the server as
     /// the user name whose privileges the client is requesting.
     Authenticate {
-        mechanism: AuthMechanism,
+        mechanism: AuthMechanism<'a>,
         /// Already base64-decoded
         initial_response: Option<Vec<u8>>,
     },
@@ -566,8 +573,8 @@ pub enum CommandBody {
     ///   implementation MUST NOT send a LOGIN command if the
     ///   LOGINDISABLED capability is advertised.
     Login {
-        username: AString,
-        password: AString,
+        username: AString<'a>,
+        password: AString<'a>,
     },
 
     // ----- Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.3) -----
@@ -644,7 +651,7 @@ pub enum CommandBody {
     /// per-user (as opposed to global) basis.  Netnews messages marked in
     /// a server-based .newsrc file are an example of such per-user
     /// permanent state that can be modified with read-only mailboxes.
-    Select { mailbox: Mailbox },
+    Select { mailbox: Mailbox<'a> },
 
     /// 6.3.2.  EXAMINE Command
     ///
@@ -665,7 +672,7 @@ pub enum CommandBody {
     ///
     /// The text of the tagged OK response to the EXAMINE command MUST
     /// begin with the "[READ-ONLY]" response code.
-    Examine { mailbox: Mailbox },
+    Examine { mailbox: Mailbox<'a> },
 
     /// ### 6.3.3.  CREATE Command
     ///
@@ -710,7 +717,7 @@ pub enum CommandBody {
     ///   named "owatagusiam" with a member called "blurdybloop" is
     ///   created.  Otherwise, two mailboxes at the same hierarchy
     ///   level are created.
-    Create { mailbox: Mailbox },
+    Create { mailbox: Mailbox<'a> },
 
     /// 6.3.4.  DELETE Command
     ///
@@ -744,7 +751,7 @@ pub enum CommandBody {
     /// incarnation, UNLESS the new incarnation has a different unique
     /// identifier validity value.  See the description of the UID command
     /// for more detail.
-    Delete { mailbox: Mailbox },
+    Delete { mailbox: Mailbox<'a> },
 
     /// 6.3.5.  RENAME Command
     ///
@@ -787,8 +794,8 @@ pub enum CommandBody {
     /// inferior hierarchical names of INBOX, these are unaffected by a
     /// rename of INBOX.
     Rename {
-        mailbox: Mailbox,
-        new_mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
+        new_mailbox: Mailbox<'a>,
     },
 
     /// ### 6.3.6.  SUBSCRIBE Command
@@ -815,7 +822,7 @@ pub enum CommandBody {
     ///   name (e.g., "system-alerts") after its contents expire,
     ///   with the intention of recreating it when new contents
     ///   are appropriate.
-    Subscribe { mailbox: Mailbox },
+    Subscribe { mailbox: Mailbox<'a> },
 
     /// 6.3.7.  UNSUBSCRIBE Command
     ///
@@ -829,7 +836,7 @@ pub enum CommandBody {
     /// the server's set of "active" or "subscribed" mailboxes as returned
     /// by the LSUB command.  This command returns a tagged OK response
     /// only if the unsubscription is successful.
-    Unsubscribe { mailbox: Mailbox },
+    Unsubscribe { mailbox: Mailbox<'a> },
 
     /// ### 6.3.8.  LIST Command
     ///
@@ -963,8 +970,8 @@ pub enum CommandBody {
     /// failure; it is not relevant whether the user's real INBOX resides
     /// on this or some other server.
     List {
-        reference: Mailbox,
-        mailbox_wildcard: ListMailbox,
+        reference: Mailbox<'a>,
+        mailbox_wildcard: ListMailbox<'a>,
     },
 
     /// ### 6.3.9.  LSUB Command
@@ -997,8 +1004,8 @@ pub enum CommandBody {
     /// from the subscription list even if a mailbox by that name no
     /// longer exists.
     Lsub {
-        reference: Mailbox,
-        mailbox_wildcard: ListMailbox,
+        reference: Mailbox<'a>,
+        mailbox_wildcard: ListMailbox<'a>,
     },
 
     /// ### 6.3.10. STATUS Command
@@ -1048,7 +1055,7 @@ pub enum CommandBody {
     ///   issue many consecutive STATUS commands and obtain
     ///   reasonable performance.
     Status {
-        mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
         attributes: Vec<StatusAttribute>,
     },
 
@@ -1109,10 +1116,10 @@ pub enum CommandBody {
     ///   because it does not provide a mechanism to transfer [SMTP]
     ///   envelope information.
     Append {
-        mailbox: Mailbox,
-        flags: Vec<Flag>,
+        mailbox: Mailbox<'a>,
+        flags: Vec<Flag<'a>>,
         date: Option<MyDateTime>,
-        message: Literal,
+        message: Literal<'a>,
     },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
@@ -1236,8 +1243,8 @@ pub enum CommandBody {
     /// "XXXXXX" is a placeholder for what would be 6 octets of
     /// 8-bit data in an actual transaction.
     Search {
-        charset: Option<Charset>,
-        criteria: SearchKey,
+        charset: Option<Charset<'a>>,
+        criteria: SearchKey<'a>,
         uid: bool,
     },
 
@@ -1267,7 +1274,7 @@ pub enum CommandBody {
     ///   safely ignore the newly transmitted envelope.
     Fetch {
         sequence_set: SequenceSet,
-        attributes: MacroOrFetchAttributes,
+        attributes: MacroOrFetchAttributes<'a>,
         uid: bool,
     },
 
@@ -1325,7 +1332,7 @@ pub enum CommandBody {
         sequence_set: SequenceSet,
         kind: StoreType,
         response: StoreResponse,
-        flags: Vec<Flag>, // FIXME(misuse): must not accept "\*" or "\Recent"
+        flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
         uid: bool,
     },
 
@@ -1357,7 +1364,7 @@ pub enum CommandBody {
     /// before the COPY attempt.
     Copy {
         sequence_set: SequenceSet,
-        mailbox: Mailbox,
+        mailbox: Mailbox<'a>,
         uid: bool,
     },
 
@@ -1452,14 +1459,14 @@ pub enum CommandBody {
 
     #[cfg(feature = "ext_enable")]
     Enable {
-        capabilities: NonEmptyVec<Capability>,
+        capabilities: NonEmptyVec<Capability<'a>>,
     },
 
     #[cfg(feature = "ext_compress")]
     Compress { algorithm: CompressionAlgorithm },
 }
 
-impl CommandBody {
+impl<'a> CommandBody<'a> {
     pub fn name(&self) -> &'static str {
         // TODO: consider the `strum` crate or use a macro?
         use CommandBody::*;
@@ -1501,7 +1508,7 @@ impl CommandBody {
 /// The defined search keys.
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum SearchKey {
+pub enum SearchKey<'a> {
     // <Not in RFC.>
     //
     // IMAP doesn't have a dedicated AND operator in its search syntax.
@@ -1512,7 +1519,7 @@ pub enum SearchKey {
     //     and multiple search keys.
     //
     // See also the corresponding `search` parser.
-    And(NonEmptyVec<SearchKey>),
+    And(NonEmptyVec<SearchKey<'a>>),
 
     /// Messages with message sequence numbers corresponding to the
     /// specified message sequence number set.
@@ -1526,7 +1533,7 @@ pub enum SearchKey {
 
     /// Messages that contain the specified string in the envelope
     /// structure's BCC field.
-    Bcc(AString),
+    Bcc(AString<'a>),
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is earlier than the specified date.
@@ -1534,11 +1541,11 @@ pub enum SearchKey {
 
     /// Messages that contain the specified string in the body of the
     /// message.
-    Body(AString),
+    Body(AString<'a>),
 
     /// Messages that contain the specified string in the envelope
     /// structure's CC field.
-    Cc(AString),
+    Cc(AString<'a>),
 
     /// Messages with the \Deleted flag set.
     Deleted,
@@ -1551,7 +1558,7 @@ pub enum SearchKey {
 
     /// Messages that contain the specified string in the envelope
     /// structure's FROM field.
-    From(AString),
+    From(AString<'a>),
 
     /// Messages that have a header with the specified field-name (as
     /// defined in [RFC-2822]) and that contains the specified string
@@ -1559,10 +1566,10 @@ pub enum SearchKey {
     /// string to search is zero-length, this matches all messages that
     /// have a header line with the specified field-name regardless of
     /// the contents.
-    Header(AString, AString),
+    Header(AString<'a>, AString<'a>),
 
     /// Messages with the specified keyword flag set.
-    Keyword(Atom),
+    Keyword(Atom<'a>),
 
     /// Messages with an [RFC-2822] size larger than the specified
     /// number of octets.
@@ -1573,7 +1580,7 @@ pub enum SearchKey {
     New,
 
     /// Messages that do not match the specified search key.
-    Not(Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
+    Not(Box<SearchKey<'a>>), // TODO: is this a Vec or a single SearchKey?
 
     /// Messages that do not have the \Recent flag set.  This is
     /// functionally equivalent to "NOT RECENT" (as opposed to "NOT
@@ -1585,7 +1592,7 @@ pub enum SearchKey {
     On(MyNaiveDate),
 
     /// Messages that match either search key.
-    Or(Box<SearchKey>, Box<SearchKey>), // TODO: is this a Vec or a single SearchKey?
+    Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>), // TODO: is this a Vec or a single SearchKey?
 
     /// Messages that have the \Recent flag set.
     Recent,
@@ -1615,15 +1622,15 @@ pub enum SearchKey {
 
     /// Messages that contain the specified string in the envelope
     /// structure's SUBJECT field.
-    Subject(AString),
+    Subject(AString<'a>),
 
     /// Messages that contain the specified string in the header or
     /// body of the message.
-    Text(AString),
+    Text(AString<'a>),
 
     /// Messages that contain the specified string in the envelope
     /// structure's TO field.
-    To(AString),
+    To(AString<'a>),
 
     /// Messages with unique identifiers corresponding to the specified
     /// unique identifier set.  Sequence set ranges are permitted.
@@ -1642,7 +1649,7 @@ pub enum SearchKey {
     Unflagged,
 
     /// Messages that do not have the specified keyword flag set.
-    Unkeyword(Atom),
+    Unkeyword(Atom<'a>),
 
     /// Messages that do not have the \Seen flag set.
     Unseen,

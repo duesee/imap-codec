@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 use abnf_core::streaming::SP;
 use imap_types::{
@@ -86,7 +86,7 @@ pub fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>>
         tag(b"("),
         map(
             separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
-            |attrs| NonEmptyVec::try_from(attrs).unwrap(),
+            |attrs| unsafe { NonEmptyVec::new_unchecked(attrs) },
         ),
         tag(b")"),
     )(input)

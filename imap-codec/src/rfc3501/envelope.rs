@@ -1,5 +1,5 @@
 use abnf_core::streaming::SP;
-use imap_types::{address::Address, core::NStringRef, envelope::Envelope};
+use imap_types::{address::Address, core::NString, envelope::Envelope};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -97,13 +97,13 @@ pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
 
 #[inline]
 /// `env-date = nstring`
-pub fn env_date(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn env_date(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `env-subject = nstring`
-pub fn env_subject(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn env_subject(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -157,12 +157,12 @@ pub fn env_bcc(input: &[u8]) -> IResult<&[u8], Vec<Address>> {
 
 #[inline]
 /// `env-in-reply-to = nstring`
-pub fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn env_in_reply_to(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `env-message-id = nstring`
-pub fn env_message_id(input: &[u8]) -> IResult<&[u8], NStringRef> {
+pub fn env_message_id(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }

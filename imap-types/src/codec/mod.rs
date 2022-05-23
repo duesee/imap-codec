@@ -1,4 +1,9 @@
-use std::{io::Write, num::NonZeroU32};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+    io::Write,
+    num::NonZeroU32,
+};
 
 use base64::encode as b64encode;
 use chrono::{DateTime, FixedOffset};
@@ -42,11 +47,17 @@ impl<'a> Encode for Command<'a> {
 
 impl<'a> Encode for Tag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.inner.as_bytes())
+        writer.write_all(self.inner().as_bytes())
     }
 }
 
-impl Encode for CommandBody {
+impl<'a> Display for Tag<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.inner())
+    }
+}
+
+impl<'a> Encode for CommandBody<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             CommandBody::Capability => writer.write_all(b"CAPABILITY"),
@@ -283,7 +294,7 @@ impl Encode for CommandBody {
     }
 }
 
-impl Encode for AuthMechanism {
+impl<'a> Encode for AuthMechanism<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match &self {
             AuthMechanism::Plain => writer.write_all(b"PLAIN"),
@@ -293,13 +304,13 @@ impl Encode for AuthMechanism {
     }
 }
 
-impl Encode for AuthMechanismOther {
+impl<'a> Encode for AuthMechanismOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.0.encode(writer)
     }
 }
 
-impl Encode for AString {
+impl<'a> Encode for AString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             AString::Atom(atom) => atom.encode(writer),
@@ -308,13 +319,19 @@ impl Encode for AString {
     }
 }
 
-impl Encode for Atom {
+impl<'a> Encode for Atom<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
+        writer.write_all(self.inner().as_bytes())
     }
 }
 
-impl Encode for IString {
+impl<'a> Display for Atom<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        Display::fmt(&self.inner(), f)
+    }
+}
+
+impl<'a> Encode for IString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Self::Literal(val) => val.encode(writer),
@@ -323,20 +340,26 @@ impl Encode for IString {
     }
 }
 
-impl Encode for Literal {
+impl<'a> Encode for Literal<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{{{}}}\r\n", self.len())?;
         writer.write_all(self)
     }
 }
 
-impl Encode for Quoted {
+impl<'a> Encode for Quoted<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "\"{}\"", escape_quoted(&self.0))
+        write!(writer, "\"{}\"", escape_quoted(&self.inner()))
     }
 }
 
-impl Encode for Mailbox {
+impl<'a> Display for Quoted<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "\"{}\"", escape_quoted(&self.inner()))
+    }
+}
+
+impl<'a> Encode for Mailbox<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => writer.write_all(b"INBOX"),
@@ -345,13 +368,13 @@ impl Encode for Mailbox {
     }
 }
 
-impl Encode for MailboxOther {
+impl<'a> Encode for MailboxOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+        self.inner.encode(writer)
     }
 }
 
-impl Encode for ListMailbox {
+impl<'a> Encode for ListMailbox<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             ListMailbox::Token(str) => writer.write_all(str.as_bytes()), // TODO: use encode()
@@ -372,7 +395,7 @@ impl Encode for StatusAttribute {
     }
 }
 
-impl Encode for Flag {
+impl<'a> Encode for Flag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
@@ -384,7 +407,7 @@ impl Encode for MyDateTime {
     }
 }
 
-impl Encode for Charset {
+impl<'a> Encode for Charset<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Charset::Atom(atom) => atom.encode(writer),
@@ -393,7 +416,16 @@ impl Encode for Charset {
     }
 }
 
-impl Encode for SearchKey {
+impl<'a> Display for Charset<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Charset::Atom(atom) => write!(f, "{}", atom),
+            Charset::Quoted(quoted) => write!(f, "{}", quoted),
+        }
+    }
+}
+
+impl<'a> Encode for SearchKey<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             SearchKey::All => writer.write_all(b"ALL"),
@@ -536,7 +568,7 @@ impl Encode for MyNaiveDate {
     }
 }
 
-impl Encode for MacroOrFetchAttributes {
+impl<'a> Encode for MacroOrFetchAttributes<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             MacroOrFetchAttributes::Macro(m) => m.encode(writer),
@@ -563,7 +595,7 @@ impl Encode for Macro {
     }
 }
 
-impl Encode for FetchAttribute {
+impl<'a> Encode for FetchAttribute<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             FetchAttribute::Body => writer.write_all(b"BODY"),
@@ -600,7 +632,7 @@ impl Encode for FetchAttribute {
     }
 }
 
-impl Encode for Section {
+impl<'a> Encode for Section<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Section::Part(part) => part.encode(writer),
@@ -660,7 +692,7 @@ impl Encode for NonZeroU32 {
     }
 }
 
-impl Encode for Capability {
+impl<'a> Encode for Capability<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
@@ -711,7 +743,7 @@ impl<'a> Encode for Status<'a> {
     }
 }
 
-impl Encode for Code {
+impl<'a> Encode for Code<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
@@ -719,11 +751,17 @@ impl Encode for Code {
 
 impl<'a> Encode for Text<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.inner.as_bytes())
+        writer.write_all(self.inner().as_bytes())
     }
 }
 
-impl Encode for Data {
+impl<'a> Display for Text<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.inner())
+    }
+}
+
+impl<'a> Encode for Data<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Data::Capability(caps) => {
@@ -817,7 +855,7 @@ impl Encode for Data {
     }
 }
 
-impl Encode for FlagNameAttribute {
+impl<'a> Encode for FlagNameAttribute<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "{}", self)
     }
@@ -825,10 +863,10 @@ impl Encode for FlagNameAttribute {
 
 impl Encode for QuotedChar {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self.0 {
+        match self.inner() {
             '\\' => writer.write_all(b"\\\\"),
             '"' => writer.write_all(b"\\\""),
-            other => writer.write_all(&[other as u8]),
+            other => writer.write_all(&[*other as u8]),
         }
     }
 }
@@ -839,7 +877,7 @@ impl Encode for StatusAttributeValue {
     }
 }
 
-impl Encode for FetchAttributeValue {
+impl<'a> Encode for FetchAttributeValue<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         use FetchAttributeValue::*;
 
@@ -900,7 +938,7 @@ impl Encode for FetchAttributeValue {
     }
 }
 
-impl Encode for NString {
+impl<'a> Encode for NString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match &self.0 {
             Some(imap_str) => imap_str.encode(writer),
@@ -909,7 +947,7 @@ impl Encode for NString {
     }
 }
 
-impl Encode for BodyStructure {
+impl<'a> Encode for BodyStructure<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"(")?;
         match self {
@@ -941,7 +979,7 @@ impl Encode for BodyStructure {
     }
 }
 
-impl Encode for Body {
+impl<'a> Encode for Body<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self.specific {
             SpecificFields::Basic {
@@ -983,7 +1021,7 @@ impl Encode for Body {
     }
 }
 
-impl Encode for BasicFields {
+impl<'a> Encode for BasicFields<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
         writer.write_all(b" ")?;
@@ -997,7 +1035,7 @@ impl Encode for BasicFields {
     }
 }
 
-impl Encode for Envelope {
+impl<'a> Encode for Envelope<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"(")?;
         self.date.encode(writer)?;
@@ -1023,7 +1061,7 @@ impl Encode for Envelope {
     }
 }
 
-impl Encode for Address {
+impl<'a> Encode for Address<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"(")?;
         self.name.encode(writer)?;
@@ -1039,7 +1077,7 @@ impl Encode for Address {
     }
 }
 
-impl Encode for SinglePartExtensionData {
+impl<'a> Encode for SinglePartExtensionData<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.md5.encode(writer)?;
         if let Some(ref dsp) = self.disposition {
@@ -1076,7 +1114,7 @@ impl Encode for SinglePartExtensionData {
     }
 }
 
-impl Encode for MultiPartExtensionData {
+impl<'a> Encode for MultiPartExtensionData<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
 
@@ -1134,7 +1172,7 @@ impl<'a> Encode for Continuation<'a> {
 }
 
 pub(crate) mod utils {
-    use std::io::Write;
+    use std::{fmt::Display, io::Write};
 
     use crate::Encode;
 
@@ -1142,7 +1180,7 @@ pub(crate) mod utils {
 
     pub(crate) struct List1AttributeValueOrNil<'a, T>(pub(crate) &'a Vec<(T, T)>);
 
-    pub(crate) fn join<T: std::fmt::Display>(elements: &[T], sep: &str) -> String {
+    pub(crate) fn join<T: Display>(elements: &[T], sep: &str) -> String {
         elements
             .iter()
             .map(|x| format!("{}", x))
