@@ -27,33 +27,33 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Command {
-    pub tag: Tag,
+pub struct Command<'a> {
+    pub tag: Tag<'a>,
     pub body: CommandBody,
 }
 
-impl Command {
-    pub fn new(tag: Tag, kind: CommandBody) -> Self {
+impl<'a> Command<'a> {
+    pub fn new(tag: Tag<'a>, kind: CommandBody) -> Self {
         Self { tag, body: kind }
     }
 
-    pub fn capability() -> Command {
+    pub fn capability() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Capability)
     }
 
-    pub fn noop() -> Command {
+    pub fn noop() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Noop)
     }
 
-    pub fn logout() -> Command {
+    pub fn logout() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Logout)
     }
 
-    pub fn starttls() -> Command {
+    pub fn starttls() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::StartTLS)
     }
 
-    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&[u8]>) -> Command {
+    pub fn authenticate(mechanism: AuthMechanism, initial_response: Option<&[u8]>) -> Command<'a> {
         Command::new(
             Tag::random(),
             CommandBody::Authenticate {
@@ -66,7 +66,7 @@ impl Command {
     pub fn login<U: TryInto<AString>, P: TryInto<AString>>(
         username: U,
         password: P,
-    ) -> Result<Command, ()> {
+    ) -> Result<Command<'a>, ()> {
         Ok(Command::new(
             Tag::random(),
             CommandBody::Login {
@@ -76,7 +76,7 @@ impl Command {
         ))
     }
 
-    pub fn select<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn select<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -88,7 +88,7 @@ impl Command {
         ))
     }
 
-    pub fn examine<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn examine<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -100,7 +100,7 @@ impl Command {
         ))
     }
 
-    pub fn create<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn create<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -112,7 +112,7 @@ impl Command {
         ))
     }
 
-    pub fn delete<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn delete<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -124,7 +124,7 @@ impl Command {
         ))
     }
 
-    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Command, ()>
+    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Command<'a>, ()>
     where
         M1: TryInto<Mailbox>,
         M2: TryInto<Mailbox>,
@@ -138,7 +138,7 @@ impl Command {
         ))
     }
 
-    pub fn subscribe<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn subscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -150,7 +150,7 @@ impl Command {
         ))
     }
 
-    pub fn unsubscribe<M>(mailbox: M) -> Result<Command, M::Error>
+    pub fn unsubscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -165,7 +165,7 @@ impl Command {
     pub fn list<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
         reference: A,
         mailbox_wildcard: B,
-    ) -> Result<Command, ()> {
+    ) -> Result<Command<'a>, ()> {
         Ok(Command::new(
             Tag::random(),
             CommandBody::List {
@@ -178,7 +178,7 @@ impl Command {
     pub fn lsub<A: TryInto<Mailbox>, B: TryInto<ListMailbox>>(
         reference: A,
         mailbox_wildcard: B,
-    ) -> Result<Command, ()> {
+    ) -> Result<Command<'a>, ()> {
         Ok(Command::new(
             Tag::random(),
             CommandBody::Lsub {
@@ -188,7 +188,7 @@ impl Command {
         ))
     }
 
-    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Command, M::Error>
+    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Command<'a>, M::Error>
     where
         M: TryInto<Mailbox>,
     {
@@ -206,7 +206,7 @@ impl Command {
         flags: Vec<Flag>,
         date: Option<MyDateTime>,
         message: D,
-    ) -> Result<Command, ()>
+    ) -> Result<Command<'a>, ()>
     where
         M: TryInto<Mailbox>,
         D: TryInto<Literal>,
@@ -222,19 +222,19 @@ impl Command {
         ))
     }
 
-    pub fn check() -> Command {
+    pub fn check() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Check)
     }
 
-    pub fn close() -> Command {
+    pub fn close() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Close)
     }
 
-    pub fn expunge() -> Command {
+    pub fn expunge() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Expunge)
     }
 
-    pub fn search<C>(charset: C, criteria: SearchKey, uid: bool) -> Result<Command, C::Error>
+    pub fn search<C>(charset: C, criteria: SearchKey, uid: bool) -> Result<Command<'a>, C::Error>
     where
         C: TryInto<Option<Charset>>,
     {
@@ -248,7 +248,7 @@ impl Command {
         ))
     }
 
-    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command, S::Error>
+    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command<'a>, S::Error>
     where
         S: TryInto<SequenceSet>,
         I: Into<MacroOrFetchAttributes>,
@@ -271,7 +271,7 @@ impl Command {
         response: StoreResponse,
         flags: Vec<Flag>,
         uid: bool,
-    ) -> Result<Command, S::Error>
+    ) -> Result<Command<'a>, S::Error>
     where
         S: TryInto<SequenceSet>,
     {
@@ -289,7 +289,7 @@ impl Command {
         ))
     }
 
-    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command, ()>
+    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command<'a>, ()>
     where
         S: TryInto<SequenceSet>,
         M: TryInto<Mailbox>,
@@ -305,12 +305,12 @@ impl Command {
     }
 
     #[cfg(feature = "ext_idle")]
-    pub fn idle() -> Command {
+    pub fn idle() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Idle)
     }
 
     #[cfg(feature = "ext_enable")]
-    pub fn enable<C>(capabilities: C) -> Result<Command, C::Error>
+    pub fn enable<C>(capabilities: C) -> Result<Command<'a>, C::Error>
     where
         C: TryInto<NonEmptyVec<Capability>>,
     {
@@ -323,7 +323,7 @@ impl Command {
     }
 
     #[cfg(feature = "ext_compress")]
-    pub fn compress(algorithm: CompressionAlgorithm) -> Command {
+    pub fn compress(algorithm: CompressionAlgorithm) -> Command<'a> {
         Command::new(Tag::random(), CommandBody::Compress { algorithm })
     }
 

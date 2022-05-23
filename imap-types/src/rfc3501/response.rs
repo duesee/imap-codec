@@ -23,11 +23,11 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Response {
+pub enum Response<'a> {
     /// Status responses can be tagged or untagged.  Tagged status responses
     /// indicate the completion result (OK, NO, or BAD status) of a client
     /// command, and have a tag matching the command.
-    Status(Status),
+    Status(Status<'a>),
     /// All server data is untagged. An untagged response is indicated by the
     /// token "*" instead of a tag. Untagged status responses indicate server
     /// greeting, or server status that does not indicate the completion of a
@@ -49,7 +49,7 @@ pub enum Response {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Status {
+pub enum Status<'a> {
     /// ### 7.1.1. OK Response
     ///
     /// The OK response indicates an information message from the server.
@@ -64,7 +64,7 @@ pub enum Status {
         /// The untagged form is also used as one of three possible greetings
         /// at connection startup.  It indicates that the connection is not
         /// yet authenticated and that a LOGIN command is needed.
-        tag: Option<Tag>,
+        tag: Option<Tag<'a>>,
         /// Response code (optional)
         code: Option<Code>,
         /// Human-readable text (must be at least 1 character!)
@@ -78,7 +78,7 @@ pub enum Status {
         /// When tagged, it indicates unsuccessful completion of the
         /// associated command.  The untagged form indicates a warning; the
         /// command can still complete successfully.
-        tag: Option<Tag>,
+        tag: Option<Tag<'a>>,
         /// Response code (optional)
         code: Option<Code>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
@@ -94,7 +94,7 @@ pub enum Status {
         /// form indicates a protocol-level error for which the associated
         /// command can not be determined; it can also indicate an internal
         /// server failure.
-        tag: Option<Tag>,
+        tag: Option<Tag<'a>>,
         /// Response code (optional)
         code: Option<Code>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
@@ -152,7 +152,7 @@ pub enum Status {
     },
 }
 
-impl Status {
+impl<'a> Status<'a> {
     pub fn greeting(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
         Ok(Status::Ok {
             tag: None,
@@ -161,7 +161,7 @@ impl Status {
         })
     }
 
-    pub fn ok(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
         Ok(Status::Ok {
             tag,
             code,
@@ -169,7 +169,7 @@ impl Status {
         })
     }
 
-    pub fn no(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn no(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
         Ok(Status::No {
             tag,
             code,
@@ -177,7 +177,7 @@ impl Status {
         })
     }
 
-    pub fn bad(tag: Option<Tag>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
         Ok(Status::Bad {
             tag,
             code,
