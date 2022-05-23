@@ -31,7 +31,7 @@ pub trait Encode {
 
 // ----- Command -----
 
-impl Encode for Command {
+impl<'a> Encode for Command<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.tag.encode(writer)?;
         writer.write_all(b" ")?;
@@ -40,9 +40,9 @@ impl Encode for Command {
     }
 }
 
-impl Encode for Tag {
+impl<'a> Encode for Tag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
+        writer.write_all(self.inner.as_bytes())
     }
 }
 
@@ -668,7 +668,7 @@ impl Encode for Capability {
 
 // ----- Responses -----
 
-impl Encode for Response {
+impl<'a> Encode for Response<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Response::Status(status) => status.encode(writer),
@@ -678,7 +678,7 @@ impl Encode for Response {
     }
 }
 
-impl Encode for Status {
+impl<'a> Encode for Status<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         fn format_status(
             tag: &Option<Tag>,

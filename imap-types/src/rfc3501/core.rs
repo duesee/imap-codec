@@ -355,14 +355,24 @@ impl TryFrom<AString> for String {
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct Tag(pub(crate) String);
+pub struct Tag<'a> {
+    pub(crate) inner: Cow<'a, str>,
+}
 
-impl Tag {
+impl<'a> Tag<'a> {
     pub fn random() -> Self {
         let mut rng = thread_rng();
         let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
 
-        Self(unsafe { String::from_utf8_unchecked(buffer.to_vec()) })
+        Tag {
+            inner: Cow::Owned(unsafe { String::from_utf8_unchecked(buffer.to_vec()) }),
+        }
+    }
+
+    pub unsafe fn unchecked(value: &'a str) -> Tag<'a> {
+        Tag {
+            inner: Cow::Borrowed(value),
+        }
     }
 
     pub fn verify(value: &str) -> bool {
@@ -370,29 +380,37 @@ impl Tag {
     }
 }
 
-impl TryFrom<&str> for Tag {
+impl<'a> TryFrom<&'a str> for Tag<'a> {
     type Error = ();
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Tag::try_from(value.to_string())
-    }
-}
-
-impl TryFrom<String> for Tag {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Tag::verify(&value) {
-            Ok(Tag(value))
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Tag::verify(value) {
+            Ok(Tag {
+                inner: Cow::Borrowed(value),
+            })
         } else {
             Err(())
         }
     }
 }
 
-impl std::fmt::Display for Tag {
+impl<'a> TryFrom<String> for Tag<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if Tag::verify(&value) {
+            Ok(Tag {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> std::fmt::Display for Tag<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.inner)
     }
 }
 
