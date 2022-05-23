@@ -1,7 +1,5 @@
 use std::borrow::Cow;
 
-use crate::{command::Command, sequence::SequenceSet};
-
 // FIXME(extract_types): copied from imap-codec
 pub mod indicators {
     use abnf_core::streaming::{is_CHAR, is_CTL};
@@ -67,16 +65,6 @@ pub mod indicators {
     pub fn is_list_char(i: u8) -> bool {
         is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
     }
-}
-
-// FIXME(extract_types): copied from imap-codec
-pub fn command(_input: &[u8]) -> Result<(&[u8], Command), ()> {
-    unimplemented!()
-}
-
-// FIXME(extract_types): copied from imap-codec
-pub fn sequence_set(_input: &[u8]) -> Result<(&[u8], SequenceSet), ()> {
-    unimplemented!()
 }
 
 pub fn escape_quoted(unescaped: &str) -> Cow<str> {

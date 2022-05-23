@@ -1819,12 +1819,6 @@ mod test {
             cmd.encode(&mut serialized).unwrap();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
-
-            let (rem, parsed) = crate::utils::command(&serialized).unwrap();
-            assert_eq!(rem, b"");
-            assert_eq!(cmd, &parsed);
-
-            println!("Unserialized: {:?}\n", parsed);
         }
     }
 
