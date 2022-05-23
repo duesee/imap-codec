@@ -717,9 +717,9 @@ impl Encode for Code {
     }
 }
 
-impl Encode for Text {
+impl<'a> Encode for Text<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.0.as_bytes())
+        writer.write_all(self.inner.as_bytes())
     }
 }
 
@@ -1120,7 +1120,7 @@ impl Encode for DateTime<FixedOffset> {
     }
 }
 
-impl Encode for Continuation {
+impl<'a> Encode for Continuation<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Continuation::Basic { code, text } => match code {

@@ -37,7 +37,7 @@ pub enum Response<'a> {
     /// tag.  These responses are sent by the server to indicate acceptance
     /// of an incomplete client command and readiness for the remainder of
     /// the command.
-    Continuation(Continuation),
+    Continuation(Continuation<'a>),
 }
 
 /// ## 7.1. Server Responses - Status Responses
@@ -68,7 +68,7 @@ pub enum Status<'a> {
         /// Response code (optional)
         code: Option<Code>,
         /// Human-readable text (must be at least 1 character!)
-        text: Text,
+        text: Text<'a>,
     },
 
     /// ### 7.1.2. NO Response
@@ -82,7 +82,7 @@ pub enum Status<'a> {
         /// Response code (optional)
         code: Option<Code>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
-        text: Text,
+        text: Text<'a>,
     },
 
     /// ### 7.1.3. BAD Response
@@ -98,7 +98,7 @@ pub enum Status<'a> {
         /// Response code (optional)
         code: Option<Code>,
         /// The human-readable text describes the condition. (must be at least 1 character!)
-        text: Text,
+        text: Text<'a>,
     },
 
     /// ### 7.1.4. PREAUTH Response
@@ -111,7 +111,7 @@ pub enum Status<'a> {
         /// Response code (optional)
         code: Option<Code>,
         /// Human-readable text (must be at least 1 character!)
-        text: Text,
+        text: Text<'a>,
     },
 
     /// ### 7.1.5. BYE Response
@@ -148,12 +148,12 @@ pub enum Status<'a> {
         code: Option<Code>,
         /// The human-readable text MAY be displayed to the user in a status
         /// report by the client. (must be at least 1 character!)
-        text: Text,
+        text: Text<'a>,
     },
 }
 
 impl<'a> Status<'a> {
-    pub fn greeting(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn greeting(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Ok {
             tag: None,
             code,
@@ -161,7 +161,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Ok {
             tag,
             code,
@@ -169,7 +169,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn no(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn no(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::No {
             tag,
             code,
@@ -177,7 +177,7 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Bad {
             tag,
             code,
@@ -185,14 +185,14 @@ impl<'a> Status<'a> {
         })
     }
 
-    pub fn preauth(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn preauth(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::PreAuth {
             code,
             text: text.try_into()?,
         })
     }
 
-    pub fn bye(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+    pub fn bye(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Bye {
             code,
             text: text.try_into()?,
@@ -480,13 +480,13 @@ impl Data {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Continuation {
-    Basic { code: Option<Code>, text: Text },
+pub enum Continuation<'a> {
+    Basic { code: Option<Code>, text: Text<'a> },
     Base64(Vec<u8>),
 }
 
-impl Continuation {
-    pub fn basic(code: Option<Code>, text: &str) -> Result<Self, &'static str> {
+impl<'a> Continuation<'a> {
+    pub fn basic(code: Option<Code>, text: &'a str) -> Result<Self, ()> {
         Ok(Continuation::Basic {
             code,
             text: text.try_into()?,

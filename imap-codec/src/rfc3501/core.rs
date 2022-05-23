@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use imap_types::core::{
-    txt, AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, QuotedChar, Tag,
+    AStringRef, AtomRef, Charset, IStringRef, LiteralRef, NStringRef, Quoted, QuotedChar, Tag, Text,
 };
 use nom::{
     branch::alt,
@@ -235,12 +235,13 @@ pub fn nil(input: &[u8]) -> IResult<&[u8], &[u8]> {
 // ----- text -----
 
 /// `text = 1*TEXT-CHAR`
-pub fn text(input: &[u8]) -> IResult<&[u8], txt> {
+pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
     map(take_while1(is_text_char), |bytes|
         // Note: is_text_char makes sure that the sequence of bytes
         //       is always valid ASCII. Thus, it is also valid UTF-8.
         unsafe {
-            txt::try_from(std::str::from_utf8_unchecked(bytes)).unwrap_unchecked() })(input)
+            Text::unchecked(std::str::from_utf8_unchecked(bytes))
+        })(input)
 }
 
 /// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`

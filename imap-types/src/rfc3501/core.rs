@@ -416,33 +416,53 @@ impl<'a> std::fmt::Display for Tag<'a> {
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct Text(pub(crate) String);
-
-impl TryFrom<&str> for Text {
-    type Error = &'static str;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Text::try_from(value.to_string())
-    }
+pub struct Text<'a> {
+    pub(crate) inner: Cow<'a, str>,
 }
 
-impl TryFrom<String> for Text {
-    type Error = &'static str;
+impl<'a> Text<'a> {
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(is_text_char)
+    }
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            Err("Text must not be empty.")
-        } else if value.bytes().all(is_text_char) {
-            Ok(Text(value))
-        } else {
-            Err("Text contains illegal characters.")
+    pub unsafe fn unchecked(value: &'a str) -> Text<'a> {
+        Text {
+            inner: Cow::Borrowed(value),
         }
     }
 }
 
-impl std::fmt::Display for Text {
+impl<'a> TryFrom<&'a str> for Text<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Text::verify(value) {
+            Ok(Text {
+                inner: Cow::Borrowed(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> TryFrom<String> for Text<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if Text::verify(&value) {
+            Ok(Text {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> std::fmt::Display for Text<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.inner)
     }
 }
 
@@ -594,32 +614,6 @@ impl<'a> AStringRef<'a> {
             AStringRef::Atom(atom) => AString::Atom(atom.to_owned()),
             AStringRef::String(istr) => AString::String(istr.to_owned()),
         }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct txt<'a>(pub(crate) &'a str);
-
-impl<'a> TryFrom<&'a str> for txt<'a> {
-    type Error = ();
-
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if txt::verify(value) {
-            Ok(txt(value))
-        } else {
-            Err(())
-        }
-    }
-}
-
-impl<'a> txt<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(is_text_char)
-    }
-
-    pub fn to_owned(&self) -> Text {
-        Text(self.0.to_string())
     }
 }
 

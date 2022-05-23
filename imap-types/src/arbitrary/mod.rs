@@ -44,7 +44,7 @@ macro_rules! implement_tryfrom_t {
 implement_tryfrom! { Atom, String }
 implement_tryfrom! { Quoted, String }
 implement_tryfrom! { Tag<'a>, String }
-implement_tryfrom! { Text, String }
+implement_tryfrom! { Text<'a>, String }
 implement_tryfrom! { ListCharString, String }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox, String }
