@@ -2,7 +2,7 @@ use std::{convert::TryFrom, str::from_utf8};
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
-    core::{txt, NonEmptyVec},
+    core::{NonEmptyVec, Text},
     response::{Capability, Code, Continuation, Data, Response, Status},
 };
 use nom::{
@@ -65,7 +65,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
 /// `resp-cond-auth = ("OK" / "PREAUTH") SP resp-text`
 ///
 /// Authentication condition
-pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, txt))> {
+pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, Text))> {
     let mut parser = tuple((
         map_res(
             alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
@@ -81,7 +81,7 @@ pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, txt)
 }
 
 /// `resp-text = ["[" resp-text-code "]" SP] text`
-pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, txt)> {
+pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, Text)> {
     tuple((
         opt(terminated(
             delimited(tag(b"["), resp_text_code, tag(b"]")),
@@ -222,7 +222,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
 }
 
 /// `resp-cond-bye = "BYE" SP resp-text`
-pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, txt)> {
+pub fn resp_cond_bye(input: &[u8]) -> IResult<&[u8], (Option<Code>, Text)> {
     let mut parser = tuple((tag_no_case(b"BYE"), SP, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
@@ -327,7 +327,7 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
 /// `resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text`
 ///
 /// Status condition
-pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, txt)> {
+pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, Text)> {
     let mut parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
         SP,
