@@ -105,8 +105,8 @@ pub fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFie
         (
             basic,
             SpecificFields::Basic {
-                type_: type_.to_owned(),
-                subtype: subtype.to_owned(),
+                type_: type_,
+                subtype: subtype,
             },
         ),
     ))
@@ -174,7 +174,7 @@ pub fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFiel
         (
             basic,
             SpecificFields::Text {
-                subtype: subtype.to_owned(),
+                subtype: subtype,
                 number_of_lines,
             },
         ),
@@ -205,13 +205,10 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     Ok((
         remaining,
         BasicFields {
-            parameter_list: parameter_list
-                .iter()
-                .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                .collect(),
-            id: id.to_owned(),
-            description: description.to_owned(),
-            content_transfer_encoding: content_transfer_encoding.to_owned(),
+            parameter_list: parameter_list,
+            id: id,
+            description: description,
+            content_transfer_encoding: content_transfer_encoding,
             size,
         },
     ))
@@ -294,31 +291,31 @@ pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
 ///
 /// TODO: this is insane... define macro?
 pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
-    let mut dsp = None;
-    let mut lang = None;
-    let mut loc = None;
-    let mut ext = Vec::new();
+    let mut disposition = None;
+    let mut language = None;
+    let mut location = None;
+    let mut extension = Vec::new();
 
     let (mut rem, md5) = body_fld_md5(input)?;
 
     let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
     if let Some(dsp_) = dsp_ {
         rem = rem_;
-        dsp = Some(dsp_);
+        disposition = Some(dsp_);
 
         let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
         if let Some(lang_) = lang_ {
             rem = rem_;
-            lang = Some(lang_);
+            language = Some(lang_);
 
             let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
             if let Some(loc_) = loc_ {
                 rem = rem_;
-                loc = Some(loc_);
+                location = Some(loc_);
 
                 let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
                 rem = rem_;
-                ext = ext_.to_vec();
+                extension = ext_.to_vec();
             }
         }
     }
@@ -326,20 +323,11 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     Ok((
         rem,
         SinglePartExtensionData {
-            md5: md5.to_owned(),
-            disposition: dsp.map(|inner| {
-                inner.map(|(a, b)| {
-                    (
-                        a.to_owned(),
-                        b.iter()
-                            .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                            .collect(),
-                    )
-                })
-            }),
-            language: lang.map(|inner| inner.iter().map(|item| item.to_owned()).collect()),
-            location: loc.map(|inner| inner.to_owned()),
-            extension: ext,
+            md5,
+            disposition,
+            language,
+            location,
+            extension,
         },
     ))
 }
@@ -455,7 +443,7 @@ fn body_type_mpart_limited(
         remaining,
         BodyStructure::Multi {
             bodies,
-            subtype: subtype.to_owned(),
+            subtype,
             extension_data: maybe_extension_data,
         },
     ))
@@ -472,31 +460,31 @@ fn body_type_mpart_limited(
 ///
 /// TODO: this is insane, too... define macro?
 pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
-    let mut dsp = None;
-    let mut lang = None;
-    let mut loc = None;
-    let mut ext = Vec::new();
+    let mut disposition = None;
+    let mut language = None;
+    let mut location = None;
+    let mut extension = Vec::new();
 
-    let (mut rem, param) = body_fld_param(input)?;
+    let (mut rem, parameter_list) = body_fld_param(input)?;
 
     let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
     if let Some(dsp_) = dsp_ {
         rem = rem_;
-        dsp = Some(dsp_);
+        disposition = Some(dsp_);
 
         let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
         if let Some(lang_) = lang_ {
             rem = rem_;
-            lang = Some(lang_);
+            language = Some(lang_);
 
             let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
             if let Some(loc_) = loc_ {
                 rem = rem_;
-                loc = Some(loc_);
+                location = Some(loc_);
 
                 let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
                 rem = rem_;
-                ext = ext_.to_vec();
+                extension = ext_.to_vec();
             }
         }
     }
@@ -504,23 +492,11 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     Ok((
         rem,
         MultiPartExtensionData {
-            parameter_list: param
-                .iter()
-                .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                .collect(),
-            disposition: dsp.map(|inner| {
-                inner.map(|(a, b)| {
-                    (
-                        a.to_owned(),
-                        b.iter()
-                            .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                            .collect(),
-                    )
-                })
-            }),
-            language: lang.map(|inner| inner.iter().map(|item| item.to_owned()).collect()),
-            location: loc.map(|inner| inner.to_owned()),
-            extension: ext,
+            parameter_list,
+            disposition,
+            language,
+            location,
+            extension,
         },
     ))
 }

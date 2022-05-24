@@ -132,15 +132,15 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
         alt((
             map(
                 tuple((tag_no_case(b"RFC822.HEADER"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring),
             ),
             map(
                 tuple((tag_no_case(b"RFC822.TEXT"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring),
             ),
             map(
                 tuple((tag_no_case(b"RFC822"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring.to_owned()),
+                |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring),
             ),
         )),
         map(
@@ -168,7 +168,7 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
             |(_, section, origin, _, data)| FetchAttributeValue::BodyExt {
                 section,
                 origin,
-                data: data.to_owned(),
+                data,
             },
         ),
         map(tuple((tag_no_case(b"UID"), SP, uniqueid)), |(_, _, uid)| {

@@ -36,23 +36,17 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
         alt((
             map(
                 resp_cond_auth,
-                |(raw_status, (maybe_code, comment))| match raw_status.to_lowercase().as_ref() {
+                |(raw_status, (code, text))| match raw_status.to_lowercase().as_ref() {
                     "ok" => Status::Ok {
                         tag: None,
-                        code: maybe_code,
-                        text: comment.to_owned(),
+                        code,
+                        text,
                     },
-                    "preauth" => Status::PreAuth {
-                        code: maybe_code,
-                        text: comment.to_owned(),
-                    },
+                    "preauth" => Status::PreAuth { code, text },
                     _ => unreachable!(),
                 },
             ),
-            map(resp_cond_bye, |(maybe_code, comment)| Status::Bye {
-                code: maybe_code,
-                text: comment.to_owned(),
-            }),
+            map(resp_cond_bye, |(code, text)| Status::Bye { code, text }),
         )),
         CRLF,
     ));
@@ -164,7 +158,7 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                 )),
             )),
             |(atom, maybe_params)| {
-                Code::Other(atom.to_owned(), maybe_params.map(|inner| inner.to_owned()))
+                Code::Other(atom, maybe_params.map(|inner| Cow::Borrowed(inner)))
             },
         ),
     ))(input)
@@ -215,7 +209,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "sasl-ir" => Capability::SaslIr,
                 #[cfg(feature = "ext_enable")]
                 "enable" => Capability::Enable,
-                _ => Capability::Other(atom.to_owned()),
+                _ => Capability::Other(atom),
             }
         }),
     ))(input)
@@ -252,11 +246,8 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
         tag(b"+"),
         SP,
         alt((
-            map(resp_text, |(code, text)| Continuation::Basic {
-                code,
-                text: text.to_owned(),
-            }),
-            map(base64, Continuation::Base64),
+            map(resp_text, |(code, text)| Continuation::Basic { code, text }),
+            map(base64, |data| Continuation::Base64(Cow::Owned(data))),
         )),
         CRLF,
     ));
@@ -283,17 +274,17 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
                     "ok" => Status::Ok {
                         tag: None,
                         code,
-                        text: text.to_owned(),
+                        text,
                     },
                     "no" => Status::No {
                         tag: None,
                         code,
-                        text: text.to_owned(),
+                        text,
                     },
                     "bad" => Status::Bad {
                         tag: None,
                         code,
-                        text: text.to_owned(),
+                        text,
                     },
                     _ => unreachable!(),
                 };
@@ -301,12 +292,7 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
                 Response::Status(status)
             }),
             map(resp_cond_bye, |(code, text)| {
-                Response::Status({
-                    Status::Bye {
-                        code,
-                        text: text.to_owned(),
-                    }
-                })
+                Response::Status(Status::Bye { code, text })
             }),
             map(mailbox_data, Response::Data),
             map(message_data, Response::Data),
@@ -351,23 +337,23 @@ pub fn response_done(input: &[u8]) -> IResult<&[u8], Status> {
 pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
     let mut parser = tuple((tag_imap, SP, resp_cond_state, CRLF));
 
-    let (remaining, (tag, _, (raw_status, maybe_code, text), _)) = parser(input)?;
+    let (remaining, (tag, _, (raw_status, code, text), _)) = parser(input)?;
 
     let status = match raw_status.to_lowercase().as_ref() {
         "ok" => Status::Ok {
             tag: Some(tag),
-            code: maybe_code,
-            text: text.to_owned(),
+            code,
+            text,
         },
         "no" => Status::No {
             tag: Some(tag),
-            code: maybe_code,
-            text: text.to_owned(),
+            code,
+            text,
         },
         "bad" => Status::Bad {
             tag: Some(tag),
-            code: maybe_code,
-            text: text.to_owned(),
+            code,
+            text,
         },
         _ => unreachable!(),
     };
@@ -381,14 +367,9 @@ pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
 pub fn response_fatal(input: &[u8]) -> IResult<&[u8], Status> {
     let mut parser = tuple((tag(b"*"), SP, resp_cond_bye, CRLF));
 
-    let (remaining, (_, _, (maybe_code, text), _)) = parser(input)?;
+    let (remaining, (_, _, (code, text), _)) = parser(input)?;
 
-    Ok((remaining, {
-        Status::Bye {
-            code: maybe_code,
-            text: text.to_owned(),
-        }
-    }))
+    Ok((remaining, { Status::Bye { code, text } }))
 }
 
 /// `message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))`
