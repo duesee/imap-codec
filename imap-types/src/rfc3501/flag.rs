@@ -58,32 +58,6 @@ pub enum Flag<'a> {
     Extension(Atom<'a>), // FIXME(#32): How to treat Extension(Atom("Recent"))
 }
 
-impl<'a> std::fmt::Display for Flag<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            // ----- System -----
-            Flag::Seen => write!(f, "\\Seen"),
-            Flag::Answered => write!(f, "\\Answered"),
-            Flag::Flagged => write!(f, "\\Flagged"),
-            Flag::Deleted => write!(f, "\\Deleted"),
-            Flag::Draft => write!(f, "\\Draft"),
-
-            // ----- Fetch -----
-            Flag::Recent => write!(f, "\\Recent"),
-
-            // ----- Selectability -----
-            Flag::NameAttribute(flag) => write!(f, "{}", flag),
-
-            // ----- Keyword -----
-            Flag::Permanent => write!(f, "\\*"),
-            Flag::Keyword(atom) => write!(f, "{}", atom),
-
-            // ----- Others -----
-            Flag::Extension(atom) => write!(f, "\\{}", atom),
-        }
-    }
-}
-
 /// Four name attributes are defined.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
@@ -116,18 +90,6 @@ impl<'a> FlagNameAttribute<'a> {
             self,
             FlagNameAttribute::Noselect | FlagNameAttribute::Marked | FlagNameAttribute::Unmarked
         )
-    }
-}
-
-impl<'a> std::fmt::Display for FlagNameAttribute<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        match self {
-            Self::Noinferiors => write!(f, "\\Noinferiors"),
-            Self::Noselect => write!(f, "\\Noselect"),
-            Self::Marked => write!(f, "\\Marked"),
-            Self::Unmarked => write!(f, "\\Unmarked"),
-            Self::Extension(atom) => write!(f, "\\{}", atom),
-        }
     }
 }
 

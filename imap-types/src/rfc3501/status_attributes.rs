@@ -48,15 +48,3 @@ pub enum StatusAttributeValue {
     /// The number of messages which do not have the \Seen flag set.
     Unseen(u32),
 }
-
-impl std::fmt::Display for StatusAttributeValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            Self::Messages(count) => write!(f, "MESSAGES {}", count),
-            Self::Recent(count) => write!(f, "RECENT {}", count),
-            Self::UidNext(next) => write!(f, "UIDNEXT {}", next),
-            Self::UidValidity(identifier) => write!(f, "UIDVALIDITY {}", identifier),
-            Self::Unseen(count) => write!(f, "UNSEEN {}", count),
-        }
-    }
-}

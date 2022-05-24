@@ -1,13 +1,10 @@
-use std::{
-    fmt,
-    fmt::{Display, Formatter},
-    io::Write,
-    num::NonZeroU32,
-};
+use std::{io::Write, num::NonZeroU32};
 
 use base64::encode as b64encode;
 use chrono::{DateTime, FixedOffset};
 
+#[cfg(feature = "ext_compress")]
+use crate::extensions::rfc4987::CompressionAlgorithm;
 use crate::{
     address::Address,
     body::{
@@ -36,6 +33,14 @@ pub trait Encode {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()>;
 }
 
+// ----- Primitive -----
+
+impl Encode for u32 {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.to_string().as_bytes())
+    }
+}
+
 // ----- Command -----
 
 impl<'a> Encode for Command<'a> {
@@ -50,12 +55,6 @@ impl<'a> Encode for Command<'a> {
 impl<'a> Encode for Tag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
-    }
-}
-
-impl<'a> Display for Tag<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.inner())
     }
 }
 
@@ -208,8 +207,8 @@ impl<'a> Encode for CommandBody<'a> {
                     writer.write_all(b"SEARCH")?;
                 }
                 if let Some(charset) = charset {
-                    writer.write_all(b" ")?;
-                    write!(writer, "CHARSET {}", charset)?;
+                    writer.write_all(b" CHARSET ")?;
+                    charset.encode(writer)?;
                 }
                 writer.write_all(b" ")?;
                 if let SearchKey::And(search_keys) = criteria {
@@ -327,12 +326,6 @@ impl<'a> Encode for Atom<'a> {
     }
 }
 
-impl<'a> Display for Atom<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(&self.inner(), f)
-    }
-}
-
 impl<'a> Encode for AtomExt<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
@@ -358,12 +351,6 @@ impl<'a> Encode for Literal<'a> {
 impl<'a> Encode for Quoted<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "\"{}\"", escape_quoted(&self.inner()))
-    }
-}
-
-impl<'a> Display for Quoted<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "\"{}\"", escape_quoted(&self.inner()))
     }
 }
 
@@ -405,7 +392,30 @@ impl Encode for StatusAttribute {
 
 impl<'a> Encode for Flag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        match self {
+            // ----- System -----
+            Flag::Seen => writer.write_all(b"\\Seen"),
+            Flag::Answered => writer.write_all(b"\\Answered"),
+            Flag::Flagged => writer.write_all(b"\\Flagged"),
+            Flag::Deleted => writer.write_all(b"\\Deleted"),
+            Flag::Draft => writer.write_all(b"\\Draft"),
+
+            // ----- Fetch -----
+            Flag::Recent => writer.write_all(b"\\Recent"),
+
+            // ----- Selectability -----
+            Flag::NameAttribute(flag) => flag.encode(writer),
+
+            // ----- Keyword -----
+            Flag::Permanent => writer.write_all(b"\\*"),
+            Flag::Keyword(atom) => atom.encode(writer),
+
+            // ----- Others -----
+            Flag::Extension(atom) => {
+                writer.write_all(b"\\")?;
+                atom.encode(writer)
+            }
+        }
     }
 }
 
@@ -420,15 +430,6 @@ impl<'a> Encode for Charset<'a> {
         match self {
             Charset::Atom(atom) => atom.encode(writer),
             Charset::Quoted(quoted) => quoted.encode(writer),
-        }
-    }
-}
-
-impl<'a> Display for Charset<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Charset::Atom(atom) => write!(f, "{}", atom),
-            Charset::Quoted(quoted) => write!(f, "{}", quoted),
         }
     }
 }
@@ -702,7 +703,33 @@ impl Encode for NonZeroU32 {
 
 impl<'a> Encode for Capability<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        use Capability::*;
+
+        match self {
+            Imap4Rev1 => writer.write_all(b"IMAP4REV1"),
+            Auth(mechanism) => match mechanism {
+                AuthMechanism::Plain => writer.write_all(b"AUTH=PLAIN"),
+                AuthMechanism::Login => writer.write_all(b"AUTH=LOGIN"),
+                AuthMechanism::Other(other) => {
+                    writer.write_all(b"AUTH=")?;
+                    other.encode(writer)
+                }
+            },
+            LoginDisabled => writer.write_all(b"LOGINDISABLED"),
+            StartTls => writer.write_all(b"STARTTLS"),
+            MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
+            LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
+            SaslIr => writer.write_all(b"SASL-IR"),
+            #[cfg(feature = "ext_idle")]
+            Idle => writer.write_all(b"IDLE"),
+            #[cfg(feature = "ext_enable")]
+            Enable => writer.write_all(b"ENABLE"),
+            #[cfg(feature = "ext_compress")]
+            Compress { algorithm } => match algorithm {
+                CompressionAlgorithm::Deflate => writer.write_all(b"COMPRESS=DEFLATE"),
+            },
+            Other(atom) => atom.encode(writer),
+        }
     }
 }
 
@@ -735,7 +762,9 @@ impl<'a> Encode for Status<'a> {
             writer.write_all(status.as_bytes())?;
             writer.write_all(b" ")?;
             if let Some(code) = code {
-                write!(writer, "[{}] ", code)?;
+                writer.write_all(b"[")?;
+                code.encode(writer)?;
+                writer.write_all(b"] ")?;
             }
             comment.encode(writer)?;
             writer.write_all(b"\r\n")
@@ -753,19 +782,64 @@ impl<'a> Encode for Status<'a> {
 
 impl<'a> Encode for Code<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        match self {
+            Code::Alert => writer.write_all(b"ALERT"),
+            Code::BadCharset(charsets) => {
+                if charsets.is_empty() {
+                    writer.write_all(b"BADCHARSET")
+                } else {
+                    writer.write_all(b"BADCHARSET (")?;
+                    join_serializable(charsets, b" ", writer)?;
+                    writer.write_all(b")")
+                }
+            }
+            Code::Capability(caps) => {
+                writer.write_all(b"CAPABILITY ")?;
+                join_serializable(caps, b" ", writer)
+            }
+            Code::Parse => writer.write_all(b"PARSE"),
+            Code::PermanentFlags(flags) => {
+                writer.write_all(b"PERMANENTFLAGS (")?;
+                join_serializable(flags, b" ", writer)?;
+                writer.write_all(b")")
+            }
+            Code::ReadOnly => writer.write_all(b"READ-ONLY"),
+            Code::ReadWrite => writer.write_all(b"READ-WRITE"),
+            Code::TryCreate => writer.write_all(b"TRYCREATE"),
+            Code::UidNext(next) => {
+                writer.write_all(b"UIDNEXT ")?;
+                next.encode(writer)
+            }
+            Code::UidValidity(validity) => {
+                writer.write_all(b"UIDVALIDITY ")?;
+                validity.encode(writer)
+            }
+            Code::Unseen(seq) => {
+                writer.write_all(b"UNSEEN ")?;
+                seq.encode(writer)
+            }
+            Code::Other(atom, params) => match params {
+                Some(params) => {
+                    atom.encode(writer)?;
+                    writer.write_all(b" ")?;
+                    writer.write_all(params.as_bytes())
+                }
+                None => atom.encode(writer),
+            },
+            // RFC 2221
+            Code::Referral(url) => {
+                writer.write_all(b"REFERRAL ")?;
+                writer.write_all(url.as_bytes())
+            }
+            #[cfg(feature = "ext_compress")]
+            Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
+        }
     }
 }
 
 impl<'a> Encode for Text<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
-    }
-}
-
-impl<'a> Display for Text<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.inner())
     }
 }
 
@@ -865,7 +939,16 @@ impl<'a> Encode for Data<'a> {
 
 impl<'a> Encode for FlagNameAttribute<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        match self {
+            Self::Noinferiors => writer.write_all(b"\\Noinferiors"),
+            Self::Noselect => writer.write_all(b"\\Noselect"),
+            Self::Marked => writer.write_all(b"\\Marked"),
+            Self::Unmarked => writer.write_all(b"\\Unmarked"),
+            Self::Extension(atom) => {
+                writer.write_all(b"\\")?;
+                atom.encode(writer)
+            }
+        }
     }
 }
 
@@ -881,7 +964,28 @@ impl Encode for QuotedChar {
 
 impl Encode for StatusAttributeValue {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        match self {
+            Self::Messages(count) => {
+                writer.write_all(b"MESSAGES ")?;
+                count.encode(writer)
+            }
+            Self::Recent(count) => {
+                writer.write_all(b"RECENT ")?;
+                count.encode(writer)
+            }
+            Self::UidNext(next) => {
+                writer.write_all(b"UIDNEXT ")?;
+                next.encode(writer)
+            }
+            Self::UidValidity(identifier) => {
+                writer.write_all(b"UIDVALIDITY ")?;
+                identifier.encode(writer)
+            }
+            Self::Unseen(count) => {
+                writer.write_all(b"UNSEEN ")?;
+                count.encode(writer)
+            }
+        }
     }
 }
 
@@ -1170,31 +1274,37 @@ impl<'a> Encode for Continuation<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Continuation::Basic { code, text } => match code {
-                Some(ref code) => write!(writer, "+ [{}] {}\r\n", code, text),
-                None => write!(writer, "+ {}\r\n", text),
+                Some(ref code) => {
+                    writer.write_all(b"+ [")?;
+                    code.encode(writer)?;
+                    writer.write_all(b"] ")?;
+                    text.encode(writer)?;
+                    writer.write_all(b"\r\n")
+                }
+                None => {
+                    writer.write_all(b"+ ")?;
+                    text.encode(writer)?;
+                    writer.write_all(b"\r\n")
+                }
             },
             // TODO: Is this correct when data is empty?
-            Continuation::Base64(data) => write!(writer, "+ {}\r\n", base64::encode(data)),
+            Continuation::Base64(data) => {
+                writer.write_all(b"+ ")?;
+                writer.write_all(base64::encode(data).as_bytes())?;
+                writer.write_all(b"\r\n")
+            }
         }
     }
 }
 
 pub(crate) mod utils {
-    use std::{fmt::Display, io::Write};
+    use std::io::Write;
 
     use crate::Encode;
 
     pub(crate) struct List1OrNil<'a, T>(pub(crate) &'a Vec<T>, pub(crate) &'a [u8]);
 
     pub(crate) struct List1AttributeValueOrNil<'a, T>(pub(crate) &'a Vec<(T, T)>);
-
-    pub(crate) fn join<T: Display>(elements: &[T], sep: &str) -> String {
-        elements
-            .iter()
-            .map(|x| format!("{}", x))
-            .collect::<Vec<String>>()
-            .join(sep)
-    }
 
     pub(crate) fn join_serializable<I: Encode>(
         elements: &[I],

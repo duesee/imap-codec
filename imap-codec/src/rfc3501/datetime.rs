@@ -315,7 +315,7 @@ mod test {
                 .unwrap(),
         );
 
-        println!("{} == \n{}", val, datetime);
+        println!("{:?} == \n{:?}", val, datetime);
 
         assert_eq!(val, datetime);
     }
