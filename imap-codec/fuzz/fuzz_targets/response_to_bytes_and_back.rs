@@ -1,5 +1,7 @@
 #![no_main]
 
+use std::str::from_utf8;
+
 use imap_codec::response::response;
 use imap_types::{
     codec::Encode,
@@ -43,7 +45,7 @@ fuzz_target!(|test: Response| {
     //    Err(_) => println!("{:?}", buffer),
     //}
 
-    println!("{:?}", std::str::from_utf8(&buffer));
+    println!("{:?}", from_utf8(&buffer));
 
     let (rem, parsed) = response(&buffer).unwrap();
     assert!(rem.is_empty());
