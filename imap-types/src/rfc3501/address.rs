@@ -9,29 +9,25 @@ use crate::core::NString;
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// TODO(misuse):
+///
+///   Here are many invariants ...
+///
+///   mailbox:
+///     NIL indicates end of [RFC-2822] group;
+///     if non-NIL and host is NIL, holds [RFC-2822] group name.
+///     Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
+///
+///   host:
+///     NIL indicates [RFC-2822] group syntax.
+///     Otherwise, holds [RFC-2822] domain name
 pub struct Address<'a> {
     /// Personal name
-    pub(crate) name: NString<'a>,
+    pub name: NString<'a>,
     /// At-domain-list (source route)
-    pub(crate) adl: NString<'a>,
+    pub adl: NString<'a>,
     /// Mailbox name
-    pub(crate) mailbox: NString<'a>,
+    pub mailbox: NString<'a>,
     /// Host name
-    pub(crate) host: NString<'a>,
-}
-
-impl<'a> Address<'a> {
-    pub fn new(
-        name: NString<'a>,
-        adl: NString<'a>,
-        mailbox: NString<'a>,
-        host: NString<'a>,
-    ) -> Address<'a> {
-        Address {
-            name,
-            adl,
-            mailbox,
-            host,
-        }
-    }
+    pub host: NString<'a>,
 }
