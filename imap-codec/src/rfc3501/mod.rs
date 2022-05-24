@@ -30,7 +30,7 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
+    use std::convert::TryFrom;
 
     use imap_types::AuthMechanism;
 
@@ -45,11 +45,11 @@ mod test {
             (b"login ".as_ref(), AuthMechanism::Login),
             (
                 b"loginX ".as_ref(),
-                AuthMechanism::Other("loginX".try_into().unwrap()),
+                AuthMechanism::try_from("loginX").unwrap(),
             ),
             (
                 b"Xplain ".as_ref(),
-                AuthMechanism::Other("Xplain".try_into().unwrap()),
+                AuthMechanism::try_from("Xplain").unwrap(),
             ),
         ];
 
