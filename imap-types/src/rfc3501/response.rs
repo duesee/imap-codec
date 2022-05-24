@@ -1,6 +1,6 @@
 //! # 7. Server Responses
 
-use std::{convert::TryInto, num::NonZeroU32};
+use std::{borrow::Cow, convert::TryInto, num::NonZeroU32};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -484,7 +484,7 @@ pub enum Continuation<'a> {
         code: Option<Code<'a>>,
         text: Text<'a>,
     },
-    Base64(Vec<u8>),
+    Base64(Cow<'a, [u8]>),
 }
 
 impl<'a> Continuation<'a> {
@@ -495,8 +495,8 @@ impl<'a> Continuation<'a> {
         })
     }
 
-    pub fn base64(data: &[u8]) -> Self {
-        Continuation::Base64(data.to_owned())
+    pub fn base64(data: &'a [u8]) -> Self {
+        Continuation::Base64(Cow::Borrowed(data))
     }
 }
 
@@ -601,10 +601,10 @@ pub enum Code<'a> {
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
     /// SHOULD ignore response codes that they do not recognize.
-    Other(Atom<'a>, Option<String>),
+    Other(Atom<'a>, Option<Cow<'a, str>>),
 
     /// IMAP4 Login Referrals (RFC 2221)
-    Referral(String), // TODO: the imap url is more complicated than that...
+    Referral(Cow<'a, str>), // TODO: the imap url is more complicated than that...
 
     #[cfg(feature = "ext_compress")]
     CompressionActive,
