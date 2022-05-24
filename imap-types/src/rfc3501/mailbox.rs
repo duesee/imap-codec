@@ -1,6 +1,7 @@
 use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
+    str::from_utf8,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -156,7 +157,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
                 }
                 IString::Literal(bytes) => {
                     // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                    if let Ok(str) = std::str::from_utf8(bytes) {
+                    if let Ok(str) = from_utf8(bytes) {
                         // After the conversion we ignore the case...
                         if str.to_lowercase() == "inbox" {
                             // ...and return the Inbox variant.

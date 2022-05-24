@@ -196,6 +196,8 @@ fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
 
 #[cfg(test)]
 mod test {
+    use std::str::from_utf8;
+
     use super::*;
 
     #[test]
@@ -340,7 +342,7 @@ mod test {
         for test in &tests[..5] {
             let (rem, datetime) = date_time(test).unwrap();
             assert_eq!(rem, b"xxx");
-            println!("{} -> {:?}", std::str::from_utf8(test).unwrap(), datetime);
+            println!("{} -> {:?}", from_utf8(test).unwrap(), datetime);
         }
 
         for test in &tests[5..] {
