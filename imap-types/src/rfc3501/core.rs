@@ -40,8 +40,8 @@ impl<'a> Atom<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Atom<'a> {
-        Atom { inner }
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        Self { inner }
     }
 }
 
@@ -49,8 +49,8 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Atom::verify(value) {
-            Ok(Atom {
+        if Self::verify(value) {
+            Ok(Self {
                 inner: Cow::Borrowed(value),
             })
         } else {
@@ -63,7 +63,7 @@ impl<'a> TryFrom<String> for Atom<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Atom::verify(&value) {
+        if Self::verify(&value) {
             Ok(Atom {
                 inner: Cow::Owned(value),
             })
@@ -229,8 +229,8 @@ impl<'a> Literal<'a> {
     ///
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
-    pub unsafe fn new_unchecked(inner: Cow<'a, [u8]>) -> Literal<'a> {
-        Literal { inner }
+    pub unsafe fn new_unchecked(inner: Cow<'a, [u8]>) -> Self {
+        Self { inner }
     }
 }
 
@@ -292,8 +292,8 @@ impl<'a> Quoted<'a> {
     ///
     /// Call this function only when you are sure that the str
     /// is a valid quoted.
-    pub unsafe fn new_unchecked(value: Cow<'a, str>) -> Quoted<'a> {
-        Quoted { inner: value }
+    pub unsafe fn new_unchecked(value: Cow<'a, str>) -> Self {
+        Self { inner: value }
     }
 }
 
@@ -431,15 +431,15 @@ impl<'a> Tag<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Tag<'a> {
-        Tag { inner }
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        Self { inner }
     }
 
     pub fn random() -> Self {
         let mut rng = thread_rng();
         let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
 
-        unsafe { Tag::new_unchecked(Cow::Owned(String::from_utf8_unchecked(buffer.to_vec()))) }
+        unsafe { Self::new_unchecked(Cow::Owned(String::from_utf8_unchecked(buffer.to_vec()))) }
     }
 }
 
@@ -447,8 +447,8 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Tag::verify(value) {
-            Ok(Tag {
+        if Self::verify(value) {
+            Ok(Self {
                 inner: Cow::Borrowed(value),
             })
         } else {
@@ -461,8 +461,8 @@ impl<'a> TryFrom<String> for Tag<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Tag::verify(&value) {
-            Ok(Tag {
+        if Self::verify(&value) {
+            Ok(Self {
                 inner: Cow::Owned(value),
             })
         } else {
@@ -486,8 +486,8 @@ impl<'a> Text<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Text<'a> {
-        Text { inner }
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        Self { inner }
     }
 }
 
@@ -495,8 +495,8 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Text::verify(value) {
-            Ok(Text {
+        if Self::verify(value) {
+            Ok(Self {
                 inner: Cow::Borrowed(value),
             })
         } else {
@@ -509,8 +509,8 @@ impl<'a> TryFrom<String> for Text<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Text::verify(&value) {
-            Ok(Text {
+        if Self::verify(&value) {
+            Ok(Self {
                 inner: Cow::Owned(value),
             })
         } else {
@@ -538,8 +538,8 @@ impl QuotedChar {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: char) -> QuotedChar {
-        QuotedChar { inner }
+    pub unsafe fn new_unchecked(inner: char) -> Self {
+        Self { inner }
     }
 }
 
@@ -598,8 +598,8 @@ pub struct NonEmptyVec<T> {
 }
 
 impl<T> NonEmptyVec<T> {
-    pub unsafe fn new_unchecked(inner: Vec<T>) -> NonEmptyVec<T> {
-        NonEmptyVec { inner }
+    pub unsafe fn new_unchecked(inner: Vec<T>) -> Self {
+        Self { inner }
     }
 }
 
@@ -607,10 +607,10 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     type Error = ();
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
-        if inner.is_empty() {
-            Err(())
+        if !inner.is_empty() {
+            Ok(Self { inner })
         } else {
-            Ok(NonEmptyVec { inner })
+            Err(())
         }
     }
 }
@@ -625,7 +625,7 @@ impl<T> Deref for NonEmptyVec<T> {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
+    use std::{convert::TryInto, str::from_utf8};
 
     use super::*;
     use crate::codec::Encode;
@@ -663,7 +663,7 @@ mod test {
 
             let mut out = Vec::new();
             cs.encode(&mut out).unwrap();
-            assert_eq!(String::from_utf8(out).unwrap(), *expected);
+            assert_eq!(from_utf8(&out).unwrap(), *expected);
         }
 
         assert!(Charset::try_from("\r").is_err());
