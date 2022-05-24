@@ -1,4 +1,5 @@
 use std::{
+    borrow::{Borrow, Cow},
     convert::{TryFrom, TryInto},
     ops::Deref,
     str::from_utf8,
@@ -16,33 +17,53 @@ use crate::{
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ListCharString(String);
+pub struct ListCharString<'a> {
+    inner: Cow<'a, str>,
+}
 
-impl TryFrom<&str> for ListCharString {
-    type Error = ();
+impl<'a> ListCharString<'a> {
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(is_list_char)
+    }
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        value.to_string().try_into()
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        Self { inner }
     }
 }
 
-impl TryFrom<String> for ListCharString {
+impl<'a> TryFrom<&'a str> for ListCharString<'a> {
     type Error = ();
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if !value.is_empty() && value.bytes().all(is_list_char) {
-            Ok(ListCharString(value))
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Self::verify(value) {
+            Ok(Self {
+                inner: Cow::Borrowed(value),
+            })
         } else {
             Err(())
         }
     }
 }
 
-impl Deref for ListCharString {
-    type Target = String;
+impl<'a> TryFrom<String> for ListCharString<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if Self::verify(&value) {
+            Ok(Self {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> Deref for ListCharString<'a> {
+    type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.inner.borrow()
     }
 }
 
@@ -50,7 +71,7 @@ impl Deref for ListCharString {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListMailbox<'a> {
-    Token(ListCharString),
+    Token(ListCharString<'a>),
     String(IString<'a>),
 }
 
