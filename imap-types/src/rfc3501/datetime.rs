@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 
 use chrono::{DateTime, FixedOffset, NaiveDate};
 #[cfg(feature = "serdex")]
@@ -14,12 +14,6 @@ impl Debug for MyDateTime {
     }
 }
 
-impl Display for MyDateTime {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct MyNaiveDate(pub NaiveDate);
@@ -27,11 +21,5 @@ pub struct MyNaiveDate(pub NaiveDate);
 impl Debug for MyNaiveDate {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
-    }
-}
-
-impl Display for MyNaiveDate {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
     }
 }

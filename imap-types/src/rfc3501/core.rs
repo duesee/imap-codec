@@ -659,7 +659,7 @@ mod test {
 
         for (from, expected) in tests.iter() {
             let cs = Charset::try_from(*from).unwrap();
-            println!("{}", cs);
+            println!("{:?}", cs);
 
             let mut out = Vec::new();
             cs.encode(&mut out).unwrap();

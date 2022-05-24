@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 use crate::{
-    codec::utils::join,
     core::{Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
     fetch_attributes::FetchAttributeValue,
     flag::{Flag, FlagNameAttribute},
@@ -620,38 +619,6 @@ impl<'a> Code<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for Code<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Code::Alert => write!(f, "ALERT"),
-            Code::BadCharset(charsets) => {
-                if charsets.is_empty() {
-                    write!(f, "BADCHARSET")
-                } else {
-                    write!(f, "BADCHARSET ({})", &join(charsets, " "))
-                }
-            }
-            Code::Capability(caps) => write!(f, "CAPABILITY {}", join(caps, " ")),
-            Code::Parse => write!(f, "PARSE"),
-            Code::PermanentFlags(flags) => write!(f, "PERMANENTFLAGS ({})", join(flags, " ")),
-            Code::ReadOnly => write!(f, "READ-ONLY"),
-            Code::ReadWrite => write!(f, "READ-WRITE"),
-            Code::TryCreate => write!(f, "TRYCREATE"),
-            Code::UidNext(next) => write!(f, "UIDNEXT {}", next),
-            Code::UidValidity(validity) => write!(f, "UIDVALIDITY {}", validity),
-            Code::Unseen(seq) => write!(f, "UNSEEN {}", seq),
-            Code::Other(atom, params) => match params {
-                Some(params) => write!(f, "{} {}", atom, params),
-                None => write!(f, "{}", atom),
-            },
-            // RFC 2221
-            Code::Referral(url) => write!(f, "REFERRAL {}", url),
-            #[cfg(feature = "ext_compress")]
-            Code::CompressionActive => write!(f, "COMPRESSIONACTIVE"),
-        }
-    }
-}
-
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -677,35 +644,6 @@ pub enum Capability<'a> {
     // FIXME: mark this enum as non-exhaustive at least?
     // FIXME: case-sensitive when compared
     Other(Atom<'a>),
-}
-
-impl<'a> std::fmt::Display for Capability<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        use Capability::*;
-
-        match self {
-            Imap4Rev1 => write!(f, "IMAP4REV1"),
-            Auth(mechanism) => match mechanism {
-                AuthMechanism::Plain => write!(f, "AUTH=PLAIN"),
-                AuthMechanism::Login => write!(f, "AUTH=LOGIN"),
-                AuthMechanism::Other(mech) => write!(f, "AUTH={}", mech),
-            },
-            LoginDisabled => write!(f, "LOGINDISABLED"),
-            StartTls => write!(f, "STARTTLS"),
-            MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
-            LoginReferrals => write!(f, "LOGIN-REFERRALS"),
-            SaslIr => write!(f, "SASL-IR"),
-            #[cfg(feature = "ext_idle")]
-            Idle => write!(f, "IDLE"),
-            #[cfg(feature = "ext_enable")]
-            Enable => write!(f, "ENABLE"),
-            #[cfg(feature = "ext_compress")]
-            Compress { algorithm } => match algorithm {
-                CompressionAlgorithm::Deflate => write!(f, "COMPRESS=DEFLATE"),
-            },
-            Other(atom) => write!(f, "{}", atom),
-        }
-    }
 }
 
 #[cfg(test)]
