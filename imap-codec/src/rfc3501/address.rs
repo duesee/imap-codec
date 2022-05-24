@@ -23,7 +23,15 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 
     let (remaining, (name, _, adl, _, mailbox, _, host)) = parser(input)?;
 
-    Ok((remaining, Address::new(name, adl, mailbox, host)))
+    Ok((
+        remaining,
+        Address {
+            name,
+            adl,
+            mailbox,
+            host,
+        },
+    ))
 }
 
 #[inline]
@@ -31,6 +39,7 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 ///
 /// If non-NIL, holds phrase from [RFC-2822]
 /// mailbox after removing [RFC-2822] quoting
+/// TODO(misuse): use `Phrase`?
 pub fn addr_name(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
@@ -39,6 +48,7 @@ pub fn addr_name(input: &[u8]) -> IResult<&[u8], NString> {
 /// `addr-adl = nstring`
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
+/// TODO(misuse): use `Route`?
 pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
@@ -49,6 +59,7 @@ pub fn addr_adl(input: &[u8]) -> IResult<&[u8], NString> {
 /// NIL indicates end of [RFC-2822] group;
 /// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
 /// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
+/// TODO(misuse): use `GroupName` or `LocalPart`?
 pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
@@ -58,15 +69,16 @@ pub fn addr_mailbox(input: &[u8]) -> IResult<&[u8], NString> {
 ///
 /// NIL indicates [RFC-2822] group syntax.
 /// Otherwise, holds [RFC-2822] domain name
+/// TODO(misuse): use `DomainName`?
 pub fn addr_host(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
 #[cfg(test)]
 mod test {
-    use std::convert::{TryFrom, TryInto};
+    use std::convert::TryInto;
 
-    use imap_types::core::{IString, Literal, NString};
+    use imap_types::core::{IString, NString};
 
     use super::*;
 
@@ -75,14 +87,14 @@ mod test {
         let (rem, val) = address(b"(nil {3}\r\nxxx \"xxx\" nil)").unwrap();
         assert_eq!(
             val,
-            Address::new(
-                NString(None),
-                NString(Some(IString::Literal(
-                    Literal::try_from(b"xxx".to_vec()).unwrap()
+            Address {
+                name: NString(None),
+                adl: NString(Some(IString::Literal(
+                    b"xxx".as_slice().try_into().unwrap()
                 ))),
-                NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
-                NString(None),
-            )
+                mailbox: NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
+                host: NString(None),
+            }
         );
         assert_eq!(rem, b"");
     }
