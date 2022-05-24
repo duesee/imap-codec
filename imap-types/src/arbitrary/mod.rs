@@ -41,17 +41,17 @@ macro_rules! implement_tryfrom_t {
     };
 }
 
-implement_tryfrom! { Atom<'a>, String }
-implement_tryfrom! { AtomExt<'a>, String }
-implement_tryfrom! { Quoted<'a>, String }
-implement_tryfrom! { Tag<'a>, String }
-implement_tryfrom! { Text<'a>, String }
-implement_tryfrom! { ListCharString, String }
+implement_tryfrom! { Atom<'a>, &str }
+implement_tryfrom! { AtomExt<'a>, &str }
+implement_tryfrom! { Quoted<'a>, &str }
+implement_tryfrom! { Tag<'a>, &str }
+implement_tryfrom! { Text<'a>, &str }
+implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
-implement_tryfrom! { Mailbox<'a>, String }
-implement_tryfrom! { AuthMechanismOther<'a>, String }
-implement_tryfrom! { SequenceSet, String }
-implement_tryfrom! { Literal<'a>, Vec<u8> }
+implement_tryfrom! { Mailbox<'a>, &str }
+implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
+implement_tryfrom! { SequenceSet, &str }
+implement_tryfrom! { Literal<'a>, &[u8] }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for SearchKey<'a> {
