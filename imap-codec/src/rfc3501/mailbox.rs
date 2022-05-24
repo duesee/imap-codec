@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{borrow::Cow, convert::TryFrom};
 
 use abnf_core::streaming::{DQUOTE, SP};
 use imap_types::{
@@ -26,12 +26,14 @@ use crate::rfc3501::{
 pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
-            // Note: this is safe, because is_list_char enforces
-            //       that the string only contains ASCII characters
-            ListMailbox::Token(
-                ListCharString::try_from(unsafe { String::from_utf8_unchecked(bytes.to_vec()) })
-                    .unwrap(),
-            ) // Safe to unwrap
+            // Safety:
+            //
+            // This is safe, because `is_list_char` enforces that the bytes ...
+            //   * contain ASCII-only characters, i.e., `from_utf8_unchecked` is safe.
+            //   * are valid according to `ListCharString::verify(), i.e., `new_unchecked` is safe.
+            ListMailbox::Token(unsafe {
+                ListCharString::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
+            })
         }),
         map(string, ListMailbox::String),
     ))(input)

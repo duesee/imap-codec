@@ -1,4 +1,4 @@
-use std::str::from_utf8;
+use std::{borrow::Cow, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
@@ -8,7 +8,7 @@ use imap_types::{
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
-    combinator::{map, map_res, opt, value},
+    combinator::{map, opt, value},
     multi::separated_list1,
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
@@ -61,9 +61,9 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
 /// Authentication condition
 pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, Text))> {
     let mut parser = tuple((
-        map_res(
+        map(
             alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
-            from_utf8, // FIXME(perf): use from_utf8_unchecked
+            |val| unsafe { from_utf8_unchecked(val) },
         ),
         SP,
         resp_text,
@@ -151,9 +151,9 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                 atom,
                 opt(preceded(
                     SP,
-                    map_res(
+                    map(
                         take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                        from_utf8, // FIXME(perf): use from_utf8_unchecked
+                        |val| unsafe { from_utf8_unchecked(val) },
                     ),
                 )),
             )),
@@ -324,7 +324,7 @@ pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, Text
 
     Ok((
         remaining,
-        (from_utf8(raw_status).expect("can't fail"), maybe_code, text), // FIXME(perf): use from_utf8_unchecked
+        (unsafe { from_utf8_unchecked(raw_status) }, maybe_code, text),
     ))
 }
 
