@@ -81,6 +81,62 @@ impl<'a> Deref for Atom<'a> {
     }
 }
 
+#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AtomExt<'a> {
+    inner: Cow<'a, str>,
+}
+
+impl<'a> AtomExt<'a> {
+    pub fn verify(value: &str) -> bool {
+        !value.is_empty() && value.bytes().all(is_astring_char)
+    }
+
+    pub fn inner(&self) -> &Cow<'a, str> {
+        &self.inner
+    }
+
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a str> for AtomExt<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        if Self::verify(value) {
+            Ok(Self {
+                inner: Cow::Borrowed(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> TryFrom<String> for AtomExt<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if Self::verify(&value) {
+            Ok(Self {
+                inner: Cow::Owned(value),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> Deref for AtomExt<'a> {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.borrow()
+    }
+}
+
 // ## 4.2. Number
 //
 // A number consists of one or more digit characters, and
@@ -288,9 +344,8 @@ pub struct NString<'a>(pub Option<IString<'a>>);
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString<'a> {
-    // FIXME(misuse): Variant should not contain `Atom`, but something like `AtomExt` ...
-    //                `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
-    Atom(Atom<'a>),      // 1*ASTRING-CHAR /
+    // `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
+    Atom(AtomExt<'a>),   // 1*ASTRING-CHAR /
     String(IString<'a>), // string
 }
 
@@ -298,7 +353,7 @@ impl<'a> TryFrom<&'a str> for AString<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, ()> {
-        if let Ok(atom) = Atom::try_from(value) {
+        if let Ok(atom) = AtomExt::try_from(value) {
             Ok(AString::Atom(atom))
         } else if let Ok(string) = IString::try_from(value) {
             Ok(AString::String(string))
@@ -312,7 +367,7 @@ impl<'a> TryFrom<String> for AString<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, ()> {
-        if let Ok(atom) = Atom::try_from(value.clone()) {
+        if let Ok(atom) = AtomExt::try_from(value.clone()) {
             Ok(AString::Atom(atom))
         } else if let Ok(string) = IString::try_from(value) {
             Ok(AString::String(string))

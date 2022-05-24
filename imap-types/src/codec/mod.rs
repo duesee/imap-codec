@@ -16,7 +16,9 @@ use crate::{
     },
     codec::utils::{join_serializable, List1AttributeValueOrNil, List1OrNil},
     command::{Command, CommandBody, SearchKey},
-    core::{AString, Atom, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text},
+    core::{
+        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+    },
     datetime::{MyDateTime, MyNaiveDate},
     envelope::Envelope,
     fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
@@ -328,6 +330,12 @@ impl<'a> Encode for Atom<'a> {
 impl<'a> Display for Atom<'a> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(&self.inner(), f)
+    }
+}
+
+impl<'a> Encode for AtomExt<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.inner().as_bytes())
     }
 }
 

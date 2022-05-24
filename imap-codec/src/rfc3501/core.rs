@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use imap_types::core::{
-    AString, Atom, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+    AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
 };
 use nom::{
     branch::alt,
@@ -162,10 +162,14 @@ pub fn is_char8(i: u8) -> bool {
 pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
-            // Note: this is safe, because is_astring_char enforces
-            //       that the string only contains ASCII characters
-            // TODO(perf): atm::try_from tests all bytes again
-            AString::Atom(Atom::try_from(unsafe { std::str::from_utf8_unchecked(bytes) }).unwrap())
+            // Safety:
+            //
+            // This is safe, because `is_astring_char` enforces that the bytes ...
+            //   * contain ASCII-only characters, i.e., `from_utf8_unchecked` is safe.
+            //   * are valid according to `AtomExt::verify(), i.e., `new_unchecked` is safe.
+            AString::Atom(unsafe {
+                AtomExt::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
+            })
         }),
         map(string, AString::String),
     ))(input)
