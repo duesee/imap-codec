@@ -1,14 +1,18 @@
 #![feature(test)]
 extern crate test;
 
-use std::convert::TryInto;
+use std::{
+    convert::{TryFrom, TryInto},
+    num::NonZeroU32,
+};
 
 use imap_codec::{
     codec::Encode,
     types::{
         command::Command,
-        fetch_attributes::{FetchAttribute, MacroOrFetchAttributes, Section},
+        fetch_attributes::{FetchAttribute, MacroOrFetchAttributes},
         response::{Code, Response, Status},
+        section::Section,
     },
 };
 use test::Bencher;
@@ -23,7 +27,7 @@ fn bench_command_serialize(b: &mut Bencher) {
             FetchAttribute::BodyExt {
                 section: Some(Section::Text(None)),
                 peek: true,
-                partial: Some((1, 100)),
+                partial: Some((1, NonZeroU32::try_from(100).unwrap())),
             },
             FetchAttribute::BodyStructure,
             FetchAttribute::Body,
