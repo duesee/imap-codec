@@ -274,12 +274,7 @@ pub fn is_base64_char(i: u8) -> bool {
 ///
 /// Note: see errata id: 261
 pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
-    alt((
-        map(atom, |atom| Charset::Atom(atom.to_owned())),
-        map(quoted, |cow| {
-            Charset::Quoted(Quoted::try_from(cow.to_string()).unwrap())
-        }),
-    ))(input)
+    alt((map(atom, Charset::Atom), map(quoted, Charset::Quoted)))(input)
 }
 
 // ----- tag -----
@@ -288,7 +283,7 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
 pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
     map(
         map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8), // FIXME(perf): use from_utf8_unchecked
-        |s| Tag::try_from(s.to_string()).unwrap(), // TODO(performance): we know already that Tag is valid.
+        |s| Tag::try_from(s).unwrap(), // TODO(performance): we know already that Tag is valid.
     )(input)
 }
 

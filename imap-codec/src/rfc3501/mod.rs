@@ -23,9 +23,9 @@ pub mod status_attributes;
 ///
 /// Note: Defined by [SASL]
 pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
-    let (rem, mechanism) = atom(input)?;
+    let (rem, atom) = atom(input)?;
 
-    Ok((rem, mechanism.to_owned().into()))
+    Ok((rem, AuthMechanism::from(atom)))
 }
 
 #[cfg(test)]

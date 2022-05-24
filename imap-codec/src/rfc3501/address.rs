@@ -23,15 +23,7 @@ pub fn address(input: &[u8]) -> IResult<&[u8], Address> {
 
     let (remaining, (name, _, adl, _, mailbox, _, host)) = parser(input)?;
 
-    Ok((
-        remaining,
-        Address::new(
-            name.to_owned(),
-            adl.to_owned(),
-            mailbox.to_owned(),
-            host.to_owned(),
-        ),
-    ))
+    Ok((remaining, Address::new(name, adl, mailbox, host)))
 }
 
 #[inline]

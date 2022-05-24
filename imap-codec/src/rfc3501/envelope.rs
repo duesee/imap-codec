@@ -81,16 +81,16 @@ pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     Ok((
         remaining,
         Envelope {
-            date: date.to_owned(),
-            subject: subject.to_owned(),
+            date,
+            subject,
             from,
             sender,
             reply_to,
             to,
             cc,
             bcc,
-            in_reply_to: in_reply_to.to_owned(),
-            message_id: message_id.to_owned(),
+            in_reply_to,
+            message_id,
         },
     ))
 }

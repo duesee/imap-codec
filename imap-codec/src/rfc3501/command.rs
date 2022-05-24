@@ -1,7 +1,7 @@
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     command::{Command, CommandBody, SearchKey},
-    core::{AString, Literal, NonEmptyVec},
+    core::{AString, NonEmptyVec},
     fetch_attributes::{Macro, MacroOrFetchAttributes},
     flag::{Flag, StoreResponse, StoreType},
     AuthMechanism,
@@ -120,15 +120,15 @@ pub fn append(input: &[u8]) -> IResult<&[u8], CommandBody> {
         literal,
     ));
 
-    let (remaining, (_, _, mailbox, flags, date_time, _, literal)) = parser(input)?;
+    let (remaining, (_, _, mailbox, flags, date, _, message)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::Append {
             mailbox,
             flags: flags.unwrap_or_default(),
-            date: date_time,
-            message: Literal::from(literal),
+            date,
+            message,
         },
     ))
 }
@@ -287,13 +287,7 @@ pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     let (remaining, (_, _, username, _, password)) = parser(input)?;
 
-    Ok((
-        remaining,
-        CommandBody::Login {
-            username: username.to_owned(),
-            password: password.to_owned(),
-        },
-    ))
+    Ok((remaining, CommandBody::Login { username, password }))
 }
 
 #[inline]
@@ -598,29 +592,29 @@ fn search_key_limited<'a>(
             value(SearchKey::All, tag_no_case(b"ALL")),
             value(SearchKey::Answered, tag_no_case(b"ANSWERED")),
             map(tuple((tag_no_case(b"BCC"), SP, astring)), |(_, _, val)| {
-                SearchKey::Bcc(val.to_owned())
+                SearchKey::Bcc(val)
             }),
             map(
                 tuple((tag_no_case(b"BEFORE"), SP, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::Before(date),
             ),
             map(tuple((tag_no_case(b"BODY"), SP, astring)), |(_, _, val)| {
-                SearchKey::Body(val.to_owned())
+                SearchKey::Body(val)
             }),
             map(tuple((tag_no_case(b"CC"), SP, astring)), |(_, _, val)| {
-                SearchKey::Cc(val.to_owned())
+                SearchKey::Cc(val)
             }),
             value(SearchKey::Deleted, tag_no_case(b"DELETED")),
             value(SearchKey::Flagged, tag_no_case(b"FLAGGED")),
             map(tuple((tag_no_case(b"FROM"), SP, astring)), |(_, _, val)| {
-                SearchKey::From(val.to_owned())
+                SearchKey::From(val)
             }),
             map(
                 // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
                 tuple((tag_no_case(b"KEYWORD"), SP, atom)),
-                |(_, _, val)| SearchKey::Keyword(val.to_owned()),
+                |(_, _, val)| SearchKey::Keyword(val),
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
             value(SearchKey::Old, tag_no_case(b"OLD")),
@@ -636,13 +630,13 @@ fn search_key_limited<'a>(
             ),
             map(
                 tuple((tag_no_case(b"SUBJECT"), SP, astring)),
-                |(_, _, val)| SearchKey::Subject(val.to_owned()),
+                |(_, _, val)| SearchKey::Subject(val),
             ),
             map(tuple((tag_no_case(b"TEXT"), SP, astring)), |(_, _, val)| {
-                SearchKey::Text(val.to_owned())
+                SearchKey::Text(val)
             }),
             map(tuple((tag_no_case(b"TO"), SP, astring)), |(_, _, val)| {
-                SearchKey::To(val.to_owned())
+                SearchKey::To(val)
             }),
         )),
         alt((
@@ -654,13 +648,13 @@ fn search_key_limited<'a>(
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
                 tuple((tag_no_case(b"UNKEYWORD"), SP, atom)),
-                |(_, _, val)| SearchKey::Unkeyword(val.to_owned()),
+                |(_, _, val)| SearchKey::Unkeyword(val),
             ),
             value(SearchKey::Unseen, tag_no_case(b"UNSEEN")),
             value(SearchKey::Draft, tag_no_case(b"DRAFT")),
             map(
                 tuple((tag_no_case(b"HEADER"), SP, header_fld_name, SP, astring)),
-                |(_, _, key, _, val)| SearchKey::Header(key.to_owned(), val.to_owned()),
+                |(_, _, key, _, val)| SearchKey::Header(key, val),
             ),
             map(
                 tuple((tag_no_case(b"LARGER"), SP, number)),
@@ -701,7 +695,7 @@ fn search_key_limited<'a>(
                 |val| match val.len() {
                     0 => unreachable!(),
                     1 => val[0].clone(),
-                    _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(val) }), // Safe to unwrap
+                    _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(val) }),
                 },
             ),
         )),

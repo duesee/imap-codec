@@ -31,7 +31,7 @@ pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
         value(Flag::Seen, tag_no_case(b"\\Seen")),
         value(Flag::Draft, tag_no_case(b"\\Draft")),
         flag_keyword,
-        map(flag_extension, |a| Flag::Extension(a.to_owned())),
+        map(flag_extension, Flag::Extension),
     ))(input)
 }
 
@@ -48,7 +48,7 @@ pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
 #[inline]
 /// `flag-keyword = atom`
 pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
-    map(atom, |a| Flag::Keyword(a.to_owned()))(input)
+    map(atom, Flag::Keyword)(input)
 }
 
 /// `flag-list = "(" [flag *(SP flag)] ")"`
@@ -88,9 +88,7 @@ pub fn mbx_list_oflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
             FlagNameAttribute::Noinferiors,
             tag_no_case(b"\\Noinferiors"),
         ),
-        map(flag_extension, |a| {
-            FlagNameAttribute::Extension(a.to_owned())
-        }),
+        map(flag_extension, FlagNameAttribute::Extension),
     ))(input)
 }
 

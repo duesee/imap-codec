@@ -33,7 +33,7 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
                     .unwrap(),
             ) // Safe to unwrap
         }),
-        map(string, |istr| ListMailbox::String(istr.to_owned())),
+        map(string, ListMailbox::String),
     ))(input)
 }
 
@@ -57,11 +57,9 @@ pub fn is_list_wildcards(i: u8) -> bool {
 ///
 /// Refer to section 5.1 for further semantic details of mailbox names.
 pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
-    map(astring, |astr| {
-        match MailboxOther::try_from(astr.to_owned()) {
-            Ok(other) => Mailbox::Other(other),
-            Err(_) => Mailbox::Inbox,
-        }
+    map(astring, |astr| match MailboxOther::try_from(astr) {
+        Ok(other) => Mailbox::Other(other),
+        Err(_) => Mailbox::Inbox,
     })(input)
 }
 
