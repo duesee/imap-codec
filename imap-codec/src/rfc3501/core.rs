@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
+use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use imap_types::core::{
@@ -22,7 +22,10 @@ use crate::{rfc3501::mailbox::is_list_wildcards, utils::unescape_quoted};
 ///
 /// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
 pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
-    map_res(map_res(digit1, from_utf8), str::parse::<u32>)(input) // FIXME(perf): use from_utf8_unchecked
+    map_res(
+        map(digit1, |val| unsafe { from_utf8_unchecked(val) }),
+        str::parse::<u32>,
+    )(input)
 }
 
 /// `nz-number = digit-nz *DIGIT`
@@ -64,13 +67,13 @@ pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
 pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
     let mut parser = tuple((
         DQUOTE,
-        map_res(
+        map(
             escaped(
                 take_while1(is_any_text_char_except_quoted_specials),
                 '\\',
                 one_of("\\\""),
             ),
-            from_utf8, // FIXME(perf): use from_utf8_unchecked
+            |val| unsafe { from_utf8_unchecked(val) },
         ),
         DQUOTE,
     ));
@@ -101,8 +104,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        // TODO(performance): We *know* already that we have a valid char.
-        |c| QuotedChar::try_from(c).unwrap(),
+        |c| unsafe { QuotedChar::new_unchecked(c) },
     )(input)
 }
 
@@ -286,8 +288,11 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
 /// `tag = 1*<any ASTRING-CHAR except "+">`
 pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
     map(
-        map_res(take_while1(|b| is_astring_char(b) && b != b'+'), from_utf8), // FIXME(perf): use from_utf8_unchecked
-        |s| Tag::try_from(s).unwrap(), // TODO(performance): we know already that Tag is valid.
+        map(
+            take_while1(|b| is_astring_char(b) && b != b'+'),
+            |val| unsafe { from_utf8_unchecked(val) },
+        ),
+        |val| unsafe { Tag::new_unchecked(Cow::Borrowed(val)) },
     )(input)
 }
 
