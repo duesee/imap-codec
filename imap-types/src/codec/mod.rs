@@ -307,7 +307,7 @@ impl<'a> Encode for AuthMechanism<'a> {
 
 impl<'a> Encode for AuthMechanismOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+        self.inner().encode(writer)
     }
 }
 

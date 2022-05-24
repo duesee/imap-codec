@@ -1,7 +1,4 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt::{Display, Formatter},
-};
+use std::convert::TryFrom;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -39,49 +36,65 @@ pub enum AuthMechanism<'a> {
     Other(AuthMechanismOther<'a>),
 }
 
+impl<'a> TryFrom<&'a str> for AuthMechanism<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, ()> {
+        match value.to_uppercase().as_str() {
+            "PLAIN" => Ok(AuthMechanism::Plain),
+            "LOGIN" => Ok(AuthMechanism::Login),
+            _ => {
+                let inner = Atom::try_from(value)?;
+                Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
+            }
+        }
+    }
+}
+
+impl<'a> TryFrom<String> for AuthMechanism<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, ()> {
+        match value.to_uppercase().as_str() {
+            "PLAIN" => Ok(AuthMechanism::Plain),
+            "LOGIN" => Ok(AuthMechanism::Login),
+            _ => {
+                let inner = Atom::try_from(value)?;
+                Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
+            }
+        }
+    }
+}
+
 impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
-    fn from(value: Atom<'a>) -> Self {
-        match value.to_lowercase().as_str() {
-            "plain" => AuthMechanism::Plain,
-            "login" => AuthMechanism::Login,
-            _ => AuthMechanism::Other(AuthMechanismOther(value)),
+    fn from(inner: Atom<'a>) -> Self {
+        match inner.to_uppercase().as_str() {
+            "PLAIN" => AuthMechanism::Plain,
+            "LOGIN" => AuthMechanism::Login,
+            _ => AuthMechanism::Other(AuthMechanismOther { inner }),
         }
     }
 }
 
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthMechanismOther<'a>(pub(crate) Atom<'a>);
-
-impl<'a> TryFrom<&'a str> for AuthMechanismOther<'a> {
-    type Error = ();
-
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        value.to_string().try_into()
-    }
+pub struct AuthMechanismOther<'a> {
+    inner: Atom<'a>,
 }
 
-impl<'a> TryFrom<String> for AuthMechanismOther<'a> {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Atom::try_from(value)?.try_into()
+impl<'a> AuthMechanismOther<'a> {
+    pub fn inner(&self) -> &Atom<'a> {
+        &self.inner
     }
 }
 
 impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
     type Error = ();
 
-    fn try_from(value: Atom<'a>) -> Result<Self, ()> {
-        match value.to_lowercase().as_str() {
-            "plain" | "login" => Err(()),
-            _ => Ok(AuthMechanismOther(value)),
+    fn try_from(inner: Atom<'a>) -> Result<Self, ()> {
+        match inner.to_uppercase().as_str() {
+            "PLAIN" | "LOGIN" => Err(()),
+            _ => Ok(AuthMechanismOther { inner }),
         }
-    }
-}
-
-impl<'a> Display for AuthMechanismOther<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
     }
 }
