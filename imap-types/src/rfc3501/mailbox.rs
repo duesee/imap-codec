@@ -81,7 +81,7 @@ impl<'a> TryFrom<&'a str> for ListMailbox<'a> {
     fn try_from(s: &'a str) -> Result<Self, ()> {
         Ok(if s.is_empty() {
             ListMailbox::String(IString::Quoted(s.try_into().map_err(|_| ())?))
-        } else if let Ok(lcs) = ListCharString::try_from(s.clone()) {
+        } else if let Ok(lcs) = ListCharString::try_from(s) {
             ListMailbox::Token(lcs)
         } else {
             ListMailbox::String(s.try_into().map_err(|_| ())?)
