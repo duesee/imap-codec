@@ -1,8 +1,22 @@
 use std::borrow::Cow;
 
-// FIXME(extract_types): copied from imap-codec
+// FIXME(extract_types): copied from abnf-core and imap-codec
 pub mod indicators {
-    use abnf_core::streaming::{is_CHAR, is_CTL};
+    /// Any 7-bit US-ASCII character, excluding NUL
+    ///
+    /// CHAR = %x01-7F
+    #[allow(non_snake_case)]
+    pub fn is_CHAR(byte: u8) -> bool {
+        matches!(byte, 0x01..=0x7f)
+    }
+
+    /// Controls
+    ///
+    /// CTL = %x00-1F / %x7F
+    #[allow(non_snake_case)]
+    pub fn is_CTL(byte: u8) -> bool {
+        matches!(byte, 0x00..=0x1f | 0x7f)
+    }
 
     pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
         is_text_char(byte) && !is_quoted_specials(byte)
