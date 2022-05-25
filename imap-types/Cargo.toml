@@ -11,7 +11,6 @@ edition = "2018"
 [features]
 default = []
 serdex  = ["serde", "chrono/serde"]
-nomx = []
 
 # IMAP Extensions
 ext_idle = []
@@ -27,7 +26,6 @@ ext_compress = []
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 base64 = "0.13"
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-abnf-core = "0.4"
 rand = "0.8"
 
 # Optional
