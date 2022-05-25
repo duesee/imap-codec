@@ -1,8 +1,3 @@
-[advisories]
-ignore = [
-    "RUSTSEC-2020-0159",
-]
-
 [bans]
 multiple-versions = "deny"
 
