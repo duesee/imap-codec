@@ -117,11 +117,11 @@ impl TryFrom<&str> for Sequence {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.split(":").count() {
+        match value.split(':').count() {
             0 => Err(()),
             1 => Ok(Sequence::Single(SeqNo::try_from(value)?)),
             2 => {
-                let mut split = value.split(":");
+                let mut split = value.split(':');
 
                 let start = split.next().unwrap();
                 let end = split.next().unwrap();
@@ -142,7 +142,7 @@ impl TryFrom<&str> for SequenceSet {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let mut results = vec![];
 
-        for seq in value.split(",") {
+        for seq in value.split(',') {
             results.push(Sequence::try_from(seq)?);
         }
 

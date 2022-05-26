@@ -157,9 +157,7 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     ),
                 )),
             )),
-            |(atom, maybe_params)| {
-                Code::Other(atom, maybe_params.map(|inner| Cow::Borrowed(inner)))
-            },
+            |(atom, maybe_params)| Code::Other(atom, maybe_params.map(Cow::Borrowed)),
         ),
     ))(input)
 }

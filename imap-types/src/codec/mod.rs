@@ -350,7 +350,7 @@ impl<'a> Encode for Literal<'a> {
 
 impl<'a> Encode for Quoted<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "\"{}\"", escape_quoted(&self.inner()))
+        write!(writer, "\"{}\"", escape_quoted(self.inner()))
     }
 }
 

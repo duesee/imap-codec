@@ -102,16 +102,7 @@ pub fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFie
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
-    Ok((
-        remaining,
-        (
-            basic,
-            SpecificFields::Basic {
-                type_: type_,
-                subtype: subtype,
-            },
-        ),
-    ))
+    Ok((remaining, (basic, SpecificFields::Basic { type_, subtype })))
 }
 
 /// `body-type-msg = media-message SP
@@ -176,7 +167,7 @@ pub fn body_type_text(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFiel
         (
             basic,
             SpecificFields::Text {
-                subtype: subtype,
+                subtype,
                 number_of_lines,
             },
         ),
@@ -207,10 +198,10 @@ pub fn body_fields(input: &[u8]) -> IResult<&[u8], BasicFields> {
     Ok((
         remaining,
         BasicFields {
-            parameter_list: parameter_list,
-            id: id,
-            description: description,
-            content_transfer_encoding: content_transfer_encoding,
+            parameter_list,
+            id,
+            description,
+            content_transfer_encoding,
             size,
         },
     ))
