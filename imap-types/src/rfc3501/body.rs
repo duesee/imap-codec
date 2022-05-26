@@ -306,5 +306,5 @@ pub struct MultiPartExtensionData<'a> {
     /// [LOCATION].
     pub location: Option<NString<'a>>,
 
-    pub extension: Vec<u8>,
+    pub extension: Cow<'a, [u8]>,
 }

@@ -465,7 +465,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     let mut disposition = None;
     let mut language = None;
     let mut location = None;
-    let mut extension = Vec::new();
+    let mut extension = Cow::Borrowed(&b""[..]);
 
     let (mut rem, parameter_list) = body_fld_param(input)?;
 
@@ -486,7 +486,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
 
                 let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
                 rem = rem_;
-                extension = ext_.to_vec();
+                extension = Cow::Borrowed(ext_);
             }
         }
     }
