@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use abnf_core::streaming::SP;
 use imap_types::{
     body::{
@@ -294,7 +296,7 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     let mut disposition = None;
     let mut language = None;
     let mut location = None;
-    let mut extension = Vec::new();
+    let mut extension = Cow::Borrowed(&b""[..]);
 
     let (mut rem, md5) = body_fld_md5(input)?;
 
@@ -315,7 +317,7 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
 
                 let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
                 rem = rem_;
-                extension = ext_.to_vec();
+                extension = Cow::Borrowed(ext_);
             }
         }
     }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "serdex")]
@@ -257,7 +259,7 @@ pub struct SinglePartExtensionData<'a> {
     /// A string list giving the body content URI as defined in [LOCATION].
     pub location: Option<NString<'a>>,
 
-    pub extension: Vec<u8>,
+    pub extension: Cow<'a, [u8]>,
 }
 
 /// The extension data of a multipart body part are in the following order:
