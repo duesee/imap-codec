@@ -439,14 +439,14 @@ fn body_type_mpart_limited(
         opt(preceded(SP, body_ext_mpart)),
     ));
 
-    let (remaining, (bodies, _, subtype, maybe_extension_data)) = parser(input)?;
+    let (remaining, (bodies, _, subtype, extension_data)) = parser(input)?;
 
     Ok((
         remaining,
         BodyStructure::Multi {
             bodies,
             subtype,
-            extension_data: maybe_extension_data,
+            extension_data,
         },
     ))
 }

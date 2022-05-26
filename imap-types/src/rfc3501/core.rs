@@ -454,7 +454,9 @@ impl<'a> Tag<'a> {
         let mut rng = thread_rng();
         let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
 
-        unsafe { Self::new_unchecked(Cow::Owned(String::from_utf8_unchecked(buffer.to_vec()))) }
+        let inner = Cow::Owned(unsafe { String::from_utf8_unchecked(buffer.to_vec()) });
+
+        Self { inner }
     }
 }
 

@@ -79,6 +79,7 @@ pub enum Section<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Part(pub NonEmptyVec<NonZeroU32>);
+
 /// A part specifier is either a part number or one of the following:
 /// `HEADER`, `HEADER.FIELDS`, `HEADER.FIELDS.NOT`, `MIME`, and `TEXT`.
 ///
