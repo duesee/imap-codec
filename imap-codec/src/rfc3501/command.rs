@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     command::{Command, CommandBody, SearchKey},
@@ -314,12 +316,18 @@ pub fn password(input: &[u8]) -> IResult<&[u8], AString> {
 ///                This is parsed here.
 ///                CRLF is parsed by upper command parser.
 /// ```
-pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Vec<u8>>)> {
+pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[u8]>>)> {
     let mut parser = tuple((
         tag_no_case(b"AUTHENTICATE"),
         SP,
         auth_type,
-        opt(preceded(SP, alt((base64, value(Vec::default(), tag("=")))))),
+        opt(preceded(
+            SP,
+            alt((
+                map(base64, Cow::Owned),
+                value(Cow::Borrowed(&b""[..]), tag("=")),
+            )),
+        )),
     ));
 
     let (remaining, (_, _, auth_type, raw_data)) = parser(input)?;

@@ -2,7 +2,7 @@
 //!
 //! see <https://tools.ietf.org/html/rfc3501#section-6>
 
-use std::convert::TryInto;
+use std::{borrow::Cow, convert::TryInto};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -55,13 +55,13 @@ impl<'a> Command<'a> {
 
     pub fn authenticate(
         mechanism: AuthMechanism<'a>,
-        initial_response: Option<&[u8]>,
+        initial_response: Option<&'a [u8]>,
     ) -> Command<'a> {
         Command::new(
             Tag::random(),
             CommandBody::Authenticate {
                 mechanism,
-                initial_response: initial_response.map(|bytes| bytes.to_vec()),
+                initial_response: initial_response.map(Cow::Borrowed),
             },
         )
     }
@@ -531,7 +531,7 @@ pub enum CommandBody<'a> {
     Authenticate {
         mechanism: AuthMechanism<'a>,
         /// Already base64-decoded
-        initial_response: Option<Vec<u8>>,
+        initial_response: Option<Cow<'a, [u8]>>,
     },
 
     /// ### 6.2.3.  LOGIN Command
@@ -1657,7 +1657,10 @@ pub enum SearchKey<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::convert::{TryFrom, TryInto};
+    use std::{
+        borrow::Cow,
+        convert::{TryFrom, TryInto},
+    };
 
     use chrono::DateTime;
 
@@ -1835,7 +1838,7 @@ mod test {
             Tag::try_from("A").unwrap(),
             CommandBody::Authenticate {
                 mechanism: AuthMechanism::Plain,
-                initial_response: Some(Vec::new()),
+                initial_response: Some(Cow::Borrowed(&b""[..])),
             },
         );
 
