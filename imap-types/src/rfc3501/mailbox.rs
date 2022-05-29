@@ -27,6 +27,9 @@ impl<'a> ListCharString<'a> {
     }
 
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }

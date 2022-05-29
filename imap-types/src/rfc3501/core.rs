@@ -41,6 +41,9 @@ impl<'a> Atom<'a> {
     }
 
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }
@@ -97,6 +100,9 @@ impl<'a> AtomExt<'a> {
     }
 
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }
@@ -230,6 +236,9 @@ impl<'a> Literal<'a> {
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
     pub unsafe fn new_unchecked(inner: Cow<'a, [u8]>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }
@@ -292,8 +301,11 @@ impl<'a> Quoted<'a> {
     ///
     /// Call this function only when you are sure that the str
     /// is a valid quoted.
-    pub unsafe fn new_unchecked(value: Cow<'a, str>) -> Self {
-        Self { inner: value }
+    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
+        Self { inner }
     }
 }
 
@@ -432,6 +444,9 @@ impl<'a> Tag<'a> {
     }
 
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 
@@ -487,6 +502,9 @@ impl<'a> Text<'a> {
     }
 
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }
@@ -539,6 +557,9 @@ impl QuotedChar {
     }
 
     pub unsafe fn new_unchecked(inner: char) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(inner));
+
         Self { inner }
     }
 }
@@ -603,6 +624,9 @@ impl<T> NonEmptyVec<T> {
     }
 
     pub unsafe fn new_unchecked(inner: Vec<T>) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(Self::verify(&inner));
+
         Self { inner }
     }
 }
