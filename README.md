@@ -10,19 +10,17 @@ The three entry points are `greeting` (to parse the first message from a server)
 
 # Features
 
-The type system is used to enforce correctness and make the library misuse resistant. It should not be possible to construct messages, which would violate the IMAP specification.
+Rust's type system is used to enforce correctness and make the library misuse-resistant. It should not be possible to construct messages that violate the IMAP specification.
 
-Fuzzing (via [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz)) and property-based tests are used to uncover parsing and serialization bugs. For example, the library is fuzz-tested never to produce a message it can not parse itself. The complete [formal syntax](https://tools.ietf.org/html/rfc3501#section-9) of IMAP4rev1 is implemented.
+Fuzzing (via [cargo fuzz](https://github.com/rust-fuzz/cargo-fuzz)) and property-based tests are used to uncover parsing and serialization bugs. For example, the library is fuzz-tested to never produce a message it can not parse itself. The complete [formal syntax](https://tools.ietf.org/html/rfc3501#section-9) of IMAP4rev1 is implemented.
 
 Every parser works in streaming mode, i.e., all parsers will return `Incomplete` when there is not enough data to make a final decision, and no command or response will ever be truncated.
-
-This is the most complete IMAP implementation in Rust available. Only [tokio-imap](https://github.com/djc/tokio-imap) provides a comparative amount of features. However, it does not implement the server-side. (Please tell me if there is another one!)
 
 # Usage
 
 ```rust
 use imap_codec::{
-    codec::Encode,           // This trait provides the `serialize` method.
+    types::codec::Encode, // This trait provides the `encode` method.
     parse::command::command, // This is the command parser.
 };
 
@@ -37,7 +35,7 @@ fn main() {
     parsed.encode(&mut serialized).unwrap(); // This could be send over the network.
     
     let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
-    println!("// Serialized:");                              // We just ignore that, so that we can print the message.
+    println!("// Serialized:"); // We just ignore that, so that we can print the message.
     println!("// {}", serialized);
 }
 ```
@@ -49,51 +47,6 @@ Have a look at the `parse_*` examples and try any IMAP message, e.g.
 ```
 $ cargo run --example=parse_command
 ```
-
-# Known issues and TODOs
-
-* Make API stable:
-    * Decide when `&[u8]` or `&str` is sufficient and when, e.g., `Atom` or `IString` are useful.
-    * Provide "owned" and "referenced" variants of types (work in progress)
-
-* Provide good documentation:
-    * Add examples and public documentation.
-    * Remove irrelevant comments and appropriately cite IMAP RFC.
-
-* Measure and improve efficiency:
-    * Do not allocate when not needed.
-    * Make good use of `Cow` (see `quoted` parser).
-
-## A Note on Allocation and Types
-
-Parsed objects are "owned", making them comfortable to use as one has not to think about lifetimes. However, I realize that a low-level parsing library should be more strict about allocations. Thus, I tried to 1) avoid unnecessary allocations, 2) defer allocations as far "up" in the parse tree as possible, and 3) always make allocations explicit. In other words: most low-level parsers do not allocate, and allocations are done as late as possible, optimally, right before returning an owned object to the user. This is currently a middle-ground with room for improvement.
-
-Due to the correctness guarantees (and the mentioned allocation strategy), the library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString` (in an owned and referenced variant.) I found them quite useful, but they might not weigh their merit. Positively thinking, this is another opportunity to remove some code.
-
-## A Note on IMAP literals
-
-The way that IMAP specified literals make it difficult to separate the parsing logic from the application logic. When a parser recognizes a literal (e.g. "{42}"), which can be used anywhere, a so-called continuation response ("+ ...") must be sent.
-Otherwise, the client or server will not send any more data, and a parser would always return `Incomplete(42)`.
-
-A possible solution is to implement a "framing codec" first. This strategy is motivated by the IMAP RFC:
-
-```
-The protocol receiver of an IMAP4rev1 client or server is either reading a line,
-or is reading a sequence of octets with a known count followed by a line.
-```
-
-Thus, the framing codec may be implemented like this...
-
-```
-loop {
-    line = read_line()
-    if line.has_literal() {
-        literal = read_literal(amount)
-    }
-}
-```
-
-A variant of this procedure is provided in [examples/parse_command.rs](https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs).
 
 ## Sample IMAP4rev1 connection from RFC 3501
 
@@ -184,6 +137,35 @@ Status(Bye { code: None, text: Text("IMAP4rev1 server terminating connection") }
 Status(Ok { tag: Some(Tag("a006")), code: None, text: Text("LOGOUT completed") })
 // a006 OK LOGOUT completed
 ```
+
+## A Note on Types
+
+Due to the correctness guarantees (and the mentioned allocation strategy), the library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString`.
+
+## A Note on IMAP literals
+
+IMAP literals make separating the parsing logic from the application logic difficult. When a parser recognizes a literal (e.g. "{42}"), which can be used anywhere, a so-called continuation response ("+ ...") must be sent.
+Otherwise, the client or server will not send any more data, and a parser would always return `Incomplete(42)`.
+
+A possible solution is to implement a "framing codec" first. This strategy is motivated by the IMAP RFC:
+
+```
+The protocol receiver of an IMAP4rev1 client or server is either reading a line,
+or is reading a sequence of octets with a known count followed by a line.
+```
+
+Thus, the framing codec may be implemented like this...
+
+```
+loop {
+    line = read_line()
+    if line.has_literal() {
+        literal = read_literal(amount)
+    }
+}
+```
+
+A variant of this procedure is provided in [examples/parse_command.rs](https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs).
 
 # License
 
