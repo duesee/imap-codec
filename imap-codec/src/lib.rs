@@ -9,6 +9,8 @@ pub mod utils;
 #[cfg(feature = "nomx")]
 pub mod internal;
 
+pub use imap_types;
+pub use imap_types as types;
 /// This module is only available when the feature "nomx" was specified.
 #[cfg(feature = "nomx")]
 pub use nom;
