@@ -18,7 +18,7 @@ use crate::{
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListCharString<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> ListCharString<'a> {

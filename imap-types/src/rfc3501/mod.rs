@@ -79,7 +79,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AuthMechanismOther<'a> {
-    inner: Atom<'a>,
+    pub(crate) inner: Atom<'a>,
 }
 
 impl<'a> AuthMechanismOther<'a> {

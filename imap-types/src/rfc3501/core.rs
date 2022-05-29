@@ -28,7 +28,7 @@ use crate::utils::indicators::{
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Atom<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> Atom<'a> {
@@ -87,7 +87,7 @@ impl<'a> Deref for Atom<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> AtomExt<'a> {
@@ -216,7 +216,7 @@ impl<'a> TryFrom<String> for IString<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
-    inner: Cow<'a, [u8]>,
+    pub(crate) inner: Cow<'a, [u8]>,
 }
 
 impl<'a> Literal<'a> {
@@ -282,7 +282,7 @@ impl<'a> Deref for Literal<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Quoted<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> Quoted<'a> {
@@ -433,7 +433,7 @@ impl<'a> TryFrom<String> for AString<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> Tag<'a> {
@@ -493,7 +493,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a> {
-    inner: Cow<'a, str>,
+    pub(crate) inner: Cow<'a, str>,
 }
 
 impl<'a> Text<'a> {
@@ -619,7 +619,7 @@ impl<'a> TryFrom<String> for Charset<'a> {
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NonEmptyVec<T> {
-    inner: Vec<T>,
+    pub(crate) inner: Vec<T>,
 }
 
 impl<T> NonEmptyVec<T> {
