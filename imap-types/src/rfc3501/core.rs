@@ -598,6 +598,10 @@ pub struct NonEmptyVec<T> {
 }
 
 impl<T> NonEmptyVec<T> {
+    pub fn verify(value: &[T]) -> bool {
+        !value.is_empty()
+    }
+
     pub unsafe fn new_unchecked(inner: Vec<T>) -> Self {
         Self { inner }
     }
@@ -607,7 +611,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     type Error = ();
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
-        if !inner.is_empty() {
+        if Self::verify(&inner) {
             Ok(Self { inner })
         } else {
             Err(())
