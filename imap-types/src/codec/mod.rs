@@ -1052,7 +1052,7 @@ impl<'a> Encode for FetchAttributeValue<'a> {
 
 impl<'a> Encode for NString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match &self.0 {
+        match &self.inner {
             Some(imap_str) => imap_str.encode(writer),
             None => writer.write_all(b"NIL"),
         }

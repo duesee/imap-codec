@@ -224,8 +224,8 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
 /// `nstring = string / nil`
 pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
     alt((
-        map(string, |item| NString(Some(item))),
-        map(nil, |_| NString(None)),
+        map(string, |item| NString { inner: Some(item) }),
+        map(nil, |_| NString { inner: None }),
     ))(input)
 }
 

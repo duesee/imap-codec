@@ -350,7 +350,9 @@ impl<'a> Deref for Quoted<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // This wrapper is merely used for formatting.
 // The inner value can be public.
-pub struct NString<'a>(pub Option<IString<'a>>);
+pub struct NString<'a> {
+    pub inner: Option<IString<'a>>,
+}
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
