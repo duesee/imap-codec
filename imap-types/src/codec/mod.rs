@@ -20,7 +20,7 @@ use crate::{
     envelope::Envelope,
     fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
     flag::{Flag, FlagNameAttribute, StoreResponse, StoreType},
-    mailbox::{ListMailbox, Mailbox, MailboxOther},
+    mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{Capability, Code, Continuation, Data, Response, Status},
     section::{Part, Section},
     sequence::{SeqNo, Sequence, SequenceSet},
@@ -372,9 +372,15 @@ impl<'a> Encode for MailboxOther<'a> {
 impl<'a> Encode for ListMailbox<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            ListMailbox::Token(str) => writer.write_all(str.as_bytes()), // TODO: use encode()
-            ListMailbox::String(imap_str) => imap_str.encode(writer),
+            ListMailbox::Token(lcs) => lcs.encode(writer),
+            ListMailbox::String(istr) => istr.encode(writer),
         }
+    }
+}
+
+impl<'a> Encode for ListCharString<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.as_bytes())
     }
 }
 
