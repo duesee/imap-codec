@@ -48,6 +48,20 @@ jobs:
           command: test
           args: --all --all-features
           
+  compile_benchmarks:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Compile benchmarks
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --no-run
+
   audit:
     needs: test
     runs-on: ubuntu-latest
