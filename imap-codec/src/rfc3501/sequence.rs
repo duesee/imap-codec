@@ -1,6 +1,7 @@
-use std::convert::TryInto;
-
-use imap_types::sequence::{SeqNo, Sequence, SequenceSet};
+use imap_types::{
+    core::NonEmptyVec,
+    sequence::{SeqNo, Sequence, SequenceSet},
+};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -42,8 +43,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
                 map(seq_number, Sequence::Single),
             )),
         ),
-        // TODO(performance)
-        |set| SequenceSet(set.try_into().unwrap()),
+        |set| SequenceSet(unsafe { NonEmptyVec::new_unchecked(set) }),
     )(input)
 }
 
