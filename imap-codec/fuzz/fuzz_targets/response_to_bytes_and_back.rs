@@ -2,10 +2,12 @@
 
 use std::str::from_utf8;
 
-use imap_codec::response::response;
-use imap_types::{
-    codec::Encode,
-    response::{Data, Response, Status},
+use imap_codec::{
+    response::response,
+    types::{
+        codec::Encode,
+        response::{Data, Response, Status},
+    },
 };
 use libfuzzer_sys::fuzz_target;
 

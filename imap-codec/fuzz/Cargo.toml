@@ -11,7 +11,6 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 imap-codec = { path = "..", features = ["arbitrary"] }
-imap-types = { path = "../../imap-types", features = ["arbitrary"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

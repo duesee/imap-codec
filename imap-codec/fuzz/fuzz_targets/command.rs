@@ -1,7 +1,6 @@
 #![no_main]
 
-use imap_codec::command::command;
-use imap_types::codec::Encode;
+use imap_codec::{command::command, types::codec::Encode};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
