@@ -1,9 +1,6 @@
 #![no_main]
 
-use imap_types::{
-    command::Command,
-    response::Response,
-};
+use imap_types::{command::Command, response::Response};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|tuple: (Command, Response)| {

@@ -8,6 +8,13 @@ edition = "2018"
 [package.metadata]
 cargo-fuzz = true
 
+# Forward features according to ...
+#    https://rust-fuzz.github.io/book/cargo-fuzz/guide.html#cargo-features
+[features]
+ext_idle = ["imap-types/ext_idle"]
+ext_enable = ["imap-types/ext_enable"]
+ext_compress = ["imap-types/ext_compress"]
+
 [dependencies]
 libfuzzer-sys = "0.4"
 imap-types = { path = "..", features = ["arbitrary"] }
