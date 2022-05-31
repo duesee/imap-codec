@@ -604,7 +604,7 @@ pub enum Code<'a> {
     Other(Atom<'a>, Option<Cow<'a, str>>),
 
     /// IMAP4 Login Referrals (RFC 2221)
-    Referral(Cow<'a, str>), // TODO: the imap url is more complicated than that...
+    Referral(Cow<'a, str>), // TODO(misuse): the imap url is more complicated than that...
 
     #[cfg(feature = "ext_compress")]
     CompressionActive,

@@ -41,7 +41,7 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// Note: This parser must be executed *instead* of the command parser
 /// when the server is in the IDLE state.
 ///
-// TODO: just interpret as command?
+// TODO(41): just interpret as command?
 pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
     let mut parser = value((), tuple((tag_no_case("DONE"), CRLF)));
 

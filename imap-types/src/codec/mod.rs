@@ -1215,7 +1215,8 @@ impl<'a> Encode for SinglePartExtensionData<'a> {
                     loc.encode(writer)?;
 
                     if !self.extension.is_empty() {
-                        //writer.write_all(b" ")?; // TODO: Extension includes the SP for now, as it is unparsed.
+                        // FIXME: Extension includes the SP for now, as it is unparsed.
+                        //writer.write_all(b" ")?;
                         writer.write_all(&self.extension)?;
                     }
                 }
@@ -1253,7 +1254,8 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
                     loc.encode(writer)?;
 
                     if !self.extension.is_empty() {
-                        //writer.write_all(b" "); // TODO: Extension includes the SP for now, as it is unparsed.
+                        // FIXME: Extension includes the SP for now, as it is unparsed.
+                        //writer.write_all(b" ");
                         writer.write_all(&self.extension)?;
                     }
                 }

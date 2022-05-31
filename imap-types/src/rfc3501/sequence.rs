@@ -150,7 +150,6 @@ impl TryFrom<&str> for SequenceSet {
     }
 }
 
-// TODO: Used for Arbitrary
 impl TryFrom<String> for SequenceSet {
     type Error = ();
 
@@ -225,7 +224,7 @@ impl From<Sequence> for SequenceSet {
     }
 }
 
-// TODO: Make this work and delete the code above?
+// TODO(cleanup): Make this work and delete the code above?
 //
 // error[E0119]: conflicting implementations of trait `std::convert::TryFrom<_>` for type `rfc3501::sequence::Sequence`
 //

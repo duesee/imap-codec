@@ -26,7 +26,7 @@ fn main() {
             }
             // Parser needs more data, and a literal acknowledgement action is required.
             // This step is crucial for real clients. Otherwise a client won't send any more data.
-            // TODO: `ErrorKind::Fix` is used (for now) to signal that a server acknowledgement is required.
+            // TODO(#40): `ErrorKind::Fix` is used (for now) to signal that a server acknowledgement is required.
             Err(nom::Err::Failure(failure)) if failure.code == nom::error::ErrorKind::Fix => {
                 // Simulate literal acknowledgement ...
                 println!("S: {}", ColorServer.paint("+ "));

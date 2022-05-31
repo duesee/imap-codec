@@ -282,7 +282,7 @@ pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
-/// TODO: this is insane... define macro?
+/// TODO(cleanup): this is insane... define macro?
 pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     let mut disposition = None;
     let mut language = None;
@@ -376,7 +376,7 @@ pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
 ///
-/// TODO: This recognizes extension data and returns &[u8].
+/// FIXME: This recognizes extension data and returns &[u8].
 pub fn body_extension(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     move |input: &[u8]| body_extension_limited(input, remaining_recursions)
 }
@@ -451,7 +451,7 @@ fn body_type_mpart_limited(
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
-/// TODO: this is insane, too... define macro?
+/// TODO(cleanup): this is insane, too... define macro?
 pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     let mut disposition = None;
     let mut language = None;

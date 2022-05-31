@@ -37,7 +37,7 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
     match NonZeroU32::new(number) {
         Some(number) => Ok((remaining, number)),
         None => {
-            // TODO(verify): use `Failure` or `Error`?
+            // TODO(#42): use `Failure` or `Error`?
             Err(nom::Err::Error(nom::error::make_error(
                 input,
                 nom::error::ErrorKind::Verify,
@@ -123,16 +123,18 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
+    // TODO(#40)
     // Signal that an continuation request is required.
-    // TODO: There are some issues with this ...
-    //       * The return type is ad-hoc and does not tell *how* many bytes are about to be send
-    //       * It doesn't capture the case when there is something in the buffer already.
-    //         This is basically good for us, but there could be issues with servers violating the
-    //         IMAP protocol and sending data right away.
+    // There are some issues with this ...
+    //   * The return type is ad-hoc and does not tell *how* many bytes are about to be send
+    //   * It doesn't capture the case when there is something in the buffer already.
+    //     This is basically good for us, but there could be issues with servers violating the
+    //     IMAP protocol and sending data right away.
     if remaining.is_empty() {
+        // TODO(#42)
         return Err(nom::Err::Failure(nom::error::Error::new(
             remaining,
-            ErrorKind::Fix, // TODO
+            ErrorKind::Fix,
         )));
     }
 
