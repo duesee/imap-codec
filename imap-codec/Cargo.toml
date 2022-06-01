@@ -10,6 +10,7 @@ edition = "2018"
 
 [features]
 default = []
+arbitrary = ["imap-types/arbitrary"]
 serdex  = ["serde", "chrono/serde", "imap-types/serdex"]
 nomx = []
 
