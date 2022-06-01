@@ -26,7 +26,7 @@ fn ignore_flags(flags: &Vec<Flag>) -> bool {
 }
 
 #[cfg(feature = "ext_enable")]
-fn ignore_capabilities(capabilities: &Vec<Capability>) -> bool {
+fn ignore_capabilities(capabilities: &[Capability]) -> bool {
     capabilities
         .iter()
         .any(|capability| matches!(capability, Capability::Other(_)))
