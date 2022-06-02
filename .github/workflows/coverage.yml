@@ -1,0 +1,78 @@
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+  #pull_request:
+  #  #branches: [ main ]
+  #  paths:
+  #    - '**.rs'
+  #    - '**.toml'
+  #    - '.github/workflows/**'
+
+name: Measure Test Coverage
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # FIXME: steps.cache.output.cache-hit is always "null"
+      #        and I don't know why.
+      #- name: Cache toolchain
+      #  id: cache
+      #  uses: actions/cache@v3
+      #  with:
+      #    path: |
+      #      ~/.cargo
+      #      ~/.rustup
+      #    key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install toolchain
+        #if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Install toolchain | grcov
+        #if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install grcov
+
+      - name: Measure coverage
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+
+      - name: Create grcov config
+        run: |
+          echo -e "output-type: html\noutput-path: html\n" > grcov.config
+
+      - name: Collect coverage
+        id: coverage
+        uses: actions-rs/grcov@v0.1
+        with:
+          config: grcov.config
+
+      # I don't want to use a third-party service to
+      # publish a badge with a single number.
+      # This solution still uses shields.io, but it is simpler.
+      - name: Deploy
+        run: |
+          msg=`cat html/coverage.json`
+          curl \
+          -X PATCH \
+          -u duesee:${{ secrets.GIST_SECRET }} \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d "{ \"files\": { \"imap-codec_badge_coverage.json\": { \"content\": \"${msg//\"/\\\"}\" } } }" \
+          https://api.github.com/gists/95b5f960b988ab73cc700de7146cd815
