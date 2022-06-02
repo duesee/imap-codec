@@ -1,12 +1,13 @@
 name: Scheduled
 on:
   schedule:
-    - cron: '43 21 * * 3,0' # At 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
+    # 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
+    - cron: '43 21 * * 3,0'
 
 jobs:
   audit:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: actions/checkout@v2
+      - uses: EmbarkStudios/cargo-deny-action@v1
