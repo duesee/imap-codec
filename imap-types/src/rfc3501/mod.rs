@@ -98,3 +98,16 @@ impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
         }
     }
 }
+
+impl<'a> TryFrom<&'a str> for AuthMechanismOther<'a> {
+    type Error = ();
+
+    fn try_from(inner: &'a str) -> Result<Self, ()> {
+        match inner.to_ascii_lowercase().as_str() {
+            "plain" | "login" => Err(()),
+            _ => Ok(AuthMechanismOther {
+                inner: Atom::try_from(inner)?,
+            }),
+        }
+    }
+}
