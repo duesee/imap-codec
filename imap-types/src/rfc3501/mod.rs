@@ -40,9 +40,9 @@ impl<'a> TryFrom<&'a str> for AuthMechanism<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, ()> {
-        match value.to_uppercase().as_str() {
-            "PLAIN" => Ok(AuthMechanism::Plain),
-            "LOGIN" => Ok(AuthMechanism::Login),
+        match value.to_ascii_lowercase().as_str() {
+            "plain" => Ok(AuthMechanism::Plain),
+            "login" => Ok(AuthMechanism::Login),
             _ => {
                 let inner = Atom::try_from(value)?;
                 Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
@@ -55,9 +55,9 @@ impl<'a> TryFrom<String> for AuthMechanism<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, ()> {
-        match value.to_uppercase().as_str() {
-            "PLAIN" => Ok(AuthMechanism::Plain),
-            "LOGIN" => Ok(AuthMechanism::Login),
+        match value.to_ascii_lowercase().as_str() {
+            "plain" => Ok(AuthMechanism::Plain),
+            "login" => Ok(AuthMechanism::Login),
             _ => {
                 let inner = Atom::try_from(value)?;
                 Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
@@ -68,9 +68,9 @@ impl<'a> TryFrom<String> for AuthMechanism<'a> {
 
 impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
     fn from(inner: Atom<'a>) -> Self {
-        match inner.to_uppercase().as_str() {
-            "PLAIN" => AuthMechanism::Plain,
-            "LOGIN" => AuthMechanism::Login,
+        match inner.to_ascii_lowercase().as_str() {
+            "plain" => AuthMechanism::Plain,
+            "login" => AuthMechanism::Login,
             _ => AuthMechanism::Other(AuthMechanismOther { inner }),
         }
     }
@@ -92,8 +92,8 @@ impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
     type Error = ();
 
     fn try_from(inner: Atom<'a>) -> Result<Self, ()> {
-        match inner.to_uppercase().as_str() {
-            "PLAIN" | "LOGIN" => Err(()),
+        match inner.to_ascii_lowercase().as_str() {
+            "plain" | "login" => Err(()),
             _ => Ok(AuthMechanismOther { inner }),
         }
     }

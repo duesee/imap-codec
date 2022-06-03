@@ -36,7 +36,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
         alt((
             map(
                 resp_cond_auth,
-                |(raw_status, (code, text))| match raw_status.to_lowercase().as_ref() {
+                |(raw_status, (code, text))| match raw_status.to_ascii_lowercase().as_ref() {
                     "ok" => Status::Ok {
                         tag: None,
                         code,
@@ -193,7 +193,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
             |(_, algorithm)| Capability::Compress { algorithm },
         ),
         map(atom, |atom| {
-            match atom.to_lowercase().as_ref() {
+            match atom.to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
                 "logindisabled" => Capability::LoginDisabled,
                 "starttls" => Capability::StartTls,
@@ -268,7 +268,7 @@ pub fn response_data(input: &[u8]) -> IResult<&[u8], Response> {
         SP,
         alt((
             map(resp_cond_state, |(raw_status, code, text)| {
-                let status = match raw_status.to_lowercase().as_ref() {
+                let status = match raw_status.to_ascii_lowercase().as_ref() {
                     "ok" => Status::Ok {
                         tag: None,
                         code,
@@ -337,7 +337,7 @@ pub fn response_tagged(input: &[u8]) -> IResult<&[u8], Status> {
 
     let (remaining, (tag, _, (raw_status, code, text), _)) = parser(input)?;
 
-    let status = match raw_status.to_lowercase().as_ref() {
+    let status = match raw_status.to_ascii_lowercase().as_ref() {
         "ok" => Status::Ok {
             tag: Some(tag),
             code,

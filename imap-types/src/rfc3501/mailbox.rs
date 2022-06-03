@@ -165,7 +165,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     fn try_from(mailbox: AString<'a>) -> Result<Self, Self::Error> {
         match mailbox {
             AString::Atom(ref str) => {
-                if str.to_lowercase() == "inbox" {
+                if str.to_ascii_lowercase() == "inbox" {
                     Err(())
                 } else {
                     Ok(MailboxOther { inner: mailbox })
@@ -173,7 +173,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
             }
             AString::String(ref imap_str) => match imap_str {
                 IString::Quoted(ref str) => {
-                    if str.to_lowercase() == "inbox" {
+                    if str.to_ascii_lowercase() == "inbox" {
                         Err(())
                     } else {
                         Ok(MailboxOther { inner: mailbox })
@@ -183,7 +183,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
                     // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
                     if let Ok(str) = from_utf8(bytes) {
                         // After the conversion we ignore the case...
-                        if str.to_lowercase() == "inbox" {
+                        if str.to_ascii_lowercase() == "inbox" {
                             // ...and return the Inbox variant.
                             Err(())
                         } else {
@@ -203,7 +203,7 @@ impl<'a> TryFrom<&'a str> for Mailbox<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, ()> {
-        if value.to_lowercase() == "inbox" {
+        if value.to_ascii_lowercase() == "inbox" {
             Ok(Mailbox::Inbox)
         } else {
             let astr = AString::try_from(value)?;
@@ -217,11 +217,11 @@ impl<'a> TryFrom<&'a str> for Mailbox<'a> {
 impl<'a> TryFrom<String> for Mailbox<'a> {
     type Error = ();
 
-    fn try_from(s: String) -> Result<Self, ()> {
-        if s.to_lowercase() == "inbox" {
+    fn try_from(value: String) -> Result<Self, ()> {
+        if value.to_ascii_lowercase() == "inbox" {
             Ok(Mailbox::Inbox)
         } else {
-            let astr = AString::try_from(s)?;
+            let astr = AString::try_from(value)?;
             let other = MailboxOther::try_from(astr)?;
 
             Ok(Mailbox::Other(other))
