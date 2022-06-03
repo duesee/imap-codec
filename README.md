@@ -1,6 +1,6 @@
 [![CI](https://github.com/duesee/imap-codec/actions/workflows/ci.yml/badge.svg)](https://github.com/duesee/imap-codec/actions/workflows/ci.yml)
 [![Scheduled](https://github.com/duesee/imap-codec/actions/workflows/scheduled.yml/badge.svg)](https://github.com/duesee/imap-codec/actions/workflows/scheduled.yml)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/duesee/95b5f960b988ab73cc700de7146cd815/raw/imap-codec_badge_coverage.json)
+[![Coverage Status](https://coveralls.io/repos/github/duesee/imap-codec/badge.svg?branch=main)](https://coveralls.io/github/duesee/imap-codec?branch=main)
 [![docs](https://docs.rs/imap-codec/badge.svg)](https://docs.rs/imap-codec)
 
 # IMAP Protocol
