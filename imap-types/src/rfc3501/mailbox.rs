@@ -228,3 +228,50 @@ impl<'a> TryFrom<String> for Mailbox<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::{borrow::Cow, convert::TryFrom};
+
+    use crate::{
+        core::{AString, IString, Literal},
+        mailbox::{Mailbox, MailboxOther},
+    };
+
+    #[test]
+    fn mailbox_try_from_str_string_positive() {
+        let tests = [
+            ("inbox", Mailbox::Inbox),
+            ("inboX", Mailbox::Inbox),
+            ("Inbox", Mailbox::Inbox),
+            ("InboX", Mailbox::Inbox),
+            ("INBOX", Mailbox::Inbox),
+            (
+                "INBO²",
+                Mailbox::Other(MailboxOther {
+                    inner: AString::String(IString::Literal(Literal {
+                        inner: Cow::Borrowed("INBO²".as_bytes()),
+                    })),
+                }),
+            ),
+        ];
+
+        for (test, expected) in tests {
+            let got = Mailbox::try_from(test).unwrap();
+            assert_eq!(expected, got);
+
+            let got = Mailbox::try_from(String::from(test)).unwrap();
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn mailbox_try_from_str_string_negative() {
+        let tests = ["\x00", "A\x00", "\x00A"];
+
+        for test in tests {
+            assert!(Mailbox::try_from(test).is_err());
+            assert!(Mailbox::try_from(String::from(test)).is_err());
+        }
+    }
+}
