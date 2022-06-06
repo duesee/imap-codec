@@ -131,6 +131,7 @@ impl<'a> IntoOwned for CommandBody<'a> {
             Capability => Capability,
             Noop => Noop,
             Logout => Logout,
+            #[cfg(feature = "starttls")]
             StartTLS => StartTLS,
             Authenticate {
                 mechanism,
@@ -573,6 +574,7 @@ impl<'a> IntoOwned for Capability<'a> {
             Imap4Rev1 => Imap4Rev1,
             Auth(val) => Auth(val.into_owned()),
             LoginDisabled => LoginDisabled,
+            #[cfg(feature = "starttls")]
             StartTls => StartTls,
             #[cfg(feature = "ext_idle")]
             Idle => Idle,

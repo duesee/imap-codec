@@ -14,6 +14,9 @@ arbitrary = ["imap-types/arbitrary"]
 serdex  = ["serde", "chrono/serde", "imap-types/serdex"]
 nomx = []
 
+# IMAP
+starttls = ["imap-types/starttls"]
+
 # IMAP Extensions
 ext_idle = ["imap-types/ext_idle"]
 ext_enable = ["imap-types/ext_enable"]

@@ -196,6 +196,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
             match atom.to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
                 "logindisabled" => Capability::LoginDisabled,
+                #[cfg(feature = "starttls")]
                 "starttls" => Capability::StartTls,
                 // RFC 2177 IMAP4 IDLE command
                 #[cfg(feature = "ext_idle")]

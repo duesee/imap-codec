@@ -275,6 +275,7 @@ pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
                 initial_response,
             }
         }),
+        #[cfg(feature = "starttls")]
         value(CommandBody::StartTLS, tag_no_case(b"STARTTLS")),
     ));
 

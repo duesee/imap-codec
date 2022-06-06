@@ -49,6 +49,7 @@ impl<'a> Command<'a> {
         Command::new(Tag::random(), CommandBody::Logout)
     }
 
+    #[cfg(feature = "starttls")]
     pub fn starttls() -> Command<'a> {
         Command::new(Tag::random(), CommandBody::StartTLS)
     }
@@ -437,6 +438,7 @@ pub enum CommandBody<'a> {
     /// the-middle attacks which alter the capabilities list prior to
     /// STARTTLS.  The server MAY advertise different capabilities after
     /// STARTTLS.
+    #[cfg(feature = "starttls")]
     StartTLS,
 
     /// ### 6.2.2.  AUTHENTICATE Command
@@ -1474,6 +1476,7 @@ impl<'a> CommandBody<'a> {
             Capability => "CAPABILITY",
             Noop => "NOOP",
             Logout => "LOGOUT",
+            #[cfg(feature = "starttls")]
             StartTLS => "STARTTLS",
             Authenticate { .. } => "AUTHENTICATE",
             Login { .. } => "LOGIN",
@@ -1687,6 +1690,7 @@ mod test {
             Command::capability(),
             Command::noop(),
             Command::logout(),
+            #[cfg(feature = "starttls")]
             Command::starttls(),
             Command::authenticate(AuthMechanism::Plain, None),
             Command::authenticate(AuthMechanism::Login, None),

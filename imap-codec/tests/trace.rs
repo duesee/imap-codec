@@ -86,6 +86,7 @@ fn test_lines_of_trace(trace: &[u8]) {
     }
 }
 
+#[cfg(feature = "starttls")]
 #[test]
 fn test_from_capability() {
     let trace = b"C: abcd CAPABILITY
@@ -126,6 +127,7 @@ S: A023 OK LOGOUT completed
     test_lines_of_trace(trace);
 }
 
+#[cfg(feature = "starttls")]
 #[test]
 fn test_from_starttls() {
     let trace = br#"C: a001 CAPABILITY

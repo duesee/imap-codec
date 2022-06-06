@@ -12,6 +12,9 @@ edition = "2018"
 default = []
 serdex  = ["serde", "chrono/serde"]
 
+# IMAP
+starttls = []
+
 # IMAP Extensions
 ext_idle = []
 ext_enable = []

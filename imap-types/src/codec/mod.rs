@@ -64,6 +64,7 @@ impl<'a> Encode for CommandBody<'a> {
             CommandBody::Capability => writer.write_all(b"CAPABILITY"),
             CommandBody::Noop => writer.write_all(b"NOOP"),
             CommandBody::Logout => writer.write_all(b"LOGOUT"),
+            #[cfg(feature = "starttls")]
             CommandBody::StartTLS => writer.write_all(b"STARTTLS"),
             CommandBody::Authenticate {
                 mechanism,
@@ -722,6 +723,7 @@ impl<'a> Encode for Capability<'a> {
                 }
             },
             LoginDisabled => writer.write_all(b"LOGINDISABLED"),
+            #[cfg(feature = "starttls")]
             StartTls => writer.write_all(b"STARTTLS"),
             MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
             LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),

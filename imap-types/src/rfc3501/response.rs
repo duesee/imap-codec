@@ -626,6 +626,7 @@ pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
     LoginDisabled,
+    #[cfg(feature = "starttls")]
     StartTls,
     // ---
     #[cfg(feature = "ext_idle")]
