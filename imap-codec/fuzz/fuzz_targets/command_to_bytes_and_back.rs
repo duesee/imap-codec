@@ -1,7 +1,7 @@
 #![no_main]
 
 #[cfg(feature = "ext_enable")]
-use imap_codec::extensions::rfc5161::CapabilityEnable;
+use imap_codec::types::extensions::rfc5161::CapabilityEnable;
 use imap_codec::{
     command::command,
     types::{
@@ -29,7 +29,7 @@ fn ignore_flags(flags: &Vec<Flag>) -> bool {
 fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
     capabilities
         .iter()
-        .any(|capability| matches!(capability, Capability::Other(_)))
+        .any(|capability| matches!(capability, CapabilityEnable::Other(_)))
 }
 
 fuzz_target!(|test: Command| {
@@ -53,7 +53,7 @@ fuzz_target!(|test: Command| {
             // FIXME(#30)
         }
         #[cfg(feature = "ext_enable")]
-        CommandBody::Enable { capabilities, .. } if ignore_capabilities(capabilities) => {
+        CommandBody::Enable { capabilities, .. } if ignore_capabilities_enable(capabilities) => {
             // FIXME(#30)
         }
         _ => {
