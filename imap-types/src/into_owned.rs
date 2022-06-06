@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+#[cfg(feature = "ext_enable")]
+use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
     address::Address,
     body::{
@@ -581,6 +583,20 @@ impl<'a> IntoOwned for Capability<'a> {
             Enable => Enable,
             #[cfg(feature = "ext_compress")]
             Compress { algorithm } => Compress { algorithm },
+            Other(val) => Other(val.into_owned()),
+        }
+    }
+}
+
+#[cfg(feature = "ext_enable")]
+impl<'a> IntoOwned for CapabilityEnable<'a> {
+    type Item = CapabilityEnable<'static>;
+
+    fn into_owned(self) -> Self::Item {
+        use CapabilityEnable::*;
+
+        match self {
+            Utf8(val) => Utf8(val),
             Other(val) => Other(val.into_owned()),
         }
     }

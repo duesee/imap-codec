@@ -864,19 +864,16 @@ mod test {
     #[test]
     #[cfg(feature = "ext_enable")]
     fn test_enable() {
-        use imap_types::response::Capability;
+        use imap_types::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
 
-        let got = command(b"A123 enable UTF8=ACCEPT ENABLE\r\n").unwrap().1;
+        let got = command(b"A123 enable UTF8=ACCEPT\r\n").unwrap().1;
         assert_eq!(
             Command::new(
                 "A123".try_into().unwrap(),
                 CommandBody::Enable {
-                    capabilities: vec![
-                        Capability::Other("UTF8=ACCEPT".try_into().unwrap()),
-                        Capability::Enable
-                    ]
-                    .try_into()
-                    .unwrap()
+                    capabilities: vec![CapabilityEnable::Utf8(Utf8Kind::Accept),]
+                        .try_into()
+                        .unwrap()
                 }
             ),
             got

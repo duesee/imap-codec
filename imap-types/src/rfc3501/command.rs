@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
-use crate::response::Capability;
+use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
     core::{AString, Atom, Charset, Literal, NonEmptyVec, Tag},
     datetime::{MyDateTime, MyNaiveDate},
@@ -319,7 +319,7 @@ impl<'a> Command<'a> {
     #[cfg(feature = "ext_enable")]
     pub fn enable<C>(capabilities: C) -> Result<Command<'a>, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability<'a>>>,
+        C: TryInto<NonEmptyVec<CapabilityEnable<'a>>>,
     {
         Ok(Command::new(
             Tag::random(),
@@ -1459,7 +1459,7 @@ pub enum CommandBody<'a> {
 
     #[cfg(feature = "ext_enable")]
     Enable {
-        capabilities: NonEmptyVec<Capability<'a>>,
+        capabilities: NonEmptyVec<CapabilityEnable<'a>>,
     },
 
     #[cfg(feature = "ext_compress")]
@@ -1667,7 +1667,7 @@ mod test {
     #[cfg(feature = "ext_compress")]
     use crate::extensions::rfc4987::CompressionAlgorithm;
     #[cfg(feature = "ext_enable")]
-    use crate::response::Capability;
+    use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
     use crate::{
         codec::Encode,
         command::{Command, CommandBody, SearchKey},
@@ -1817,7 +1817,9 @@ mod test {
             #[cfg(feature = "ext_idle")]
             Command::idle(),
             #[cfg(feature = "ext_enable")]
-            Command::enable(vec![Capability::Enable]).unwrap(),
+            Command::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]).unwrap(),
+            #[cfg(feature = "ext_enable")]
+            Command::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
             #[cfg(feature = "ext_compress")]
             Command::compress(CompressionAlgorithm::Deflate),
         ];
