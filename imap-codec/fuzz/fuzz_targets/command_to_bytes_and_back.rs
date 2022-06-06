@@ -1,7 +1,7 @@
 #![no_main]
 
 #[cfg(feature = "ext_enable")]
-use imap_codec::types::response::Capability;
+use imap_codec::extensions::rfc5161::CapabilityEnable;
 use imap_codec::{
     command::command,
     types::{
@@ -26,7 +26,7 @@ fn ignore_flags(flags: &Vec<Flag>) -> bool {
 }
 
 #[cfg(feature = "ext_enable")]
-fn ignore_capabilities(capabilities: &[Capability]) -> bool {
+fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
     capabilities
         .iter()
         .any(|capability| matches!(capability, Capability::Other(_)))
