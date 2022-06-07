@@ -10,7 +10,7 @@ edition = "2018"
 
 [features]
 default = []
-serdex  = ["serde", "chrono/serde"]
+serde = ["dep:serde", "chrono/serde"]
 
 # IMAP
 starttls = []
@@ -30,8 +30,6 @@ arbitrary = { version = "1", optional = true, features = ["derive"] }
 base64 = "0.13"
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 rand = "0.8"
-
-# Optional
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]

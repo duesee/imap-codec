@@ -1,6 +1,6 @@
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{address::Address, core::NString};
@@ -54,7 +54,7 @@ use crate::{address::Address, core::NString};
 ///    members in the envelope can not be NIL.
 /// TODO(#31): many invariants here...
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Envelope<'a> {
     pub date: NString<'a>, // TODO(#31): must not be empty string

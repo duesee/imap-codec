@@ -53,13 +53,13 @@
 //! (7) LOGOUT command, server shutdown, or connection closed
 //! ```
 
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::mailbox::Mailbox;
 
 /// State of the IMAP4rev1 connection.
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub enum State<'a> {
     /// ## 3.1. Not Authenticated State

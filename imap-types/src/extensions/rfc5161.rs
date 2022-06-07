@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::{core::Atom, Encode};
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CapabilityEnable<'a> {
     Utf8(Utf8Kind),
@@ -24,7 +24,7 @@ pub enum CapabilityEnable<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Utf8Kind {
     Accept,

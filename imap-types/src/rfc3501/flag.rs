@@ -2,7 +2,7 @@
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::core::Atom;
@@ -13,7 +13,7 @@ use crate::core::Atom;
 /// type can be permanent or session-only.
 /// TODO(#7): this struct is not very usable currently...
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Flag<'a> {
     // ----- System -----
@@ -60,7 +60,7 @@ pub enum Flag<'a> {
 
 /// Four name attributes are defined.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FlagNameAttribute<'a> {
     /// It is not possible for any child levels of hierarchy to exist
@@ -94,7 +94,7 @@ impl<'a> FlagNameAttribute<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreType {
     Replace,
@@ -103,7 +103,7 @@ pub enum StoreType {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoreResponse {
     Answer,

@@ -4,7 +4,7 @@ use std::{borrow::Cow, convert::TryInto, num::NonZeroU32};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_compress")]
@@ -20,7 +20,7 @@ use crate::{
 
 /// Server responses are in three forms.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response<'a> {
     /// Status responses can be tagged or untagged.  Tagged status responses
@@ -46,7 +46,7 @@ pub enum Response<'a> {
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [`Code`](crate::response::Code).)
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Status<'a> {
     /// ### 7.1.1. OK Response
@@ -201,7 +201,7 @@ impl<'a> Status<'a> {
 
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Data<'a> {
     // ## 7.2. Server Responses - Server and Mailbox Status
@@ -477,7 +477,7 @@ impl<'a> Data<'a> {
 /// additional command arguments, the literal octets are followed by a
 /// space and those arguments.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continuation<'a> {
     Basic {
@@ -509,7 +509,7 @@ impl<'a> Continuation<'a> {
 ///
 /// The currently defined response codes are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Code<'a> {
     /// `ALERT`
@@ -620,7 +620,7 @@ impl<'a> Code<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Capability<'a> {
     Imap4Rev1,

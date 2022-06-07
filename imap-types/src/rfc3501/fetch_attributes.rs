@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Macro {
     /// `ALL` Macro equivalent to:
@@ -41,7 +41,7 @@ impl Macro {
 
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MacroOrFetchAttributes<'a> {
     Macro(Macro),
@@ -62,7 +62,7 @@ impl<'a> From<Vec<FetchAttribute<'a>>> for MacroOrFetchAttributes<'a> {
 
 /// The currently defined data items that can be fetched are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FetchAttribute<'a> {
     /// `BODY`
@@ -174,7 +174,7 @@ pub enum FetchAttribute<'a> {
 
 /// The current data items are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FetchAttributeValue<'a> {
     /// A form of BODYSTRUCTURE without extension data.

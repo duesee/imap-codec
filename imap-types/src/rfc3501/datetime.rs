@@ -1,10 +1,10 @@
 use std::fmt::{Debug, Formatter};
 
 use chrono::{DateTime, FixedOffset, NaiveDate};
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct MyDateTime(pub DateTime<FixedOffset>);
 
@@ -14,7 +14,7 @@ impl Debug for MyDateTime {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct MyNaiveDate(pub NaiveDate);
 

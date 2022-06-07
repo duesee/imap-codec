@@ -15,7 +15,7 @@ use std::{
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::utils::indicators::{
@@ -25,7 +25,7 @@ use crate::utils::indicators::{
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Atom<'a> {
     pub(crate) inner: Cow<'a, str>,
@@ -84,7 +84,7 @@ impl<'a> Deref for Atom<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a> {
     pub(crate) inner: Cow<'a, str>,
@@ -156,7 +156,7 @@ impl<'a> Deref for AtomExt<'a> {
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString<'a> {
     /// A literal is a sequence of zero or more octets (including CR and
@@ -213,7 +213,7 @@ impl<'a> TryFrom<String> for IString<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
     pub(crate) inner: Cow<'a, [u8]>,
@@ -279,7 +279,7 @@ impl<'a> Deref for Literal<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Quoted<'a> {
     pub(crate) inner: Cow<'a, str>,
@@ -346,7 +346,7 @@ impl<'a> Deref for Quoted<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // This wrapper is merely used for formatting.
 // The inner value can be public.
@@ -355,7 +355,7 @@ pub struct NString<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString<'a> {
     // `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
@@ -430,7 +430,7 @@ impl<'a> TryFrom<String> for AString<'a> {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a> {
     pub(crate) inner: Cow<'a, str>,
@@ -490,7 +490,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a> {
     pub(crate) inner: Cow<'a, str>,
@@ -541,7 +541,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct QuotedChar {
     inner: char,
@@ -581,7 +581,7 @@ impl TryFrom<char> for QuotedChar {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Charset<'a> {
     Atom(Atom<'a>),
@@ -616,7 +616,7 @@ impl<'a> TryFrom<String> for Charset<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NonEmptyVec<T> {
     pub(crate) inner: Vec<T>,

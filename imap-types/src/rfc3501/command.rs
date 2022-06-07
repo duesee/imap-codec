@@ -6,7 +6,7 @@ use std::{borrow::Cow, convert::TryInto};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_compress")]
@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command<'a> {
     pub tag: Tag<'a>,
@@ -341,7 +341,7 @@ impl<'a> Command<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommandBody<'a> {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
@@ -1509,7 +1509,7 @@ impl<'a> CommandBody<'a> {
 }
 
 /// The defined search keys.
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchKey<'a> {
     // <Not in RFC.>

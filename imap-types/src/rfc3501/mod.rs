@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::core::Atom;
@@ -23,7 +23,7 @@ pub mod status_attributes;
 
 /// Note: Defined by [SASL]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AuthMechanism<'a> {
     // RFC4616: The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
@@ -76,7 +76,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AuthMechanismOther<'a> {
     pub(crate) inner: Atom<'a>,
