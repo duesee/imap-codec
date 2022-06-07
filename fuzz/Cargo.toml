@@ -17,7 +17,7 @@ ext_compress = ["imap-codec/ext_compress"]
 
 [dependencies]
 libfuzzer-sys = "0.4"
-imap-codec = { path = "..", features = ["arbitrary"] }
+imap-codec = { path = "..", features = ["nom", "arbitrary"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

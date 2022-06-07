@@ -4,9 +4,10 @@
 use imap_codec::types::extensions::rfc5161::CapabilityEnable;
 use imap_codec::{
     command::command,
+    nom,
     types::{
         codec::Encode,
-        command::{Command, CommandBody},
+        command::{Command, CommandBody, SearchKey},
         flag::Flag,
     },
 };
@@ -32,6 +33,20 @@ fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
         .any(|capability| matches!(capability, CapabilityEnable::Other(_)))
 }
 
+fn ignore_search_key_and(sk: &SearchKey) -> bool {
+    use SearchKey::*;
+
+    match sk {
+        And(list) => match list.len() {
+            1 => true,
+            _ => list.iter().any(ignore_search_key_and),
+        },
+        Not(sk) => ignore_search_key_and(sk),
+        Or(sk1, sk2) => ignore_search_key_and(sk1) || ignore_search_key_and(sk2),
+        _ => false,
+    }
+}
+
 fuzz_target!(|test: Command| {
     //println!("{:?}", test);
 
@@ -52,17 +67,29 @@ fuzz_target!(|test: Command| {
         CommandBody::Append { flags, .. } if ignore_flags(flags) => {
             // FIXME(#30)
         }
+        CommandBody::Search { criteria, .. } if ignore_search_key_and(criteria) => {
+            // FIXME(#30)
+        }
         #[cfg(feature = "ext_enable")]
         CommandBody::Enable { capabilities, .. } if ignore_capabilities_enable(capabilities) => {
             // FIXME(#30)
         }
         _ => {
-            let (rem, parsed) = command(&buffer).unwrap();
-            assert!(rem.is_empty());
+            match command(&buffer) {
+                Ok((rem, parsed)) => {
+                    assert!(rem.is_empty());
 
-            //println!("{:?}", parsed);
+                    //println!("{:?}", parsed);
 
-            assert_eq!(test, parsed)
+                    assert_eq!(test, parsed)
+                }
+                Err(nom::Err::Failure(failure))
+                    if failure.code == nom::error::ErrorKind::TooLarge =>
+                {
+                    // That is okay for now.
+                }
+                _ => panic!("Could not parse produced object."),
+            }
         }
     }
 
