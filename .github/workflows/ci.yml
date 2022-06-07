@@ -75,10 +75,7 @@ jobs:
           cd -
 
       - name: Compile fuzz targets for imap-codec
-        run: | 
-          cd imap-codec
-          cargo fuzz build --all-features
-          cd -
+        run: cargo fuzz build --all-features
 
   audit:
     needs: test
