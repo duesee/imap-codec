@@ -519,11 +519,11 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
         many1(preceded(SP, search_key(8))),
     ));
 
-    let (remaining, (_, charset, criteria)) = parser(input)?;
+    let (remaining, (_, charset, mut criteria)) = parser(input)?;
 
     let criteria = match criteria.len() {
         0 => unreachable!(),
-        1 => criteria[0].clone(),
+        1 => criteria.pop().unwrap(),
         _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(criteria) }),
     };
 
@@ -701,9 +701,9 @@ fn search_key_limited<'a>(
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(SP, search_key), tag(b")")),
-                |val| match val.len() {
+                |mut val| match val.len() {
                     0 => unreachable!(),
-                    1 => val[0].clone(),
+                    1 => val.pop().unwrap(),
                     _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(val) }),
                 },
             ),
