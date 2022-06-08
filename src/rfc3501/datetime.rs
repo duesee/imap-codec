@@ -107,14 +107,12 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
                 Ok((remaining, MyDateTime(datetime)))
             } else {
-                // TODO(#42): use `Failure` or `Error`?
                 Err(nom::Err::Failure(nom::error::Error::new(
                     remaining,
                     ErrorKind::Verify,
                 )))
             }
         }
-        // TODO(#42): use `Failure` or `Error`?
         _ => Err(nom::Err::Failure(nom::error::Error::new(
             remaining,
             ErrorKind::Verify,

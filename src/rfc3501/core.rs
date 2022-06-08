@@ -36,13 +36,10 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
 
     match NonZeroU32::new(number) {
         Some(number) => Ok((remaining, number)),
-        None => {
-            // TODO(#42): use `Failure` or `Error`?
-            Err(nom::Err::Error(nom::error::make_error(
-                input,
-                nom::error::ErrorKind::Verify,
-            )))
-        }
+        None => Err(nom::Err::Failure(nom::error::make_error(
+            input,
+            nom::error::ErrorKind::Verify,
+        ))),
     }
 }
 
@@ -131,7 +128,6 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     //     This is basically good for us, but there could be issues with servers violating the
     //     IMAP protocol and sending data right away.
     if remaining.is_empty() {
-        // TODO(#42)
         return Err(nom::Err::Failure(nom::error::Error::new(
             remaining,
             ErrorKind::Fix,
@@ -142,13 +138,10 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
 
     match Literal::try_from(data) {
         Ok(literal) => Ok((remaining, literal)),
-        Err(_) => {
-            // TODO(verify): use `Failure` or `Error`?
-            Err(nom::Err::Error(nom::error::Error::new(
-                remaining,
-                ErrorKind::Verify,
-            )))
-        }
+        Err(_) => Err(nom::Err::Failure(nom::error::Error::new(
+            remaining,
+            ErrorKind::Verify,
+        ))),
     }
 }
 

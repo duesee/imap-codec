@@ -70,8 +70,7 @@ pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
         .count();
 
     if sflag_count > 1 {
-        // TODO(#42): use `Failure` or `Error`?
-        return Err(nom::Err::Error(nom::error::make_error(
+        return Err(nom::Err::Failure(nom::error::make_error(
             input,
             nom::error::ErrorKind::Verify,
         )));
