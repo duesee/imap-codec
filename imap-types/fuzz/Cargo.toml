@@ -16,11 +16,18 @@ ext_enable = ["imap-types/ext_enable"]
 ext_compress = ["imap-types/ext_compress"]
 
 [dependencies]
+bounded-static = "0.4"
 libfuzzer-sys = "0.4"
-imap-types = { path = "..", features = ["arbitrary"] }
+imap-types = { path = "..", features = ["arbitrary", "bounded-static"] }
 
 [[bin]]
-name = "into_owned"
-path = "fuzz_targets/into_owned.rs"
+name = "into_static"
+path = "fuzz_targets/into_static.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "to_static"
+path = "fuzz_targets/to_static.rs"
 test = false
 doc = false

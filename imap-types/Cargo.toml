@@ -10,6 +10,7 @@ edition = "2018"
 
 [features]
 default = []
+bounded-static = ["dep:bounded-static", "bounded-static/derive"]
 serde = ["dep:serde", "chrono/serde"]
 
 # IMAP
@@ -28,6 +29,7 @@ ext_compress = []
 [dependencies]
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 base64 = "0.13"
+bounded-static = { version = "0.4", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"], optional = true }

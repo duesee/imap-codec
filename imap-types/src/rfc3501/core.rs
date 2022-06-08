@@ -14,6 +14,8 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -25,6 +27,7 @@ use crate::utils::indicators::{
 // ## 4.1. Atom
 
 /// An atom consists of one or more non-special characters.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Atom<'a> {
@@ -84,6 +87,7 @@ impl<'a> Deref for Atom<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a> {
@@ -156,6 +160,7 @@ impl<'a> Deref for AtomExt<'a> {
 /// with zero characters between double quotes) or as {0} followed
 /// by CRLF (a literal with an octet count of 0).
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString<'a> {
@@ -213,6 +218,7 @@ impl<'a> TryFrom<String> for IString<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
@@ -279,6 +285,7 @@ impl<'a> Deref for Literal<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Quoted<'a> {
@@ -346,6 +353,7 @@ impl<'a> Deref for Quoted<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // This wrapper is merely used for formatting.
@@ -355,6 +363,7 @@ pub struct NString<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AString<'a> {
@@ -430,6 +439,7 @@ impl<'a> TryFrom<String> for AString<'a> {
 ///  "nstring" syntax which is NIL or a string, but never an
 ///  atom.
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a> {
@@ -490,6 +500,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a> {
@@ -541,6 +552,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct QuotedChar {
@@ -581,6 +593,7 @@ impl TryFrom<char> for QuotedChar {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Charset<'a> {
@@ -616,6 +629,7 @@ impl<'a> TryFrom<String> for Charset<'a> {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NonEmptyVec<T> {

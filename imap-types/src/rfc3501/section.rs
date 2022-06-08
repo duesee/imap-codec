@@ -2,6 +2,8 @@ use std::num::NonZeroU32;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +54,7 @@ use crate::core::{AString, NonEmptyVec};
 /// 4.2.2.2    TEXT/RICHTEXT
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Section<'a> {
@@ -76,6 +79,7 @@ pub enum Section<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Part(pub NonEmptyVec<NonZeroU32>);
@@ -95,6 +99,7 @@ pub struct Part(pub NonEmptyVec<NonZeroU32>);
 /// and the body; the blank line is included in all header fetches,
 /// except in the case of a message which has no body and no blank
 /// line.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PartSpecifier<'a> {

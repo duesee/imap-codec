@@ -11,6 +11,7 @@ edition = "2018"
 [features]
 default = []
 arbitrary = ["imap-types/arbitrary"]
+bounded-static = ["imap-types/bounded-static"]
 serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
 nom = []
 

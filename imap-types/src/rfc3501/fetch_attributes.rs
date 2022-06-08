@@ -2,6 +2,8 @@ use std::num::NonZeroU32;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +15,7 @@ use crate::{
 /// There are three macros which specify commonly-used sets of data
 /// items, and can be used instead of data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Macro {
@@ -41,6 +44,7 @@ impl Macro {
 
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MacroOrFetchAttributes<'a> {
@@ -62,6 +66,7 @@ impl<'a> From<Vec<FetchAttribute<'a>>> for MacroOrFetchAttributes<'a> {
 
 /// The currently defined data items that can be fetched are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FetchAttribute<'a> {
@@ -174,6 +179,7 @@ pub enum FetchAttribute<'a> {
 
 /// The current data items are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FetchAttributeValue<'a> {
