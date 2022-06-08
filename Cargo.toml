@@ -51,5 +51,7 @@ harness = false
 
 [workspace]
 members = [
+    "fuzz",
     "imap-types",
+    "imap-types/fuzz",
 ]
