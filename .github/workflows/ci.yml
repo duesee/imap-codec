@@ -36,46 +36,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build code
+      - name: Build everything
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --all-features
+          args: --workspace --all-targets --all-features
 
-      - name: Test code
+      - name: Test everything (w/o fuzzing)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all --all-features --all-targets
-
-  compile_fuzz_targets:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-
-      - name: Install cargo-fuzz
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-fuzz
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Compile fuzz targets for imap-types
-        run: | 
-          cd imap-types
-          cargo fuzz build --all-features
-          cd -
-
-      - name: Compile fuzz targets for imap-codec
-        run: cargo fuzz build --all-features
+          args: --workspace --all-targets --all-features --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
   audit:
     needs: test
