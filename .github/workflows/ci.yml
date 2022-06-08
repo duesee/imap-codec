@@ -36,11 +36,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build everything
+      - name: Check everything
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --workspace --all-targets --all-features
+
+      - name: Build everything (w/o fuzzing)
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --workspace --all-targets --all-features
+          args: --workspace --all-targets --all-features --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
       - name: Test everything (w/o fuzzing)
         uses: actions-rs/cargo@v1
