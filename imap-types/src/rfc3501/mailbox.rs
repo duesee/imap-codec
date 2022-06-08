@@ -7,6 +7,8 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +17,7 @@ use crate::{
     utils::indicators::is_list_char,
 };
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListCharString<'a> {
@@ -71,6 +74,7 @@ impl<'a> Deref for ListCharString<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListMailbox<'a> {
@@ -146,6 +150,7 @@ impl<'a> TryFrom<String> for ListMailbox<'a> {
 ///    levels of hierarchy.
 /// 5) Two characters, "#" and "&", have meanings by convention, and should be avoided except
 ///    when used in that convention.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mailbox<'a> {
@@ -153,6 +158,7 @@ pub enum Mailbox<'a> {
     Other(MailboxOther<'a>),
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MailboxOther<'a> {

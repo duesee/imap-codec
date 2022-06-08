@@ -6,6 +6,8 @@ use std::{borrow::Cow, convert::TryInto};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +27,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command<'a> {
@@ -341,6 +344,7 @@ impl<'a> Command<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommandBody<'a> {
@@ -1509,6 +1513,7 @@ impl<'a> CommandBody<'a> {
 }
 
 /// The defined search keys.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchKey<'a> {

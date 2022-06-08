@@ -2,6 +2,8 @@ use std::borrow::Cow;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+#[cfg(feature = "bounded-static")]
+use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +13,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Body<'a> {
@@ -22,6 +25,7 @@ pub struct Body<'a> {
 
 /// The basic fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BasicFields<'a> {
@@ -45,6 +49,7 @@ pub struct BasicFields<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SpecificFields<'a> {
@@ -163,6 +168,7 @@ pub enum SpecificFields<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BodyStructure<'a> {
@@ -242,6 +248,7 @@ pub enum BodyStructure<'a> {
 
 /// The extension data of a non-multipart body part are in the following order:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SinglePartExtensionData<'a> {
@@ -277,6 +284,7 @@ pub struct SinglePartExtensionData<'a> {
 /// )
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiPartExtensionData<'a> {
