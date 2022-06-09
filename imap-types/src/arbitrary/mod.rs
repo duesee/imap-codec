@@ -61,7 +61,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
         use crate::sequence::SequenceSet as SequenceSetData;
 
         Ok(match u.int_in_range(0u8..=36)? {
-            0 => And(NonEmptyVec::<SearchKey>::arbitrary(u)?),
+            0 => And(NonEmptyVec::try_from(vec![All, All]).unwrap()), // TODO(testing)
             1 => SequenceSet(SequenceSetData::arbitrary(u)?),
             2 => All,
             3 => Answered,
@@ -77,13 +77,10 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
             13 => Keyword(Atom::arbitrary(u)?),
             14 => Larger(u32::arbitrary(u)?),
             15 => New,
-            16 => Not(Box::<SearchKey>::arbitrary(u)?),
+            16 => Not(Box::new(All)), // TODO(testing)
             17 => Old,
             18 => On(MyNaiveDate::arbitrary(u)?),
-            19 => Or(
-                Box::<SearchKey>::arbitrary(u)?,
-                Box::<SearchKey>::arbitrary(u)?,
-            ),
+            19 => Or(Box::new(All), Box::new(All)), // TODO(testing)
             20 => Recent,
             21 => Seen,
             22 => SentBefore(MyNaiveDate::arbitrary(u)?),
