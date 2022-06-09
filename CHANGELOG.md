@@ -37,13 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Introduce `new_unchecked()` functions.
   - Check `new_unchecked()` during debug builds.
 - Cleanup API for `AuthMechanism`.
+- Update to nom 7 and abnf-core 0.5.
 
 ### Removed
 
 - Remove `impl Display` for types in imap-types.
-- Remove `abnf-core` dependency in imap-types.
 - Remove `nom` feature in imap-types.
-- Remove `arbitrary` dependency in imap-codec.
+- Remove/cleanup (unused) dependencies in imap-codec.
+- Remove/cleanup (unused) dependencies in imap-types.
 
 ### Fixed
 
