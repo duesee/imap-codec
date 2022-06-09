@@ -29,11 +29,11 @@ ext_compress = ["imap-types/ext_compress"]
 # ext_saslir = []                           # TODO
 
 [dependencies]
-abnf-core = "0.4"
+abnf-core = "0.5"
 base64 = "0.13"
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { path = "imap-types", default-features = false }
-nom = "6"
+nom = "7"
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
