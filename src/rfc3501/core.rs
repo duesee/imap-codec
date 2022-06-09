@@ -295,7 +295,6 @@ pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 mod test {
     use std::convert::TryInto;
 
-    use assert_matches::assert_matches;
     use imap_types::core::Quoted;
 
     use super::*;
@@ -337,12 +336,15 @@ mod test {
         assert_eq!(val, Quoted::try_from("Hello \"World\"").unwrap());
 
         // Test Incomplete
-        assert_matches!(quoted(br#""#), Err(nom::Err::Incomplete(_)));
-        assert_matches!(quoted(br#""\"#), Err(nom::Err::Incomplete(_)));
-        assert_matches!(quoted(br#""Hello "#), Err(nom::Err::Incomplete(_)));
+        assert!(matches!(quoted(br#""#), Err(nom::Err::Incomplete(_))));
+        assert!(matches!(quoted(br#""\"#), Err(nom::Err::Incomplete(_))));
+        assert!(matches!(
+            quoted(br#""Hello "#),
+            Err(nom::Err::Incomplete(_))
+        ));
 
         // Test Error
-        assert_matches!(quoted(br#"\"#), Err(nom::Err::Error(_)));
+        assert!(matches!(quoted(br#"\"#), Err(nom::Err::Error(_))));
     }
 
     #[test]
