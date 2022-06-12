@@ -20,7 +20,6 @@ use nom::{
 
 use crate::{
     core::atom,
-    response::capability,
     types::{
         command::CommandBody,
         extensions::rfc5161::{CapabilityEnable, Utf8Kind},
@@ -71,7 +70,10 @@ pub fn capability_enable(input: &[u8]) -> IResult<&[u8], CapabilityEnable> {
 
 /// `enable-data = "ENABLED" *(SP capability)`
 pub fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
-    let mut parser = tuple((tag_no_case(b"ENABLED"), many0(preceded(SP, capability))));
+    let mut parser = tuple((
+        tag_no_case(b"ENABLED"),
+        many0(preceded(SP, capability_enable)),
+    ));
 
     let (remaining, (_, capabilities)) = parser(input)?;
 
