@@ -37,6 +37,9 @@ pub mod utils;
 #[cfg(feature = "nom")]
 pub mod internal;
 
+#[cfg(any(feature = "tokio_util_codec"))]
+pub mod tokio;
+
 pub use imap_types;
 pub use imap_types as types;
 /// This module is only available when the feature "nom" was specified.

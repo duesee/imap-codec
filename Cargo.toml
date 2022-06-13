@@ -12,8 +12,9 @@ edition = "2018"
 default = []
 arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["imap-types/bounded-static"]
-serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
 nom = []
+serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
+tokio_util_codec = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 
 # IMAP
 starttls = ["imap-types/starttls"]
@@ -31,10 +32,12 @@ ext_compress = ["imap-types/ext_compress"]
 [dependencies]
 abnf-core = "0.5"
 base64 = "0.13"
+bytes = { version = "*", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { path = "imap-types", default-features = false }
 nom = "7"
 serde = { version = "1.0", features = ["derive"], optional = true }
+tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
 
 [dev-dependencies]
 ansi_term = "0.12"
@@ -53,4 +56,5 @@ members = [
     "fuzz",
     "imap-types",
     "imap-types/fuzz",
+    "assets/demos/tokio_demo",
 ]
