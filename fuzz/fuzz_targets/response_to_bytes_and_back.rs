@@ -12,7 +12,7 @@ use imap_codec::{
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Response| {
-    if matches!(test, Response::Continuation(_)) {
+    if matches!(test, Response::Continue(_)) {
         // FIXME(#30)
         return;
     }

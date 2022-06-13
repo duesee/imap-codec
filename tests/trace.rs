@@ -688,7 +688,7 @@ fn test_response_data_fetch() {
 }
 
 #[test]
-fn test_response_data_continuation() {
+fn test_response_data_continue() {
     // C: A001 LOGIN {11}
     // C: FRED FOOBAR {7}
     // C: fat man
