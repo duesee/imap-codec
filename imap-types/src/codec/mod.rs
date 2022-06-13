@@ -21,7 +21,7 @@ use crate::{
     fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
     flag::{Flag, FlagNameAttribute, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
-    response::{Capability, Code, Continuation, Data, Response, Status},
+    response::{Capability, Code, Continue, Data, Response, Status},
     section::{Part, Section},
     sequence::{SeqNo, Sequence, SequenceSet},
     status_attributes::{StatusAttribute, StatusAttributeValue},
@@ -748,7 +748,7 @@ impl<'a> Encode for Response<'a> {
         match self {
             Response::Status(status) => status.encode(writer),
             Response::Data(data) => data.encode(writer),
-            Response::Continuation(continuation) => continuation.encode(writer),
+            Response::Continue(continue_request) => continue_request.encode(writer),
         }
     }
 }
@@ -1280,10 +1280,10 @@ impl Encode for DateTime<FixedOffset> {
     }
 }
 
-impl<'a> Encode for Continuation<'a> {
+impl<'a> Encode for Continue<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Continuation::Basic { code, text } => match code {
+            Continue::Basic { code, text } => match code {
                 Some(ref code) => {
                     writer.write_all(b"+ [")?;
                     code.encode(writer)?;
@@ -1298,7 +1298,7 @@ impl<'a> Encode for Continuation<'a> {
                 }
             },
             // TODO: Is this correct when data is empty?
-            Continuation::Base64(data) => {
+            Continue::Base64(data) => {
                 writer.write_all(b"+ ")?;
                 writer.write_all(base64::encode(data).as_bytes())?;
                 writer.write_all(b"\r\n")

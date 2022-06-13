@@ -41,7 +41,7 @@ pub enum Response<'a> {
     /// tag.  These responses are sent by the server to indicate acceptance
     /// of an incomplete client command and readiness for the remainder of
     /// the command.
-    Continuation(Continuation<'a>),
+    Continue(Continue<'a>),
 }
 
 /// ## 7.1. Server Responses - Status Responses
@@ -489,7 +489,7 @@ impl<'a> Data<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Continuation<'a> {
+pub enum Continue<'a> {
     Basic {
         code: Option<Code<'a>>,
         text: Text<'a>,
@@ -497,16 +497,16 @@ pub enum Continuation<'a> {
     Base64(Cow<'a, [u8]>),
 }
 
-impl<'a> Continuation<'a> {
+impl<'a> Continue<'a> {
     pub fn basic(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
-        Ok(Continuation::Basic {
+        Ok(Continue::Basic {
             code,
             text: text.try_into()?,
         })
     }
 
     pub fn base64(data: &'a [u8]) -> Self {
-        Continuation::Base64(Cow::Borrowed(data))
+        Continue::Base64(Cow::Borrowed(data))
     }
 }
 
@@ -794,11 +794,11 @@ mod test {
     }
 
     #[test]
-    fn test_continuation() {
+    fn test_continue() {
         let tests: Vec<(_, &[u8])> = vec![
-            (Continuation::basic(None, "hello"), b"+ hello\r\n".as_ref()),
+            (Continue::basic(None, "hello"), b"+ hello\r\n".as_ref()),
             (
-                Continuation::basic(Some(Code::ReadWrite), "hello"),
+                Continue::basic(Some(Code::ReadWrite), "hello"),
                 b"+ [READ-WRITE] hello\r\n",
             ),
         ];
@@ -814,10 +814,10 @@ mod test {
     }
 
     #[test]
-    fn test_continuation_fail() {
+    fn test_continue_fail() {
         let tests: Vec<_> = vec![
-            Continuation::basic(None, ""),
-            Continuation::basic(Some(Code::ReadWrite), ""),
+            Continue::basic(None, ""),
+            Continue::basic(Some(Code::ReadWrite), ""),
         ];
 
         for test in tests.into_iter() {

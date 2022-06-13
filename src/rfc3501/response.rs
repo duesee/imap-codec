@@ -3,7 +3,7 @@ use std::{borrow::Cow, str::from_utf8_unchecked};
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     core::{NonEmptyVec, Text},
-    response::{Capability, Code, Continuation, Data, Response, Status},
+    response::{Capability, Code, Continue, Data, Response, Status},
 };
 use nom::{
     branch::alt,
@@ -233,27 +233,27 @@ pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
     //
     // However, I will keep it as it is for now.
     alt((
-        map(continue_req, Response::Continuation),
+        map(continue_req, Response::Continue),
         response_data,
         map(response_done, Response::Status),
     ))(input)
 }
 
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
-pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continuation> {
+pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continue> {
     let mut parser = tuple((
         tag(b"+"),
         SP,
         alt((
-            map(resp_text, |(code, text)| Continuation::Basic { code, text }),
-            map(base64, |data| Continuation::Base64(Cow::Owned(data))),
+            map(resp_text, |(code, text)| Continue::Basic { code, text }),
+            map(base64, |data| Continue::Base64(Cow::Owned(data))),
         )),
         CRLF,
     ));
 
-    let (remaining, (_, _, continuation, _)) = parser(input)?;
+    let (remaining, (_, _, continue_request, _)) = parser(input)?;
 
-    Ok((remaining, continuation))
+    Ok((remaining, continue_request))
 }
 
 /// `response-data = "*" SP (
