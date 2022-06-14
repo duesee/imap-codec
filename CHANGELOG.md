@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - YYYY-MM-DD
 
+## [Version 0.6.0] - 2022-06-14
+
 ### Added
 
 - Introduce "starttls" feature.
@@ -52,4 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix benchmarks (thanks, @franziskuskiefer).
 - Fix misuses, e.g., `AtomExt` (1*ASTRING-CHAR).
 
-[Unreleased]: https://github.com/duesee/imap-codec/compare/aa2f616b7b39f36a2077bdee0fa6c359261c8eff...HEAD
+[Unreleased]: https://github.com/duesee/imap-codec/compare/468e220a3b7e4faafc23a4c1da8a05b05cd91c35...HEAD
+[Version 0.6.0]: https://github.com/duesee/imap-codec/compare/fcb400e508f74a8d88bbcbfd777bdca7cb75bdeb...468e220a3b7e4faafc23a4c1da8a05b05cd91c35
