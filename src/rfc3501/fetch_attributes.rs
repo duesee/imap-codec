@@ -129,34 +129,30 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
             tuple((tag_no_case(b"INTERNALDATE"), SP, date_time)),
             |(_, _, date_time)| FetchAttributeValue::InternalDate(date_time),
         ),
-        alt((
-            map(
-                tuple((tag_no_case(b"RFC822.HEADER"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring),
-            ),
-            map(
-                tuple((tag_no_case(b"RFC822.TEXT"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring),
-            ),
-            map(
-                tuple((tag_no_case(b"RFC822"), SP, nstring)),
-                |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring),
-            ),
-        )),
+        map(
+            tuple((tag_no_case(b"RFC822.HEADER"), SP, nstring)),
+            |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring),
+        ),
+        map(
+            tuple((tag_no_case(b"RFC822.TEXT"), SP, nstring)),
+            |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring),
+        ),
         map(
             tuple((tag_no_case(b"RFC822.SIZE"), SP, number)),
             |(_, _, num)| FetchAttributeValue::Rfc822Size(num),
         ),
-        alt((
-            map(
-                tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body(8))),
-                |(_, _, body)| FetchAttributeValue::BodyStructure(body),
-            ),
-            map(
-                tuple((tag_no_case(b"BODY"), SP, body(8))),
-                |(_, _, body)| FetchAttributeValue::Body(body),
-            ),
-        )),
+        map(
+            tuple((tag_no_case(b"RFC822"), SP, nstring)),
+            |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring),
+        ),
+        map(
+            tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body(8))),
+            |(_, _, body)| FetchAttributeValue::BodyStructure(body),
+        ),
+        map(
+            tuple((tag_no_case(b"BODY"), SP, body(8))),
+            |(_, _, body)| FetchAttributeValue::Body(body),
+        ),
         map(
             tuple((
                 tag_no_case(b"BODY"),
