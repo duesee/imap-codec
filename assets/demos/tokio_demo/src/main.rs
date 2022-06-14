@@ -1,24 +1,20 @@
-use futures::{stream::Stream, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt};
 use imap_codec::{
     imap_types::response::{Response, Status},
-    tokio::{Action, ImapServerCodec, ImapServerCodecError, Outcome},
+    tokio::{Action, ImapServerCodec, Outcome},
     types::response::Continue,
 };
-use tokio::{
-    self,
-    io::Sink,
-    net::{TcpListener, TcpStream},
-};
+use tokio::{self, net::TcpListener};
 use tokio_util::codec::Decoder;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<std::io::Error>> {
-    //let stream = TcpStream::connect("127.0.0.1:14300").await?;
+async fn main() {
+    //let stream = TcpStream::connect("127.0.0.1:14300").await.unwrap();
 
-    let mut listener = TcpListener::bind("127.0.0.1:14300").await?;
+    let listener = TcpListener::bind("127.0.0.1:14300").await.unwrap();
 
     loop {
-        let (stream, _) = listener.accept().await?;
+        let (stream, _) = listener.accept().await.unwrap();
 
         let mut framed = ImapServerCodec::new(4).framed(stream);
 
@@ -52,6 +48,4 @@ async fn main() -> Result<(), Box<std::io::Error>> {
             }
         }
     }
-
-    Ok(())
 }
