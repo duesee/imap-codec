@@ -11,4 +11,6 @@ pub mod rfc3501;
 pub mod state;
 pub mod utils;
 
+#[cfg(feature = "bounded-static")]
+pub use bounded_static;
 pub use rfc3501::*;
