@@ -2,7 +2,7 @@
 name = "imap-codec"
 description = "Low-level IMAP Parser and Serializer"
 keywords = ["email", "imap", "parser", "codec"]
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
@@ -32,9 +32,9 @@ ext_compress = ["imap-types/ext_compress"]
 [dependencies]
 abnf-core = "0.5"
 base64 = "0.13"
-bytes = { version = "*", optional = true }
+bytes = { version = "1.1", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-imap-types = { path = "imap-types", default-features = false }
+imap-types = { version = "0.6", default-features = false }
 nom = "7"
 serde = { version = "1.0", features = ["derive"], optional = true }
 tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
