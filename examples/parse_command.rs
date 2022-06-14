@@ -1,7 +1,10 @@
 use std::io::Write;
 
 use ansi_term::Colour::{Blue as ColorServer, Red as ColorClient};
-use imap_codec::rfc3501::command::command;
+use imap_codec::{
+    codec::{Decode, DecodeError},
+    types::command::Command,
+};
 
 fn main() {
     welcome();
@@ -9,8 +12,8 @@ fn main() {
     let mut buffer = Vec::new();
 
     loop {
-        // Try to rfc3501 the first command in `buffer`.
-        match command(&buffer) {
+        // Try to parse the first command in `buffer`.
+        match Command::decode(&buffer) {
             // Parser succeeded.
             Ok((remaining, command)) => {
                 // Do something with the command ...
@@ -20,14 +23,13 @@ fn main() {
                 buffer = remaining.to_vec();
             }
             // Parser needs more data.
-            Err(nom::Err::Incomplete(_needed)) => {
+            Err(DecodeError::Incomplete) => {
                 // Read more data.
                 read_more(&mut buffer);
             }
             // Parser needs more data, and a literal acknowledgement action is required.
             // This step is crucial for real clients. Otherwise a client won't send any more data.
-            // TODO(#40): `ErrorKind::Fix` is used (for now) to signal that a server acknowledgement is required.
-            Err(nom::Err::Failure(failure)) if failure.code == nom::error::ErrorKind::Fix => {
+            Err(DecodeError::LiteralAckRequired) => {
                 // Simulate literal acknowledgement ...
                 println!("S: {}", ColorServer.paint("+ "));
 
@@ -35,8 +37,8 @@ fn main() {
                 read_more(&mut buffer);
             }
             // Parser failed.
-            Err(nom::Err::Error(error)) | Err(nom::Err::Failure(error)) => {
-                println!("Error parsing command. Is it correct? ({:?})", error);
+            Err(DecodeError::Failed) => {
+                println!("Error parsing command.");
                 println!("Clearing buffer.");
 
                 // Clear the buffer and proceed with loop.

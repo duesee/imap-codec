@@ -1,6 +1,6 @@
 use std::io::{Read, Result as IoResult, Write};
 
-use imap_codec::rfc3501::response::response;
+use imap_codec::{codec::Decode, types::response::Response};
 
 pub fn read_file(path: &str) -> IoResult<Vec<u8>> {
     let mut file = std::fs::File::open(path)?;
@@ -16,7 +16,7 @@ fn main() -> std::io::Result<()> {
     if let Some(path) = args.nth(1) {
         let data = read_file(&path).unwrap();
 
-        match response(&data) {
+        match Response::decode(&data) {
             Ok((remaining, response)) => {
                 println!("{:#?}", response);
 
@@ -46,7 +46,7 @@ fn main() -> std::io::Result<()> {
             break;
         }
 
-        match response(line.as_bytes()) {
+        match Response::decode(line.as_bytes()) {
             Ok((remaining, response)) => {
                 println!("{:#?}", response);
 
