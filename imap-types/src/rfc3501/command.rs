@@ -36,306 +36,14 @@ pub struct Command<'a> {
 }
 
 impl<'a> Command<'a> {
-    pub fn new(tag: Tag<'a>, kind: CommandBody<'a>) -> Self {
-        Self { tag, body: kind }
-    }
-
-    pub fn capability() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Capability)
-    }
-
-    pub fn noop() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Noop)
-    }
-
-    pub fn logout() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Logout)
-    }
-
-    #[cfg(feature = "starttls")]
-    pub fn starttls() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::StartTLS)
-    }
-
-    pub fn authenticate(
-        mechanism: AuthMechanism<'a>,
-        initial_response: Option<&'a [u8]>,
-    ) -> Command<'a> {
-        Command::new(
-            Tag::random(),
-            CommandBody::Authenticate {
-                mechanism,
-                initial_response: initial_response.map(Cow::Borrowed),
-            },
-        )
-    }
-
-    pub fn login<U: TryInto<AString<'a>>, P: TryInto<AString<'a>>>(
-        username: U,
-        password: P,
-    ) -> Result<Command<'a>, ()> {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Login {
-                username: username.try_into().map_err(|_| ())?,
-                password: password.try_into().map_err(|_| ())?,
-            },
-        ))
-    }
-
-    pub fn select<M>(mailbox: M) -> Result<Command<'a>, M::Error>
+    pub fn new<T>(tag: T, body: CommandBody<'a>) -> Result<Self, ()>
     where
-        M: TryInto<Mailbox<'a>>,
+        T: TryInto<Tag<'a>>,
     {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Select {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn examine<M>(mailbox: M) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Examine {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn create<M>(mailbox: M) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Create {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn delete<M>(mailbox: M) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Delete {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Command<'a>, ()>
-    where
-        M1: TryInto<Mailbox<'a>>,
-        M2: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Rename {
-                mailbox: mailbox.try_into().map_err(|_| ())?,
-                new_mailbox: new_mailbox.try_into().map_err(|_| ())?,
-            },
-        ))
-    }
-
-    pub fn subscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Subscribe {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn unsubscribe<M>(mailbox: M) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Unsubscribe {
-                mailbox: mailbox.try_into()?,
-            },
-        ))
-    }
-
-    pub fn list<A: TryInto<Mailbox<'a>>, B: TryInto<ListMailbox<'a>>>(
-        reference: A,
-        mailbox_wildcard: B,
-    ) -> Result<Command<'a>, ()> {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::List {
-                reference: reference.try_into().map_err(|_| ())?,
-                mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
-            },
-        ))
-    }
-
-    pub fn lsub<A: TryInto<Mailbox<'a>>, B: TryInto<ListMailbox<'a>>>(
-        reference: A,
-        mailbox_wildcard: B,
-    ) -> Result<Command<'a>, ()> {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Lsub {
-                reference: reference.try_into().map_err(|_| ())?,
-                mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
-            },
-        ))
-    }
-
-    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Command<'a>, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Status {
-                mailbox: mailbox.try_into()?,
-                attributes,
-            },
-        ))
-    }
-
-    pub fn append<M, D>(
-        mailbox: M,
-        flags: Vec<Flag<'a>>,
-        date: Option<MyDateTime>,
-        message: D,
-    ) -> Result<Command<'a>, ()>
-    where
-        M: TryInto<Mailbox<'a>>,
-        D: TryInto<Literal<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Append {
-                mailbox: mailbox.try_into().map_err(|_| ())?,
-                flags,
-                date,
-                message: message.try_into().map_err(|_| ())?,
-            },
-        ))
-    }
-
-    pub fn check() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Check)
-    }
-
-    pub fn close() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Close)
-    }
-
-    pub fn expunge() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Expunge)
-    }
-
-    pub fn search<C>(
-        charset: C,
-        criteria: SearchKey<'a>,
-        uid: bool,
-    ) -> Result<Command<'a>, C::Error>
-    where
-        C: TryInto<Option<Charset<'a>>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Search {
-                charset: charset.try_into()?,
-                criteria,
-                uid,
-            },
-        ))
-    }
-
-    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Command<'a>, S::Error>
-    where
-        S: TryInto<SequenceSet>,
-        I: Into<MacroOrFetchAttributes<'a>>,
-    {
-        let sequence_set = sequence_set.try_into()?;
-
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Fetch {
-                sequence_set,
-                attributes: attributes.into(),
-                uid,
-            },
-        ))
-    }
-
-    pub fn store<S>(
-        sequence_set: S,
-        kind: StoreType,
-        response: StoreResponse,
-        flags: Vec<Flag<'a>>,
-        uid: bool,
-    ) -> Result<Command<'a>, S::Error>
-    where
-        S: TryInto<SequenceSet>,
-    {
-        let sequence_set = sequence_set.try_into()?;
-
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Store {
-                sequence_set,
-                kind,
-                response,
-                flags,
-                uid,
-            },
-        ))
-    }
-
-    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Command<'a>, ()>
-    where
-        S: TryInto<SequenceSet>,
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Copy {
-                sequence_set: sequence_set.try_into().map_err(|_| ())?,
-                mailbox: mailbox.try_into().map_err(|_| ())?,
-                uid,
-            },
-        ))
-    }
-
-    #[cfg(feature = "ext_idle")]
-    pub fn idle() -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Idle)
-    }
-
-    #[cfg(feature = "ext_enable")]
-    pub fn enable<C>(capabilities: C) -> Result<Command<'a>, C::Error>
-    where
-        C: TryInto<NonEmptyVec<CapabilityEnable<'a>>>,
-    {
-        Ok(Command::new(
-            Tag::random(),
-            CommandBody::Enable {
-                capabilities: capabilities.try_into()?,
-            },
-        ))
-    }
-
-    #[cfg(feature = "ext_compress")]
-    pub fn compress(algorithm: CompressionAlgorithm) -> Command<'a> {
-        Command::new(Tag::random(), CommandBody::Compress { algorithm })
+        Ok(Self {
+            tag: tag.try_into().map_err(|_| ())?,
+            body,
+        })
     }
 
     pub fn name(&self) -> &'static str {
@@ -1473,6 +1181,221 @@ pub enum CommandBody<'a> {
 }
 
 impl<'a> CommandBody<'a> {
+    pub fn tag<T>(self, tag: T) -> Result<Command<'a>, ()>
+    where
+        T: TryInto<Tag<'a>>,
+    {
+        Ok(Command {
+            tag: tag.try_into().map_err(|_| ())?,
+            body: self,
+        })
+    }
+
+    // ----- Constructors -----
+
+    pub fn authenticate(mechanism: AuthMechanism<'a>, initial_response: Option<&'a [u8]>) -> Self {
+        CommandBody::Authenticate {
+            mechanism,
+            initial_response: initial_response.map(Cow::Borrowed),
+        }
+    }
+
+    pub fn login<U, P>(username: U, password: P) -> Result<Self, ()>
+    where
+        U: TryInto<AString<'a>>,
+        P: TryInto<AString<'a>>,
+    {
+        Ok(CommandBody::Login {
+            username: username.try_into().map_err(|_| ())?,
+            password: password.try_into().map_err(|_| ())?,
+        })
+    }
+
+    pub fn select<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Select {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn examine<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Examine {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn create<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Create {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn delete<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Delete {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Self, ()>
+    where
+        M1: TryInto<Mailbox<'a>>,
+        M2: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Rename {
+            mailbox: mailbox.try_into().map_err(|_| ())?,
+            new_mailbox: new_mailbox.try_into().map_err(|_| ())?,
+        })
+    }
+
+    pub fn subscribe<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Subscribe {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn unsubscribe<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Unsubscribe {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn list<A, B>(reference: A, mailbox_wildcard: B) -> Result<Self, ()>
+    where
+        A: TryInto<Mailbox<'a>>,
+        B: TryInto<ListMailbox<'a>>,
+    {
+        Ok(CommandBody::List {
+            reference: reference.try_into().map_err(|_| ())?,
+            mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
+        })
+    }
+
+    pub fn lsub<A, B>(reference: A, mailbox_wildcard: B) -> Result<Self, ()>
+    where
+        A: TryInto<Mailbox<'a>>,
+        B: TryInto<ListMailbox<'a>>,
+    {
+        Ok(CommandBody::Lsub {
+            reference: reference.try_into().map_err(|_| ())?,
+            mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
+        })
+    }
+
+    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Status {
+            mailbox: mailbox.try_into()?,
+            attributes,
+        })
+    }
+
+    pub fn append<M, D>(
+        mailbox: M,
+        flags: Vec<Flag<'a>>,
+        date: Option<MyDateTime>,
+        message: D,
+    ) -> Result<Self, ()>
+    where
+        M: TryInto<Mailbox<'a>>,
+        D: TryInto<Literal<'a>>,
+    {
+        Ok(CommandBody::Append {
+            mailbox: mailbox.try_into().map_err(|_| ())?,
+            flags,
+            date,
+            message: message.try_into().map_err(|_| ())?,
+        })
+    }
+
+    pub fn search(charset: Option<Charset<'a>>, criteria: SearchKey<'a>, uid: bool) -> Self {
+        CommandBody::Search {
+            charset,
+            criteria,
+            uid,
+        }
+    }
+
+    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Self, S::Error>
+    where
+        S: TryInto<SequenceSet>,
+        I: Into<MacroOrFetchAttributes<'a>>,
+    {
+        let sequence_set = sequence_set.try_into()?;
+
+        Ok(CommandBody::Fetch {
+            sequence_set,
+            attributes: attributes.into(),
+            uid,
+        })
+    }
+
+    pub fn store<S>(
+        sequence_set: S,
+        kind: StoreType,
+        response: StoreResponse,
+        flags: Vec<Flag<'a>>,
+        uid: bool,
+    ) -> Result<Self, S::Error>
+    where
+        S: TryInto<SequenceSet>,
+    {
+        let sequence_set = sequence_set.try_into()?;
+
+        Ok(CommandBody::Store {
+            sequence_set,
+            kind,
+            response,
+            flags,
+            uid,
+        })
+    }
+
+    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Self, ()>
+    where
+        S: TryInto<SequenceSet>,
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::Copy {
+            sequence_set: sequence_set.try_into().map_err(|_| ())?,
+            mailbox: mailbox.try_into().map_err(|_| ())?,
+            uid,
+        })
+    }
+
+    #[cfg(feature = "ext_enable")]
+    pub fn enable<C>(capabilities: C) -> Result<Self, C::Error>
+    where
+        C: TryInto<NonEmptyVec<CapabilityEnable<'a>>>,
+    {
+        Ok(CommandBody::Enable {
+            capabilities: capabilities.try_into()?,
+        })
+    }
+
+    #[cfg(feature = "ext_compress")]
+    pub fn compress(algorithm: CompressionAlgorithm) -> Self {
+        CommandBody::Compress { algorithm }
+    }
+
     pub fn name(&self) -> &'static str {
         // TODO: consider the `strum` crate or use a macro?
         use CommandBody::*;
@@ -1690,57 +1613,57 @@ mod test {
     };
 
     #[test]
-    fn test_command_new() {
-        let cmds = &[
-            Command::capability(),
-            Command::noop(),
-            Command::logout(),
+    fn test_commandbody_new() {
+        let cmds = vec![
+            CommandBody::Capability,
+            CommandBody::Noop,
+            CommandBody::Logout,
             #[cfg(feature = "starttls")]
-            Command::starttls(),
-            Command::authenticate(AuthMechanism::Plain, None),
-            Command::authenticate(AuthMechanism::Login, None),
-            Command::authenticate(AuthMechanism::Plain, Some(b"XXXXXXXX")),
-            Command::authenticate(AuthMechanism::Login, Some(b"YYYYYYYY")),
-            Command::login("alice", "I_am_an_atom").unwrap(),
-            Command::login("alice", "I am \\ \"quoted\"").unwrap(),
-            Command::login("alice", "I am a literal²").unwrap(),
-            Command::login(
+            CommandBody::StartTLS,
+            CommandBody::authenticate(AuthMechanism::Plain, None),
+            CommandBody::authenticate(AuthMechanism::Login, None),
+            CommandBody::authenticate(AuthMechanism::Plain, Some(b"XXXXXXXX")),
+            CommandBody::authenticate(AuthMechanism::Login, Some(b"YYYYYYYY")),
+            CommandBody::login("alice", "I_am_an_atom").unwrap(),
+            CommandBody::login("alice", "I am \\ \"quoted\"").unwrap(),
+            CommandBody::login("alice", "I am a literal²").unwrap(),
+            CommandBody::login(
                 AString::Atom("alice".try_into().unwrap()),
                 AString::String(crate::core::IString::Literal(
                     vec![0xff, 0xff, 0xff].try_into().unwrap(),
                 )),
             )
             .unwrap(),
-            Command::select("inbox").unwrap(),
-            Command::select("atom").unwrap(),
-            Command::select("C:\\").unwrap(),
-            Command::select("²").unwrap(),
-            Command::select("Trash").unwrap(),
-            Command::examine("inbox").unwrap(),
-            Command::examine("atom").unwrap(),
-            Command::examine("C:\\").unwrap(),
-            Command::examine("²").unwrap(),
-            Command::examine("Trash").unwrap(),
-            Command::create("inBoX").unwrap(),
-            Command::delete("inBOX").unwrap(),
-            Command::rename("iNBoS", "INboX").unwrap(),
-            Command::subscribe("inbox").unwrap(),
-            Command::unsubscribe("INBOX").unwrap(),
-            Command::list("iNbOx", "test").unwrap(),
-            Command::list("inbox", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
-            Command::lsub(
+            CommandBody::select("inbox").unwrap(),
+            CommandBody::select("atom").unwrap(),
+            CommandBody::select("C:\\").unwrap(),
+            CommandBody::select("²").unwrap(),
+            CommandBody::select("Trash").unwrap(),
+            CommandBody::examine("inbox").unwrap(),
+            CommandBody::examine("atom").unwrap(),
+            CommandBody::examine("C:\\").unwrap(),
+            CommandBody::examine("²").unwrap(),
+            CommandBody::examine("Trash").unwrap(),
+            CommandBody::create("inBoX").unwrap(),
+            CommandBody::delete("inBOX").unwrap(),
+            CommandBody::rename("iNBoS", "INboX").unwrap(),
+            CommandBody::subscribe("inbox").unwrap(),
+            CommandBody::unsubscribe("INBOX").unwrap(),
+            CommandBody::list("iNbOx", "test").unwrap(),
+            CommandBody::list("inbox", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
+            CommandBody::lsub(
                 "inbox",
                 ListMailbox::String(IString::Quoted("\x7f".try_into().unwrap())),
             )
             .unwrap(),
-            Command::list("inBoX", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
-            Command::lsub(
+            CommandBody::list("inBoX", ListMailbox::Token("test".try_into().unwrap())).unwrap(),
+            CommandBody::lsub(
                 "INBOX",
                 ListMailbox::String(IString::Quoted("\x7f".try_into().unwrap())),
             )
             .unwrap(),
-            Command::status("inbox", vec![StatusAttribute::Messages]).unwrap(),
-            Command::append(
+            CommandBody::status("inbox", vec![StatusAttribute::Messages]).unwrap(),
+            CommandBody::append(
                 "inbox",
                 vec![],
                 Some(MyDateTime(
@@ -1749,7 +1672,7 @@ mod test {
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),
-            Command::append(
+            CommandBody::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
                 Some(MyDateTime(
@@ -1758,10 +1681,10 @@ mod test {
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),
-            Command::check(),
-            Command::close(),
-            Command::expunge(),
-            Command::search(
+            CommandBody::Check,
+            CommandBody::Close,
+            CommandBody::Expunge,
+            CommandBody::search(
                 None,
                 SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
@@ -1769,9 +1692,8 @@ mod test {
                         .unwrap(),
                 ),
                 false,
-            )
-            .unwrap(),
-            Command::search(
+            ),
+            CommandBody::search(
                 None,
                 SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
@@ -1779,18 +1701,16 @@ mod test {
                         .unwrap(),
                 ),
                 true,
-            )
-            .unwrap(),
+            ),
             //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
-            Command::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true).unwrap(),
-            Command::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true).unwrap(),
-            Command::search(
+            CommandBody::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
+            CommandBody::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
+            CommandBody::search(
                 None,
                 SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
                 true,
-            )
-            .unwrap(),
-            Command::fetch(
+            ),
+            CommandBody::fetch(
                 "1",
                 vec![FetchAttribute::BodyExt {
                     partial: None,
@@ -1804,8 +1724,8 @@ mod test {
                 false,
             )
             .unwrap(),
-            Command::fetch("1:*,2,3", Macro::Full, true).unwrap(),
-            Command::store(
+            CommandBody::fetch("1:*,2,3", Macro::Full, true).unwrap(),
+            CommandBody::store(
                 "1,2:*",
                 StoreType::Remove,
                 StoreResponse::Answer,
@@ -1813,7 +1733,7 @@ mod test {
                 false,
             )
             .unwrap(),
-            Command::store(
+            CommandBody::store(
                 "1:5",
                 StoreType::Add,
                 StoreResponse::Answer,
@@ -1821,21 +1741,22 @@ mod test {
                 true,
             )
             .unwrap(),
-            Command::copy("1", "inbox", false).unwrap(),
-            Command::copy("1337", "archive", true).unwrap(),
+            CommandBody::copy("1", "inbox", false).unwrap(),
+            CommandBody::copy("1337", "archive", true).unwrap(),
             #[cfg(feature = "ext_idle")]
-            Command::idle(),
+            CommandBody::Idle,
             #[cfg(feature = "ext_enable")]
-            Command::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]).unwrap(),
+            CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]).unwrap(),
             #[cfg(feature = "ext_enable")]
-            Command::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
+            CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
             #[cfg(feature = "ext_compress")]
-            Command::compress(CompressionAlgorithm::Deflate),
+            CommandBody::compress(CompressionAlgorithm::Deflate),
         ];
 
-        for cmd in cmds.iter() {
-            println!("Test: {:?}", cmd);
+        for (no, cmd_body) in cmds.into_iter().enumerate() {
+            println!("Test: {}, {:?}", no, cmd_body);
 
+            let cmd = cmd_body.tag(format!("A{}", no)).unwrap();
             let mut serialized = Vec::new();
             cmd.encode(&mut serialized).unwrap();
             let printable = String::from_utf8_lossy(&serialized);
@@ -1851,7 +1772,8 @@ mod test {
                 mechanism: AuthMechanism::Plain,
                 initial_response: Some(Cow::Borrowed(&b""[..])),
             },
-        );
+        )
+        .unwrap();
 
         let mut buffer = Vec::new();
         command.encode(&mut buffer).unwrap();
