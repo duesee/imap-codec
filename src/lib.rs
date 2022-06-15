@@ -39,7 +39,7 @@ pub mod utils;
 pub mod internal;
 
 #[cfg(any(feature = "tokio_util_codec"))]
-pub mod tokio;
+pub mod tokio_compat;
 
 pub use imap_types;
 pub use imap_types as types;
