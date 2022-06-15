@@ -708,7 +708,44 @@ pub enum Capability<'a> {
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
     // FIXME: case-sensitive when compared
-    Other(Atom<'a>),
+    Other(CapabilityOther<'a>),
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CapabilityOther<'a> {
+    pub(crate) inner: Atom<'a>,
+}
+
+impl<'a> TryFrom<&'a str> for CapabilityOther<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        let atom = Atom::try_from(value).map_err(|_| ())?;
+
+        CapabilityOther::try_from(atom)
+    }
+}
+
+impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
+    type Error = ();
+
+    fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
+        // FIXME(misuse): Check non-other variants.
+
+        Ok(Self { inner: atom })
+    }
+}
+
+impl<'a> Capability<'a> {
+    pub fn other<O>(other: O) -> Result<Self, O::Error>
+    where
+        O: TryInto<CapabilityOther<'a>>,
+    {
+        Ok(Self::Other(other.try_into()?))
+    }
 }
 
 #[cfg(test)]
