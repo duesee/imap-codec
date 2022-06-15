@@ -65,6 +65,8 @@ use crate::mailbox::Mailbox;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub enum State<'a> {
+    Greeting,
+
     /// ## 3.1. Not Authenticated State
     ///
     /// In the not authenticated state, the client MUST supply
