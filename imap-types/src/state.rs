@@ -114,9 +114,9 @@ pub enum State<'a> {
     /// simply close its connection.
     Logout,
 
-    /// Extension IDLE
+    #[cfg(feature = "ext_idle")]
     IdleAuthenticated(String),
 
-    /// Extension IDLE
+    #[cfg(feature = "ext_idle")]
     IdleSelected(String, Mailbox<'a>),
 }
