@@ -36,7 +36,7 @@ pub mod utils;
 
 /// Raw nom parsers for the formal syntax of IMAP ([RFC3501](https://datatracker.ietf.org/doc/html/rfc3501#section-9)) and IMAP extensions.
 #[cfg(feature = "nom")]
-pub mod internal;
+pub mod nom_compat;
 
 #[cfg(any(feature = "tokio_util_codec"))]
 pub mod tokio_compat;
