@@ -1,9 +1,9 @@
-use std::{borrow::Cow, str::from_utf8_unchecked};
+use std::{borrow::Cow, convert::TryFrom, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     core::{NonEmptyVec, Text},
-    response::{Capability, Code, Continue, Data, Response, Status},
+    response::{Capability, CapabilityOther, Code, Continue, Data, Response, Status},
 };
 use nom::{
     branch::alt,
@@ -208,7 +208,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "sasl-ir" => Capability::SaslIr,
                 #[cfg(feature = "ext_enable")]
                 "enable" => Capability::Enable,
-                _ => Capability::Other(atom),
+                _ => Capability::Other(CapabilityOther::try_from(atom).unwrap()),
             }
         }),
     ))(input)

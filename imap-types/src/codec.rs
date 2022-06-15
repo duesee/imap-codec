@@ -736,7 +736,7 @@ impl<'a> Encode for Capability<'a> {
             Compress { algorithm } => match algorithm {
                 CompressionAlgorithm::Deflate => writer.write_all(b"COMPRESS=DEFLATE"),
             },
-            Other(atom) => atom.encode(writer),
+            Other(other) => other.inner.encode(writer),
         }
     }
 }
