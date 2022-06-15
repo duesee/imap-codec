@@ -1,6 +1,10 @@
 //! # 7. Server Responses
 
-use std::{borrow::Cow, convert::TryInto, num::NonZeroU32};
+use std::{
+    borrow::Cow,
+    convert::{TryFrom, TryInto},
+    num::{NonZeroU32, TryFromIntError},
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -626,8 +630,25 @@ impl<'a> Code<'a> {
     where
         C: TryInto<NonEmptyVec<Capability<'a>>>,
     {
-        Ok(Code::Capability(caps.try_into()?))
+        Ok(Self::Capability(caps.try_into()?))
     }
+
+    pub fn uidnext(uidnext: u32) -> Result<Self, TryFromIntError> {
+        Ok(Self::UidNext(NonZeroU32::try_from(uidnext)?))
+    }
+
+    pub fn uidvalidity(uidnext: u32) -> Result<Self, TryFromIntError> {
+        Ok(Self::UidValidity(NonZeroU32::try_from(uidnext)?))
+    }
+
+    pub fn unseen(uidnext: u32) -> Result<Self, TryFromIntError> {
+        Ok(Self::Unseen(NonZeroU32::try_from(uidnext)?))
+    }
+
+    // TODO
+    // pub fn other() -> Self {
+    //
+    // }
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
