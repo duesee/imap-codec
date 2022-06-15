@@ -28,6 +28,7 @@
 
 #![deny(missing_debug_implementations)]
 
+pub mod codec;
 #[cfg(any(feature = "ext_idle", feature = "ext_enable", feature = "ext_compress"))]
 pub mod extensions;
 pub mod rfc3501;
