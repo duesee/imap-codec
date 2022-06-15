@@ -56,7 +56,7 @@ mod test {
 
     use imap_types::{
         command::{Command, CommandBody},
-        core::{IString, Literal, NString, NonEmptyVec, Tag},
+        core::{IString, Literal, NString, NonEmptyVec},
         fetch_attributes::FetchAttributeValue,
         mailbox::Mailbox,
         response::{Data, Response},
@@ -70,16 +70,13 @@ mod test {
             // Ok
             (
                 b"a noop\r\n".as_ref(),
-                Ok((
-                    b"".as_ref(),
-                    Command::new(Tag::try_from("a").unwrap(), CommandBody::Noop),
-                )),
+                Ok((b"".as_ref(), Command::new("a", CommandBody::Noop).unwrap())),
             ),
             (
                 b"a noop\r\n???".as_ref(),
                 Ok((
                     b"???".as_ref(),
-                    Command::new(Tag::try_from("a").unwrap(), CommandBody::Noop),
+                    Command::new("a", CommandBody::Noop).unwrap(),
                 )),
             ),
             (
@@ -87,11 +84,12 @@ mod test {
                 Ok((
                     b"".as_ref(),
                     Command::new(
-                        Tag::try_from("a").unwrap(),
+                        "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
                         },
-                    ),
+                    )
+                    .unwrap(),
                 )),
             ),
             (
@@ -99,11 +97,12 @@ mod test {
                 Ok((
                     b"xxx".as_ref(),
                     Command::new(
-                        Tag::try_from("a").unwrap(),
+                        "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
                         },
-                    ),
+                    )
+                    .unwrap(),
                 )),
             ),
             // Incomplete

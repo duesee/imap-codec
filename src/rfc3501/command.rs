@@ -49,9 +49,9 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
         CRLF,
     ));
 
-    let (remaining, (tag, _, command_body, _)) = parser(input)?;
+    let (remaining, (tag, _, body, _)) = parser(input)?;
 
-    Ok((remaining, Command::new(tag, command_body)))
+    Ok((remaining, Command { tag, body }))
 }
 
 // # Command Any
@@ -870,13 +870,10 @@ mod test {
         let got = command(b"A123 enable UTF8=ACCEPT\r\n").unwrap().1;
         assert_eq!(
             Command::new(
-                "A123".try_into().unwrap(),
-                CommandBody::Enable {
-                    capabilities: vec![CapabilityEnable::Utf8(Utf8Kind::Accept),]
-                        .try_into()
-                        .unwrap()
-                }
-            ),
+                "A123",
+                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap()
+            )
+            .unwrap(),
             got
         );
     }

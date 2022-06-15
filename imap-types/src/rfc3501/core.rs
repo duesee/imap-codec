@@ -16,7 +16,6 @@ use std::{
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -458,15 +457,6 @@ impl<'a> Tag<'a> {
     pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
-
-        Self { inner }
-    }
-
-    pub fn random() -> Self {
-        let mut rng = thread_rng();
-        let buffer = [0u8; 8].map(|_| rng.sample(Alphanumeric));
-
-        let inner = Cow::Owned(unsafe { String::from_utf8_unchecked(buffer.to_vec()) });
 
         Self { inner }
     }

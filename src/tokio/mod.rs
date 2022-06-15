@@ -252,7 +252,7 @@ mod test {
     use bytes::BytesMut;
     use imap_types::{
         command::{Command, CommandBody},
-        core::{AString, AtomExt, IString, Literal, Tag},
+        core::{AString, AtomExt, IString, Literal},
     };
     use tokio_util::codec::Decoder;
 
@@ -290,10 +290,9 @@ mod test {
             (b"\r", Ok(None)),
             (
                 b"\n",
-                Ok(Some(Outcome::Command(Command::new(
-                    Tag::try_from("a").unwrap(),
-                    CommandBody::Noop,
-                )))),
+                Ok(Some(Outcome::Command(
+                    Command::new("a", CommandBody::Noop).unwrap(),
+                ))),
             ),
             (b"", Ok(None)),
             (b"xxxx", Ok(None)),
@@ -332,15 +331,18 @@ mod test {
             (b" ", Ok(None)),
             (
                 b"password\r\n",
-                Ok(Some(Outcome::Command(Command::new(
-                    Tag::try_from("a").unwrap(),
-                    CommandBody::Login {
-                        username: AString::String(IString::Literal(
-                            Literal::try_from(b"alice".as_ref()).unwrap(),
-                        )),
-                        password: AString::Atom(AtomExt::try_from("password").unwrap()),
-                    },
-                )))),
+                Ok(Some(Outcome::Command(
+                    Command::new(
+                        "a",
+                        CommandBody::Login {
+                            username: AString::String(IString::Literal(
+                                Literal::try_from(b"alice".as_ref()).unwrap(),
+                            )),
+                            password: AString::Atom(AtomExt::try_from("password").unwrap()),
+                        },
+                    )
+                    .unwrap(),
+                ))),
             ),
         ];
 
@@ -366,10 +368,9 @@ mod test {
             ),
             (
                 b"a noop\r\n",
-                Ok(Some(Outcome::Command(Command::new(
-                    Tag::try_from("a").unwrap(),
-                    CommandBody::Noop,
-                )))),
+                Ok(Some(Outcome::Command(
+                    Command::new("a", CommandBody::Noop).unwrap(),
+                ))),
             ),
         ];
 
