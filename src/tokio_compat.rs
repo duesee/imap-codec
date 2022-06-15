@@ -256,7 +256,7 @@ mod test {
     };
     use tokio_util::codec::Decoder;
 
-    use crate::tokio::{Action, ImapServerCodec, ImapServerCodecError, LineKind, Outcome};
+    use crate::tokio_compat::{Action, ImapServerCodec, ImapServerCodecError, LineKind, Outcome};
 
     #[test]
     fn find_crlf_inclusive() {
