@@ -448,27 +448,58 @@ pub enum Data<'a> {
 }
 
 impl<'a> Data<'a> {
-    pub fn capability<C>(caps: C) -> Result<Data<'a>, C::Error>
+    pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
         C: TryInto<NonEmptyVec<Capability<'a>>>,
     {
-        Ok(Data::Capability(caps.try_into()?))
+        Ok(Self::Capability(caps.try_into()?))
     }
 
-    // TODO: implement other methods
+    // TODO
+    // pub fn list() -> Self {
+    //     unimplemented!()
+    // }
 
-    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Data<'a>, ()>
+    // TODO
+    // pub fn lsub() -> Self {
+    //     unimplemented!()
+    // }
+
+    // TODO
+    // pub fn status() -> Self {
+    //     unimplemented!()
+    // }
+
+    // TODO
+    // pub fn search() -> Self {
+    //     unimplemented!()
+    // }
+
+    // TODO
+    // pub fn flags() -> Self {
+    //     unimplemented!()
+    // }
+
+    pub fn expunge(seq_or_uid: u32) -> Result<Self, TryFromIntError> {
+        Ok(Self::Expunge(NonZeroU32::try_from(seq_or_uid)?))
+    }
+
+    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Self, ()>
     where
         I: TryInto<NonZeroU32>,
         A: TryInto<NonEmptyVec<FetchAttributeValue<'a>>>,
     {
-        Ok(Data::Fetch {
+        Ok(Self::Fetch {
             seq_or_uid: seq_or_uid.try_into().map_err(|_| ())?, // TODO: better error
             attributes: attributes.try_into().map_err(|_| ())?, // TODO: better error
         })
     }
 
-    // TODO: implement other methods
+    // TODO
+    // #[cfg(feature = "ext_enable")]
+    // pub fn enable() -> Self {
+    //     unimplemented!()
+    // }
 }
 
 /// ## 7.5. Server Responses - Command Continuation Request
