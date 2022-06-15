@@ -34,7 +34,7 @@ abnf-core = "0.5"
 base64 = "0.13"
 bytes = { version = "1.1", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-imap-types = { version = "0.6", default-features = false }
+imap-types = { path = "imap-types", default-features = false }
 nom = "7"
 serde = { version = "1.0", features = ["derive"], optional = true }
 tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
