@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -37,6 +37,15 @@ pub enum AuthMechanism<'a> {
     // AUTH=LOGIN
     Login,
     Other(AuthMechanismOther<'a>),
+}
+
+impl<'a> AuthMechanism<'a> {
+    pub fn other<O>(other: O) -> Result<Self, O::Error>
+    where
+        O: TryInto<AuthMechanismOther<'a>>,
+    {
+        Ok(AuthMechanism::Other(other.try_into()?))
+    }
 }
 
 impl<'a> TryFrom<&'a str> for AuthMechanism<'a> {
