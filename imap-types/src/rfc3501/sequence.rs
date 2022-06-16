@@ -13,6 +13,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::NonEmptyVec;
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SequenceSet(pub NonEmptyVec<Sequence>);
+
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -20,65 +25,6 @@ use crate::core::NonEmptyVec;
 pub enum Sequence {
     Single(SeqNo),
     Range(SeqNo, SeqNo),
-}
-
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SequenceSet(pub NonEmptyVec<Sequence>);
-
-impl<'a> SequenceSet {
-    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
-        match strategy {
-            Strategy::Naive { largest } => SequenceSetIterNaive {
-                iter: self.0.iter(),
-                active_range: None,
-                largest,
-            },
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Strategy {
-    Naive { largest: NonZeroU32 },
-}
-
-#[derive(Debug)]
-pub struct SequenceSetIterNaive<'a> {
-    iter: core::slice::Iter<'a, Sequence>,
-    active_range: Option<std::ops::RangeInclusive<u32>>,
-    largest: NonZeroU32,
-}
-
-impl<'a> Iterator for SequenceSetIterNaive<'a> {
-    type Item = NonZeroU32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(ref mut range) = self.active_range {
-                if let Some(seq_or_uid) = range.next() {
-                    return Some(NonZeroU32::try_from(seq_or_uid).unwrap());
-                } else {
-                    self.active_range = None;
-                }
-            }
-
-            match self.iter.next() {
-                Some(seq) => match seq {
-                    Sequence::Single(seq_no) => {
-                        return Some(seq_no.expand(self.largest));
-                    }
-                    Sequence::Range(from, to) => {
-                        let from = from.expand(self.largest);
-                        let to = to.expand(self.largest);
-                        self.active_range = Some(u32::from(from)..=u32::from(to));
-                    }
-                },
-                None => return None,
-            }
-        }
-    }
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -90,53 +36,14 @@ pub enum SeqNo {
     Largest,
 }
 
-impl SeqNo {
-    pub fn expand(&self, largest: NonZeroU32) -> NonZeroU32 {
-        match self {
-            SeqNo::Value(value) => *value,
-            SeqNo::Largest => largest,
-        }
-    }
-}
-
-impl TryFrom<&str> for SeqNo {
-    type Error = ();
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value == "*" {
-            Ok(SeqNo::Largest)
-        } else {
-            // This is to align parsing here with the IMAP grammar:
-            // Rust's `parse::<NonZeroU32>` function accepts numbers that start with 0.
-            // For example, 00001, is interpreted as 1. But this is not allowed in IMAP.
-            if value.starts_with('0') {
-                Err(())
-            } else {
-                Ok(SeqNo::Value(value.parse::<NonZeroU32>().map_err(|_| ())?))
-            }
-        }
-    }
-}
-
-impl TryFrom<&str> for Sequence {
-    type Error = ();
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.split(':').count() {
-            0 => Err(()),
-            1 => Ok(Sequence::Single(SeqNo::try_from(value)?)),
-            2 => {
-                let mut split = value.split(':');
-
-                let start = split.next().unwrap();
-                let end = split.next().unwrap();
-
-                Ok(Sequence::Range(
-                    SeqNo::try_from(start)?,
-                    SeqNo::try_from(end)?,
-                ))
-            }
-            _ => Err(()),
+impl<'a> SequenceSet {
+    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
+        match strategy {
+            Strategy::Naive { largest } => SequenceSetIterNaive {
+                iter: self.0.iter(),
+                active_range: None,
+                largest,
+            },
         }
     }
 }
@@ -160,6 +67,29 @@ impl TryFrom<String> for SequenceSet {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
+    }
+}
+
+impl TryFrom<&str> for Sequence {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.split(':').count() {
+            0 => Err(()),
+            1 => Ok(Sequence::Single(SeqNo::try_from(value)?)),
+            2 => {
+                let mut split = value.split(':');
+
+                let start = split.next().unwrap();
+                let end = split.next().unwrap();
+
+                Ok(Sequence::Range(
+                    SeqNo::try_from(start)?,
+                    SeqNo::try_from(end)?,
+                ))
+            }
+            _ => Err(()),
+        }
     }
 }
 
@@ -252,6 +182,78 @@ impl From<Sequence> for SequenceSet {
 //         Ok(Sequence::Range(start, end))
 //     }
 // }
+
+impl SeqNo {
+    pub fn expand(&self, largest: NonZeroU32) -> NonZeroU32 {
+        match self {
+            SeqNo::Value(value) => *value,
+            SeqNo::Largest => largest,
+        }
+    }
+}
+
+impl TryFrom<&str> for SeqNo {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value == "*" {
+            Ok(SeqNo::Largest)
+        } else {
+            // This is to align parsing here with the IMAP grammar:
+            // Rust's `parse::<NonZeroU32>` function accepts numbers that start with 0.
+            // For example, 00001, is interpreted as 1. But this is not allowed in IMAP.
+            if value.starts_with('0') {
+                Err(())
+            } else {
+                Ok(SeqNo::Value(value.parse::<NonZeroU32>().map_err(|_| ())?))
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub enum Strategy {
+    Naive { largest: NonZeroU32 },
+}
+
+#[derive(Debug)]
+pub struct SequenceSetIterNaive<'a> {
+    iter: core::slice::Iter<'a, Sequence>,
+    active_range: Option<std::ops::RangeInclusive<u32>>,
+    largest: NonZeroU32,
+}
+
+impl<'a> Iterator for SequenceSetIterNaive<'a> {
+    type Item = NonZeroU32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(ref mut range) = self.active_range {
+                if let Some(seq_or_uid) = range.next() {
+                    return Some(NonZeroU32::try_from(seq_or_uid).unwrap());
+                } else {
+                    self.active_range = None;
+                }
+            }
+
+            match self.iter.next() {
+                Some(seq) => match seq {
+                    Sequence::Single(seq_no) => {
+                        return Some(seq_no.expand(self.largest));
+                    }
+                    Sequence::Range(from, to) => {
+                        let from = from.expand(self.largest);
+                        let to = to.expand(self.largest);
+                        self.active_range = Some(u32::from(from)..=u32::from(to));
+                    }
+                },
+                None => return None,
+            }
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
