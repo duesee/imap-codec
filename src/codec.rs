@@ -1,3 +1,4 @@
+pub use imap_types::codec::Encode;
 use imap_types::{command::Command, response::Response};
 
 use crate::rfc3501::{command::command, response::response};
