@@ -1,11 +1,10 @@
 #![deny(missing_debug_implementations)]
 
 #[cfg(feature = "arbitrary")]
-pub mod arbitrary;
+mod arbitrary;
 #[cfg(any(feature = "ext_idle", feature = "ext_enable", feature = "ext_compress"))]
 pub mod extensions;
-pub mod rfc3501;
-pub mod utils;
+mod rfc3501;
 
 pub use rfc3501::*;
 
@@ -13,6 +12,7 @@ pub use rfc3501::*;
 
 pub mod codec;
 pub mod state;
+pub mod utils;
 
 // -- Re-exports -----------------------------------------------------------------------------------
 
