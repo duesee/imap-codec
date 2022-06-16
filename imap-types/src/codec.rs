@@ -1310,7 +1310,7 @@ impl<'a> Encode for Continue<'a> {
 pub(crate) mod utils {
     use std::io::Write;
 
-    use crate::Encode;
+    use super::Encode;
 
     pub(crate) struct List1OrNil<'a, T>(pub(crate) &'a Vec<T>, pub(crate) &'a [u8]);
 

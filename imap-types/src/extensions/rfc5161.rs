@@ -15,7 +15,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{core::Atom, Encode};
+use crate::{codec::Encode, core::Atom};
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
