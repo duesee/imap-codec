@@ -11,6 +11,9 @@ pub mod rfc3501;
 pub mod state;
 pub mod utils;
 
+pub use rfc3501::*;
+
+// -- Re-exports -----------------------------------------------------------------------------------
+
 #[cfg(feature = "bounded-static")]
 pub use bounded_static;
-pub use rfc3501::*;
