@@ -1,8 +1,7 @@
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
-    imap_types::response::{Response, Status},
     tokio_compat::{Action, ImapServerCodec, Outcome},
-    types::response::Continue,
+    types::api::response::{Continue, Response, Status},
 };
 use tokio::{self, net::TcpListener};
 use tokio_util::codec::Decoder;
