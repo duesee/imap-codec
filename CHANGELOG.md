@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compile fuzzers in CI.
 - Implement benchmarks (Criterion.rs).
   - Compile benchmarks in CI.
-- Implement `Command::into_owned()` and `Response::into_owned()`.
+- Implement `Command::into_static()` and `Response::into_static()`.
+  - Use `bounded-static` (thanks, @jakoschiko)
 - Add types to fix misuses
   - Introduce `AtomExt` (1*ASTRING-CHAR) to fix misuse.
   - Introduce `CapabilityEnable` to increase misuse-resistance.
