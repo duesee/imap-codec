@@ -41,12 +41,22 @@ fn main() {
 }
 ```
 
-# Example (binary)
+# Examples
 
-Have a look at the `parse_*` examples and try any IMAP message, e.g.
+## Simple Parsing
+
+Have a look at the `parse_*` examples and try any IMAP message, e.g., ...
 
 ```
 $ cargo run --example=parse_command
+```
+
+## Tokio Demo
+
+Try the [tokio demo](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_demo) and connect to the demo server via ...
+
+```sh
+$ netcat 127.0.0.1 14300
 ```
 
 ## Sample IMAP4rev1 connection from RFC 3501
