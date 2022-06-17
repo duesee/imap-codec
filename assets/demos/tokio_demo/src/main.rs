@@ -25,7 +25,7 @@ async fn main() {
                 Some(Ok(Outcome::ActionRequired(Action::SendLiteralAck(_)))) => {
                     println!("Sending continuation request ...");
                     framed
-                        .send(Response::Continue(Continue::basic(None, "...").unwrap()))
+                        .send(&Response::Continue(Continue::basic(None, "...").unwrap()))
                         .await
                         .unwrap();
                     println!("... done.");
@@ -33,7 +33,7 @@ async fn main() {
                 Some(Ok(Outcome::ActionRequired(Action::SendLiteralReject(_)))) => {
                     println!("Sending literal reject ...");
                     framed
-                        .send(Response::Status(
+                        .send(&Response::Status(
                             Status::bad(None, None, "literal too large.").unwrap(),
                         ))
                         .await
