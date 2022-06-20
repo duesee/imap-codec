@@ -56,5 +56,6 @@ members = [
     "fuzz",
     "imap-types",
     "imap-types/fuzz",
+    "assets/demos/tokio_client",
     "assets/demos/tokio_server",
 ]
