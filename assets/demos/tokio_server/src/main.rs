@@ -1,6 +1,6 @@
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
-    tokio_compat::{Action, ImapServerCodec, Outcome},
+    tokio_compat::{Action, ImapServerCodec, OutcomeServer},
     types::{
         api::response::{Continue, Response, Status},
         command::CommandBody,
@@ -36,7 +36,7 @@ async fn main() {
 
         loop {
             match framed.next().await {
-                Some(Ok(Outcome::Command(cmd))) => {
+                Some(Ok(OutcomeServer::Command(cmd))) => {
                     println!("C: {:?}", cmd);
 
                     match (cmd.tag, cmd.body) {
@@ -75,7 +75,7 @@ async fn main() {
                         }
                     }
                 }
-                Some(Ok(Outcome::ActionRequired(Action::SendLiteralAck(_)))) => {
+                Some(Ok(OutcomeServer::ActionRequired(Action::SendLiteralAck(_)))) => {
                     println!("[!] Sending continuation request ...");
 
                     let rsp = Response::Continue(Continue::basic(None, "...").unwrap());
@@ -83,7 +83,7 @@ async fn main() {
                     framed.send(&rsp).await.unwrap();
                     println!("[!] ... done.");
                 }
-                Some(Ok(Outcome::ActionRequired(Action::SendLiteralReject(_)))) => {
+                Some(Ok(OutcomeServer::ActionRequired(Action::SendLiteralReject(_)))) => {
                     println!("[!] Sending literal reject ...");
                     let rsp =
                         Response::Status(Status::bad(None, None, "literal too large.").unwrap());

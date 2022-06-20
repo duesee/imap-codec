@@ -130,9 +130,10 @@ impl From<std::io::Error> for ImapServerCodecError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Outcome {
+pub enum OutcomeServer {
     Command(Command<'static>),
     ActionRequired(Action),
+    // More might be require.
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -142,7 +143,7 @@ pub enum Action {
 }
 
 impl Decoder for ImapServerCodec {
-    type Item = Outcome;
+    type Item = OutcomeServer;
     type Error = ImapServerCodecError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -165,7 +166,7 @@ impl Decoder for ImapServerCodec {
                                         src.advance(*to_consume_acc);
                                         self.state = State::ReadLine { to_consume_acc: 0 };
 
-                                        return Ok(Some(Outcome::Command(cmd)));
+                                        return Ok(Some(OutcomeServer::Command(cmd)));
                                     }
                                     Err(_) => {
                                         src.advance(*to_consume_acc);
@@ -179,7 +180,7 @@ impl Decoder for ImapServerCodec {
                                         src.advance(*to_consume_acc);
                                         self.state = State::ReadLine { to_consume_acc: 0 };
 
-                                        return Ok(Some(Outcome::ActionRequired(
+                                        return Ok(Some(OutcomeServer::ActionRequired(
                                             Action::SendLiteralReject(needed),
                                         )));
                                     }
@@ -191,7 +192,7 @@ impl Decoder for ImapServerCodec {
                                         needed,
                                     };
 
-                                    return Ok(Some(Outcome::ActionRequired(
+                                    return Ok(Some(OutcomeServer::ActionRequired(
                                         Action::SendLiteralAck(needed),
                                     )));
                                 }
@@ -256,7 +257,9 @@ mod test {
     };
     use tokio_util::codec::Decoder;
 
-    use crate::tokio_compat::{Action, ImapServerCodec, ImapServerCodecError, LineKind, Outcome};
+    use crate::tokio_compat::{
+        Action, ImapServerCodec, ImapServerCodecError, LineKind, OutcomeServer,
+    };
 
     #[test]
     fn find_crlf_inclusive() {
@@ -290,7 +293,7 @@ mod test {
             (b"\r", Ok(None)),
             (
                 b"\n",
-                Ok(Some(Outcome::Command(
+                Ok(Some(OutcomeServer::Command(
                     Command::new("a", CommandBody::Noop).unwrap(),
                 ))),
             ),
@@ -322,7 +325,9 @@ mod test {
             (b"}", Ok(None)),
             (
                 b"\r\n",
-                Ok(Some(Outcome::ActionRequired(Action::SendLiteralAck(5)))),
+                Ok(Some(OutcomeServer::ActionRequired(Action::SendLiteralAck(
+                    5,
+                )))),
             ),
             (b"a", Ok(None)),
             (b"l", Ok(None)),
@@ -331,7 +336,7 @@ mod test {
             (b" ", Ok(None)),
             (
                 b"password\r\n",
-                Ok(Some(Outcome::Command(
+                Ok(Some(OutcomeServer::Command(
                     Command::new(
                         "a",
                         CommandBody::Login {
@@ -368,7 +373,7 @@ mod test {
             ),
             (
                 b"a noop\r\n",
-                Ok(Some(Outcome::Command(
+                Ok(Some(OutcomeServer::Command(
                     Command::new("a", CommandBody::Noop).unwrap(),
                 ))),
             ),
