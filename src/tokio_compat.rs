@@ -6,7 +6,7 @@ use imap_types::{
 };
 use tokio_util::codec::{Decoder, Encoder};
 
-use crate::command::command;
+use crate::codec::Decode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImapServerCodec {
@@ -158,7 +158,7 @@ impl Decoder for ImapServerCodec {
 
                             match ImapServerCodec::parse_literal(&src[..*to_consume_acc - 2]) {
                                 // No literal.
-                                Ok(None) => match command(&src[..*to_consume_acc]) {
+                                Ok(None) => match Command::decode(&src[..*to_consume_acc]) {
                                     Ok((rem, cmd)) => {
                                         assert!(rem.is_empty());
                                         let cmd = cmd.into_static();
