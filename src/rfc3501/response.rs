@@ -3,7 +3,9 @@ use std::{borrow::Cow, convert::TryFrom, str::from_utf8_unchecked};
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     core::{NonEmptyVec, Text},
-    response::{Capability, CapabilityOther, Code, Continue, Data, Response, Status},
+    response::{
+        Capability, CapabilityOther, Code, Continue, Data, Greeting, GreetingKind, Response, Status,
+    },
 };
 use nom::{
     branch::alt,
@@ -34,44 +36,33 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
         tag(b"*"),
         SP,
         alt((
-            map(
-                resp_cond_auth,
-                |(raw_status, (code, text))| match raw_status.to_ascii_lowercase().as_ref() {
-                    "ok" => Status::Ok {
-                        tag: None,
-                        code,
-                        text,
-                    },
-                    "preauth" => Status::PreAuth { code, text },
-                    _ => unreachable!(),
-                },
-            ),
-            map(resp_cond_bye, |(code, text)| Status::Bye { code, text }),
+            resp_cond_auth,
+            map(resp_cond_bye, |resp_text| (GreetingKind::Bye, resp_text)),
         )),
         CRLF,
     ));
 
-    let (remaining, (_, _, status, _)) = parser(input)?;
+    let (remaining, (_, _, (kind, (code, text)), _)) = parser(input)?;
 
-    Ok((remaining, Response::Status(status)))
+    Ok((remaining, Response::Greeting(Greeting { kind, code, text })))
 }
 
 /// `resp-cond-auth = ("OK" / "PREAUTH") SP resp-text`
 ///
 /// Authentication condition
-pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (&str, (Option<Code>, Text))> {
+pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (GreetingKind, (Option<Code>, Text))> {
     let mut parser = tuple((
-        map(
-            alt((tag_no_case(b"OK"), tag_no_case(b"PREAUTH"))),
-            |val| unsafe { from_utf8_unchecked(val) },
-        ),
+        alt((
+            value(GreetingKind::Ok, tag_no_case(b"OK")),
+            value(GreetingKind::PreAuth, tag_no_case(b"PREAUTH")),
+        )),
         SP,
         resp_text,
     ));
 
-    let (remaining, (raw_status, _, resp_text)) = parser(input)?;
+    let (remaining, (kind, _, resp_text)) = parser(input)?;
 
-    Ok((remaining, (raw_status, resp_text)))
+    Ok((remaining, (kind, resp_text)))
 }
 
 /// `resp-text = ["[" resp-text-code "]" SP] text`

@@ -26,12 +26,53 @@ use crate::{
     AuthMechanism,
 };
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Greeting<'a> {
+    pub kind: GreetingKind,
+    pub code: Option<Code<'a>>,
+    pub text: Text<'a>,
+}
+
+impl<'a> Greeting<'a> {
+    pub fn new(kind: GreetingKind, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+        Ok(Greeting {
+            kind,
+            code,
+            text: text.try_into()?,
+        })
+    }
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// IMAP4rev1 defines three possible greetings at connection startup.
+pub enum GreetingKind {
+    /// The connection is not yet authenticated.
+    ///
+    /// (Advice: A LOGIN command is needed.)
+    Ok,
+    /// The connection has already been authenticated by external means.
+    ///
+    /// (Advice: No LOGIN command is needed.)
+    PreAuth,
+    /// The server is not willing to accept a connection from this client.
+    ///
+    /// (Advice: The server closes the connection immediately.)
+    Bye,
+}
+
 /// Server responses are in three forms.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response<'a> {
+    Greeting(Greeting<'a>),
     /// Status responses can be tagged or untagged.  Tagged status responses
     /// indicate the completion result (OK, NO, or BAD status) of a client
     /// command, and have a tag matching the command.
@@ -754,6 +795,23 @@ mod test {
 
     use super::*;
     use crate::codec::Encode;
+
+    #[test]
+    fn test_greeting() {
+        let tests: Vec<(_, &[u8])> = vec![(
+            Greeting::new(GreetingKind::PreAuth, Some(Code::Alert), "hello").unwrap(),
+            b"* PREAUTH [ALERT] hello\r\n",
+        )];
+
+        for (parsed, serialized) in tests.into_iter() {
+            eprintln!("{:?}", parsed);
+            let mut out = Vec::new();
+            parsed.encode(&mut out).unwrap();
+            assert_eq!(out, serialized.to_vec());
+            // FIXME(#30):
+            //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
+        }
+    }
 
     #[test]
     fn test_status() {
