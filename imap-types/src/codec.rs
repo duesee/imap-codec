@@ -21,7 +21,7 @@ use crate::{
     fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
     flag::{Flag, FlagNameAttribute, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
-    response::{Capability, Code, Continue, Data, Response, Status},
+    response::{Capability, Code, Continue, Data, Greeting, GreetingKind, Response, Status},
     section::{Part, Section},
     sequence::{SeqNo, Sequence, SequenceSet},
     status_attributes::{StatusAttribute, StatusAttributeValue},
@@ -746,9 +746,37 @@ impl<'a> Encode for Capability<'a> {
 impl<'a> Encode for Response<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
+            Response::Greeting(greeting) => greeting.encode(writer),
             Response::Status(status) => status.encode(writer),
             Response::Data(data) => data.encode(writer),
             Response::Continue(continue_request) => continue_request.encode(writer),
+        }
+    }
+}
+
+impl<'a> Encode for Greeting<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"* ")?;
+        self.kind.encode(writer)?;
+        writer.write_all(b" ")?;
+
+        if let Some(ref code) = self.code {
+            writer.write_all(b"[")?;
+            code.encode(writer)?;
+            writer.write_all(b"] ")?;
+        }
+
+        self.text.encode(writer)?;
+        writer.write_all(b"\r\n")
+    }
+}
+
+impl Encode for GreetingKind {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            GreetingKind::Ok => writer.write_all(b"OK"),
+            GreetingKind::PreAuth => writer.write_all(b"PREAUTH"),
+            GreetingKind::Bye => writer.write_all(b"BYE"),
         }
     }
 }
