@@ -63,7 +63,7 @@ use crate::mailbox::Mailbox;
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum State<'a> {
     Greeting,
 
