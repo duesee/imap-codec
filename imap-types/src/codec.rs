@@ -810,7 +810,6 @@ impl<'a> Encode for Status<'a> {
             Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, writer),
             Status::No { tag, code, text } => format_status(tag, "NO", code, text, writer),
             Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, writer),
-            Status::PreAuth { code, text } => format_status(&None, "PREAUTH", code, text, writer),
             Status::Bye { code, text } => format_status(&None, "BYE", code, text, writer),
         }
     }
