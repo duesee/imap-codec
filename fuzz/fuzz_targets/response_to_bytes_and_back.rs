@@ -6,18 +6,13 @@ use imap_codec::{
     response::response,
     types::{
         codec::Encode,
-        response::{Data, Response, Status},
+        response::{Data, Response},
     },
 };
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Response| {
     if matches!(test, Response::Continue(_)) {
-        // FIXME(#30)
-        return;
-    }
-
-    if matches!(test, Response::Status(Status::PreAuth { .. })) {
         // FIXME(#30)
         return;
     }

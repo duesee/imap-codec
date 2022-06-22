@@ -151,19 +151,6 @@ pub enum Status<'a> {
         text: Text<'a>,
     },
 
-    /// ### 7.1.4. PREAUTH Response
-    ///
-    /// The PREAUTH response is always untagged, and is one of three
-    /// possible greetings at connection startup.  It indicates that the
-    /// connection has already been authenticated by external means; thus
-    /// no LOGIN command is needed.
-    PreAuth {
-        /// Response code (optional)
-        code: Option<Code<'a>>,
-        /// Human-readable text (must be at least 1 character!)
-        text: Text<'a>,
-    },
-
     /// ### 7.1.5. BYE Response
     ///
     /// The BYE response is always untagged, and indicates that the server
@@ -230,13 +217,6 @@ impl<'a> Status<'a> {
     pub fn bad(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Bad {
             tag,
-            code,
-            text: text.try_into()?,
-        })
-    }
-
-    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
-        Ok(Status::PreAuth {
             code,
             text: text.try_into()?,
         })
@@ -869,11 +849,6 @@ mod test {
             (Status::ok(None, None, "hello"), b"* OK hello\r\n"),
             (Status::no(None, None, "hello"), b"* NO hello\r\n"),
             (Status::bad(None, None, "hello"), b"* BAD hello\r\n"),
-            // preauth
-            (
-                Status::preauth(Some(Code::Alert), "hello"),
-                b"* PREAUTH [ALERT] hello\r\n",
-            ),
             // bye
             (
                 Status::bye(Some(Code::Alert), "hello"),
