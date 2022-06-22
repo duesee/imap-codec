@@ -190,14 +190,6 @@ pub enum Status<'a> {
 }
 
 impl<'a> Status<'a> {
-    pub fn greeting(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
-        Ok(Status::Ok {
-            tag: None,
-            code,
-            text: text.try_into()?,
-        })
-    }
-
     pub fn ok(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
         Ok(Status::Ok {
             tag,
