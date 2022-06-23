@@ -44,6 +44,30 @@ impl<'a> Greeting<'a> {
             text: text.try_into()?,
         })
     }
+
+    pub fn ok(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+        Ok(Greeting {
+            kind: GreetingKind::Ok,
+            code,
+            text: text.try_into()?,
+        })
+    }
+
+    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+        Ok(Greeting {
+            kind: GreetingKind::PreAuth,
+            code,
+            text: text.try_into()?,
+        })
+    }
+
+    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+        Ok(Greeting {
+            kind: GreetingKind::Bye,
+            code,
+            text: text.try_into()?,
+        })
+    }
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
