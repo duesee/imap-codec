@@ -88,13 +88,11 @@ pub enum LiteralKind {
 
 impl PartialEq for ImapClientCodecError {
     fn eq(&self, other: &Self) -> bool {
-        use ImapClientCodecError::*;
-
         match (self, other) {
-            (Io(error1), Io(error2)) => error1.kind() == error2.kind(),
-            (Line(kind2), Line(kind1)) => kind1 == kind2,
-            (Literal(kind1), Literal(kind2)) => kind1 == kind2,
-            (ResponseParsingFailed, ResponseParsingFailed) => true,
+            (Self::Io(error1), Self::Io(error2)) => error1.kind() == error2.kind(),
+            (Self::Line(kind2), Self::Line(kind1)) => kind1 == kind2,
+            (Self::Literal(kind1), Self::Literal(kind2)) => kind1 == kind2,
+            (Self::ResponseParsingFailed, Self::ResponseParsingFailed) => true,
             _ => false,
         }
     }
@@ -102,14 +100,12 @@ impl PartialEq for ImapClientCodecError {
 
 impl PartialEq for ImapServerCodecError {
     fn eq(&self, other: &Self) -> bool {
-        use ImapServerCodecError::*;
-
         match (self, other) {
-            (Io(error1), Io(error2)) => error1.kind() == error2.kind(),
-            (Line(kind2), Line(kind1)) => kind1 == kind2,
-            (Literal(kind1), Literal(kind2)) => kind1 == kind2,
-            (CommandParsingFailed, CommandParsingFailed) => true,
-            (ActionRequired, ActionRequired) => true,
+            (Self::Io(error1), Self::Io(error2)) => error1.kind() == error2.kind(),
+            (Self::Line(kind2), Self::Line(kind1)) => kind1 == kind2,
+            (Self::Literal(kind1), Self::Literal(kind2)) => kind1 == kind2,
+            (Self::CommandParsingFailed, Self::CommandParsingFailed) => true,
+            (Self::ActionRequired, Self::ActionRequired) => true,
             _ => false,
         }
     }
