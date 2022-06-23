@@ -90,7 +90,6 @@ pub enum GreetingKind {
     Bye,
 }
 
-/// Server responses are in three forms.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
