@@ -1025,10 +1025,8 @@ impl Encode for StatusAttributeValue {
 
 impl<'a> Encode for FetchAttributeValue<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use FetchAttributeValue::*;
-
         match self {
-            BodyExt {
+            Self::BodyExt {
                 section,
                 origin,
                 data,
@@ -1045,41 +1043,41 @@ impl<'a> Encode for FetchAttributeValue<'a> {
                 data.encode(writer)
             }
             // FIXME: do not return body-ext-1part and body-ext-mpart here
-            Body(body) => {
+            Self::Body(body) => {
                 writer.write_all(b"BODY ")?;
                 body.encode(writer)
             }
-            BodyStructure(body) => {
+            Self::BodyStructure(body) => {
                 writer.write_all(b"BODYSTRUCTURE ")?;
                 body.encode(writer)
             }
-            Envelope(envelope) => {
+            Self::Envelope(envelope) => {
                 writer.write_all(b"ENVELOPE ")?;
                 envelope.encode(writer)
             }
-            Flags(flags) => {
+            Self::Flags(flags) => {
                 writer.write_all(b"FLAGS (")?;
                 join_serializable(flags, b" ", writer)?;
                 writer.write_all(b")")
             }
-            InternalDate(datetime) => {
+            Self::InternalDate(datetime) => {
                 writer.write_all(b"INTERNALDATE ")?;
                 datetime.encode(writer)
             }
-            Rfc822(nstring) => {
+            Self::Rfc822(nstring) => {
                 writer.write_all(b"RFC822 ")?;
                 nstring.encode(writer)
             }
-            Rfc822Header(nstring) => {
+            Self::Rfc822Header(nstring) => {
                 writer.write_all(b"RFC822.HEADER ")?;
                 nstring.encode(writer)
             }
-            Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
-            Rfc822Text(nstring) => {
+            Self::Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
+            Self::Rfc822Text(nstring) => {
                 writer.write_all(b"RFC822.TEXT ")?;
                 nstring.encode(writer)
             }
-            Uid(uid) => write!(writer, "UID {}", uid),
+            Self::Uid(uid) => write!(writer, "UID {}", uid),
         }
     }
 }

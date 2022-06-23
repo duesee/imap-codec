@@ -37,12 +37,10 @@ pub enum Utf8Kind {
 
 impl<'a> Encode for CapabilityEnable<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use CapabilityEnable::*;
-
         match self {
-            Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
-            Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
-            Other(atom) => atom.encode(writer),
+            Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
+            Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
+            Self::Other(atom) => atom.encode(writer),
         }
     }
 }

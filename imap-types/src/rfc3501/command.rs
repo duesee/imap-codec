@@ -1397,40 +1397,38 @@ impl<'a> CommandBody<'a> {
     }
 
     pub fn name(&self) -> &'static str {
-        // TODO: consider the `strum` crate or use a macro?
-        use CommandBody::*;
         match self {
-            Capability => "CAPABILITY",
-            Noop => "NOOP",
-            Logout => "LOGOUT",
+            Self::Capability => "CAPABILITY",
+            Self::Noop => "NOOP",
+            Self::Logout => "LOGOUT",
             #[cfg(feature = "starttls")]
-            StartTLS => "STARTTLS",
-            Authenticate { .. } => "AUTHENTICATE",
-            Login { .. } => "LOGIN",
-            Select { .. } => "SELECT",
-            Examine { .. } => "EXAMINE",
-            Create { .. } => "CREATE",
-            Delete { .. } => "DELETE",
-            Rename { .. } => "RENAME",
-            Subscribe { .. } => "SUBSCRIBE",
-            Unsubscribe { .. } => "UNSUBSCRIBE",
-            List { .. } => "LIST",
-            Lsub { .. } => "LSUB",
-            Status { .. } => "STATUS",
-            Append { .. } => "APPEND",
-            Check => "CHECK",
-            Close => "CLOSE",
-            Expunge => "EXPUNGE",
-            Search { .. } => "SEARCH",
-            Fetch { .. } => "FETCH",
-            Store { .. } => "STORE",
-            Copy { .. } => "COPY",
+            Self::StartTLS => "STARTTLS",
+            Self::Authenticate { .. } => "AUTHENTICATE",
+            Self::Login { .. } => "LOGIN",
+            Self::Select { .. } => "SELECT",
+            Self::Examine { .. } => "EXAMINE",
+            Self::Create { .. } => "CREATE",
+            Self::Delete { .. } => "DELETE",
+            Self::Rename { .. } => "RENAME",
+            Self::Subscribe { .. } => "SUBSCRIBE",
+            Self::Unsubscribe { .. } => "UNSUBSCRIBE",
+            Self::List { .. } => "LIST",
+            Self::Lsub { .. } => "LSUB",
+            Self::Status { .. } => "STATUS",
+            Self::Append { .. } => "APPEND",
+            Self::Check => "CHECK",
+            Self::Close => "CLOSE",
+            Self::Expunge => "EXPUNGE",
+            Self::Search { .. } => "SEARCH",
+            Self::Fetch { .. } => "FETCH",
+            Self::Store { .. } => "STORE",
+            Self::Copy { .. } => "COPY",
             #[cfg(feature = "ext_idle")]
-            Idle => "IDLE",
+            Self::Idle => "IDLE",
             #[cfg(feature = "ext_enable")]
-            Enable { .. } => "ENABLE",
+            Self::Enable { .. } => "ENABLE",
             #[cfg(feature = "ext_compress")]
-            Compress { .. } => "COMPRESS",
+            Self::Compress { .. } => "COMPRESS",
         }
     }
 }

@@ -34,15 +34,13 @@ fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
 }
 
 fn ignore_search_key_and(sk: &SearchKey) -> bool {
-    use SearchKey::*;
-
     match sk {
-        And(list) => match list.as_ref().len() {
+        SearchKey::And(list) => match list.as_ref().len() {
             1 => true,
             _ => list.as_ref().iter().any(ignore_search_key_and),
         },
-        Not(sk) => ignore_search_key_and(sk),
-        Or(sk1, sk2) => ignore_search_key_and(sk1) || ignore_search_key_and(sk2),
+        SearchKey::Not(sk) => ignore_search_key_and(sk),
+        SearchKey::Or(sk1, sk2) => ignore_search_key_and(sk1) || ignore_search_key_and(sk2),
         _ => false,
     }
 }
