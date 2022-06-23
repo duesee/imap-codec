@@ -710,11 +710,9 @@ impl Encode for NonZeroU32 {
 
 impl<'a> Encode for Capability<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        use Capability::*;
-
         match self {
-            Imap4Rev1 => writer.write_all(b"IMAP4REV1"),
-            Auth(mechanism) => match mechanism {
+            Self::Imap4Rev1 => writer.write_all(b"IMAP4REV1"),
+            Self::Auth(mechanism) => match mechanism {
                 AuthMechanism::Plain => writer.write_all(b"AUTH=PLAIN"),
                 AuthMechanism::Login => writer.write_all(b"AUTH=LOGIN"),
                 AuthMechanism::Other(other) => {
@@ -722,21 +720,22 @@ impl<'a> Encode for Capability<'a> {
                     other.encode(writer)
                 }
             },
-            LoginDisabled => writer.write_all(b"LOGINDISABLED"),
             #[cfg(feature = "starttls")]
-            StartTls => writer.write_all(b"STARTTLS"),
-            MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
-            LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
-            SaslIr => writer.write_all(b"SASL-IR"),
+            Self::LoginDisabled => writer.write_all(b"LOGINDISABLED"),
+            #[cfg(feature = "starttls")]
+            Self::StartTls => writer.write_all(b"STARTTLS"),
+            Self::MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
+            Self::LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
+            Self::SaslIr => writer.write_all(b"SASL-IR"),
             #[cfg(feature = "ext_idle")]
-            Idle => writer.write_all(b"IDLE"),
+            Self::Idle => writer.write_all(b"IDLE"),
             #[cfg(feature = "ext_enable")]
-            Enable => writer.write_all(b"ENABLE"),
+            Self::Enable => writer.write_all(b"ENABLE"),
             #[cfg(feature = "ext_compress")]
-            Compress { algorithm } => match algorithm {
+            Self::Compress { algorithm } => match algorithm {
                 CompressionAlgorithm::Deflate => writer.write_all(b"COMPRESS=DEFLATE"),
             },
-            Other(other) => other.inner.encode(writer),
+            Self::Other(other) => other.inner.encode(writer),
         }
     }
 }

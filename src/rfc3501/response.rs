@@ -186,6 +186,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
         map(atom, |atom| {
             match atom.as_ref().to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
+                #[cfg(feature = "starttls")]
                 "logindisabled" => Capability::LoginDisabled,
                 #[cfg(feature = "starttls")]
                 "starttls" => Capability::StartTls,

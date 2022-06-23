@@ -726,6 +726,7 @@ impl<'a> Code<'a> {
 pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
+    #[cfg(feature = "starttls")]
     LoginDisabled,
     #[cfg(feature = "starttls")]
     StartTls,
