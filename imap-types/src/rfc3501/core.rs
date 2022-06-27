@@ -6,11 +6,7 @@
 //! may take more than one form; for example, a data item defined as
 //! using "astring" syntax may be either an atom or a string.
 
-use std::{
-    borrow::{Borrow, Cow},
-    convert::TryFrom,
-    ops::Deref,
-};
+use std::{borrow::Cow, convert::TryFrom};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -78,11 +74,9 @@ impl<'a> TryFrom<String> for Atom<'a> {
     }
 }
 
-impl<'a> Deref for Atom<'a> {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner.borrow()
+impl<'a> AsRef<str> for Atom<'a> {
+    fn as_ref(&self) -> &str {
+        self.inner.as_ref()
     }
 }
 
@@ -138,11 +132,9 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
     }
 }
 
-impl<'a> Deref for AtomExt<'a> {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner.borrow()
+impl<'a> AsRef<str> for AtomExt<'a> {
+    fn as_ref(&self) -> &str {
+        &self.inner
     }
 }
 
@@ -217,6 +209,15 @@ impl<'a> TryFrom<String> for IString<'a> {
     }
 }
 
+impl<'a> AsRef<[u8]> for IString<'a> {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Self::Literal(literal) => literal.as_ref(),
+            Self::Quoted(quoted) => quoted.as_ref().as_bytes(),
+        }
+    }
+}
+
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -276,10 +277,8 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
     }
 }
 
-impl<'a> Deref for Literal<'a> {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
+impl<'a> AsRef<[u8]> for Literal<'a> {
+    fn as_ref(&self) -> &[u8] {
         &self.inner
     }
 }
@@ -343,11 +342,9 @@ impl<'a> TryFrom<String> for Quoted<'a> {
     }
 }
 
-impl<'a> Deref for Quoted<'a> {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner.as_ref()
+impl<'a> AsRef<str> for Quoted<'a> {
+    fn as_ref(&self) -> &str {
+        &self.inner
     }
 }
 
@@ -395,6 +392,15 @@ impl<'a> TryFrom<String> for AString<'a> {
             Ok(AString::String(string))
         } else {
             Err(())
+        }
+    }
+}
+
+impl<'a> AsRef<[u8]> for AString<'a> {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Self::Atom(atom_ext) => atom_ext.as_ref().as_bytes(),
+            Self::String(istr) => istr.as_ref(),
         }
     }
 }
@@ -651,10 +657,8 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     }
 }
 
-impl<T> Deref for NonEmptyVec<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
+impl<T> AsRef<[T]> for NonEmptyVec<T> {
+    fn as_ref(&self) -> &[T] {
         &self.inner
     }
 }

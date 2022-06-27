@@ -1,7 +1,6 @@
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::Cow,
     convert::{TryFrom, TryInto},
-    ops::Deref,
     str::from_utf8,
 };
 
@@ -65,11 +64,9 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
     }
 }
 
-impl<'a> Deref for ListCharString<'a> {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner.borrow()
+impl<'a> AsRef<[u8]> for ListCharString<'a> {
+    fn as_ref(&self) -> &[u8] {
+        self.inner.as_bytes()
     }
 }
 
@@ -171,7 +168,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     fn try_from(mailbox: AString<'a>) -> Result<Self, Self::Error> {
         match mailbox {
             AString::Atom(ref str) => {
-                if str.to_ascii_lowercase() == "inbox" {
+                if str.as_ref().to_ascii_lowercase() == "inbox" {
                     Err(())
                 } else {
                     Ok(MailboxOther { inner: mailbox })
@@ -179,7 +176,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
             }
             AString::String(ref imap_str) => match imap_str {
                 IString::Quoted(ref str) => {
-                    if str.to_ascii_lowercase() == "inbox" {
+                    if str.as_ref().to_ascii_lowercase() == "inbox" {
                         Err(())
                     } else {
                         Ok(MailboxOther { inner: mailbox })
@@ -187,7 +184,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
                 }
                 IString::Literal(bytes) => {
                     // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                    if let Ok(str) = from_utf8(bytes) {
+                    if let Ok(str) = from_utf8(bytes.as_ref()) {
                         // After the conversion we ignore the case...
                         if str.to_ascii_lowercase() == "inbox" {
                             // ...and return the Inbox variant.

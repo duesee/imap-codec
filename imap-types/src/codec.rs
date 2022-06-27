@@ -191,8 +191,8 @@ impl<'a> Encode for CommandBody<'a> {
                 }
 
                 writer.write_all(b" ")?;
-                writer.write_all(format!("{{{}}}\r\n", message.len()).as_bytes())?;
-                writer.write_all(message)
+                writer.write_all(format!("{{{}}}\r\n", message.as_ref().len()).as_bytes())?;
+                writer.write_all(message.as_ref())
             }
             CommandBody::Check => writer.write_all(b"CHECK"),
             CommandBody::Close => writer.write_all(b"CLOSE"),
@@ -213,7 +213,7 @@ impl<'a> Encode for CommandBody<'a> {
                 }
                 writer.write_all(b" ")?;
                 if let SearchKey::And(search_keys) = criteria {
-                    join_serializable(search_keys, b" ", writer) // TODO: use List1?
+                    join_serializable(search_keys.as_ref(), b" ", writer) // TODO: use List1?
                 } else {
                     criteria.encode(writer)
                 }
@@ -285,7 +285,7 @@ impl<'a> Encode for CommandBody<'a> {
             #[cfg(feature = "ext_enable")]
             CommandBody::Enable { capabilities } => {
                 writer.write_all(b"ENABLE ")?;
-                join_serializable(capabilities, b" ", writer)
+                join_serializable(capabilities.as_ref(), b" ", writer)
             }
             #[cfg(feature = "ext_compress")]
             CommandBody::Compress { algorithm } => {
@@ -344,8 +344,8 @@ impl<'a> Encode for IString<'a> {
 
 impl<'a> Encode for Literal<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{{{}}}\r\n", self.len())?;
-        writer.write_all(self)
+        write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+        writer.write_all(self.as_ref())
     }
 }
 
@@ -381,7 +381,7 @@ impl<'a> Encode for ListMailbox<'a> {
 
 impl<'a> Encode for ListCharString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(self.as_bytes())
+        writer.write_all(self.as_ref())
     }
 }
 
@@ -543,7 +543,7 @@ impl<'a> Encode for SearchKey<'a> {
             SearchKey::SequenceSet(sequence_set) => sequence_set.encode(writer),
             SearchKey::And(search_keys) => {
                 writer.write_all(b"(")?;
-                join_serializable(search_keys, b" ", writer)?;
+                join_serializable(search_keys.as_ref(), b" ", writer)?;
                 writer.write_all(b")")
             }
         }
@@ -552,7 +552,7 @@ impl<'a> Encode for SearchKey<'a> {
 
 impl Encode for SequenceSet {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(&self.0, b",", writer)
+        join_serializable(self.0.as_ref(), b",", writer)
     }
 }
 
@@ -667,7 +667,7 @@ impl<'a> Encode for Section<'a> {
                     }
                     None => writer.write_all(b"HEADER.FIELDS (")?,
                 };
-                join_serializable(header_list, b" ", writer)?;
+                join_serializable(header_list.as_ref(), b" ", writer)?;
                 writer.write_all(b")")
             }
             Section::HeaderFieldsNot(maybe_part, header_list) => {
@@ -678,7 +678,7 @@ impl<'a> Encode for Section<'a> {
                     }
                     None => writer.write_all(b"HEADER.FIELDS.NOT (")?,
                 };
-                join_serializable(header_list, b" ", writer)?;
+                join_serializable(header_list.as_ref(), b" ", writer)?;
                 writer.write_all(b")")
             }
             Section::Text(maybe_part) => match maybe_part {
@@ -698,7 +698,7 @@ impl<'a> Encode for Section<'a> {
 
 impl Encode for Part {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(&self.0, b".", writer)
+        join_serializable(self.0.as_ref(), b".", writer)
     }
 }
 
@@ -830,7 +830,7 @@ impl<'a> Encode for Code<'a> {
             }
             Code::Capability(caps) => {
                 writer.write_all(b"CAPABILITY ")?;
-                join_serializable(caps, b" ", writer)
+                join_serializable(caps.as_ref(), b" ", writer)
             }
             Code::Parse => writer.write_all(b"PARSE"),
             Code::PermanentFlags(flags) => {
@@ -883,7 +883,7 @@ impl<'a> Encode for Data<'a> {
         match self {
             Data::Capability(caps) => {
                 writer.write_all(b"* CAPABILITY ")?;
-                join_serializable(caps, b" ", writer)?;
+                join_serializable(caps.as_ref(), b" ", writer)?;
             }
             Data::List {
                 items,
@@ -954,7 +954,7 @@ impl<'a> Encode for Data<'a> {
                 attributes,
             } => {
                 write!(writer, "* {} FETCH (", seq_or_uid)?;
-                join_serializable(attributes, b" ", writer)?;
+                join_serializable(attributes.as_ref(), b" ", writer)?;
                 writer.write_all(b")")?;
             }
             #[cfg(feature = "ext_enable")]

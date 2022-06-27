@@ -184,7 +184,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
             |(_, algorithm)| Capability::Compress { algorithm },
         ),
         map(atom, |atom| {
-            match atom.to_ascii_lowercase().as_ref() {
+            match atom.as_ref().to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
                 "logindisabled" => Capability::LoginDisabled,
                 #[cfg(feature = "starttls")]
