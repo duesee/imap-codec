@@ -40,7 +40,7 @@ impl<'a> SequenceSet {
     pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
         match strategy {
             Strategy::Naive { largest } => SequenceSetIterNaive {
-                iter: self.0.iter(),
+                iter: self.0.as_ref().iter(),
                 active_range: None,
                 largest,
             },
