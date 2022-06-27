@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 futures = "0.3"
 imap-codec = { path = "../../../", features = ["tokio_util_codec"] }
+subtle = "*"
 tokio = { version = "*", features = ["full"] }
 tokio-util = { version = "*", features = ["codec"] }
