@@ -1,7 +1,13 @@
 pub use imap_types::codec::Encode;
-use imap_types::{command::Command, response::Response};
+use imap_types::{
+    command::Command,
+    response::{Greeting, Response},
+};
 
-use crate::rfc3501::{command::command, response::response};
+use crate::{
+    response::greeting,
+    rfc3501::{command::command, response::response},
+};
 
 pub trait Decode<'a>: Sized + 'a {
     fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError>;
@@ -22,6 +28,20 @@ pub enum DecodeError {
 }
 
 // -------------------------------------------------------------------------------------------------
+
+impl<'a> Decode<'a> for Greeting<'a> {
+    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
+        match greeting(input) {
+            Ok((rem, grt)) => Ok((rem, grt)),
+            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+            Err(nom::Err::Failure(error)) => match error.code {
+                nom::error::ErrorKind::Fix => Err(DecodeError::LiteralAckRequired),
+                _ => Err(DecodeError::Failed),
+            },
+            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+        }
+    }
+}
 
 impl<'a> Decode<'a> for Command<'a> {
     fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {

@@ -1,15 +1,17 @@
 use std::io::Error;
 
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::{
-    bounded_static::IntoBoundedStatic, codec::Encode, command::Command, response::Response,
-    state::State as ImapState,
-};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{
     codec::Decode,
-    response::{greeting, response},
+    types::{
+        bounded_static::IntoBoundedStatic,
+        codec::Encode,
+        command::Command,
+        response::{Greeting, Response},
+        state::State as ImapState,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -158,12 +160,13 @@ impl Decoder for ImapClientCodec {
 
                             match parse_literal(&src[..*to_consume_acc - 2]) {
                                 // No literal.
-                                // TODO: use API.
                                 Ok(None) => {
-                                    // TODO: Introduce Greeting::decode() and use API.
                                     let parser = match self.imap_state {
-                                        ImapState::Greeting => greeting,
-                                        _ => response,
+                                        ImapState::Greeting => |input| {
+                                            Greeting::decode(input)
+                                                .map(|(rem, grt)| (rem, Response::Greeting(grt)))
+                                        },
+                                        _ => Response::decode,
                                     };
 
                                     match parser(&src[..*to_consume_acc]) {

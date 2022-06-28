@@ -31,7 +31,7 @@ use crate::rfc3501::{
 // ----- greeting -----
 
 /// `greeting = "*" SP (resp-cond-auth / resp-cond-bye) CRLF`
-pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
+pub fn greeting(input: &[u8]) -> IResult<&[u8], Greeting> {
     let mut parser = tuple((
         tag(b"*"),
         SP,
@@ -44,7 +44,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
 
     let (remaining, (_, _, (kind, (code, text)), _)) = parser(input)?;
 
-    Ok((remaining, Response::Greeting(Greeting { kind, code, text })))
+    Ok((remaining, Greeting { kind, code, text }))
 }
 
 /// `resp-cond-auth = ("OK" / "PREAUTH") SP resp-text`
