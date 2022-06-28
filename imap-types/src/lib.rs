@@ -132,8 +132,12 @@ pub mod utils;
 
 // TODO: Temporarily. Use this in tests, examples, etc. and see if it feels right.
 pub mod api {
+    pub use crate::codec;
+
     pub mod core {
-        pub use crate::rfc3501::core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted};
+        pub use crate::rfc3501::core::{
+            AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted,
+        };
     }
 
     pub mod message {
@@ -143,9 +147,10 @@ pub mod api {
         pub use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
         pub use crate::rfc3501::{
             core::{Charset, Tag},
+            datetime::{MyDateTime, MyNaiveDate},
             flag::{Flag, FlagNameAttribute},
             mailbox::{Mailbox, MailboxOther},
-            section::{Part, Section},
+            section::{Part, PartSpecifier, Section},
             AuthMechanism, AuthMechanismOther,
         };
     }
@@ -153,7 +158,7 @@ pub mod api {
     pub mod command {
         pub use crate::rfc3501::{
             command::{Command, CommandBody},
-            mailbox::ListMailbox,
+            mailbox::{ListCharString, ListMailbox},
             sequence::{SeqNo, Sequence, SequenceSet, Strategy},
         };
 
@@ -179,11 +184,12 @@ pub mod api {
     pub mod response {
         pub use crate::rfc3501::{
             core::Text,
-            response::{Code, Continue, Data, Response, Status},
+            response::{Code, Continue, Data, Greeting, GreetingKind, Response, Status},
         };
 
         pub mod data {
             pub use crate::rfc3501::{
+                address::Address,
                 body::{
                     BasicFields, Body, BodyStructure, MultiPartExtensionData,
                     SinglePartExtensionData, SpecificFields,
