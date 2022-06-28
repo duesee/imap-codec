@@ -2,10 +2,9 @@ use std::{borrow::Cow, convert::TryFrom};
 
 use abnf_core::streaming::{DQUOTE, SP};
 use imap_types::{
-    core::QuotedChar,
-    flag::FlagNameAttribute,
-    mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
-    response::Data,
+    command::{ListCharString, ListMailbox},
+    message::{FlagNameAttribute, Mailbox, MailboxOther},
+    response::{data::QuotedChar, Data},
 };
 use nom::{
     branch::alt,

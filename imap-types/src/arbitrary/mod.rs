@@ -4,12 +4,10 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::{
-    command::SearchKey,
-    core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted, QuotedChar, Tag, Text},
-    datetime::{MyDateTime, MyNaiveDate},
-    mailbox::{ListCharString, Mailbox},
-    sequence::SequenceSet,
-    AuthMechanismOther,
+    command::{search::SearchKey, ListCharString, SequenceSet},
+    core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
+    message::{AuthMechanismOther, Mailbox, MyDateTime, MyNaiveDate, Tag},
+    response::{data::QuotedChar, Text},
 };
 
 macro_rules! implement_tryfrom {

@@ -1,7 +1,7 @@
 use abnf_core::streaming::SP;
 use imap_types::{
     core::Atom,
-    flag::{Flag, FlagNameAttribute},
+    message::{Flag, FlagNameAttribute},
 };
 use nom::{
     branch::alt,

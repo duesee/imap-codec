@@ -3,9 +3,11 @@ use std::{convert::TryFrom, num::NonZeroU32};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_types::{
     codec::Encode,
-    command::{Command, CommandBody},
-    fetch_attributes::{FetchAttribute, MacroOrFetchAttributes},
-    section::Section,
+    command::{
+        fetch::{FetchAttribute, MacroOrFetchAttributes},
+        Command, CommandBody,
+    },
+    message::Section,
 };
 
 fn serialize_command(cmd: &Command, out: &mut Vec<u8>) {

@@ -18,12 +18,12 @@ use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
-    core::{Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
-    fetch_attributes::FetchAttributeValue,
-    flag::{Flag, FlagNameAttribute},
-    mailbox::Mailbox,
-    status_attributes::StatusAttributeValue,
-    AuthMechanism,
+    core::{Atom, NonEmptyVec},
+    message::{AuthMechanism, Charset, Flag, FlagNameAttribute, Mailbox, Tag},
+    response::{
+        data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
+        Text,
+    },
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

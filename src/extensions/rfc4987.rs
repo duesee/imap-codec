@@ -6,7 +6,7 @@
 // capability     =/ "COMPRESS=" algorithm
 // resp-text-code =/ "COMPRESSIONACTIVE"
 
-use imap_types::{command::CommandBody, extensions::rfc4987::CompressionAlgorithm};
+use imap_types::{command::CommandBody, message::CompressionAlgorithm};
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},

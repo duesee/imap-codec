@@ -22,7 +22,7 @@ use crate::{
     core::atom,
     types::{
         command::CommandBody,
-        extensions::rfc5161::{CapabilityEnable, Utf8Kind},
+        message::{CapabilityEnable, Utf8Kind},
         response::Data,
     },
 };

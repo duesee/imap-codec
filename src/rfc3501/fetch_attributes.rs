@@ -2,8 +2,7 @@ use std::num::NonZeroU32;
 
 use abnf_core::streaming::SP;
 use imap_types::{
-    core::NonEmptyVec,
-    fetch_attributes::{FetchAttribute, FetchAttributeValue},
+    command::fetch::FetchAttribute, core::NonEmptyVec, response::data::FetchAttributeValue,
 };
 use nom::{
     branch::alt,

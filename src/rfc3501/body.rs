@@ -2,11 +2,11 @@ use std::borrow::Cow;
 
 use abnf_core::streaming::SP;
 use imap_types::{
-    body::{
+    core::{IString, NString},
+    response::data::{
         BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
         SpecificFields,
     },
-    core::{IString, NString},
 };
 use nom::{
     branch::alt,

@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use abnf_core::streaming::SP;
 use imap_types::{
     core::{AString, NonEmptyVec},
-    section::{Part, PartSpecifier, Section},
+    message::{Part, PartSpecifier, Section},
 };
 use nom::{
     branch::alt,

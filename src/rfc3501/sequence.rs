@@ -1,6 +1,6 @@
 use imap_types::{
+    command::{SeqNo, Sequence, SequenceSet},
     core::NonEmptyVec,
-    sequence::{SeqNo, Sequence, SequenceSet},
 };
 use nom::{
     branch::alt,

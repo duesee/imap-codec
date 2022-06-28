@@ -1,5 +1,8 @@
 use abnf_core::streaming::SP;
-use imap_types::{address::Address, core::NString, envelope::Envelope};
+use imap_types::{
+    core::NString,
+    response::data::{Address, Envelope},
+};
 use nom::{
     branch::alt,
     bytes::streaming::tag,

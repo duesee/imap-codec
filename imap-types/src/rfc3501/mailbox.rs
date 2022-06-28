@@ -238,7 +238,7 @@ mod test {
 
     use crate::{
         core::{AString, IString, Literal},
-        mailbox::{Mailbox, MailboxOther},
+        message::{Mailbox, MailboxOther},
     };
 
     #[test]

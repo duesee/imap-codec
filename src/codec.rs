@@ -4,9 +4,9 @@ use imap_types::{
     response::{Greeting, Response},
 };
 
-use crate::{
-    response::greeting,
-    rfc3501::{command::command, response::response},
+use crate::rfc3501::{
+    command::command,
+    response::{greeting, response},
 };
 
 pub trait Decode<'a>: Sized + 'a {
@@ -78,9 +78,8 @@ mod test {
     use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
-        fetch_attributes::FetchAttributeValue,
-        mailbox::Mailbox,
-        response::{Data, Response},
+        message::Mailbox,
+        response::{data::FetchAttributeValue, Data, Response},
     };
 
     use super::{Decode, DecodeError};
