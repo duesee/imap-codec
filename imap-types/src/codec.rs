@@ -1,3 +1,26 @@
+//! # Serialization of messages
+//!
+//! Every type in imap-codec can be serialized into bytes (`&[u8]`) by using the [Encode](crate::codec::Encode) trait.
+//!
+//! ## Example
+//!
+//! ```rust
+//! use imap_types::{
+//!     codec::Encode,
+//!     response::{Greeting, Response},
+//! };
+//!
+//! let rsp = Response::Greeting(Greeting::ok(None, "Hello, World!").unwrap());
+//!
+//! let bytes = {
+//!     let mut out = Vec::new();
+//!     rsp.encode(&mut out).unwrap();
+//!     out
+//! };
+//!
+//! println!("{}", String::from_utf8(bytes).unwrap());
+//! ```
+
 use std::{io::Write, num::NonZeroU32};
 
 use base64::encode as b64encode;

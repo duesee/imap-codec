@@ -129,12 +129,24 @@ pub mod codec;
 pub mod state;
 
 pub mod core {
+    //! # Core Data Types
+    //!
+    //! This module exposes IMAPs "core data types" (or "string types").
+    //! It is loosely based on the IMAP standard.
+    //! Some additional types are defined and some might be missing.
+    //!
+    //! "IMAP4rev1 uses textual commands and responses.
+    //! Data in IMAP4rev1 can be in one of several forms: atom, number, string, parenthesized list, or NIL.
+    //! Note that a particular data item may take more than one form; for example, a data item defined as using "astring" syntax may be either an atom or a string." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+
     pub use crate::rfc3501::core::{
         AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted,
     };
 }
 
 pub mod message {
+    //! # Types used in commands and responses
+
     #[cfg(feature = "ext_compress")]
     pub use crate::extensions::rfc4987::CompressionAlgorithm;
     #[cfg(feature = "ext_enable")]
@@ -150,6 +162,8 @@ pub mod message {
 }
 
 pub mod command {
+    //! # Types used in commands
+
     pub use crate::rfc3501::{
         command::{Command, CommandBody},
         mailbox::{ListCharString, ListMailbox},
@@ -157,23 +171,32 @@ pub mod command {
     };
 
     pub mod status {
+        //! # Types used in STATUS command
+
         pub use crate::rfc3501::status_attributes::StatusAttribute;
     }
 
     pub mod search {
+        //! # Types used in SEARCH command
+
         pub use crate::rfc3501::command::SearchKey;
     }
 
     pub mod fetch {
+        //! # Types used in FETCH command
+
         pub use crate::rfc3501::fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes};
     }
 
     pub mod store {
+        //! # Types used in STORE command
         pub use crate::rfc3501::flag::{StoreResponse, StoreType};
     }
 }
 
 pub mod response {
+    //! # Types used in responses
+
     pub use crate::rfc3501::{
         core::Text,
         response::{Code, Continue, Data, Greeting, GreetingKind, Response, Status},

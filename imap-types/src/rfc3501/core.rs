@@ -1,11 +1,3 @@
-//! # 4. Data Formats
-//!
-//! IMAP4rev1 uses textual commands and responses.  Data in
-//! IMAP4rev1 can be in one of several forms: atom, number, string,
-//! parenthesized list, or NIL.  Note that a particular data item
-//! may take more than one form; for example, a data item defined as
-//! using "astring" syntax may be either an atom or a string.
-
 use std::{borrow::Cow, convert::TryFrom};
 
 #[cfg(feature = "arbitrary")]
@@ -19,9 +11,9 @@ use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
 };
 
-// ## 4.1. Atom
-
-/// An atom consists of one or more non-special characters.
+/// An atom.
+///
+/// "An atom consists of one or more non-special characters." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -80,6 +72,9 @@ impl<'a> AsRef<str> for Atom<'a> {
     }
 }
 
+/// An (extended) atom.
+///
+/// According to IMAP's formal syntax, an atom with additional allowed chars.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -145,35 +140,15 @@ impl<'a> AsRef<str> for AtomExt<'a> {
 
 // ## 4.3. String
 
-/// A string is in one of two forms: either literal or quoted string.
+/// Either a literal or a quoted string.
 ///
-/// The empty string is represented as either "" (a quoted string
-/// with zero characters between double quotes) or as {0} followed
-/// by CRLF (a literal with an octet count of 0).
+/// "The empty string is represented as either "" (a quoted string with zero characters between double quotes) or as {0} followed by CRLF (a literal with an octet count of 0)." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString<'a> {
-    /// A literal is a sequence of zero or more octets (including CR and
-    /// LF), prefix-quoted with an octet count in the form of an open
-    /// brace ("{"), the number of octets, close brace ("}"), and CRLF.
-    /// In the case of literals transmitted from server to client, the
-    /// CRLF is immediately followed by the octet data.  In the case of
-    /// literals transmitted from client to server, the client MUST wait
-    /// to receive a command continuation request (...) before sending
-    /// the octet data (and the remainder of the command).
-    ///
-    /// Note: Even if the octet count is 0, a client transmitting a
-    /// literal MUST wait to receive a command continuation request.
-    ///
     Literal(Literal<'a>),
-    /// The quoted string form is an alternative that avoids the overhead of
-    /// processing a literal at the cost of limitations of characters which may be used.
-    ///
-    /// A quoted string is a sequence of zero or more 7-bit characters,
-    /// excluding CR and LF, with double quote (<">) characters at each end.
-    ///
     Quoted(Quoted<'a>),
 }
 
@@ -218,6 +193,13 @@ impl<'a> AsRef<[u8]> for IString<'a> {
     }
 }
 
+/// A literal.
+///
+/// "A literal is a sequence of zero or more octets (including CR and LF), prefix-quoted with an octet count in the form of an open brace ("{"), the number of octets, close brace ("}"), and CRLF.
+/// In the case of literals transmitted from server to client, the CRLF is immediately followed by the octet data.
+/// In the case of literals transmitted from client to server, the client MUST wait to receive a command continuation request (...) before sending the octet data (and the remainder of the command).
+///
+/// Note: Even if the octet count is 0, a client transmitting a literal MUST wait to receive a command continuation request." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -283,6 +265,11 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
     }
 }
 
+/// A quoted string.
+///
+/// "The quoted string form is an alternative that avoids the overhead of processing a literal at the cost of limitations of characters which may be used.
+///
+/// A quoted string is a sequence of zero or more 7-bit characters, excluding CR and LF, with double quote (<">) characters at each end." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -348,16 +335,20 @@ impl<'a> AsRef<str> for Quoted<'a> {
     }
 }
 
+/// Either NIL or a string.
+///
+/// This is modeled using Rust's `Option` type.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// This wrapper is merely used for formatting.
-// The inner value can be public.
 pub struct NString<'a> {
+    // This wrapper is merely used for formatting.
+    // The inner value can be public.
     pub inner: Option<IString<'a>>,
 }
 
+/// Either an (extended) atom or a string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -625,6 +616,7 @@ impl<'a> TryFrom<String> for Charset<'a> {
     }
 }
 
+/// A `Vec` that always contains >= 1 elements.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
