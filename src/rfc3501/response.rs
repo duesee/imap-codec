@@ -2,9 +2,10 @@ use std::{borrow::Cow, convert::TryFrom, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
-    core::{NonEmptyVec, Text},
+    core::NonEmptyVec,
     response::{
-        Capability, CapabilityOther, Code, Continue, Data, Greeting, GreetingKind, Response, Status,
+        data::{Capability, CapabilityOther},
+        Code, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
 };
 use nom::{

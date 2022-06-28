@@ -1,14 +1,14 @@
 #![no_main]
 
 #[cfg(feature = "ext_enable")]
-use imap_codec::types::extensions::rfc5161::CapabilityEnable;
+use imap_codec::types::message::CapabilityEnable;
 use imap_codec::{
     command::command,
     nom,
     types::{
         codec::Encode,
-        command::{Command, CommandBody, SearchKey},
-        flag::Flag,
+        command::{search::SearchKey, Command, CommandBody},
+        message::Flag,
     },
 };
 use libfuzzer_sys::fuzz_target;

@@ -263,7 +263,7 @@ mod test {
     };
 
     use super::{SeqNo, Sequence, Strategy};
-    use crate::{codec::Encode, sequence::SequenceSet};
+    use crate::{codec::Encode, command::SequenceSet};
 
     #[test]
     fn creation_of_sequence_from_range() {

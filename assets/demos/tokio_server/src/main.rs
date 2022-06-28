@@ -2,9 +2,8 @@ use futures::{SinkExt, StreamExt};
 use imap_codec::{
     tokio_compat::{Action, ImapServerCodec, OutcomeServer},
     types::{
-        api::response::{Continue, Response, Status},
         command::CommandBody,
-        response::Greeting,
+        response::{Continue, Greeting, Response, Status},
     },
 };
 use subtle::ConstantTimeEq;

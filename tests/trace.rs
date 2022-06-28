@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use imap_codec::{
     codec::{Decode, Encode},
-    types::api::{
+    types::{
         command::{
             fetch::{FetchAttribute, Macro},
             Command, CommandBody,

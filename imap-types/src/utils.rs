@@ -95,6 +95,7 @@ pub fn escape_quoted(unescaped: &str) -> Cow<str> {
     escaped
 }
 
+#[allow(unused)]
 pub fn unescape_quoted(escaped: &str) -> Cow<str> {
     let mut unescaped = Cow::Borrowed(escaped);
 

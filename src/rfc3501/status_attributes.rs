@@ -1,5 +1,5 @@
 use abnf_core::streaming::SP;
-use imap_types::status_attributes::{StatusAttribute, StatusAttributeValue};
+use imap_types::{command::status::StatusAttribute, response::data::StatusAttributeValue};
 use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,

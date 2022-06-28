@@ -2,9 +2,9 @@ use futures::{SinkExt, StreamExt};
 use imap_codec::{
     tokio_compat::{ImapClientCodec, OutcomeClient},
     types::{
-        api::response::{Response, Status},
         command::{Command, CommandBody},
-        core::Tag,
+        message::Tag,
+        response::{Response, Status},
     },
 };
 use tokio::{self, net::TcpStream};

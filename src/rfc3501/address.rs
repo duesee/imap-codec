@@ -1,5 +1,5 @@
 use abnf_core::streaming::SP;
-use imap_types::{address::Address, core::NString};
+use imap_types::{core::NString, response::data::Address};
 use nom::{
     bytes::streaming::tag,
     sequence::{delimited, tuple},

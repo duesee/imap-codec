@@ -16,14 +16,14 @@ use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
-    core::{AString, Atom, Charset, Literal, NonEmptyVec, Tag},
-    datetime::{MyDateTime, MyNaiveDate},
-    fetch_attributes::MacroOrFetchAttributes,
-    flag::{Flag, StoreResponse, StoreType},
-    mailbox::{ListMailbox, Mailbox},
-    sequence::SequenceSet,
-    status_attributes::StatusAttribute,
-    AuthMechanism,
+    command::{
+        fetch::MacroOrFetchAttributes,
+        status::StatusAttribute,
+        store::{StoreResponse, StoreType},
+        ListMailbox, SequenceSet,
+    },
+    core::{AString, Atom, Literal, NonEmptyVec},
+    message::{AuthMechanism, Charset, Flag, Mailbox, MyDateTime, MyNaiveDate, Tag},
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -1599,15 +1599,15 @@ mod test {
     use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
     use crate::{
         codec::Encode,
-        command::{Command, CommandBody, SearchKey},
-        core::{AString, IString, Tag},
-        datetime::MyDateTime,
-        fetch_attributes::{FetchAttribute, Macro},
-        flag::{Flag, StoreResponse, StoreType},
-        mailbox::ListMailbox,
-        section::{Part, Section},
-        status_attributes::StatusAttribute,
-        AuthMechanism,
+        command::{
+            fetch::{FetchAttribute, Macro},
+            search::SearchKey,
+            status::StatusAttribute,
+            store::{StoreResponse, StoreType},
+            Command, CommandBody, ListMailbox,
+        },
+        core::{AString, IString},
+        message::{AuthMechanism, Flag, MyDateTime, Part, Section, Tag},
     };
 
     #[test]

@@ -58,7 +58,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::mailbox::Mailbox;
+use crate::message::Mailbox;
 
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]

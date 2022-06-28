@@ -1,8 +1,10 @@
 use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
-use imap_types::core::{
-    AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+use imap_types::{
+    core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
+    message::{Charset, Tag},
+    response::{data::QuotedChar, Text},
 };
 use nom::{
     branch::alt,

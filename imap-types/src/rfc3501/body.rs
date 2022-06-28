@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{IString, NString},
-    envelope::Envelope,
+    response::data::Envelope,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

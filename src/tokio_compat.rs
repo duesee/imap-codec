@@ -1,12 +1,12 @@
 use std::io::Error;
 
 use bytes::{Buf, BufMut, BytesMut};
+use imap_types::bounded_static::IntoBoundedStatic;
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{
     codec::Decode,
     types::{
-        bounded_static::IntoBoundedStatic,
         codec::Encode,
         command::Command,
         response::{Greeting, Response},

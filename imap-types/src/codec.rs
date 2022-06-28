@@ -6,27 +6,28 @@ use chrono::{DateTime, FixedOffset};
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 use crate::{
-    address::Address,
-    body::{
-        BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
-        SpecificFields,
-    },
     codec::utils::{join_serializable, List1AttributeValueOrNil, List1OrNil},
-    command::{Command, CommandBody, SearchKey},
-    core::{
-        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+    command::{
+        fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
+        search::SearchKey,
+        status::StatusAttribute,
+        store::{StoreResponse, StoreType},
+        Command, CommandBody, ListCharString, ListMailbox, SeqNo, Sequence, SequenceSet,
     },
-    datetime::{MyDateTime, MyNaiveDate},
-    envelope::Envelope,
-    fetch_attributes::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
-    flag::{Flag, FlagNameAttribute, StoreResponse, StoreType},
-    mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
-    response::{Capability, Code, Continue, Data, Greeting, GreetingKind, Response, Status},
-    section::{Part, Section},
-    sequence::{SeqNo, Sequence, SequenceSet},
-    status_attributes::{StatusAttribute, StatusAttributeValue},
+    core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
+    message::{
+        AuthMechanism, AuthMechanismOther, Charset, Flag, FlagNameAttribute, Mailbox, MailboxOther,
+        MyDateTime, MyNaiveDate, Part, Section, Tag,
+    },
+    response::{
+        data::{
+            Address, BasicFields, Body, BodyStructure, Capability, Envelope, FetchAttributeValue,
+            MultiPartExtensionData, QuotedChar, SinglePartExtensionData, SpecificFields,
+            StatusAttributeValue,
+        },
+        Code, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
+    },
     utils::escape_quoted,
-    AuthMechanism, AuthMechanismOther,
 };
 
 pub trait Encode {

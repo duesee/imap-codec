@@ -8,8 +8,9 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    body::BodyStructure, core::NString, datetime::MyDateTime, envelope::Envelope, flag::Flag,
-    section::Section,
+    core::NString,
+    message::{Flag, MyDateTime, Section},
+    response::data::{BodyStructure, Envelope},
 };
 
 /// There are three macros which specify commonly-used sets of data

@@ -1,6 +1,6 @@
 use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
 use chrono::{FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
-use imap_types::datetime::{MyDateTime, MyNaiveDate};
+use imap_types::message::{MyDateTime, MyNaiveDate};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
@@ -162,7 +162,7 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
 //            map(take_while_m_n(min, max, is_DIGIT), |bytes| unsafe {
 //                std::str::from_utf8_unchecked(bytes)
 //            }),
-//            str::rfc3501::<u8>,
+//            str::parse::<u8>,
 //        )(input)
 //    }
 //}

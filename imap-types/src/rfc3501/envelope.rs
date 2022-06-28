@@ -5,7 +5,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{address::Address, core::NString};
+use crate::{core::NString, response::data::Address};
 
 /// The fields of the envelope structure are in the following
 /// order: date, subject, from, sender, reply-to, to, cc, bcc,

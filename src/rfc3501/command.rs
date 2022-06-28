@@ -2,11 +2,14 @@ use std::borrow::Cow;
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
-    command::{Command, CommandBody, SearchKey},
+    command::{
+        fetch::{Macro, MacroOrFetchAttributes},
+        search::SearchKey,
+        store::{StoreResponse, StoreType},
+        Command, CommandBody,
+    },
     core::{AString, NonEmptyVec},
-    fetch_attributes::{Macro, MacroOrFetchAttributes},
-    flag::{Flag, StoreResponse, StoreType},
-    AuthMechanism,
+    message::{AuthMechanism, Flag},
 };
 use nom::{
     branch::alt,
@@ -719,9 +722,8 @@ mod test {
     };
 
     use imap_types::{
-        fetch_attributes::FetchAttribute,
-        section::Section,
-        sequence::{SeqNo, Sequence, SequenceSet as SequenceSetData},
+        command::{fetch::FetchAttribute, SequenceSet as SequenceSetData},
+        message::Section,
     };
 
     use super::*;
@@ -793,9 +795,7 @@ mod test {
 
     #[test]
     fn test_search() {
-        use SearchKey::*;
-        use SeqNo::Value;
-        use Sequence::*;
+        use crate::types::command::{search::SearchKey::*, SeqNo::Value, Sequence::*};
 
         let (_rem, val) = search(b"search (uid 5)???").unwrap();
         assert_eq!(
@@ -865,7 +865,7 @@ mod test {
     #[test]
     #[cfg(feature = "ext_enable")]
     fn test_enable() {
-        use imap_types::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
+        use imap_types::message::{CapabilityEnable, Utf8Kind};
 
         let got = command(b"A123 enable UTF8=ACCEPT\r\n").unwrap().1;
         assert_eq!(
