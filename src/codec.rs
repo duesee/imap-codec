@@ -1,9 +1,13 @@
 pub use imap_types::codec::Encode;
+#[cfg(feature = "ext_idle")]
+use imap_types::command::idle::IdleDone;
 use imap_types::{
     command::Command,
     response::{Greeting, Response},
 };
 
+#[cfg(feature = "ext_idle")]
+use crate::extensions::rfc2177::idle_done;
 use crate::rfc3501::{
     command::command,
     response::{greeting, response},
@@ -52,6 +56,18 @@ impl<'a> Decode<'a> for Command<'a> {
                 nom::error::ErrorKind::Fix => Err(DecodeError::LiteralAckRequired),
                 _ => Err(DecodeError::Failed),
             },
+            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+        }
+    }
+}
+
+#[cfg(feature = "ext_idle")]
+impl<'a> Decode<'a> for IdleDone {
+    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
+        match idle_done(input) {
+            Ok((rem, done)) => Ok((rem, done)),
+            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+            Err(nom::Err::Failure(_)) => Err(DecodeError::Failed),
             Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
         }
     }
