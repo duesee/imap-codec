@@ -192,6 +192,11 @@ pub mod command {
         //! # Types used in STORE command
         pub use crate::rfc3501::flag::{StoreResponse, StoreType};
     }
+
+    #[cfg(feature = "ext_idle")]
+    pub mod idle {
+        pub use crate::extensions::rfc2177::IdleDone;
+    }
 }
 
 pub mod response {
