@@ -4,7 +4,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use imap_types::bounded_static::IntoBoundedStatic;
 use tokio_util::codec::{Decoder, Encoder};
 
-use super::{find_crlf_inclusive, parse_literal, LineKind, LiteralKind, State};
+use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
 use crate::{
     codec::Decode,
     types::{codec::Encode, command::Command, response::Response},
@@ -12,14 +12,14 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImapServerCodec {
-    state: State,
+    state: LiteralFramingState,
     max_literal_size: usize,
 }
 
 impl ImapServerCodec {
     pub fn new(max_literal_size: usize) -> Self {
         Self {
-            state: State::ReadLine { to_consume_acc: 0 },
+            state: LiteralFramingState::ReadLine { to_consume_acc: 0 },
             max_literal_size,
         }
     }
@@ -28,8 +28,8 @@ impl ImapServerCodec {
 #[derive(Debug)]
 pub enum ImapServerCodecError {
     Io(std::io::Error),
-    Line(LineKind),
-    Literal(LiteralKind),
+    Line(LineError),
+    Literal(LiteralError),
     CommandParsingFailed,
     ActionRequired,
 }
@@ -73,7 +73,7 @@ impl Decoder for ImapServerCodec {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         loop {
             match self.state {
-                State::ReadLine {
+                LiteralFramingState::ReadLine {
                     ref mut to_consume_acc,
                 } => {
                     match find_crlf_inclusive(*to_consume_acc, src) {
@@ -88,7 +88,8 @@ impl Decoder for ImapServerCodec {
                                         let cmd = cmd.into_static();
 
                                         src.advance(*to_consume_acc);
-                                        self.state = State::ReadLine { to_consume_acc: 0 };
+                                        self.state =
+                                            LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                                         return Ok(Some(OutcomeServer::Command(cmd)));
                                     }
@@ -102,7 +103,8 @@ impl Decoder for ImapServerCodec {
                                 Ok(Some(needed)) => {
                                     if self.max_literal_size < needed as usize {
                                         src.advance(*to_consume_acc);
-                                        self.state = State::ReadLine { to_consume_acc: 0 };
+                                        self.state =
+                                            LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                                         return Ok(Some(OutcomeServer::ActionRequired(
                                             Action::SendLiteralReject(needed),
@@ -111,7 +113,7 @@ impl Decoder for ImapServerCodec {
 
                                     src.reserve(needed as usize);
 
-                                    self.state = State::ReadLiteral {
+                                    self.state = LiteralFramingState::ReadLiteral {
                                         to_consume_acc: *to_consume_acc,
                                         needed,
                                     };
@@ -123,7 +125,8 @@ impl Decoder for ImapServerCodec {
                                 // Error processing literal.
                                 Err(error) => {
                                     src.clear();
-                                    self.state = State::ReadLine { to_consume_acc: 0 };
+                                    self.state =
+                                        LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                                     return Err(ImapServerCodecError::Literal(error));
                                 }
@@ -136,18 +139,18 @@ impl Decoder for ImapServerCodec {
                         // Error processing newline.
                         Err(error) => {
                             src.clear();
-                            self.state = State::ReadLine { to_consume_acc: 0 };
+                            self.state = LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                             return Err(ImapServerCodecError::Line(error));
                         }
                     }
                 }
-                State::ReadLiteral {
+                LiteralFramingState::ReadLiteral {
                     to_consume_acc,
                     needed,
                 } => {
                     if to_consume_acc + needed as usize <= src.len() {
-                        self.state = State::ReadLine {
+                        self.state = LiteralFramingState::ReadLine {
                             to_consume_acc: to_consume_acc + needed as usize,
                         }
                     } else {
