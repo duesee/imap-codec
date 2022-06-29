@@ -7,9 +7,8 @@
 //
 // command_auth =/ idle
 
-use abnf_core::streaming::CRLF;
-use imap_types::command::CommandBody;
-use nom::{bytes::streaming::tag_no_case, combinator::value, sequence::tuple, IResult};
+use imap_types::command::{idle::IdleDone, CommandBody};
+use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -40,12 +39,6 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///
 /// Note: This parser must be executed *instead* of the command parser
 /// when the server is in the IDLE state.
-///
-// TODO(41): just interpret as command?
-pub fn idle_done(input: &[u8]) -> IResult<&[u8], ()> {
-    let mut parser = value((), tuple((tag_no_case("DONE"), CRLF)));
-
-    let (remaining, parsed_idle_done) = parser(input)?;
-
-    Ok((remaining, parsed_idle_done))
+pub fn idle_done(input: &[u8]) -> IResult<&[u8], IdleDone> {
+    value(IdleDone, tag_no_case("DONE\r\n"))(input)
 }
