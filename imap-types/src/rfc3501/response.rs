@@ -95,6 +95,7 @@ pub enum GreetingKind {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response<'a> {
+    // FIXME(misuse)
     Greeting(Greeting<'a>),
     /// Status responses can be tagged or untagged.  Tagged status responses
     /// indicate the completion result (OK, NO, or BAD status) of a client
@@ -683,7 +684,7 @@ pub enum Code<'a> {
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
     /// SHOULD ignore response codes that they do not recognize.
-    Other(Atom<'a>, Option<Cow<'a, str>>),
+    Other(Atom<'a>, Option<Cow<'a, str>>), // TODO(misuse)
 
     /// IMAP4 Login Referrals (RFC 2221)
     Referral(Cow<'a, str>), // TODO(misuse): the imap url is more complicated than that...
