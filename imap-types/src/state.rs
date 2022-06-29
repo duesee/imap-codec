@@ -56,6 +56,8 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::message::Mailbox;
+#[cfg(feature = "ext_idle")]
+use crate::message::Tag;
 
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -89,8 +91,8 @@ pub enum State<'a> {
     Logout,
 
     #[cfg(feature = "ext_idle")]
-    IdleAuthenticated(String),
+    IdleAuthenticated(Tag<'a>),
 
     #[cfg(feature = "ext_idle")]
-    IdleSelected(String, Mailbox<'a>),
+    IdleSelected(Tag<'a>, Mailbox<'a>),
 }
