@@ -82,6 +82,48 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_parse_literal() {
+        let tests = [
+            (b"".as_ref(), Ok(None)),
+            (b"{0}".as_ref(), Ok(Some(0))),
+            (b"{123456}".as_ref(), Ok(Some(123456))),
+            (b"{4294967295}".as_ref(), Ok(Some(u32::MAX))),
+            (b"{4294967296}".as_ref(), Err(LiteralError::BadNumber)),
+            (b"{}".as_ref(), Err(LiteralError::BadNumber)),
+            (b"{a}".as_ref(), Err(LiteralError::BadNumber)),
+            (b"{0a}".as_ref(), Err(LiteralError::BadNumber)),
+            (b"{-1}".as_ref(), Err(LiteralError::BadNumber)),
+            (b"}".as_ref(), Err(LiteralError::NoOpeningBrace)),
+        ];
+
+        for (test, expected) in tests {
+            let got = parse_literal(test);
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_parse_literal_enclosing() {
+        let tests = [
+            (b"".as_ref(), Ok(None)),
+            (b"{0}".as_ref(), Ok(Some(b"0".as_ref()))),
+            (b"{123456}".as_ref(), Ok(Some(b"123456"))),
+            (b"{4294967295}".as_ref(), Ok(Some(b"4294967295"))),
+            (b"{4294967296}".as_ref(), Ok(Some(b"4294967296"))),
+            (b"{}".as_ref(), Ok(Some(b""))),
+            (b"{a}".as_ref(), Ok(Some(b"a"))),
+            (b"{0a}".as_ref(), Ok(Some(b"0a"))),
+            (b"{-1}".as_ref(), Ok(Some(b"-1"))),
+            (b"}".as_ref(), Err(LiteralError::NoOpeningBrace)),
+        ];
+
+        for (test, expected) in tests {
+            let got = parse_literal_enclosing(test);
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
     fn test_find_crlf_inclusive() {
         let tests = [
             (b"A\r".as_ref(), 0, Ok(None)),
