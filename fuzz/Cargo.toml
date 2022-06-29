@@ -38,6 +38,12 @@ test = false
 doc = false
 
 [[bin]]
+name = "greeting_to_bytes_and_back"
+path = "fuzz_targets/greeting_to_bytes_and_back.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "command_to_bytes_and_back"
 path = "fuzz_targets/command_to_bytes_and_back.rs"
 test = false
