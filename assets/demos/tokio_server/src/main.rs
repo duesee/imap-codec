@@ -1,6 +1,6 @@
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
-    tokio_compat::{Action, ImapServerCodec, OutcomeServer},
+    tokio_compat::server::{Action, ImapServerCodec, OutcomeServer},
     types::{
         command::CommandBody,
         response::{Continue, Greeting, Response, Status},
