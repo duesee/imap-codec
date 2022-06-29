@@ -1,8 +1,6 @@
 pub mod client;
 pub mod server;
 
-use bytes::BytesMut;
-
 /// All interactions transmitted by client and server are in the form of
 /// lines, that is, strings that end with a CRLF.
 ///
@@ -28,7 +26,7 @@ pub enum LiteralKind {
     NoOpeningBrace,
 }
 
-fn find_crlf_inclusive(skip: usize, buf: &BytesMut) -> Result<Option<usize>, LineKind> {
+fn find_crlf_inclusive(skip: usize, buf: &[u8]) -> Result<Option<usize>, LineKind> {
     match buf.iter().skip(skip).position(|item| *item == b'\n') {
         Some(position) => {
             if buf[skip + position.saturating_sub(1)] != b'\r' {
@@ -81,8 +79,6 @@ fn parse_literal_enclosing(line: &[u8]) -> Result<Option<&[u8]>, LiteralKind> {
 
 #[cfg(test)]
 mod test {
-    use bytes::BytesMut;
-
     use super::*;
 
     #[test]
@@ -99,9 +95,7 @@ mod test {
         ];
 
         for (test, skip, expected) in tests {
-            let bytes = BytesMut::from(test);
-
-            let got = find_crlf_inclusive(skip, &bytes);
+            let got = find_crlf_inclusive(skip, test);
 
             dbg!((std::str::from_utf8(test).unwrap(), skip, &expected, &got));
 
