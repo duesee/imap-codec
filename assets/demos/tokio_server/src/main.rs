@@ -3,7 +3,7 @@ use imap_codec::{
     tokio_compat::server::{Action, ImapServerCodec, OutcomeServer},
     types::{
         command::CommandBody,
-        response::{Continue, Greeting, Response, Status},
+        response::{data::Capability, Continue, Data, Greeting, Response, Status},
     },
 };
 use subtle::ConstantTimeEq;
@@ -41,6 +41,18 @@ async fn main() {
                 println!("C: {:?}", cmd);
 
                 match (cmd.tag, cmd.body) {
+                    (tag, CommandBody::Capability) => {
+                        let rsp =
+                            Response::Data(Data::capability(vec![Capability::Imap4Rev1]).unwrap());
+                        framed.send(&rsp).await.unwrap();
+                        println!("S: {:?}", rsp);
+
+                        let rsp = Response::Status(
+                            Status::ok(Some(tag), None, "CAPABILITY done").unwrap(),
+                        );
+                        framed.send(&rsp).await.unwrap();
+                        println!("S: {:?}", rsp);
+                    }
                     (tag, CommandBody::Login { username, password }) => {
                         // Convert `AString`s to `&[u8]` ...
                         let (username, password) = (username.as_ref(), password.as_ref());
