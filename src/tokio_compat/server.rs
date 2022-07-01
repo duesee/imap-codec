@@ -6,8 +6,9 @@ use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
 use crate::{
-    codec::Decode,
-    types::{codec::Encode, command::Command, response::Response},
+    codec::{Decode, Encode},
+    command::Command,
+    response::Response,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

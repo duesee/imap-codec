@@ -3,11 +3,8 @@
 // use std::str::from_utf8;
 
 use imap_codec::{
-    response::greeting,
-    types::{
-        codec::Encode,
-        response::{Code, Greeting},
-    },
+    codec::{Decode, Encode},
+    response::{Code, Greeting},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -42,7 +39,7 @@ fuzz_target!(|test: Greeting| {
 
     // println!("{:?}", from_utf8(&buffer));
 
-    let (rem, parsed) = greeting(&buffer).unwrap();
+    let (rem, parsed) = Greeting::decode(&buffer).unwrap();
     assert!(rem.is_empty());
 
     // println!("{:?}", parsed);

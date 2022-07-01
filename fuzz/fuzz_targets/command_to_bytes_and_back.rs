@@ -1,15 +1,11 @@
 #![no_main]
 
 #[cfg(feature = "ext_enable")]
-use imap_codec::types::message::CapabilityEnable;
+use imap_codec::message::CapabilityEnable;
 use imap_codec::{
-    command::command,
-    nom,
-    types::{
-        codec::Encode,
-        command::{search::SearchKey, Command, CommandBody},
-        message::Flag,
-    },
+    codec::{Decode, Encode},
+    command::{search::SearchKey, Command, CommandBody},
+    message::Flag,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -75,7 +71,7 @@ fuzz_target!(|test: Command| {
             // FIXME(#30)
         }
         _ => {
-            match command(&buffer) {
+            match Command::decode(&buffer) {
                 Ok((rem, parsed)) => {
                     assert!(rem.is_empty());
 
@@ -83,12 +79,12 @@ fuzz_target!(|test: Command| {
 
                     assert_eq!(test, parsed)
                 }
-                Err(nom::Err::Failure(failure))
-                    if failure.code == nom::error::ErrorKind::TooLarge =>
-                {
-                    // That is okay for now.
+                Err(error) => {
+                    // TODO: Signal recursion limit?
+                    // Previously the nom code `nom::error::ErrorKind::TooLarge` signaled
+                    // an exceeded recursion limit. Should the API signal it, too?
+                    panic!("Could not parse produced object. Error: {:?}", error);
                 }
-                _ => panic!("Could not parse produced object."),
             }
         }
     }

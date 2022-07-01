@@ -6,13 +6,10 @@ use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
 use crate::{
-    codec::Decode,
-    types::{
-        codec::Encode,
-        command::Command,
-        response::{Greeting, Response},
-        state::State as ImapState,
-    },
+    codec::{Decode, Encode},
+    command::Command,
+    response::{Greeting, Response},
+    state::State as ImapState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

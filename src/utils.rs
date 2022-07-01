@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+#[allow(unused)]
 pub fn escape_quoted(unescaped: &str) -> Cow<str> {
     let mut escaped = Cow::Borrowed(unescaped);
 
