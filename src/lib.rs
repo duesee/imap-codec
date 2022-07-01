@@ -45,3 +45,5 @@ pub use imap_types::*;
 /// This module is only available when the feature "nom" was specified.
 #[cfg(feature = "nom")]
 pub use nom;
+#[cfg(any(feature = "tokio_util_codec"))]
+pub use tokio_util;
