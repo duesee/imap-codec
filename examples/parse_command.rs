@@ -3,7 +3,7 @@ use std::io::Write;
 use ansi_term::Colour::{Blue as ColorServer, Red as ColorClient};
 use imap_codec::{
     codec::{Decode, DecodeError},
-    types::command::Command,
+    command::Command,
 };
 
 fn main() {

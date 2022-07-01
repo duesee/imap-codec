@@ -1,10 +1,8 @@
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
+    command::CommandBody,
+    response::{data::Capability, Continue, Data, Greeting, Response, Status},
     tokio_compat::server::{Action, ImapServerCodec, OutcomeServer},
-    types::{
-        command::CommandBody,
-        response::{data::Capability, Continue, Data, Greeting, Response, Status},
-    },
 };
 use subtle::ConstantTimeEq;
 use tokio::{self, net::TcpListener};

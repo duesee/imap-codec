@@ -3,11 +3,8 @@
 use std::str::from_utf8;
 
 use imap_codec::{
-    response::response,
-    types::{
-        codec::Encode,
-        response::{Data, Response},
-    },
+    codec::{Decode, Encode},
+    response::{Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -44,7 +41,7 @@ fuzz_target!(|test: Response| {
 
     println!("{:?}", from_utf8(&buffer));
 
-    let (rem, parsed) = response(&buffer).unwrap();
+    let (rem, parsed) = Response::decode(&buffer).unwrap();
     assert!(rem.is_empty());
 
     println!("{:?}", parsed);

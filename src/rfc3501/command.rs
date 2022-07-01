@@ -795,7 +795,7 @@ mod test {
 
     #[test]
     fn test_search() {
-        use crate::types::command::{search::SearchKey::*, SeqNo::Value, Sequence::*};
+        use crate::command::{search::SearchKey::*, SeqNo::Value, Sequence::*};
 
         let (_rem, val) = search(b"search (uid 5)???").unwrap();
         assert_eq!(

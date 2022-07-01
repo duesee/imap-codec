@@ -2,17 +2,15 @@ use std::convert::TryFrom;
 
 use imap_codec::{
     codec::{Decode, Encode},
-    types::{
-        command::{
-            fetch::{FetchAttribute, Macro},
-            Command, CommandBody,
-        },
-        core::{AString, IString, Quoted},
-        message::{AuthMechanism, Flag, Section, Tag},
-        response::{
-            data::{Capability, FetchAttributeValue},
-            Code, Data, Response, Status,
-        },
+    command::{
+        fetch::{FetchAttribute, Macro},
+        Command, CommandBody,
+    },
+    core::{AString, IString, Quoted},
+    message::{AuthMechanism, Flag, Section, Tag},
+    response::{
+        data::{Capability, FetchAttributeValue},
+        Code, Data, Response, Status,
     },
 };
 

@@ -19,12 +19,10 @@ use nom::{
 };
 
 use crate::{
-    core::atom,
-    types::{
-        command::CommandBody,
-        message::{CapabilityEnable, Utf8Kind},
-        response::Data,
-    },
+    command::CommandBody,
+    message::{CapabilityEnable, Utf8Kind},
+    response::Data,
+    rfc3501::core::atom,
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
