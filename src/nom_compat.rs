@@ -1,3 +1,5 @@
+//! Raw nom parsers for the formal syntax of IMAP ([RFC3501](https://datatracker.ietf.org/doc/html/rfc3501#section-9)) and IMAP extensions.
+
 /// IMAP4 IDLE command
 #[cfg(feature = "ext_idle")]
 pub mod rfc2177 {

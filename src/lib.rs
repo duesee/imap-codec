@@ -1,3 +1,47 @@
+//! # IMAP Protocol Library
+//!
+//! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
+//! It is based on [imap-types](imap_types) and extends it with parsing support via [nom](nom).
+//!
+//! ## Parsing
+//!
+//! Parsing is implemented through the [Decode](crate::codec::Decode) trait.
+//! The main entry points for parsing are
+//! [Greeting::decode(...)](response::Greeting#method.decode) (to parse the first message from a server)),
+//! [Command::decode(...)](command::Command#method.decode) (to parse commands from a client), and
+//! [Response::decode(...)](response::Response#method.decode) (to parse responses or results from a server).
+//! Note, however, that certain message-flows require other parsers as well.
+//! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
+//!
+//! ## Serialization
+//!
+//! Serialization is implemented via the [Encode](crate::codec::Encode) trait.
+//! See the [imap-types](imap_types) documentation for the module layout and how to construct messages.
+//!
+//! ## Example
+//!
+//! ```rust
+//! use imap_codec::{
+//!     codec::{Decode, Encode},
+//!     command::Command,
+//! };
+//!
+//! fn main() {
+//!     let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
+//!
+//!     let (_remainder, parsed) = Command::decode(input).unwrap();
+//!     println!("// Parsed:");
+//!     println!("{:#?}", parsed);
+//!
+//!     let mut serialized = Vec::new();
+//!     parsed.encode(&mut serialized).unwrap(); // This could be send over the network.
+//!
+//!     let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
+//!     println!("// Serialized:"); // We just ignore that, so that we can print the message.
+//!     println!("// {}", serialized);
+//! }
+//! ```
+//!
 //! # Features
 //!
 //! This crate uses the following features to enable IMAP extensions:
@@ -15,16 +59,21 @@
 //!
 //! Furthermore, imap-codec uses the following features to facilitate interoperability:
 //!
-//! |Feature     |Description                     |Enabled by default|
-//! |------------|--------------------------------|------------------|
-//! |arbitrary   |`derive(Arbitrary)`             |No                |
-//! |nom         |`pub use internal;`             |No                |
-//! |serde       |`derive(Serialize, Deserialize)`|No                |
+//! |Feature           |Description                     |Enabled by default|
+//! |-----------------|--------------------------------|------------------|
+//! |arbitrary        |`derive(Arbitrary)`             |No                |
+//! |nom              |`pub use nom_compat;`           |No                |
+//! |serde            |`derive(Serialize, Deserialize)`|No                |
+//! |tokio_util_codec |`pub use tokio_compat;`         |No                |
 //!
 //! When using "arbitrary", all types defined in imap-codec implement the [Arbitrary](https://docs.rs/arbitrary/1.1.0/arbitrary/trait.Arbitrary.html)
-//! trait to ease testing. Although [nom](https://docs.rs/nom/latest/nom/) is always used for parsing, imap-codec tries to hide nom from the public API.
+//! trait to ease testing. Although [nom](https://docs.rs/nom/latest/nom/) is always used for parsing, imap-codec hides nom from the public API.
 //! Should you want to reuse a parser from imap-codec, use the "nom" feature to export all parsers. When the "serde" feature is used, all types implement
 //! [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits.
+//! The "tokio_util_compat" feature unlocks an implementation of [tokio_util::codec](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
+//! See the
+//! [tokio client](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client) and
+//! [tokio server](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server) demos.
 
 #![deny(missing_debug_implementations)]
 
@@ -34,15 +83,19 @@ mod extensions;
 mod rfc3501;
 mod utils;
 
-/// Raw nom parsers for the formal syntax of IMAP ([RFC3501](https://datatracker.ietf.org/doc/html/rfc3501#section-9)) and IMAP extensions.
+pub use imap_types::*;
+
+// ----------- Compatibility modules -----------
+
 #[cfg(feature = "nom")]
 pub mod nom_compat;
 
 #[cfg(any(feature = "tokio_util_codec"))]
 pub mod tokio_compat;
 
-pub use imap_types::*;
-/// This module is only available when the feature "nom" was specified.
+// ----------- Re-exports -----------
+
+pub use imap_types;
 #[cfg(feature = "nom")]
 pub use nom;
 #[cfg(any(feature = "tokio_util_codec"))]
