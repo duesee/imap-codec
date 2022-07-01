@@ -1,4 +1,4 @@
-//! # Misuse-resistant Low-Level Types for the IMAP Protocol
+//! # Misuse-resistant Types for the IMAP Protocol
 //!
 //! The two main types in imap-types are [Command](command::Command) and [Response](response::Response) and we use the term "message" to refer to either of them.
 //!
@@ -113,6 +113,10 @@
 //!
 //! println!("{:?}", search);
 //! ```
+//!
+//! # A Note on Types
+//!
+//! Due to the correctness guarantees, this library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString`. See the [core](core) module.
 
 #![deny(missing_debug_implementations)]
 

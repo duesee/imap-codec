@@ -1,26 +1,31 @@
-# Misuse-resistant Types for the IMAP Protocol
+# Misuse-resistant IMAP Types
 
-This library provides types, i.e., `struct`s and `enum`s, for the [IMAP4rev1] protocol.
-Rust's type system is used to enforce correctness and make the library misuse-resistant.
-It must not be possible to construct messages that violate the IMAP specification.
+This library provides types, i.e., `struct`s and `enum`s, to support [IMAP4rev1] implementations.
+The types were initially extracted from [imap-codec] -- an IMAP parser and serializer -- and may now serve as a common basis for diverse IMAP implementations in Rust.
 
-# Testing
+## Features
 
-Fuzzing (via [cargo fuzz]) and property-based tests are used to uncover bugs.
-For example, the library is fuzz-tested never to produce an invalid message.
-Testing is currently done in [imap-codec] -- the parent library from which imap-types was initially extracted.
+* Rust's type system is used to enforce correctness and make the library misuse-resistant. 
+It must not be possible to construct a type that violates the IMAP specification.
+* Fuzzing (via [cargo fuzz]) and property-based tests are used to uncover bugs.
+The library is fuzz-tested never to produce an invalid message.
 
-# Used String Types
+## Core Types
 
-Due to the correctness guarantees, imap-types uses multiple ["string types"] like `Atom`, `Tag`, `NString`, and `IString`.
-These types should not play an essential role for library consumers.
-However, it can make sense to expose some of them.
+To ensure correctness, imap-types makes use of types such as
+[AString](core::AString),
+[Atom](core::Atom),
+[IString](core::IString),
+[Quoted](core::Quoted), and
+[Literal](core::Literal) (from the [core] module).
+It is good to know these types, because IMAP may require different message flows depending on what type was used to encode certain information such as a username or password.
+When constructing types, imap-types will automatically choose the best encoding.
 
 # License
 
 This crate is dual-licensed under Apache 2.0 and MIT terms.
 
 [IMAP4rev1]: https://datatracker.ietf.org/doc/html/rfc3501
-[cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
 [imap-codec]: https://github.com/duesee/imap-codec
-["string types"]: https://docs.rs/imap-types/0.5.0/imap_types/core/index.html
+[cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
+[core]: https://docs.rs/imap-types/latest/imap_types/core/index.html
