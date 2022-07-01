@@ -138,6 +138,24 @@ pub mod core {
     //! "IMAP4rev1 uses textual commands and responses.
     //! Data in IMAP4rev1 can be in one of several forms: atom, number, string, parenthesized list, or NIL.
     //! Note that a particular data item may take more than one form; for example, a data item defined as using "astring" syntax may be either an atom or a string." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+    //!
+    //! ## (Incomplete) Summary
+    //!
+    //! ```
+    //!        ┌───────┐ ┌─────────────────┐
+    //!        │AString│ │     NString     │
+    //!        └──┬─┬──┘ │(Option<IString>)│
+    //!           │ │    └─────┬───────────┘
+    //!           │ └──────┐   │
+    //!           │        │   │
+    //! ┌────┐ ┌──▼────┐ ┌─▼───▼─┐
+    //! │Atom│ │AtomExt│ │IString│
+    //! └────┘ └───────┘ └┬─────┬┘
+    //!                   │     │
+    //!             ┌─────▼─┐ ┌─▼────┐
+    //!             │Literal│ │Quoted│
+    //!             └───────┘ └──────┘
+    //! ```
 
     pub use crate::rfc3501::core::{
         AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted,
