@@ -21,20 +21,20 @@ Every parser works in streaming mode, i.e., all parsers will return `Incomplete`
 
 ```rust
 use imap_codec::{
-    types::codec::Encode, // This trait provides the `encode` method.
-    parse::command::command, // This is the command parser.
+    codec::{Decode, Encode},
+    types::command::Command,
 };
 
 fn main() {
     let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
 
-    let (_remainder, parsed) = command(input).unwrap();
+    let (_remainder, parsed) = Command::decode(input).unwrap();
     println!("// Parsed:");
     println!("{:#?}", parsed);
 
     let mut serialized = Vec::new();
     parsed.encode(&mut serialized).unwrap(); // This could be send over the network.
-    
+
     let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
     println!("// Serialized:"); // We just ignore that, so that we can print the message.
     println!("// {}", serialized);
