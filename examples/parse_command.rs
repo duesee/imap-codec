@@ -49,14 +49,17 @@ fn main() {
 }
 
 fn welcome() {
-    let welcome = r#"
-# Parsing of IMAP commands.
+    let welcome = r#"# Parsing of IMAP commands
 
-As a user, you are in the role of an IMAP client. Thus, you type IMAP commands. However, the example code shows typical server code, i.e., how to rfc3501 received commands.
+"C:" denotes the client,
+"S:" denotes the server, and
+".." denotes the continuation of an (incomplete) command, e.g., due to the use of an IMAP literal.
 
-"C:" denotes the client, "S:" denotes the server, and ".." denotes the continuation of an (incomplete) command, e.g., due to the use of IMAP literals.
+Note: "\n" will be automatically replaced by "\r\n".
 
-Enter command (or "exit").
+--------------------------------------------------------------------------------------------------
+
+Enter IMAP command (or "exit").
 "#;
 
     println!("{}", welcome);
@@ -67,7 +70,8 @@ fn read_more(buffer: &mut Vec<u8>) {
 
     let line = read_line(prompt);
 
-    if line.trim() == "exit" || line.trim() == "" {
+    if line.trim() == "exit" {
+        println!("Exiting.");
         std::process::exit(0);
     }
 
