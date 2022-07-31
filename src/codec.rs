@@ -2,14 +2,14 @@ pub use imap_types::codec::Encode;
 #[cfg(feature = "ext_idle")]
 use imap_types::command::idle::IdleDone;
 use imap_types::{
-    command::Command,
+    command::{AuthenticateData, Command},
     response::{Greeting, Response},
 };
 
 #[cfg(feature = "ext_idle")]
 use crate::extensions::rfc2177::idle_done;
 use crate::rfc3501::{
-    command::command,
+    command::{authenticate_data, command},
     response::{greeting, response},
 };
 
@@ -56,6 +56,17 @@ impl<'a> Decode<'a> for Command<'a> {
                 nom::error::ErrorKind::Fix => Err(DecodeError::LiteralAckRequired),
                 _ => Err(DecodeError::Failed),
             },
+            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+        }
+    }
+}
+
+impl<'a> Decode<'a> for AuthenticateData {
+    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
+        match authenticate_data(input) {
+            Ok((rem, auth_data)) => Ok((rem, auth_data)),
+            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+            Err(nom::Err::Failure(_)) => Err(DecodeError::Failed),
             Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
         }
     }
