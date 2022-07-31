@@ -12,7 +12,6 @@ edition = "2018"
 default = []
 arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["imap-types/bounded-static"]
-nom = []
 serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
 tokio_util_codec = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 

@@ -62,14 +62,13 @@
 //! |Feature           |Description                     |Enabled by default|
 //! |-----------------|--------------------------------|------------------|
 //! |arbitrary        |`derive(Arbitrary)`             |No                |
-//! |nom              |`pub use nom_compat;`           |No                |
 //! |serde            |`derive(Serialize, Deserialize)`|No                |
 //! |tokio_util_codec |`pub use tokio_compat;`         |No                |
 //!
 //! When using "arbitrary", all types defined in imap-codec implement the [Arbitrary](https://docs.rs/arbitrary/1.1.0/arbitrary/trait.Arbitrary.html)
-//! trait to ease testing. Although [nom](https://docs.rs/nom/latest/nom/) is always used for parsing, imap-codec hides nom from the public API.
-//! Should you want to reuse a parser from imap-codec, use the "nom" feature to export all parsers. When the "serde" feature is used, all types implement
-//! [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits.
+//! trait to ease testing.
+//! When the "serde" feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
+//! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits.
 //! The "tokio_util_compat" feature unlocks an implementation of [tokio_util::codec](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
 //! See the
 //! [tokio client](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client) and
@@ -87,16 +86,12 @@ pub use imap_types::*;
 
 // ----------- Compatibility modules -----------
 
-#[cfg(feature = "nom")]
-pub mod nom_compat;
-
 #[cfg(any(feature = "tokio_util_codec"))]
 pub mod tokio_compat;
 
 // ----------- Re-exports -----------
 
 pub use imap_types;
-#[cfg(feature = "nom")]
 pub use nom;
 #[cfg(any(feature = "tokio_util_codec"))]
 pub use tokio_util;
