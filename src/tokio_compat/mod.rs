@@ -56,7 +56,7 @@ fn parse_literal(line: &[u8]) -> Result<Option<u32>, LiteralError> {
 }
 
 fn parse_literal_enclosing(line: &[u8]) -> Result<Option<&[u8]>, LiteralError> {
-    if line.len() == 0 {
+    if line.is_empty() {
         return Ok(None);
     }
 
@@ -74,7 +74,7 @@ fn parse_literal_enclosing(line: &[u8]) -> Result<Option<&[u8]>, LiteralError> {
         }
     }
 
-    return Err(LiteralError::NoOpeningBrace);
+    Err(LiteralError::NoOpeningBrace)
 }
 
 #[cfg(test)]
