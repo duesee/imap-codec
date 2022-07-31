@@ -10,7 +10,7 @@
 //! [Greeting::decode(...)](response::Greeting#method.decode) (to parse the first message from a server)),
 //! [Command::decode(...)](command::Command#method.decode) (to parse commands from a client), and
 //! [Response::decode(...)](response::Response#method.decode) (to parse responses or results from a server).
-//! Note, however, that certain message-flows require other parsers as well.
+//! Note, however, that certain message flows require other parsers as well.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
 //! ## Serialization
@@ -33,7 +33,7 @@
 //! println!("{:#?}", parsed);
 //!
 //! let mut serialized = Vec::new();
-//! parsed.encode(&mut serialized).unwrap(); // This could be send over the network.
+//! parsed.encode(&mut serialized).unwrap(); // This can be sent over the network.
 //!
 //! let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
 //! println!("// Serialized:"); // We just ignore that, so that we can print the message.
@@ -53,7 +53,7 @@
 //!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
 //! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
-//! You should always use IMAPS, i.e., IMAP-over-TLS on port 993, instead of STARTTLS.
+//! It would be best if you always used IMAPS, i.e., IMAP-over-TLS on port 993, instead of STARTTLS.
 //!
 //! Furthermore, imap-codec uses the following features to facilitate interoperability:
 //!
