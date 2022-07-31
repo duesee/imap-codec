@@ -151,9 +151,9 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
 /// `CHAR8 = %x01-ff`
 ///
 /// Any OCTET except NUL, %x00
-pub fn is_char8(i: u8) -> bool {
-    i != 0
-}
+// pub fn is_char8(i: u8) -> bool {
+//     i != 0
+// }
 
 // ----- astring ----- atom (roughly) or string
 
