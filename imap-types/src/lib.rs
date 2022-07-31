@@ -1,30 +1,30 @@
 //! # Misuse-resistant Types for the IMAP Protocol
 //!
-//! The two main types in imap-types are [Command](command::Command) and [Response](response::Response) and we use the term "message" to refer to either of them.
+//! The two main types in imap-types are [Command](command::Command) and [Response](response::Response), and we use the term "message" to refer to either of them.
 //!
 //! ## Module structure
 //!
 //! The module structure reflects this terminology:
 //! types that are specific to commands are in the [command](command) module;
 //! types that are specific to responses are in the [response](response) module;
-//! types that are used in both are in the [message](message) module.
+//! types used in both are in the [message](message) module.
 //! The [codec](codec) module contains the [Decode](codec::Decode) trait used to serialize messages.
 //! The [core] module contains "string types" -- there should be no need to use them directly.
 //!
 //! ## Simple construction of messages.
 //!
 //! Messages can be created in different ways.
-//! However, what all ways have in common is, that the API does not allow to create invalid ones.
+//! However, what all ways have in common is, that the API does not allow the creation of invalid ones.
 //!
-//! For example, all command in IMAP (and many responses) are prefixed with a tag.
-//! Although tags are basically strings, they have additional rules, such as, that no whitespace is allowed.
-//! Thus, imap-codec encapsulates tags in the [Tag](message::Tag) struct and makes sure that no invalid tag can be created.
+//! For example, all commands in IMAP (and many responses) are prefixed with a tag.
+//! Although tags are strings, they have additional rules, such as that no whitespace is allowed.
+//! Thus, imap-codec encapsulates tags in the [Tag](message::Tag) struct and ensures no invalid tag can be created.
 //! This is why [Result](std::result::Result) is often used in associated functions or methods.
 //!
 //! Generally, imap-codec relies a lot on the [From](std::convert::From), [TryFrom](std::convert::TryFrom), [Into](std::convert::Into), and [TryInto](std::convert::TryInto) traits.
 //! Make good use of them.
 //! However, some types are cumbersome to create.
-//! Thus, there are helper methods, such as, [AuthMechanism::other(...)](message::AuthMechanism::other).
+//! Thus, there are helper methods, such as [AuthMechanism::other(...)](message::AuthMechanism::other).
 //!
 //! ### Example
 //!
@@ -59,7 +59,7 @@
 //! All messages implement the `Encode` trait.
 //! You can `use imap_types::Encode` and call the `.encode(...)` method to serialize a message into a writer.
 //! Note that IMAP traces are not guaranteed to be UTF-8. Thus, be careful when using things like `std::str::from_utf8(...).unwrap()`.
-//! It should be generally better to not think about IMAP as being UTF-8.
+//! It should generally be better not to think about IMAP as being UTF-8.
 //! This is also why `Display` is not implemented.
 //! All types implement `Debug`, though.
 //!
@@ -145,7 +145,7 @@ pub mod core {
     //!
     //! ## (Incomplete) Summary
     //!
-    //! ```
+    //! ```text
     //!        ┌───────┐ ┌─────────────────┐
     //!        │AString│ │     NString     │
     //!        └──┬─┬──┘ │(Option<IString>)│
