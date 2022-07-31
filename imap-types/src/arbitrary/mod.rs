@@ -115,7 +115,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                         tmp
                     };
 
-                    if keys.len() >= 1 {
+                    if !keys.is_empty() {
                         NonEmptyVec::try_from(keys).unwrap()
                     } else {
                         NonEmptyVec::try_from(vec![make_search_key(u)?]).unwrap()
