@@ -187,7 +187,7 @@ pub mod command {
     //! # Types used in commands
 
     pub use crate::rfc3501::{
-        command::{Command, CommandBody},
+        command::{AuthenticateData, Command, CommandBody},
         mailbox::{ListCharString, ListMailbox},
         sequence::{SeqNo, Sequence, SequenceSet, Strategy},
     };

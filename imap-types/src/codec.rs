@@ -35,7 +35,8 @@ use crate::{
         search::SearchKey,
         status::StatusAttribute,
         store::{StoreResponse, StoreType},
-        Command, CommandBody, ListCharString, ListMailbox, SeqNo, Sequence, SequenceSet,
+        AuthenticateData, Command, CommandBody, ListCharString, ListMailbox, SeqNo, Sequence,
+        SequenceSet,
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{
@@ -333,6 +334,13 @@ impl<'a> Encode for AuthMechanism<'a> {
 impl<'a> Encode for AuthMechanismOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.inner().encode(writer)
+    }
+}
+
+impl Encode for AuthenticateData {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        let encoded = base64::encode(&self.data);
+        writer.write_all(encoded.as_bytes())
     }
 }
 

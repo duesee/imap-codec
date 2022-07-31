@@ -6,7 +6,7 @@ use imap_types::{
         fetch::{Macro, MacroOrFetchAttributes},
         search::SearchKey,
         store::{StoreResponse, StoreType},
-        Command, CommandBody,
+        AuthenticateData, Command, CommandBody,
     },
     core::{AString, NonEmptyVec},
     message::{AuthMechanism, Flag},
@@ -351,8 +351,8 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[
 ///                CRLF is additionally parsed in this parser.
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
-pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
-    terminated(base64, CRLF)(input) // FIXME: many0 deleted
+pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], AuthenticateData> {
+    map(terminated(base64, CRLF), |data| AuthenticateData { data })(input) // FIXME: many0 deleted
 }
 
 // # Command Select
