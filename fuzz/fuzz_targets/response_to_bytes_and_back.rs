@@ -4,7 +4,7 @@ use std::str::from_utf8;
 
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{Data, Response},
+    response::{Code, Data, Response, Status},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -25,6 +25,16 @@ fuzz_target!(|test: Response| {
     }
 
     if matches!(test, Response::Data(Data::Lsub { .. })) {
+        // FIXME(#30)
+        return;
+    }
+
+    if matches!(test, Response::Status(
+        Status::Ok { ref code, .. } |
+        Status::No { ref code, .. } |
+        Status::Bad { ref code, .. } |
+        Status::Bye{ ref code, .. }) if matches!(code, Some(Code::Referral(_))))
+    {
         // FIXME(#30)
         return;
     }
