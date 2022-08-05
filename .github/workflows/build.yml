@@ -53,7 +53,9 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.features }} --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
       - name: Test everything (w/o fuzzing)
-        run: cargo test --workspace --all-targets ${{ matrix.features }} --exclude imap-codec-fuzz --exclude imap-types-fuzz
+        run: |
+          cargo test --workspace --doc
+          cargo test --workspace --all-targets ${{ matrix.features }} --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
   audit:
     needs: test
