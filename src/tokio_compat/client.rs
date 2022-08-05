@@ -57,6 +57,7 @@ impl From<std::io::Error> for ImapClientCodecError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OutcomeClient {
+    Greeting(Greeting<'static>),
     Response(Response<'static>),
     // More might be require.
 }
@@ -80,16 +81,20 @@ impl Decoder for ImapClientCodec {
                                 Ok(None) => {
                                     let parser = match self.imap_state {
                                         ImapState::Greeting => |input| {
-                                            Greeting::decode(input)
-                                                .map(|(rem, grt)| (rem, Response::Greeting(grt)))
+                                            Greeting::decode(input).map(|(rem, grt)| {
+                                                (rem, OutcomeClient::Greeting(grt.into_static()))
+                                            })
                                         },
-                                        _ => Response::decode,
+                                        _ => |input| {
+                                            Response::decode(input).map(|(rem, rsp)| {
+                                                (rem, OutcomeClient::Response(rsp.into_static()))
+                                            })
+                                        },
                                     };
 
                                     match parser(&src[..*to_consume_acc]) {
-                                        Ok((rem, rsp)) => {
+                                        Ok((rem, outcome)) => {
                                             assert!(rem.is_empty());
-                                            let rsp = rsp.into_static();
 
                                             src.advance(*to_consume_acc);
                                             self.state =
@@ -100,7 +105,7 @@ impl Decoder for ImapClientCodec {
                                                 self.imap_state = ImapState::NotAuthenticated;
                                             }
 
-                                            return Ok(Some(OutcomeClient::Response(rsp)));
+                                            return Ok(Some(outcome));
                                         }
                                         Err(_) => {
                                             src.advance(*to_consume_acc);

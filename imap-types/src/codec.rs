@@ -777,7 +777,6 @@ impl<'a> Encode for Capability<'a> {
 impl<'a> Encode for Response<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Response::Greeting(greeting) => greeting.encode(writer),
             Response::Status(status) => status.encode(writer),
             Response::Data(data) => data.encode(writer),
             Response::Continue(continue_request) => continue_request.encode(writer),

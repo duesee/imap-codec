@@ -28,7 +28,7 @@ async fn main() {
     };
 
     // Send OK greeting.
-    let greeting = Response::Greeting(Greeting::ok(None, "Hello, World!").unwrap());
+    let greeting = Greeting::ok(None, "Hello, World!").unwrap();
     framed.send(&greeting).await.unwrap();
     println!("S: {:?}", greeting);
 
