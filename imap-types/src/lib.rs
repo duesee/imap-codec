@@ -1,12 +1,12 @@
 //! # Misuse-resistant Types for the IMAP Protocol
 //!
-//! The two main types in imap-types are [Command](command::Command) and [Response](response::Response), and we use the term "message" to refer to either of them.
+//! The main types in imap-types are [Greeting](response::Greeting), [Command](command::Command), and [Response](response::Response), and we use the term "message" to refer to either of them.
 //!
 //! ## Module structure
 //!
 //! The module structure reflects this terminology:
 //! types that are specific to commands are in the [command](command) module;
-//! types that are specific to responses are in the [response](response) module;
+//! types that are specific to responses (including the greeting) are in the [response](response) module;
 //! types used in both are in the [message](message) module.
 //! The [codec](codec) module contains the [Decode](codec::Decode) trait used to serialize messages.
 //! The [core] module contains "string types" -- there should be no need to use them directly.
@@ -16,15 +16,14 @@
 //! Messages can be created in different ways.
 //! However, what all ways have in common is, that the API does not allow the creation of invalid ones.
 //!
-//! For example, all commands in IMAP (and many responses) are prefixed with a tag.
-//! Although tags are strings, they have additional rules, such as that no whitespace is allowed.
+//! For example, all commands in IMAP (and many responses) are prefixed with a "tag".
+//! Although IMAP tags are just strings, they have additional rules, such as that no whitespace is allowed.
 //! Thus, imap-codec encapsulates tags in the [Tag](message::Tag) struct and ensures no invalid tag can be created.
 //! This is why [Result](std::result::Result) is often used in associated functions or methods.
 //!
 //! Generally, imap-codec relies a lot on the [From](std::convert::From), [TryFrom](std::convert::TryFrom), [Into](std::convert::Into), and [TryInto](std::convert::TryInto) traits.
 //! Make good use of them.
-//! However, some types are cumbersome to create.
-//! Thus, there are helper methods, such as [AuthMechanism::other(...)](message::AuthMechanism::other).
+//! For types that are more cumbersome to create, there are helper methods such as [AuthMechanism::other(...)](message::AuthMechanism::other).
 //!
 //! ### Example
 //!
@@ -87,31 +86,66 @@
 //!
 //! ## More complex messages.
 //!
-//! ...
-//!
 //! ### Example
 //!
+//! The following example is a server fetch response containing the size and MIME structure of message 42.
+//!
 //! ```
-//! use std::convert::TryFrom;
+//! use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32};
 //!
 //! use imap_types::{
-//!     message::Charset,
-//!     command::{
-//!         Command,
-//!         CommandBody,
-//!         search::SearchKey,
+//!     codec::Encode,
+//!     core::{IString, NString, NonEmptyVec},
+//!     response::{
+//!         data::{
+//!             BasicFields,
+//!             Body,
+//!             BodyStructure,
+//!             FetchAttributeValue,
+//!             SinglePartExtensionData,
+//!             SpecificFields,
+//!         },
+//!         Data, Response,
 //!     },
 //! };
 //!
-//! let search = {
-//!     let mailbox = Charset::try_from("Archive").unwrap();
+//! let fetch = {
+//!     let data = Data::Fetch {
+//!         seq_or_uid: NonZeroU32::new(42).unwrap(),
+//!         attributes: NonEmptyVec::try_from(vec![
+//!             FetchAttributeValue::Rfc822Size(1337),
+//!             FetchAttributeValue::Body(BodyStructure::Single {
+//!                 body: Body {
+//!                     basic: BasicFields {
+//!                         parameter_list: vec![],
+//!                         id: NString { inner: None },
+//!                         description: NString {
+//!                             inner: Some(IString::try_from("Important message.").unwrap())
+//!                         },
+//!                         content_transfer_encoding: IString::try_from("base64").unwrap(),
+//!                         size: 512,
+//!                     },
+//!                     specific: SpecificFields::Basic {
+//!                         type_: IString::try_from("text").unwrap(),
+//!                         subtype: IString::try_from("html").unwrap(),
+//!                     },
+//!                 },
+//!                 extension: Some(SinglePartExtensionData {
+//!                     md5: NString { inner: None },
+//!                     disposition: None,
+//!                     language: None,
+//!                     location: None,
+//!                     extension: Cow::Borrowed(b""),
+//!                 }),
+//!             }),
+//!         ]).unwrap(),
+//!     };
 //!
-//!     CommandBody::search(Some(mailbox), SearchKey::All, false)
-//!         .tag("A123")
-//!         .unwrap()
+//!     Response::Data(data)
 //! };
 //!
-//! println!("{:?}", search);
+//! let mut out = std::io::stdout();
+//! fetch.encode(&mut out).unwrap();
 //! ```
 //!
 //! # A Note on Types
