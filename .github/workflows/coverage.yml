@@ -1,3 +1,5 @@
+name: Coverage
+
 on:
   push:
     branches: [ main ]
@@ -5,12 +7,12 @@ on:
       - '**.rs'
       - '**.toml'
       - '.github/workflows/**'
-  #pull_request:
-  #  #branches: [ main ]
-  #  paths:
-  #    - '**.rs'
-  #    - '**.toml'
-  #    - '.github/workflows/**'
+  pull_request:
+    #branches: [ main ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
 
 jobs:
   coverage:
