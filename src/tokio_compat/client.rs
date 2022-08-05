@@ -57,7 +57,7 @@ impl From<std::io::Error> for ImapClientCodecError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OutcomeClient {
-    Respone(Response<'static>),
+    Response(Response<'static>),
     // More might be require.
 }
 
@@ -100,7 +100,7 @@ impl Decoder for ImapClientCodec {
                                                 self.imap_state = ImapState::NotAuthenticated;
                                             }
 
-                                            return Ok(Some(OutcomeClient::Respone(rsp)));
+                                            return Ok(Some(OutcomeClient::Response(rsp)));
                                         }
                                         Err(_) => {
                                             src.advance(*to_consume_acc);
