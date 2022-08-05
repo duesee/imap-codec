@@ -1,4 +1,3 @@
-name: Scheduled
 on:
   schedule:
     # 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)

@@ -1,5 +1,3 @@
-name: CI
-
 on:
   push:
     branches: [ main ]
@@ -22,7 +20,11 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # Use only Rust stable for now.
         rust: [ stable ]
+        # Build imap-codec without any additional features or with all features.
+        # That should suffice for now.
+        features: [ "", "--all-features" ]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -34,39 +36,36 @@ jobs:
           override: true
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Check everything
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --workspace --all-targets --all-features
+        run: cargo check --workspace --all-targets ${{ matrix.features }}
 
+      - name: Build everything
+        if: matrix.os != 'windows-latest'
+        run: cargo build --workspace --all-targets ${{ matrix.features }}
+
+      # TODO: error: linking with `link.exe` failed: exit code: 1561
       - name: Build everything (w/o fuzzing)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --workspace --all-targets --all-features --exclude imap-codec-fuzz --exclude imap-types-fuzz
+        if: matrix.os == 'windows-latest'
+        run: cargo build --workspace --all-targets ${{ matrix.features }} --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
       - name: Test everything (w/o fuzzing)
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-targets --all-features --exclude imap-codec-fuzz --exclude imap-types-fuzz
+        run: cargo test --workspace --all-targets ${{ matrix.features }} --exclude imap-codec-fuzz --exclude imap-types-fuzz
 
   audit:
     needs: test
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Audit dependencies
-      uses: EmbarkStudios/cargo-deny-action@v1
+      - name: Audit dependencies
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   lint:
-    needs: test
+    needs: audit
     runs-on: ubuntu-latest
 
     steps:
@@ -79,13 +78,10 @@ jobs:
           components: clippy
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Check code formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check --config imports_granularity=Crate,group_imports=StdExternalCrate
+        run: cargo fmt --all -- --check --config imports_granularity=Crate,group_imports=StdExternalCrate
 
       - name: Check for common mistakes and missed improvements
         uses: actions-rs/clippy-check@v1
