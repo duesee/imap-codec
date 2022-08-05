@@ -32,7 +32,7 @@ jobs:
 
       - name: Install toolchain
         #if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@b5b5f21f4797c02da247df37026fcd0a5024aa4d
         with:
           toolchain: nightly
           profile: minimal
@@ -51,10 +51,10 @@ jobs:
 
       - name: Collect coverage
         id: coverage
-        uses: actions-rs/grcov@v0.1
+        uses: actions-rs/grcov@d9881ad44979aa34f846a82abb764b2b8cfbd715
 
       - name: Upload to Coveralls
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@3284643be2c47fb6432518ecec17f1255e8a06a6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ${{ steps.coverage.outputs.report }}
