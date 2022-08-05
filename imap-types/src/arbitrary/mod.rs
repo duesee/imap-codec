@@ -168,7 +168,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
             })
         }
 
-        make_search_key_rec(u, 10)
+        make_search_key_rec(u, 7)
     }
 }
 
