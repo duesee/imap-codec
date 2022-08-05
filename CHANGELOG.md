@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Improve CI.
 * Improve documentation.
 * Switch to new module layout in imap-codec.
 * Refactor creation of `Command`s and `CommandBody`s.
@@ -48,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Fix missing doc test in CI.
 * Fix (and improve) examples.
 
 ## [Version 0.6.0] - 2022-06-14
