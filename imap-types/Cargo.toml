@@ -2,7 +2,7 @@
 name = "imap-types"
 description = "Misuse-resistant IMAP types"
 keywords = ["email", "imap", "types"]
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
