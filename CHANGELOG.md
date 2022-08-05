@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Improve CI.
 * Improve documentation.
 * Switch to new module layout in imap-codec.
 * Refactor creation of `Command`s and `CommandBody`s.
@@ -48,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Fix missing doc test in CI.
 * Fix (and improve) examples.
 
 ## [Version 0.6.0] - 2022-06-14
@@ -99,6 +101,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix benchmarks (thanks, @franziskuskiefer).
 - Fix misuses, e.g., `AtomExt` (1*ASTRING-CHAR).
 
-[Unreleased]:    https://github.com/duesee/imap-codec/compare/6df4364620e0d64566e4291797a3c9955af422ea...HEAD
-[Version 0.7.0]: https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...6df4364620e0d64566e4291797a3c9955af422ea
+[Unreleased]:    https://github.com/duesee/imap-codec/compare/5954417de14dc76d67a290df282b476b09c27d2d...HEAD
+[Version 0.7.0]: https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...5954417de14dc76d67a290df282b476b09c27d2d
 [Version 0.6.0]: https://github.com/duesee/imap-codec/compare/fcb400e508f74a8d88bbcbfd777bdca7cb75bdeb...63b6a2e4a94f2734d67a18039b3f6dae68994902
