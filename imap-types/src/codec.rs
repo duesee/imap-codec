@@ -10,7 +10,7 @@
 //!     response::{Greeting, Response},
 //! };
 //!
-//! let rsp = Response::Greeting(Greeting::ok(None, "Hello, World!").unwrap());
+//! let rsp = Greeting::ok(None, "Hello, World!").unwrap();
 //!
 //! let bytes = {
 //!     let mut out = Vec::new();
