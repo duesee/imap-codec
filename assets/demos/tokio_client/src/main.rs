@@ -38,17 +38,17 @@ async fn main() {
                     println!("S: {:?}", rsp);
 
                     match rsp {
-                        OutcomeClient::Respone(Response::Data(_)) => {
+                        OutcomeClient::Response(Response::Data(_)) => {
                             println!("[!] got data");
                         }
-                        OutcomeClient::Respone(Response::Status(Status::Ok {
+                        OutcomeClient::Response(Response::Status(Status::Ok {
                             tag: Some(ref tag),
                             ..
                         })) if *tag == tag_login => {
                             println!("[!] login successful");
                             break;
                         }
-                        OutcomeClient::Respone(Response::Status(Status::No {
+                        OutcomeClient::Response(Response::Status(Status::No {
                             tag: Some(ref tag),
                             ..
                         })) if *tag == tag_login => {
