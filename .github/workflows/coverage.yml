@@ -8,7 +8,6 @@ on:
       - '**.toml'
       - '.github/workflows/**'
   pull_request:
-    #branches: [ main ]
     paths:
       - '**.rs'
       - '**.toml'
@@ -18,47 +17,25 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # FIXME: steps.cache.output.cache-hit is always "null"
-      #        and I don't know why.
-      #- name: Cache toolchain
-      #  id: cache
-      #  uses: actions/cache@v3
-      #  with:
-      #    path: |
-      #      ~/.cargo
-      #      ~/.rustup
-      #    key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Install toolchain
-        #if: steps.cache.outputs.cache-hit != 'true'
         uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
         with:
-          toolchain: nightly
+          toolchain: stable
           profile: minimal
           override: true
 
-      - name: Install toolchain | grcov
-        #if: steps.cache.outputs.cache-hit != 'true'
-        run: cargo install grcov
+      - name: Setup | Install tarpaulin
+        run: cargo install cargo-tarpaulin
 
-      - name: Measure coverage
-        run: cargo test --workspace --all-features --no-fail-fast --exclude imap_codec_fuzz --exclude imap_types_fuzz
-        env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Collect coverage
-        id: coverage
-        uses: actions-rs/grcov@d9881ad44979aa34f846a82abb764b2b8cfbd715
+      - name: Generate code coverage
+        run: cargo tarpaulin -p imap-codec -p imap-types --all-features --out xml
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
         with:
-          config: ./assets/coverage/grcov.yml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
 
-      - name: Upload to Coveralls
-        uses: coverallsapp/github-action@3284643be2c47fb6432518ecec17f1255e8a06a6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ steps.coverage.outputs.report }}
