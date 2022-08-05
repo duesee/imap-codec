@@ -95,8 +95,6 @@ pub enum GreetingKind {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response<'a> {
-    // FIXME(misuse)
-    Greeting(Greeting<'a>),
     /// Status responses can be tagged or untagged.  Tagged status responses
     /// indicate the completion result (OK, NO, or BAD status) of a client
     /// command, and have a tag matching the command.

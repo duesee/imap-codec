@@ -1,7 +1,7 @@
 use std::io::Error;
 
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::bounded_static::IntoBoundedStatic;
+use imap_types::{bounded_static::IntoBoundedStatic, response::Greeting};
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
@@ -160,6 +160,17 @@ impl Decoder for ImapServerCodec {
                 }
             }
         }
+    }
+}
+
+impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
+    type Error = std::io::Error;
+
+    fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), std::io::Error> {
+        //dst.reserve(item.len());
+        let mut writer = dst.writer();
+        item.encode(&mut writer).unwrap();
+        Ok(())
     }
 }
 
