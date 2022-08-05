@@ -45,7 +45,7 @@ jobs:
         run: cargo install grcov
 
       - name: Measure coverage
-        run: cargo test --all-features --no-fail-fast
+        run: cargo test --workspace --all-features --no-fail-fast --exclude imap_codec_fuzz --exclude imap_types_fuzz
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
@@ -54,6 +54,8 @@ jobs:
       - name: Collect coverage
         id: coverage
         uses: actions-rs/grcov@d9881ad44979aa34f846a82abb764b2b8cfbd715
+        with:
+          config: ./assets/coverage/grcov.yml
 
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@3284643be2c47fb6432518ecec17f1255e8a06a6
