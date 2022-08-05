@@ -7,7 +7,10 @@ use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
     message::{AuthMechanismOther, Mailbox, MyDateTime, MyNaiveDate, Tag},
-    response::{data::QuotedChar, Text},
+    response::{
+        data::{CapabilityOther, QuotedChar},
+        Text,
+    },
 };
 
 macro_rules! implement_tryfrom {
@@ -47,6 +50,7 @@ implement_tryfrom! { Text<'a>, &str }
 implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
+implement_tryfrom! { CapabilityOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom! { SequenceSet, &str }
 implement_tryfrom! { Literal<'a>, &[u8] }

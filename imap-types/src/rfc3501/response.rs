@@ -747,7 +747,6 @@ pub enum Capability<'a> {
     Other(CapabilityOther<'a>),
 }
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -769,9 +768,31 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
     type Error = ();
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        // FIXME(misuse): Check non-other variants.
+        // This is not great but it works for now.
+        match atom.as_ref().to_ascii_lowercase().as_ref() {
+            "imap4rev1" => Err(()),
+            #[cfg(feature = "starttls")]
+            "logindisabled" | "starttls" => Err(()),
+            #[cfg(feature = "ext_idle")]
+            "idle" => Err(()),
+            "mailbox-referrals" => Err(()),
+            "login-referrals" => Err(()),
+            "sasl-ir" => Err(()),
+            #[cfg(feature = "ext_enable")]
+            "enable" => Err(()),
+            left => {
+                if left.starts_with("auth=") {
+                    return Err(());
+                }
 
-        Ok(Self { inner: atom })
+                #[cfg(feature = "ext_compress")]
+                if left.starts_with("compress=") {
+                    return Err(());
+                }
+
+                Ok(Self { inner: atom })
+            }
+        }
     }
 }
 
