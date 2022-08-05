@@ -34,7 +34,7 @@ jobs:
 
       - name: Install toolchain
         #if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions-rs/toolchain@b5b5f21f4797c02da247df37026fcd0a5024aa4d
+        uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
         with:
           toolchain: nightly
           profile: minimal
