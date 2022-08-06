@@ -8,7 +8,6 @@ on:
       - '**.toml'
       - '.github/workflows/**'
   pull_request:
-    #branches: [ main ]
     paths:
       - '**.rs'
       - '**.toml'
@@ -21,19 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # FIXME: steps.cache.output.cache-hit is always "null"
-      #        and I don't know why.
-      #- name: Cache toolchain
-      #  id: cache
-      #  uses: actions/cache@v3
-      #  with:
-      #    path: |
-      #      ~/.cargo
-      #      ~/.rustup
-      #    key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Install toolchain
-        #if: steps.cache.outputs.cache-hit != 'true'
         uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
         with:
           toolchain: nightly
@@ -41,11 +28,12 @@ jobs:
           override: true
 
       - name: Install toolchain | grcov
-        #if: steps.cache.outputs.cache-hit != 'true'
         run: cargo install grcov
 
       - name: Measure coverage
-        run: cargo test --workspace --all-features --no-fail-fast --exclude imap_codec_fuzz --exclude imap_types_fuzz
+        run: |
+          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --no-fail-fast
+          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --no-fail-fast --all-features
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
