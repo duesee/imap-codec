@@ -83,7 +83,90 @@ impl<'a> Encode for QuotaResourceName<'a> {
     }
 }
 
-
+#[cfg(test)]
 mod tests {
-    
+    use std::convert::TryInto;
+
+    use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
+
+    use super::{QuotaResource, QuotaResourceName, SetQuotaResource};
+
+    fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
+        let mut writer: Vec<u8> = Vec::new();
+        for item in items {
+            item.0.unwrap().encode(&mut writer).unwrap();
+            assert_eq!(std::str::from_utf8(&writer).unwrap(), item.1);
+            writer.clear();
+        }
+    }
+
+    #[test]
+    fn command_output() {
+        let commands = vec![
+            (CommandBody::get_quota("INBOX"), "GETQUOTA INBOX"),
+            (CommandBody::get_quota(""), "GETQUOTA \"\""),
+            (
+                CommandBody::get_quota_root("MAILBOX"),
+                "GETQUOTAROOT MAILBOX",
+            ),
+            (CommandBody::set_quota("INBOX", vec![]), "SETQUOTA INBOX ()"),
+            (
+                CommandBody::set_quota(
+                    "INBOX",
+                    vec![SetQuotaResource {
+                        name: QuotaResourceName::Storage,
+                        limit: 256,
+                    }],
+                ),
+                "SETQUOTA INBOX (STORAGE 256)",
+            ),
+            (
+                CommandBody::set_quota(
+                    "INBOX",
+                    vec![
+                        SetQuotaResource {
+                            name: QuotaResourceName::Message,
+                            limit: 256,
+                        },
+                        SetQuotaResource {
+                            name: QuotaResourceName::Storage,
+                            limit: 512,
+                        },
+                    ],
+                ),
+                "SETQUOTA INBOX (MESSAGE 256 STORAGE 512)",
+            ),
+        ];
+
+        compare_output(commands)
+    }
+    #[test]
+    fn response_output() {
+        let responses = vec![
+            (
+                Data::quota(
+                    "INBOX",
+                    vec![QuotaResource {
+                        name: QuotaResourceName::Message,
+                        usage: 1024,
+                        limit: 2048,
+                    }],
+                ),
+                "* QUOTA INBOX (MESSAGE 1024 2048)\r\n",
+            ),
+            (
+                Data::quota_root("INBOX", vec![]),
+                "* QUOTAROOT INBOX \"\"\r\n",
+            ),
+            (
+                Data::quota_root(
+                    "INBOX",
+                    vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
+                ),
+                "* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
+            ),
+        ];
+
+        compare_output(responses)
+    }
 }

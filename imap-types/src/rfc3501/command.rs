@@ -1498,7 +1498,7 @@ impl<'a> CommandBody<'a> {
         })
     }
     #[cfg(feature = "ext_quota")]
-    pub fn get_quota_roo<A>(mailbox_name: A) -> Result<Self, A::Error>
+    pub fn get_quota_root<A>(mailbox_name: A) -> Result<Self, A::Error>
     where
         A: TryInto<AString<'a>>,
     {
@@ -1874,6 +1874,10 @@ mod test {
             CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
             #[cfg(feature = "ext_compress")]
             CommandBody::compress(CompressionAlgorithm::Deflate),
+            #[cfg(feature = "ext_quota")]
+            CommandBody::get_quota("INBOX").unwrap(),
+            #[cfg(feature = "ext_quota")]
+            CommandBody::get_quota_root("MAILBOX").unwrap(),
         ];
 
         for (no, cmd_body) in cmds.into_iter().enumerate() {

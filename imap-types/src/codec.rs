@@ -326,7 +326,7 @@ impl<'a> Encode for CommandBody<'a> {
                 quota_root.encode(writer)?;
                 writer.write_all(b" (")?;
                 join_serializable(resources.as_ref(), b" ", writer)?;
-                writer.write_all(b" )")
+                writer.write_all(b")")
             }
             #[cfg(feature = "ext_quota")]
             CommandBody::GetQuota { quota_root } => {
@@ -1028,7 +1028,7 @@ impl<'a> Encode for Data<'a> {
                 root_name.encode(writer)?;
                 writer.write_all(b" (")?;
                 join_serializable(resources.as_ref(), b" ", writer)?;
-                writer.write_all(b" )")?;
+                writer.write_all(b")")?;
             }
             #[cfg(feature = "ext_quota")]
             Data::QuotaRoot {
@@ -1038,8 +1038,9 @@ impl<'a> Encode for Data<'a> {
                 writer.write_all(b"* QUOTAROOT ")?;
                 mailbox_name.encode(writer)?;
                 if quota_roots.is_empty() {
-                    writer.write_all(b"\"\"")?;
+                    writer.write_all(b" \"\"")?;
                 } else {
+                    writer.write_all(b" ")?;
                     join_serializable(quota_roots, b" ", writer)?;
                 }
             }

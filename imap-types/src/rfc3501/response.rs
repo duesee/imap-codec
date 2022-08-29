@@ -20,7 +20,7 @@ use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
-    core::{Atom, NonEmptyVec},
+    core::{Atom, NonEmptyVec,AString},
     message::{AuthMechanism, Charset, Flag, FlagNameAttribute, Mailbox, Tag},
     response::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
@@ -28,7 +28,6 @@ use crate::{
     },
 };
 
-use super::core::AString;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -577,7 +576,29 @@ impl<'a> Data<'a> {
             attributes: attributes.try_into().map_err(|_| ())?, // TODO: better error
         })
     }
+    #[cfg(feature = "ext_quota")]
+    pub fn quota<A, B>(name: A, resources: B) -> Result<Self, ()>
+    where
+        A: TryInto<AString<'a>>,
+        B: TryInto<Vec<QuotaResource<'a>>>,
+    {
+        Ok(Self::Quota {
+            root_name: name.try_into().map_err(|_| ())?,
+            resources: resources.try_into().map_err(|_| ())?,
+        })
+    }
 
+    #[cfg(feature = "ext_quota")]
+    pub fn quota_root<A, B>(mailbox_name: A, quota_roots: B) -> Result<Self, ()>
+    where
+        A: TryInto<AString<'a>>,
+        B: TryInto<Vec<AString<'a>>>,
+    {
+        Ok(Self::QuotaRoot {
+            mailbox_name: mailbox_name.try_into().map_err(|_| ())?,
+            quota_roots: quota_roots.try_into().map_err(|_| ())?,
+        })
+    }
     // TODO
     // #[cfg(feature = "ext_enable")]
     // pub fn enable() -> Self {
