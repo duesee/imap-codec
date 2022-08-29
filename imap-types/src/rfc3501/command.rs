@@ -12,7 +12,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc2087::QuotaResouceCommand;
+use crate::extensions::rfc2087::SetQuotaResource;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
@@ -27,7 +27,6 @@ use crate::{
     },
     core::{AString, Atom, Literal, NonEmptyVec},
     message::{AuthMechanism, Charset, Flag, Mailbox, MyDateTime, MyNaiveDate, Tag},
-    response::Text,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -1204,9 +1203,9 @@ pub enum CommandBody<'a> {
     #[cfg(feature = "ext_quota")]
     SetQuota {
         /// The name of a mailbox quota root.
-        quota_root: Text<'a>,
+        quota_root: AString<'a>,
         /// A list of resource limits.
-        resources: Vec<QuotaResouceCommand<'a>>,
+        resources: Vec<SetQuotaResource<'a>>,
     },
 
     /// [4.2. GETQUOTA Command](https://www.rfc-editor.org/rfc/rfc2087#section-4.2)
@@ -1476,6 +1475,36 @@ impl<'a> CommandBody<'a> {
     #[cfg(feature = "ext_compress")]
     pub fn compress(algorithm: CompressionAlgorithm) -> Self {
         CommandBody::Compress { algorithm }
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub fn set_quota<QR, SQR>(quota_root: QR, resources: SQR) -> Result<Self, ()>
+    where
+        QR: TryInto<AString<'a>>,
+        SQR: TryInto<Vec<SetQuotaResource<'a>>>,
+    {
+        Ok(CommandBody::SetQuota {
+            quota_root: quota_root.try_into().map_err(|_| ())?,
+            resources: resources.try_into().map_err(|_| ())?,
+        })
+    }
+    #[cfg(feature = "ext_quota")]
+    pub fn get_quota<A>(quota_root: A) -> Result<Self, A::Error>
+    where
+        A: TryInto<AString<'a>>,
+    {
+        Ok(CommandBody::GetQuota {
+            quota_root: quota_root.try_into()?,
+        })
+    }
+    #[cfg(feature = "ext_quota")]
+    pub fn get_quota_roo<A>(mailbox_name: A) -> Result<Self, A::Error>
+    where
+        A: TryInto<AString<'a>>,
+    {
+        Ok(CommandBody::GetQuotaRoot {
+            mailbox_name: mailbox_name.try_into()?,
+        })
     }
 
     pub fn name(&self) -> &'static str {

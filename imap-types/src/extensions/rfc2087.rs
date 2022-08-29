@@ -31,12 +31,12 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct QuotaResouceCommand<'a> {
+pub struct SetQuotaResource<'a> {
     pub name: QuotaResourceName<'a>,
     pub limit: u64,
 }
 
-impl<'a> Encode for QuotaResouceCommand<'a> {
+impl<'a> Encode for SetQuotaResource<'a> {
     fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         self.name.encode(writer)?;
         write!(writer, " {}", self.limit)
@@ -47,13 +47,13 @@ impl<'a> Encode for QuotaResouceCommand<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct QuotaResouceRespone<'a> {
+pub struct QuotaResource<'a> {
     pub name: QuotaResourceName<'a>,
     pub usage: u64,
     pub limit: u64,
 }
 
-impl<'a> Encode for QuotaResouceRespone<'a> {
+impl<'a> Encode for QuotaResource<'a> {
     fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         self.name.encode(writer)?;
         write!(writer, " {} {}", self.usage, self.limit)
@@ -81,4 +81,9 @@ impl<'a> Encode for QuotaResourceName<'a> {
             QuotaResourceName::Atom(atom) => atom.encode(writer),
         }
     }
+}
+
+
+mod tests {
+    
 }

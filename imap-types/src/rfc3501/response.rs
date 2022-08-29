@@ -14,7 +14,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc2087::QuotaResouceRespone;
+use crate::extensions::rfc2087::QuotaResource;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
@@ -507,7 +507,7 @@ pub enum Data<'a> {
         /// Name of Mailbox
         root_name: AString<'a>,
         /// Zero or More Quota Root Names
-        resources: Vec<QuotaResouceRespone<'a>>,
+        resources: Vec<QuotaResource<'a>>,
     },
 
     /// [5.2. QUOTAROOT Response](https://www.rfc-editor.org/rfc/rfc2087#section-5.2)
