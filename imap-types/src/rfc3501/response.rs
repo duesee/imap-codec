@@ -20,14 +20,13 @@ use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
 use crate::{
-    core::{Atom, NonEmptyVec,AString},
+    core::{AString, Atom, NonEmptyVec},
     message::{AuthMechanism, Charset, Flag, FlagNameAttribute, Mailbox, Tag},
     response::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
         Text,
     },
 };
-
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
