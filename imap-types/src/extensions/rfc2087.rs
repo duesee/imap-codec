@@ -18,14 +18,15 @@
 //!     - [Data::QuotaRoot](crate::response::Data::QuotaRoot)
 //!
 
-pub use crate::core::AString;
-use crate::{codec::Encode, rfc3501::core::Atom};
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+pub use crate::core::AString;
+use crate::{codec::Encode, rfc3501::core::Atom};
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -87,9 +88,8 @@ impl<'a> Encode for QuotaResourceName<'a> {
 mod tests {
     use std::convert::TryInto;
 
-    use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
-
     use super::{QuotaResource, QuotaResourceName, SetQuotaResource};
+    use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
 
     fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
         let mut writer: Vec<u8> = Vec::new();

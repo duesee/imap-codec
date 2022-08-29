@@ -17,7 +17,6 @@ use crate::extensions::rfc2087::SetQuotaResource;
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
-
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
