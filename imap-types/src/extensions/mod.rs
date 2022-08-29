@@ -1,3 +1,5 @@
+#[cfg(feature = "ext_quota")]
+pub mod rfc2087;
 #[cfg(feature = "ext_idle")]
 pub mod rfc2177;
 #[cfg(feature = "ext_compress")]

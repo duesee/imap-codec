@@ -11,10 +11,13 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc2087::QuotaResouceCommand;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
+
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
@@ -24,6 +27,7 @@ use crate::{
     },
     core::{AString, Atom, Literal, NonEmptyVec},
     message::{AuthMechanism, Charset, Flag, Mailbox, MyDateTime, MyNaiveDate, Tag},
+    response::Text,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -1178,6 +1182,84 @@ pub enum CommandBody<'a> {
 
     #[cfg(feature = "ext_compress")]
     Compress { algorithm: CompressionAlgorithm },
+
+    /// [4.1. SETQUOTA Command](https://www.rfc-editor.org/rfc/rfc2087#section-4.1)
+    /// Arguments:  quota root
+    ///             list of resource limits
+    ///
+    /// Data:       untagged responses: QUOTA
+    ///
+    /// Result:     OK - setquota completed
+    ///             NO - setquota error: can't set that data
+    ///             BAD - command unknown or arguments invalid
+    ///
+    /// The SETQUOTA command takes the name of a mailbox quota root and a
+    /// list of resource limits. The resource limits for the named quota root
+    /// are changed to be the specified limits.  Any previous resource limits
+    /// for the named quota root are discarded.
+    ///
+    /// If the named quota root did not previously exist, an implementation
+    /// may optionally create it and change the quota roots for any number of
+    /// existing mailboxes in an implementation-defined manner.
+    #[cfg(feature = "ext_quota")]
+    SetQuota {
+        /// The name of a mailbox quota root.
+        quota_root: Text<'a>,
+        /// A list of resource limits.
+        resources: Vec<QuotaResouceCommand<'a>>,
+    },
+
+    /// [4.2. GETQUOTA Command](https://www.rfc-editor.org/rfc/rfc2087#section-4.2)
+    ///
+    /// Arguments:  quota root
+    ///
+    /// Data:       untagged responses: QUOTA
+    ///
+    /// Result:     OK - getquota completed
+    ///             NO - getquota  error:  no  such  quota  root,  permission
+    ///             denied
+    ///             BAD - command unknown or arguments invalid
+    ///
+    /// The GETQUOTA command takes the name of a quota root and returns the
+    /// quota root's resource usage and limits in an untagged QUOTA response.
+    ///
+    /// Example:    C: A003 GETQUOTA ""
+    ///             S: * QUOTA "" (STORAGE 10 512)
+    ///             S: A003 OK Getquota completed
+    ///
+    ///    getquota        ::= "GETQUOTA" SP astring
+    #[cfg(feature = "ext_quota")]
+    GetQuota {
+        /// The name of a quota root.
+        quota_root: AString<'a>,
+    },
+
+    /// [4.3. GETQUOTAROOT Command](https://www.rfc-editor.org/rfc/rfc2087#section-4.2)
+    ///
+    /// Arguments:  mailbox name
+    ///
+    /// Data:       untagged responses: QUOTAROOT, QUOTA
+    ///
+    /// Result:     OK - getquota completed
+    ///             NO - getquota error: no such mailbox, permission denied
+    ///             BAD - command unknown or arguments invalid
+    ///
+    /// The GETQUOTAROOT command takes the name of a mailbox and returns the
+    /// list of quota roots for the mailbox in an untagged QUOTAROOT
+    /// response.  For each listed quota root, it also returns the quota
+    /// root's resource usage and limits in an untagged QUOTA response.
+    ///
+    /// Example:    C: A003 GETQUOTAROOT INBOX
+    ///             S: * QUOTAROOT INBOX ""
+    ///             S: * QUOTA "" (STORAGE 10 512)
+    ///             S: A003 OK Getquota completed
+    ///
+    ///    getquotaroot    ::= "GETQUOTAROOT" SP astring
+    #[cfg(feature = "ext_quota")]
+    GetQuotaRoot {
+        /// The name of a mailbox.
+        mailbox_name: AString<'a>,
+    },
 }
 
 impl<'a> CommandBody<'a> {
@@ -1429,6 +1511,12 @@ impl<'a> CommandBody<'a> {
             Self::Enable { .. } => "ENABLE",
             #[cfg(feature = "ext_compress")]
             Self::Compress { .. } => "COMPRESS",
+            #[cfg(feature = "ext_quota")]
+            Self::SetQuota { .. } => "SETQUOTA",
+            #[cfg(feature = "ext_quota")]
+            Self::GetQuota { .. } => "GETQUOTA",
+            #[cfg(feature = "ext_quota")]
+            Self::GetQuotaRoot { .. } => "GETQUOTAROOT",
         }
     }
 }

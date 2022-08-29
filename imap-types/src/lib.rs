@@ -156,7 +156,12 @@
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
-#[cfg(any(feature = "ext_idle", feature = "ext_enable", feature = "ext_compress"))]
+#[cfg(any(
+    feature = "ext_idle",
+    feature = "ext_enable",
+    feature = "ext_compress",
+    feature = "ext_quota"
+))]
 mod extensions;
 mod rfc3501;
 mod utils;
@@ -252,6 +257,10 @@ pub mod command {
     #[cfg(feature = "ext_idle")]
     pub mod idle {
         pub use crate::extensions::rfc2177::IdleDone;
+    }
+    #[cfg(feature = "ext_quota")]
+    pub mod quota {
+        pub use crate::extensions::rfc2087::*;
     }
 }
 

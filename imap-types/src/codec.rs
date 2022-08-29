@@ -317,6 +317,27 @@ impl<'a> Encode for CommandBody<'a> {
                 writer.write_all(b"COMPRESS ")?;
                 algorithm.encode(writer)
             }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::SetQuota {
+                quota_root,
+                resources,
+            } => {
+                writer.write_all(b"SETQUOTA ")?;
+                quota_root.encode(writer)?;
+                writer.write_all(b" (")?;
+                join_serializable(resources.as_ref(), b" ", writer)?;
+                writer.write_all(b" )")
+            }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::GetQuota { quota_root } => {
+                writer.write_all(b"GETQUOTA ")?;
+                quota_root.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::GetQuotaRoot { mailbox_name } => {
+                writer.write_all(b"GETQUOTAROOT ")?;
+                mailbox_name.encode(writer)
+            }
         }
     }
 }
@@ -767,6 +788,8 @@ impl<'a> Encode for Capability<'a> {
             Self::Compress { algorithm } => match algorithm {
                 CompressionAlgorithm::Deflate => writer.write_all(b"COMPRESS=DEFLATE"),
             },
+            #[cfg(feature = "ext_quota")]
+            Self::Quota => writer.write_all(b"QUOTA"),
             Self::Other(other) => other.inner.encode(writer),
         }
     }
@@ -994,6 +1017,30 @@ impl<'a> Encode for Data<'a> {
                 for cap in capabilities {
                     writer.write_all(b" ")?;
                     cap.encode(writer)?;
+                }
+            }
+            #[cfg(feature = "ext_quota")]
+            Data::Quota {
+                root_name,
+                resources,
+            } => {
+                writer.write_all(b"* QUOTA ")?;
+                root_name.encode(writer)?;
+                writer.write_all(b" (")?;
+                join_serializable(resources.as_ref(), b" ", writer)?;
+                writer.write_all(b" )")?;
+            }
+            #[cfg(feature = "ext_quota")]
+            Data::QuotaRoot {
+                mailbox_name,
+                quota_roots,
+            } => {
+                writer.write_all(b"* QUOTAROOT ")?;
+                mailbox_name.encode(writer)?;
+                if quota_roots.is_empty() {
+                    writer.write_all(b"\"\"")?;
+                } else {
+                    join_serializable(quota_roots, b" ", writer)?;
                 }
             }
         }

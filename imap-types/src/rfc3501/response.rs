@@ -13,6 +13,8 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc2087::QuotaResouceRespone;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
@@ -25,6 +27,8 @@ use crate::{
         Text,
     },
 };
+
+use super::core::AString;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -480,6 +484,50 @@ pub enum Data<'a> {
     Enabled {
         capabilities: Vec<CapabilityEnable<'a>>,
     },
+    /// [5.1. QUOTA Response](https://www.rfc-editor.org/rfc/rfc2087#section-5.1)
+    ///    Data:       quota root name
+    ///    list of resource names, usages, and limits
+    ///
+    /// This response occurs as a result of a GETQUOTA or GETQUOTAROOT
+    /// command. The first string is the name of the quota root for which
+    /// this quota applies.
+    ///
+    /// The name is followed by a S-expression format list of the resource
+    /// usage and limits of the quota root.  The list contains zero or
+    /// more triplets.  Each triplet conatins a resource name, the current
+    /// usage of the resource, and the resource limit.
+    ///
+    /// Resources not named in the list are not limited in the quota root.
+    /// Thus, an empty list means there are no administrative resource
+    /// limits in the quota root.
+    ///
+    /// Example:    S: * QUOTA "" (STORAGE 10 512)
+    #[cfg(feature = "ext_quota")]
+    Quota {
+        /// Name of Mailbox
+        root_name: AString<'a>,
+        /// Zero or More Quota Root Names
+        resources: Vec<QuotaResouceRespone<'a>>,
+    },
+
+    /// [5.2. QUOTAROOT Response](https://www.rfc-editor.org/rfc/rfc2087#section-5.2)
+    ///
+    /// Data:       mailbox name
+    ///             zero or more quota root names
+    ///
+    ///    This response occurs as a result of a GETQUOTAROOT command.  The
+    ///    first string is the mailbox and the remaining strings are the
+    ///    names of the quota roots for the mailbox.
+    ///
+    ///    Example:    S: * QUOTAROOT INBOX ""
+    ///                S: * QUOTAROOT comp.mail.mime    
+    ///
+    /// quotaroot_response ::= "QUOTAROOT" SP astring *(SP astring)
+    #[cfg(feature = "ext_quota")]
+    QuotaRoot {
+        mailbox_name: AString<'a>,
+        quota_roots: Vec<AString<'a>>,
+    },
 }
 
 impl<'a> Data<'a> {
@@ -740,6 +788,8 @@ pub enum Capability<'a> {
     Compress {
         algorithm: CompressionAlgorithm,
     },
+    #[cfg(feature = "ext_quota")]
+    Quota, // RFC 2087
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?

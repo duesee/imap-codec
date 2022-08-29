@@ -20,7 +20,7 @@ starttls = []
 ext_idle = []
 ext_enable = []
 ext_compress = []
-
+ext_quota = []
 # ext_mailbox_referrals = ["ext_referrals"] # TODO
 # ext_login_referrals = ["ext_referrals"]   # TODO
 # ext_referrals = []                        # TODO
