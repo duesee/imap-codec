@@ -117,7 +117,6 @@ pub enum FetchAttribute<'a> {
         ///    Note: A substring fetch of a HEADER.FIELDS or
         ///    HEADER.FIELDS.NOT part specifier is calculated after
         ///    subsetting the header.
-        ///
         partial: Option<(u32, NonZeroU32)>,
         /// Defines, wheather BODY or BODY.PEEK should be used.
         ///

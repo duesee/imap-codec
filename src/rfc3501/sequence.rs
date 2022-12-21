@@ -32,7 +32,6 @@ use crate::rfc3501::core::nz_number;
 /// Simplified:
 ///
 /// `sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))`
-///
 pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
     map(
         separated_list1(
