@@ -31,8 +31,8 @@
 //! use std::convert::TryFrom;
 //!
 //! use imap_types::{
-//!     message::Tag,
 //!     command::{Command, CommandBody},
+//!     message::Tag,
 //! };
 //!
 //! // # Variant 1
@@ -98,11 +98,7 @@
 //!     core::{IString, NString, NonEmptyVec},
 //!     response::{
 //!         data::{
-//!             BasicFields,
-//!             Body,
-//!             BodyStructure,
-//!             FetchAttributeValue,
-//!             SinglePartExtensionData,
+//!             BasicFields, Body, BodyStructure, FetchAttributeValue, SinglePartExtensionData,
 //!             SpecificFields,
 //!         },
 //!         Data, Response,
@@ -120,7 +116,7 @@
 //!                         parameter_list: vec![],
 //!                         id: NString { inner: None },
 //!                         description: NString {
-//!                             inner: Some(IString::try_from("Important message.").unwrap())
+//!                             inner: Some(IString::try_from("Important message.").unwrap()),
 //!                         },
 //!                         content_transfer_encoding: IString::try_from("base64").unwrap(),
 //!                         size: 512,
@@ -138,7 +134,8 @@
 //!                     extension: Cow::Borrowed(b""),
 //!                 }),
 //!             }),
-//!         ]).unwrap(),
+//!         ])
+//!         .unwrap(),
 //!     };
 //!
 //!     Response::Data(data)

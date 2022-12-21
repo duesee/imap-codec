@@ -1529,7 +1529,7 @@ pub enum SearchKey<'a> {
     On(MyNaiveDate),
 
     /// Messages that match either search key.
-    Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>), // TODO(misuse): is this a Vec or a single SearchKey?
+    Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>), /* TODO(misuse): is this a Vec or a single SearchKey? */
 
     /// Messages that have the \Recent flag set.
     Recent,
