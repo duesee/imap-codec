@@ -1,17 +1,10 @@
 name: Coverage
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - '**.rs'
-      - '**.toml'
-      - '.github/workflows/**'
-  pull_request:
-    paths:
-      - '**.rs'
-      - '**.toml'
-      - '.github/workflows/**'
+  workflow_run:
+    workflows: [ "Build & Test" ]
+    types:
+      - completed
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
