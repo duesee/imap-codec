@@ -202,3 +202,13 @@ This crate is dual-licensed under Apache 2.0 and MIT terms.
 [demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
 [demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
 [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
+
+# Thanks
+
+Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec through their [NGI Assure](https://nlnet.nl/assure/) program!
+
+<div align="right">
+    <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262095-ab12d43a-ca8a-4d44-b79b-7e99ab91ca01.png"/>
+    <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262734-1d6d8b9a-b6bc-4601-add7-4967abe2643c.png"/>
+    <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262235-0db02da9-7c6c-498e-a3d2-7ea7901637bf.png"/>
+</div>
