@@ -1,0 +1,34 @@
+name: Check API
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+
+jobs:
+  semver:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup | Install cargo-semver-checks
+        run: cargo install cargo-semver-checks --locked
+
+      - name: Setup | Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check for SemVer violations | imap-types
+        run: |
+          cd imap-types
+          cargo semver-checks check-release
+
+      - name: Check for SemVer violations | imap-codec
+        run: cargo semver-checks check-release
