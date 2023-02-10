@@ -44,7 +44,7 @@ fn parse_literal(line: &[u8]) -> Result<Option<u32>, LiteralError> {
         Ok(maybe_raw) => {
             if let Some(raw) = maybe_raw {
                 let str = std::str::from_utf8(raw).map_err(|_| LiteralError::BadNumber)?;
-                let num = u32::from_str_radix(str, 10).map_err(|_| LiteralError::BadNumber)?;
+                let num: u32 = str.parse().map_err(|_| LiteralError::BadNumber)?;
 
                 Ok(Some(num))
             } else {
