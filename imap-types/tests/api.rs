@@ -13,6 +13,6 @@ fn construction_of_atom() {
     // Panics
     // let mut atm = Atom::try_from(" x ").unwrap();
 
-    // Requires unsafe
-    // let atm = unsafe { Atom::unchecked(" x "); }
+    // #[cfg(feature = "unchecked")]
+    // let atm = Atom::new_unchecked(" x ");
 }

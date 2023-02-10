@@ -28,7 +28,8 @@ impl<'a> ListCharString<'a> {
         !value.is_empty() && value.bytes().all(is_list_char)
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 

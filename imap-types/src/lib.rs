@@ -149,6 +149,7 @@
 //!
 //! Due to the correctness guarantees, this library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString`. See the [core](core) module.
 
+#![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 
 #[cfg(feature = "arbitrary")]

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom, str::from_utf8_unchecked};
+use std::{borrow::Cow, convert::TryFrom, str::from_utf8};
 
 use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
@@ -145,7 +145,10 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     SP,
                     map(
                         take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                        |val| unsafe { from_utf8_unchecked(val) },
+                        // # Safety
+                        //
+                        // `val` is always UTF-8.
+                        |val| from_utf8(val).unwrap(),
                     ),
                 )),
             )),
@@ -167,7 +170,7 @@ pub fn capability_data(input: &[u8]) -> IResult<&[u8], NonEmptyVec<Capability>> 
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    Ok((rem, unsafe { NonEmptyVec::new_unchecked(caps) }))
+    Ok((rem, NonEmptyVec::new_unchecked(caps)))
 }
 
 /// `capability = ("AUTH=" auth-type) /
@@ -316,7 +319,10 @@ pub fn resp_cond_state(input: &[u8]) -> IResult<&[u8], (&str, Option<Code>, Text
 
     Ok((
         remaining,
-        (unsafe { from_utf8_unchecked(raw_status) }, maybe_code, text),
+        // # Safety
+        //
+        // `raw_status` is always UTF-8.
+        (from_utf8(raw_status).unwrap(), maybe_code, text),
     ))
 }
 

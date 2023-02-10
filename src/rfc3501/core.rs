@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8_unchecked};
+use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
@@ -26,7 +26,10 @@ use crate::{rfc3501::mailbox::is_list_wildcards, utils::unescape_quoted};
 /// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
 pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
     map_res(
-        map(digit1, |val| unsafe { from_utf8_unchecked(val) }),
+        // # Safety
+        //
+        // `unwrap` is safe because `1*DIGIT` contains ASCII-only characters.
+        map(digit1, |val| from_utf8(val).unwrap()),
         str::parse::<u32>,
     )(input)
 }
@@ -73,16 +76,17 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
                 '\\',
                 one_of("\\\""),
             ),
-            |val| unsafe { from_utf8_unchecked(val) },
+            // # Saftey
+            //
+            // `unwrap` is safe because val contains ASCII-only characters.
+            |val| from_utf8(val).unwrap(),
         ),
         DQUOTE,
     ));
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    Ok((remaining, unsafe {
-        Quoted::new_unchecked(unescape_quoted(quoted))
-    }))
+    Ok((remaining, Quoted::new_unchecked(unescape_quoted(quoted))))
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
@@ -104,7 +108,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        |c| unsafe { QuotedChar::new_unchecked(c) },
+        |c| QuotedChar::new_unchecked(c),
     )(input)
 }
 
@@ -162,14 +166,14 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
 pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
-            // Safety:
+            // # Safety
             //
-            // This is safe, because `is_astring_char` enforces that the bytes ...
-            //   * contain ASCII-only characters, i.e., `from_utf8_unchecked` is safe.
+            // `unwrap` is safe, because `is_astring_char` enforces that the bytes ...
+            //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
             //   * are valid according to `AtomExt::verify(), i.e., `new_unchecked` is safe.
-            AString::Atom(unsafe {
-                AtomExt::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
-            })
+            AString::Atom(AtomExt::new_unchecked(Cow::Borrowed(
+                std::str::from_utf8(bytes).unwrap(),
+            )))
         }),
         map(string, AString::String),
     ))(input)
@@ -209,12 +213,15 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    // Note(Unsafe): this is safe, because is_atom_char enforces
-    //               that the string is always UTF8 and contains
-    //               only the allowed characters.
-    Ok((remaining, unsafe {
-        Atom::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(parsed_atom)))
-    }))
+    // # Saftey
+    //
+    // `unwrap` is safe, because `is_atom_char` enforces ...
+    // * that the string is always UTF8, and ...
+    // * contains only the allowed characters.
+    Ok((
+        remaining,
+        Atom::new_unchecked(Cow::Borrowed(std::str::from_utf8(parsed_atom).unwrap())),
+    ))
 }
 
 // ----- nstring ----- nil or string
@@ -238,11 +245,11 @@ pub fn nil(input: &[u8]) -> IResult<&[u8], &[u8]> {
 /// `text = 1*TEXT-CHAR`
 pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
     map(take_while1(is_text_char), |bytes|
-        // Note: is_text_char makes sure that the sequence of bytes
-        //       is always valid ASCII. Thus, it is also valid UTF-8.
-        unsafe {
-            Text::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
-        })(input)
+        // # Safety
+        // 
+        // `is_text_char` makes sure that the sequence of bytes
+        // is always valid ASCII. Thus, it is also valid UTF-8.
+        Text::new_unchecked(Cow::Borrowed(std::str::from_utf8(bytes).unwrap())))(input)
 }
 
 /// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`
@@ -286,11 +293,13 @@ pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
 /// `tag = 1*<any ASTRING-CHAR except "+">`
 pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
     map(
-        map(
-            take_while1(|b| is_astring_char(b) && b != b'+'),
-            |val| unsafe { from_utf8_unchecked(val) },
-        ),
-        |val| unsafe { Tag::new_unchecked(Cow::Borrowed(val)) },
+        map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
+            // # Safety
+            //
+            // `is_astring_char` ensures that `val` is UTF-8.
+            from_utf8(val).unwrap()
+        }),
+        |val| Tag::new_unchecked(Cow::Borrowed(val)),
     )(input)
 }
 

@@ -30,7 +30,8 @@ impl<'a> Atom<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -91,7 +92,8 @@ impl<'a> AtomExt<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -223,7 +225,8 @@ impl<'a> Literal<'a> {
     ///
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
-    pub unsafe fn new_unchecked(inner: Cow<'a, [u8]>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, [u8]>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -293,7 +296,8 @@ impl<'a> Quoted<'a> {
     ///
     /// Call this function only when you are sure that the str
     /// is a valid quoted.
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -451,7 +455,8 @@ impl<'a> Tag<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -503,7 +508,8 @@ impl<'a> Text<'a> {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
@@ -559,7 +565,8 @@ impl QuotedChar {
         &self.inner
     }
 
-    pub unsafe fn new_unchecked(inner: char) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: char) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner));
 
@@ -629,7 +636,8 @@ impl<T> NonEmptyVec<T> {
         !value.is_empty()
     }
 
-    pub unsafe fn new_unchecked(inner: Vec<T>) -> Self {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 

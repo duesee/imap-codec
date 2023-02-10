@@ -25,14 +25,14 @@ use crate::rfc3501::{
 pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
-            // Safety:
+            // # Safety
             //
-            // This is safe, because `is_list_char` enforces that the bytes ...
-            //   * contain ASCII-only characters, i.e., `from_utf8_unchecked` is safe.
-            //   * are valid according to `ListCharString::verify(), i.e., `new_unchecked` is safe.
-            ListMailbox::Token(unsafe {
-                ListCharString::new_unchecked(Cow::Borrowed(std::str::from_utf8_unchecked(bytes)))
-            })
+            // `unwrap` is safe here, because `is_list_char` enforces that the bytes ...
+            //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
+            //   * are valid according to `ListCharString::verify()`, i.e., `new_unchecked` is safe.
+            ListMailbox::Token(ListCharString::new_unchecked(Cow::Borrowed(
+                std::str::from_utf8(bytes).unwrap(),
+            )))
         }),
         map(string, ListMailbox::String),
     ))(input)

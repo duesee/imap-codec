@@ -527,7 +527,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let criteria = match criteria.len() {
         0 => unreachable!(),
         1 => criteria.pop().unwrap(),
-        _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(criteria) }),
+        _ => SearchKey::And(NonEmptyVec::new_unchecked(criteria)),
     };
 
     Ok((
@@ -707,7 +707,7 @@ fn search_key_limited<'a>(
                 |mut val| match val.len() {
                     0 => unreachable!(),
                     1 => val.pop().unwrap(),
-                    _ => SearchKey::And(unsafe { NonEmptyVec::new_unchecked(val) }),
+                    _ => SearchKey::And(NonEmptyVec::new_unchecked(val)),
                 },
             ),
         )),
