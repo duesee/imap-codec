@@ -177,12 +177,13 @@ impl<'a> Arbitrary<'a> for MyDateTime {
         // FIXME(#30): make arbitrary :-)
 
         let local_datetime = NaiveDateTime::new(
-            NaiveDate::from_ymd(1985, 2, 1),
-            NaiveTime::from_hms(12, 34, 56),
+            NaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
+            NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
         Ok(MyDateTime(
-            FixedOffset::east(3600)
+            FixedOffset::east_opt(3600)
+                .unwrap()
                 .from_local_datetime(&local_datetime)
                 .unwrap(),
         ))
