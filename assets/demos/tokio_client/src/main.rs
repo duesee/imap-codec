@@ -20,7 +20,7 @@ async fn main() {
 
         // Read greeting
         let greeting = framed.next().await.unwrap();
-        println!("S: {:?}", greeting);
+        println!("S: {greeting:?}");
 
         // Send LOGIN
         let tag_login = Tag::try_from("A1").unwrap();
@@ -30,12 +30,12 @@ async fn main() {
         )
         .unwrap();
         framed.send(&cmd).await.unwrap();
-        println!("C: {:?}", cmd);
+        println!("C: {cmd:?}");
 
         loop {
             match framed.next().await.unwrap() {
                 Ok(rsp) => {
-                    println!("S: {:?}", rsp);
+                    println!("S: {rsp:?}");
 
                     match rsp {
                         OutcomeClient::Response(Response::Data(_)) => {
@@ -59,7 +59,7 @@ async fn main() {
                     }
                 }
                 Err(error) => {
-                    println!("{:?}", error);
+                    println!("{error:?}");
                 }
             }
         }

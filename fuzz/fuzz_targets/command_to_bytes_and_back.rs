@@ -9,7 +9,7 @@ use imap_codec::{
 };
 use libfuzzer_sys::fuzz_target;
 
-fn ignore_flags(flags: &Vec<Flag>) -> bool {
+fn ignore_flags(flags: &[Flag]) -> bool {
     flags.iter().any(|flag| {
         matches!(
             flag,

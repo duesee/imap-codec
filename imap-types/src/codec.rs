@@ -543,7 +543,7 @@ impl<'a> Encode for SearchKey<'a> {
                 writer.write_all(b" ")?;
                 astring.encode(writer)
             }
-            SearchKey::Larger(number) => write!(writer, "LARGER {}", number),
+            SearchKey::Larger(number) => write!(writer, "LARGER {number}"),
             SearchKey::Not(search_key) => {
                 writer.write_all(b"NOT ")?;
                 search_key.encode(writer)
@@ -566,7 +566,7 @@ impl<'a> Encode for SearchKey<'a> {
                 writer.write_all(b"SENTSINCE ")?;
                 date.encode(writer)
             }
-            SearchKey::Smaller(number) => write!(writer, "SMALLER {}", number),
+            SearchKey::Smaller(number) => write!(writer, "SMALLER {number}"),
             SearchKey::Uid(sequence_set) => {
                 writer.write_all(b"UID ")?;
                 sequence_set.encode(writer)
@@ -604,7 +604,7 @@ impl Encode for Sequence {
 impl Encode for SeqNo {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            SeqNo::Value(number) => write!(writer, "{}", number),
+            SeqNo::Value(number) => write!(writer, "{number}"),
             SeqNo::Largest => writer.write_all(b"*"),
         }
     }
@@ -662,7 +662,7 @@ impl<'a> Encode for FetchAttribute<'a> {
                 }
                 writer.write_all(b"]")?;
                 if let Some((a, b)) = partial {
-                    write!(writer, "<{}.{}>", a, b)?;
+                    write!(writer, "<{a}.{b}>")?;
                 }
 
                 Ok(())
@@ -736,7 +736,7 @@ impl Encode for Part {
 
 impl Encode for NonZeroU32 {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{}", self)
+        write!(writer, "{self}")
     }
 }
 
@@ -976,14 +976,14 @@ impl<'a> Encode for Data<'a> {
                 join_serializable(flags, b" ", writer)?;
                 writer.write_all(b")")?;
             }
-            Data::Exists(count) => write!(writer, "* {} EXISTS", count)?,
-            Data::Recent(count) => write!(writer, "* {} RECENT", count)?,
-            Data::Expunge(msg) => write!(writer, "* {} EXPUNGE", msg)?,
+            Data::Exists(count) => write!(writer, "* {count} EXISTS")?,
+            Data::Recent(count) => write!(writer, "* {count} RECENT")?,
+            Data::Expunge(msg) => write!(writer, "* {msg} EXPUNGE")?,
             Data::Fetch {
                 seq_or_uid,
                 attributes,
             } => {
-                write!(writer, "* {} FETCH (", seq_or_uid)?;
+                write!(writer, "* {seq_or_uid} FETCH (")?;
                 join_serializable(attributes.as_ref(), b" ", writer)?;
                 writer.write_all(b")")?;
             }
@@ -1068,7 +1068,7 @@ impl<'a> Encode for FetchAttributeValue<'a> {
                 }
                 writer.write_all(b"]")?;
                 if let Some(origin) = origin {
-                    write!(writer, "<{}>", origin)?;
+                    write!(writer, "<{origin}>")?;
                 }
                 writer.write_all(b" ")?;
                 data.encode(writer)
@@ -1103,12 +1103,12 @@ impl<'a> Encode for FetchAttributeValue<'a> {
                 writer.write_all(b"RFC822.HEADER ")?;
                 nstring.encode(writer)
             }
-            Self::Rfc822Size(size) => write!(writer, "RFC822.SIZE {}", size),
+            Self::Rfc822Size(size) => write!(writer, "RFC822.SIZE {size}"),
             Self::Rfc822Text(nstring) => {
                 writer.write_all(b"RFC822.TEXT ")?;
                 nstring.encode(writer)
             }
-            Self::Uid(uid) => write!(writer, "UID {}", uid),
+            Self::Uid(uid) => write!(writer, "UID {uid}"),
         }
     }
 }
@@ -1179,7 +1179,7 @@ impl<'a> Encode for Body<'a> {
                 writer.write_all(b" ")?;
                 body_structure.encode(writer)?;
                 writer.write_all(b" ")?;
-                write!(writer, "{}", number_of_lines)
+                write!(writer, "{number_of_lines}")
             }
             SpecificFields::Text {
                 ref subtype,
@@ -1190,7 +1190,7 @@ impl<'a> Encode for Body<'a> {
                 writer.write_all(b" ")?;
                 self.basic.encode(writer)?;
                 writer.write_all(b" ")?;
-                write!(writer, "{}", number_of_lines)
+                write!(writer, "{number_of_lines}")
             }
         }
     }

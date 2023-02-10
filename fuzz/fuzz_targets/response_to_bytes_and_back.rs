@@ -39,7 +39,7 @@ fuzz_target!(|test: Response| {
         return;
     }
 
-    println!("{:?}", test);
+    println!("{test:?}");
 
     let mut buffer = Vec::new();
     test.encode(&mut buffer).unwrap();
@@ -54,7 +54,7 @@ fuzz_target!(|test: Response| {
     let (rem, parsed) = Response::decode(&buffer).unwrap();
     assert!(rem.is_empty());
 
-    println!("{:?}", parsed);
+    println!("{parsed:?}");
 
     assert_eq!(test, parsed);
 
