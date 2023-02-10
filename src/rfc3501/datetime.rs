@@ -159,9 +159,12 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
 //fn digit_min_max(min: usize, max: usize) -> impl Fn(&[u8]) -> IResult<&[u8], ...> { // u8, u16, ...
 //    move |input| {
 //        map_res(
-//            map(take_while_m_n(min, max, is_DIGIT), |bytes| unsafe {
-//                std::str::from_utf8_unchecked(bytes)
-//            }),
+//            map(take_while_m_n(min, max, is_DIGIT), |bytes|
+//                // # Safety
+//                //
+//                // `bytes` is always UTF-8.
+//                std::str::from_utf8(bytes).unwrap()
+//            ),
 //            str::parse::<u8>,
 //        )(input)
 //    }
@@ -169,8 +172,11 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
 
 fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
     map_res(
-        map(take_while_m_n(1, 2, is_DIGIT), |bytes| unsafe {
-            std::str::from_utf8_unchecked(bytes)
+        map(take_while_m_n(1, 2, is_DIGIT), |bytes| {
+            // # Safety
+            //
+            // `bytes` is always UTF-8.
+            std::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u8>,
     )(input)
@@ -178,8 +184,11 @@ fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
 
 fn digit_2(input: &[u8]) -> IResult<&[u8], u8> {
     map_res(
-        map(take_while_m_n(2, 2, is_DIGIT), |bytes| unsafe {
-            std::str::from_utf8_unchecked(bytes)
+        map(take_while_m_n(2, 2, is_DIGIT), |bytes| {
+            // # Safety
+            //
+            // `bytes` is always UTF-8.
+            std::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u8>,
     )(input)
@@ -187,8 +196,11 @@ fn digit_2(input: &[u8]) -> IResult<&[u8], u8> {
 
 fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
     map_res(
-        map(take_while_m_n(4, 4, is_DIGIT), |bytes| unsafe {
-            std::str::from_utf8_unchecked(bytes)
+        map(take_while_m_n(4, 4, is_DIGIT), |bytes| {
+            // # Safety
+            //
+            // `bytes` is always UTF-8.
+            std::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u16>,
     )(input)

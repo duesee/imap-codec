@@ -12,6 +12,7 @@ edition = "2018"
 default = []
 bounded-static = ["dep:bounded-static", "bounded-static/derive"]
 serde = ["dep:serde", "chrono/serde"]
+unchecked = []
 
 # IMAP
 starttls = []

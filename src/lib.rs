@@ -72,6 +72,7 @@
 //! [tokio client](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client) and
 //! [tokio server](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server) demos.
 
+#![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 
 pub mod codec;

@@ -155,7 +155,7 @@ impl TryFrom<RangeToInclusive<u32>> for Sequence {
 
 impl From<Sequence> for SequenceSet {
     fn from(seq: Sequence) -> Self {
-        SequenceSet(unsafe { NonEmptyVec::new_unchecked(vec![seq]) })
+        SequenceSet(NonEmptyVec::new_unchecked(vec![seq]))
     }
 }
 
