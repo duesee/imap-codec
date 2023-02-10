@@ -30,17 +30,17 @@ ext_compress = ["imap-types/ext_compress"]
 
 [dependencies]
 abnf-core = "0.5"
-base64 = "0.13"
-bytes = { version = "1.1", optional = true }
-chrono = { version = ">=0.4.20", default-features = false, features = ["alloc"] }
+base64 = "0.21"
+bytes = { version = "1", optional = true }
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { version = "0.7", default-features = false }
 nom = "7"
-serde = { version = "1.0", features = ["derive"], optional = true }
-tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+tokio-util = { version = "0.7", default-features = false, features = ["codec"], optional = true }
 
 [dev-dependencies]
 ansi_term = "0.12"
-criterion = "0.3"
+criterion = "0.4"
 
 [[bench]]
 name = "parse_command"

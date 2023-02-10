@@ -23,7 +23,7 @@
 
 use std::{io::Write, num::NonZeroU32};
 
-use base64::encode as b64encode;
+use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime, FixedOffset};
 
 #[cfg(feature = "ext_compress")]
@@ -108,7 +108,7 @@ impl<'a> Encode for CommandBody<'a> {
                     if ir.is_empty() {
                         writer.write_all(b"=")?;
                     } else {
-                        writer.write_all(b64encode(ir).as_bytes())?;
+                        writer.write_all(base64.encode(ir).as_bytes())?;
                     };
                 };
 
@@ -339,7 +339,7 @@ impl<'a> Encode for AuthMechanismOther<'a> {
 
 impl Encode for AuthenticateData {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        let encoded = base64::encode(&self.data);
+        let encoded = base64.encode(&self.data);
         writer.write_all(encoded.as_bytes())
     }
 }
@@ -1355,7 +1355,7 @@ impl<'a> Encode for Continue<'a> {
             // TODO: Is this correct when data is empty?
             Continue::Base64(data) => {
                 writer.write_all(b"+ ")?;
-                writer.write_all(base64::encode(data).as_bytes())?;
+                writer.write_all(base64.encode(data).as_bytes())?;
                 writer.write_all(b"\r\n")
             }
         }

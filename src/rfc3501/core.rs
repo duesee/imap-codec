@@ -1,6 +1,7 @@
 use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8_unchecked};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
+use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{Charset, Tag},
@@ -260,7 +261,7 @@ pub fn base64(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
             take_while(is_base64_char),
             opt(alt((tag("=="), tag("=")))),
         ))),
-        base64::decode,
+        |input| _base64.decode(input),
     )(input)
 }
 
