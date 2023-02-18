@@ -66,6 +66,12 @@ impl Encode for u32 {
     }
 }
 
+impl Encode for u64 {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(self.to_string().as_bytes())
+    }
+}
+
 // ----- Command -----
 
 impl<'a> Encode for Command<'a> {
