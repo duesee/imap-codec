@@ -3,6 +3,8 @@ use std::convert::TryFrom;
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc9208::ResourceOther;
 use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
@@ -51,6 +53,8 @@ implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { CapabilityOther<'a>, Atom<'a> }
+#[cfg(feature = "ext_quota")]
+implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom! { SequenceSet, &str }
 implement_tryfrom! { Literal<'a>, &[u8] }

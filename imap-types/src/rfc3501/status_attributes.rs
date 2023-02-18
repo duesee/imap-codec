@@ -27,6 +27,14 @@ pub enum StatusAttribute {
 
     /// The number of messages which do not have the \Seen flag set.
     Unseen,
+
+    /// The number of messages with the \Deleted flag set.
+    #[cfg(feature = "ext_quota")]
+    Deleted,
+
+    /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
+    #[cfg(feature = "ext_quota")]
+    DeletedStorage,
 }
 
 /// The currently defined status data items.
@@ -51,4 +59,12 @@ pub enum StatusAttributeValue {
 
     /// The number of messages which do not have the \Seen flag set.
     Unseen(u32),
+
+    /// The number of messages with the \Deleted flag set.
+    #[cfg(feature = "ext_quota")]
+    Deleted(u32),
+
+    /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
+    #[cfg(feature = "ext_quota")]
+    DeletedStorage(u64),
 }

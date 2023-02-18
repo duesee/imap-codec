@@ -323,6 +323,24 @@ impl<'a> Encode for CommandBody<'a> {
                 writer.write_all(b"COMPRESS ")?;
                 algorithm.encode(writer)
             }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::GetQuota { root } => {
+                writer.write_all(b"GETQUOTA ")?;
+                root.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::GetQuotaRoot { mailbox } => {
+                writer.write_all(b"GETQUOTAROOT ")?;
+                mailbox.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            CommandBody::SetQuota { root, quotas } => {
+                writer.write_all(b"SETQUOTA ")?;
+                root.encode(writer)?;
+                writer.write_all(b" (")?;
+                join_serializable(quotas.as_ref(), b" ", writer)?;
+                writer.write_all(b")")
+            }
         }
     }
 }
@@ -431,6 +449,10 @@ impl Encode for StatusAttribute {
             StatusAttribute::UidNext => writer.write_all(b"UIDNEXT"),
             StatusAttribute::UidValidity => writer.write_all(b"UIDVALIDITY"),
             StatusAttribute::Unseen => writer.write_all(b"UNSEEN"),
+            #[cfg(feature = "ext_quota")]
+            StatusAttribute::Deleted => writer.write_all(b"DELETED"),
+            #[cfg(feature = "ext_quota")]
+            StatusAttribute::DeletedStorage => writer.write_all(b"DELETED-STORAGE"),
         }
     }
 }
@@ -773,6 +795,15 @@ impl<'a> Encode for Capability<'a> {
             Self::Compress { algorithm } => match algorithm {
                 CompressionAlgorithm::Deflate => writer.write_all(b"COMPRESS=DEFLATE"),
             },
+            #[cfg(feature = "ext_quota")]
+            Self::Quota => writer.write_all(b"QUOTA"),
+            #[cfg(feature = "ext_quota")]
+            Self::QuotaRes(resource) => {
+                writer.write_all(b"QUOTA=RES-")?;
+                resource.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            Self::QuotaSet => writer.write_all(b"QUOTASET"),
             Self::Other(other) => other.inner.encode(writer),
         }
     }
@@ -904,6 +935,8 @@ impl<'a> Encode for Code<'a> {
             }
             #[cfg(feature = "ext_compress")]
             Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
+            #[cfg(feature = "ext_quota")]
+            Code::OverQuota => writer.write_all(b"OVERQUOTA"),
         }
     }
 }
@@ -1002,6 +1035,23 @@ impl<'a> Encode for Data<'a> {
                     cap.encode(writer)?;
                 }
             }
+            #[cfg(feature = "ext_quota")]
+            Data::Quota { root, quotas } => {
+                writer.write_all(b"* QUOTA ")?;
+                root.encode(writer)?;
+                writer.write_all(b" (")?;
+                join_serializable(quotas.as_ref(), b" ", writer)?;
+                writer.write_all(b")")?;
+            }
+            #[cfg(feature = "ext_quota")]
+            Data::QuotaRoot { mailbox, roots } => {
+                writer.write_all(b"* QUOTAROOT ")?;
+                mailbox.encode(writer)?;
+                for root in roots {
+                    writer.write_all(b" ")?;
+                    root.encode(writer)?;
+                }
+            }
         }
 
         writer.write_all(b"\r\n")
@@ -1054,6 +1104,16 @@ impl Encode for StatusAttributeValue {
             }
             Self::Unseen(count) => {
                 writer.write_all(b"UNSEEN ")?;
+                count.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            Self::Deleted(count) => {
+                writer.write_all(b"DELETED ")?;
+                count.encode(writer)
+            }
+            #[cfg(feature = "ext_quota")]
+            Self::DeletedStorage(count) => {
+                writer.write_all(b"DELETED-STORAGE ")?;
                 count.encode(writer)
             }
         }
