@@ -154,8 +154,6 @@
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
-#[cfg(any(feature = "ext_idle", feature = "ext_enable", feature = "ext_compress"))]
-mod extensions;
 mod rfc3501;
 mod utils;
 
@@ -277,6 +275,14 @@ pub mod response {
         };
     }
 }
+
+#[cfg(any(
+    feature = "ext_idle",
+    feature = "ext_enable",
+    feature = "ext_compress",
+    feature = "ext_quota"
+))]
+pub mod extensions;
 
 // -- Re-exports -----------------------------------------------------------------------------------
 

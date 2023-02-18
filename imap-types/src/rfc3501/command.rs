@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc9208::QuotaSet;
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
@@ -1178,6 +1180,114 @@ pub enum CommandBody<'a> {
 
     #[cfg(feature = "ext_compress")]
     Compress { algorithm: CompressionAlgorithm },
+
+    /// Takes the name of a quota root and returns the quota root's resource usage and limits in an untagged QUOTA response.
+    ///
+    /// Arguments:
+    /// * quota root
+    ///
+    /// Responses:
+    /// * REQUIRED untagged responses: QUOTA
+    ///
+    /// Result:
+    /// * OK - getquota completed
+    /// * NO - getquota error: no such quota root, permission denied
+    /// * BAD - command unknown or arguments invalid
+    ///
+    /// # Example (IMAP)
+    ///
+    /// ```imap
+    /// S: * CAPABILITY [...] QUOTA QUOTA=RES-STORAGE [...]
+    /// [...]
+    /// C: G0001 GETQUOTA "!partition/sda4"
+    /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
+    /// S: G0001 OK Getquota complete
+    /// ```
+    #[cfg(feature = "ext_quota")]
+    GetQuota {
+        /// Name of quota root.
+        root: AString<'a>,
+    },
+
+    /// Takes a mailbox name and returns the list of quota roots for the mailbox in an untagged QUOTAROOT response.
+    /// For each listed quota root, it also returns the quota root's resource usage and limits in an untagged QUOTA response.
+    ///
+    /// Arguments:
+    /// * mailbox name
+    ///
+    /// Responses:
+    /// * REQUIRED untagged responses: QUOTAROOT, QUOTA
+    ///
+    /// Result:
+    /// * OK - getquotaroot completed
+    /// * NO - getquotaroot error: permission denied
+    /// * BAD - command unknown or arguments invalid
+    ///
+    /// Note that the mailbox name parameter doesn't have to reference an existing mailbox.
+    /// This can be handy in order to determine which quota root would apply to a mailbox when it gets created
+    ///
+    /// # Example (IMAP)
+    ///
+    /// ```imap
+    /// S: * CAPABILITY [...] QUOTA QUOTA=RES-STORAGE QUOTA=RES-MESSAGE
+    /// [...]
+    /// C: G0002 GETQUOTAROOT INBOX
+    /// S: * QUOTAROOT INBOX "#user/alice" "!partition/sda4"
+    /// S: * QUOTA "#user/alice" (MESSAGE 42 1000)
+    /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
+    /// S: G0002 OK Getquotaroot complete
+    /// ```
+    #[cfg(feature = "ext_quota")]
+    GetQuotaRoot {
+        /// Name of mailbox.
+        mailbox: Mailbox<'a>,
+    },
+
+    /// Changes the mailbox quota root resource limits to the specified limits.
+    ///
+    /// Arguments:
+    /// * quota root list of resource limits
+    ///
+    /// Responses:
+    /// * untagged responses: QUOTA
+    ///
+    /// Result:
+    ///
+    /// * OK - setquota completed
+    /// * NO - setquota error: can't set that data
+    /// * BAD - command unknown or arguments invalid
+    ///
+    /// Note: requires the server to advertise the "QUOTASET" capability.
+    ///
+    /// # Example (IMAP)
+    ///
+    /// ```imap
+    /// S: * CAPABILITY [...] QUOTA QUOTASET QUOTA=RES-STORAGE QUOTA=RES-
+    /// MESSAGE [...]
+    /// [...]
+    /// C: S0000 GETQUOTA "#user/alice"
+    /// S: * QUOTA "#user/alice" (STORAGE 54 111 MESSAGE 42 1000)
+    /// S: S0000 OK Getquota completed
+    /// C: S0001 SETQUOTA "#user/alice" (STORAGE 510)
+    /// S: * QUOTA "#user/alice" (STORAGE 58 512)
+    /// // The server has rounded the STORAGE quota limit requested to
+    /// the nearest 512 blocks of 1024 octets; otherwise, another client
+    /// has performed a near-simultaneous SETQUOTA using a limit of 512.
+    /// S: S0001 OK Rounded quota
+    /// C: S0002 SETQUOTA "!partition/sda4" (STORAGE 99999999)
+    /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
+    /// // The server has not changed the quota, since this is a
+    /// filesystem limit, and it cannot be changed. The QUOTA
+    /// response here is entirely optional.
+    /// S: S0002 NO Cannot change system limit
+    /// ```
+    #[cfg(feature = "ext_quota")]
+    SetQuota {
+        /// Name of quota root.
+        root: AString<'a>,
+        /// List of resource limits.
+        quotas: Vec<QuotaSet<'a>>,
+    },
 }
 
 impl<'a> CommandBody<'a> {
@@ -1396,6 +1506,38 @@ impl<'a> CommandBody<'a> {
         CommandBody::Compress { algorithm }
     }
 
+    #[cfg(feature = "ext_quota")]
+    pub fn get_quota<A>(root: A) -> Result<Self, A::Error>
+    where
+        A: TryInto<AString<'a>>,
+    {
+        Ok(CommandBody::GetQuota {
+            root: root.try_into()?,
+        })
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub fn get_quota_root<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::GetQuotaRoot {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, ()>
+    where
+        R: TryInto<AString<'a>>,
+        S: TryInto<Vec<QuotaSet<'a>>>,
+    {
+        Ok(CommandBody::SetQuota {
+            root: root.try_into().map_err(|_| ())?,
+            quotas: quotas.try_into().map_err(|_| ())?,
+        })
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             Self::Capability => "CAPABILITY",
@@ -1429,6 +1571,12 @@ impl<'a> CommandBody<'a> {
             Self::Enable { .. } => "ENABLE",
             #[cfg(feature = "ext_compress")]
             Self::Compress { .. } => "COMPRESS",
+            #[cfg(feature = "ext_quota")]
+            Self::GetQuota { .. } => "GETQUOTA",
+            #[cfg(feature = "ext_quota")]
+            Self::GetQuotaRoot { .. } => "GETQUOTAROOT",
+            #[cfg(feature = "ext_quota")]
+            Self::SetQuota { .. } => "SETQUOTA",
         }
     }
 }
@@ -1605,6 +1753,8 @@ mod test {
     use crate::extensions::rfc4987::CompressionAlgorithm;
     #[cfg(feature = "ext_enable")]
     use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
+    #[cfg(feature = "ext_quota")]
+    use crate::extensions::rfc9208::{QuotaSet, Resource};
     use crate::{
         codec::Encode,
         command::{
@@ -1757,6 +1907,19 @@ mod test {
             CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
             #[cfg(feature = "ext_compress")]
             CommandBody::compress(CompressionAlgorithm::Deflate),
+            #[cfg(feature = "ext_quota")]
+            CommandBody::get_quota("").unwrap(),
+            #[cfg(feature = "ext_quota")]
+            CommandBody::get_quota_root("INBOX").unwrap(),
+            #[cfg(feature = "ext_quota")]
+            CommandBody::set_quota(
+                "",
+                vec![
+                    QuotaSet::new(Resource::Message, 1337),
+                    QuotaSet::new(Resource::other("spam").unwrap(), 0),
+                ],
+            )
+            .unwrap(),
         ];
 
         for (no, cmd_body) in cmds.into_iter().enumerate() {

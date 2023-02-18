@@ -17,6 +17,11 @@ use serde::{Deserialize, Serialize};
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
+#[cfg(feature = "ext_quota")]
+use crate::{
+    core::AString,
+    extensions::rfc9208::{QuotaGet, Resource},
+};
 use crate::{
     core::{Atom, NonEmptyVec},
     message::{AuthMechanism, Charset, Flag, FlagNameAttribute, Mailbox, Tag},
@@ -480,6 +485,22 @@ pub enum Data<'a> {
     Enabled {
         capabilities: Vec<CapabilityEnable<'a>>,
     },
+
+    #[cfg(feature = "ext_quota")]
+    Quota {
+        /// Quota root.
+        root: AString<'a>,
+        /// List of quotas.
+        quotas: Vec<QuotaGet<'a>>,
+    },
+
+    #[cfg(feature = "ext_quota")]
+    QuotaRoot {
+        /// Mailbox name.
+        mailbox: Mailbox<'a>,
+        /// List of quota roots.
+        roots: Vec<AString<'a>>,
+    },
 }
 
 impl<'a> Data<'a> {
@@ -527,6 +548,30 @@ impl<'a> Data<'a> {
         Ok(Self::Fetch {
             seq_or_uid: seq_or_uid.try_into().map_err(|_| ())?, // TODO: better error
             attributes: attributes.try_into().map_err(|_| ())?, // TODO: better error
+        })
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, ()>
+    where
+        R: TryInto<AString<'a>>,
+        Q: TryInto<Vec<QuotaGet<'a>>>,
+    {
+        Ok(Self::Quota {
+            root: root.try_into().map_err(|_| ())?,
+            quotas: quotas.try_into().map_err(|_| ())?,
+        })
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub fn quota_root<M, R>(mailbox: M, roots: R) -> Result<Self, ()>
+    where
+        M: TryInto<Mailbox<'a>>,
+        R: TryInto<Vec<AString<'a>>>,
+    {
+        Ok(Self::QuotaRoot {
+            mailbox: mailbox.try_into().map_err(|_| ())?,
+            roots: roots.try_into().map_err(|_| ())?,
         })
     }
 
@@ -689,6 +734,11 @@ pub enum Code<'a> {
 
     #[cfg(feature = "ext_compress")]
     CompressionActive,
+
+    /// SHOULD be returned in the tagged NO response to an APPEND/COPY/MOVE when the addition of the
+    /// message(s) puts the target mailbox over any one of its quota limits.
+    #[cfg(feature = "ext_quota")]
+    OverQuota,
 }
 
 impl<'a> Code<'a> {
@@ -740,6 +790,12 @@ pub enum Capability<'a> {
     Compress {
         algorithm: CompressionAlgorithm,
     },
+    #[cfg(feature = "ext_quota")]
+    Quota, // RFC 2087
+    #[cfg(feature = "ext_quota")]
+    QuotaRes(Resource<'a>), // RFC 9208
+    #[cfg(feature = "ext_quota")]
+    QuotaSet, // RFC 9208
     // --- Other ---
     // TODO: Is this a good idea?
     // FIXME: mark this enum as non-exhaustive at least?
