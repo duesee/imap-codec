@@ -105,8 +105,6 @@ pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         #[cfg(feature = "ext_idle")]
         idle,
         #[cfg(feature = "ext_enable")]
-        // Note: The formal syntax defines ENABLE in command-any, but describes it to
-        // be allowed in the authenticated state only. I will use the authenticated state.
         enable,
         #[cfg(feature = "ext_compress")]
         compress,
