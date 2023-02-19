@@ -15,6 +15,8 @@ use nom::{
     IResult,
 };
 
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc9208::{quota_response, quotaroot_response};
 use crate::rfc3501::{
     core::{astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string},
     flag::{flag_list, mbx_list_flags},
@@ -118,6 +120,10 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
             tuple((number, SP, tag_no_case(b"RECENT"))),
             |(num, _, _)| Data::Recent(num),
         ),
+        #[cfg(feature = "ext_quota")]
+        quotaroot_response,
+        #[cfg(feature = "ext_quota")]
+        quota_response,
     ))(input)
 }
 

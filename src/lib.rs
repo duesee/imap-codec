@@ -50,6 +50,7 @@
 //! |ext_idle    |See [IDLE](https://datatracker.ietf.org/doc/html/rfc2177)                  |No (but may change)|
 //! |ext_enable  |See [ENABLE](https://datatracker.ietf.org/doc/html/rfc5161)                |No (but may change)|
 //! |ext_compress|See [COMPRESS](https://datatracker.ietf.org/doc/html/rfc4978)              |No (but may change)|
+//! |ext_quota   |See [QUOTA](https://datatracker.ietf.org/doc/html/rfc9208)                 |No (but may change)|
 //!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
 //! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
@@ -76,7 +77,12 @@
 #![deny(missing_debug_implementations)]
 
 pub mod codec;
-#[cfg(any(feature = "ext_idle", feature = "ext_enable", feature = "ext_compress"))]
+#[cfg(any(
+    feature = "ext_idle",
+    feature = "ext_enable",
+    feature = "ext_compress",
+    feature = "ext_quota"
+))]
 mod extensions;
 mod rfc3501;
 mod utils;

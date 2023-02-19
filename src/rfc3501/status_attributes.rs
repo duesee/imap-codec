@@ -9,6 +9,8 @@ use nom::{
     IResult,
 };
 
+#[cfg(feature = "ext_quota")]
+use crate::rfc3501::core::number64;
 use crate::rfc3501::core::{number, nz_number};
 
 /// `status-att = "MESSAGES" /
@@ -23,6 +25,13 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
         value(StatusAttribute::UidNext, tag_no_case(b"UIDNEXT")),
         value(StatusAttribute::UidValidity, tag_no_case(b"UIDVALIDITY")),
         value(StatusAttribute::Unseen, tag_no_case(b"UNSEEN")),
+        #[cfg(feature = "ext_quota")]
+        value(
+            StatusAttribute::DeletedStorage,
+            tag_no_case(b"DELETED-STORAGE"),
+        ),
+        #[cfg(feature = "ext_quota")]
+        value(StatusAttribute::Deleted, tag_no_case(b"DELETED")),
     ))(input)
 }
 
@@ -61,6 +70,16 @@ fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusAttributeValue> {
         map(
             tuple((tag_no_case(b"UNSEEN"), SP, number)),
             |(_, _, num)| StatusAttributeValue::Unseen(num),
+        ),
+        #[cfg(feature = "ext_quota")]
+        map(
+            tuple((tag_no_case(b"DELETED-STORAGE"), SP, number64)),
+            |(_, _, num)| StatusAttributeValue::DeletedStorage(num),
+        ),
+        #[cfg(feature = "ext_quota")]
+        map(
+            tuple((tag_no_case(b"DELETED"), SP, number)),
+            |(_, _, num)| StatusAttributeValue::Deleted(num),
         ),
     ))(input)
 }

@@ -26,6 +26,8 @@ use crate::extensions::rfc2177::idle;
 use crate::extensions::rfc4987::compress;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::enable;
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc9208::{getquota, getquotaroot, setquota};
 use crate::rfc3501::{
     auth_type,
     core::{astring, atom, base64, charset, literal, number, tag_imap},
@@ -108,6 +110,12 @@ pub fn command_auth(input: &[u8]) -> IResult<&[u8], CommandBody> {
         enable,
         #[cfg(feature = "ext_compress")]
         compress,
+        #[cfg(feature = "ext_quota")]
+        getquota,
+        #[cfg(feature = "ext_quota")]
+        getquotaroot,
+        #[cfg(feature = "ext_quota")]
+        setquota,
     ))(input)
 }
 
