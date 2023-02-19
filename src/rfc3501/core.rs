@@ -34,6 +34,23 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
     )(input)
 }
 
+/// ```abnf
+/// number64 = 1*DIGIT
+/// ```
+///
+/// Unsigned 63-bit integer (0 <= n <= 9,223,372,036,854,775,807)
+///
+/// Defined in RFC 9051
+pub fn number64(input: &[u8]) -> IResult<&[u8], u64> {
+    map_res(
+        // # Safety
+        //
+        // `unwrap` is safe because `1*DIGIT` contains ASCII-only characters.
+        map(digit1, |val| from_utf8(val).unwrap()),
+        str::parse::<u64>,
+    )(input)
+}
+
 /// `nz-number = digit-nz *DIGIT`
 ///
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
