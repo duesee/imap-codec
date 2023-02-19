@@ -22,6 +22,7 @@ starttls = ["imap-types/starttls"]
 ext_idle = ["imap-types/ext_idle"]
 ext_enable = ["imap-types/ext_enable"]
 ext_compress = ["imap-types/ext_compress"]
+ext_quota = ["imap-types/ext_quota"]
 
 # ext_mailbox_referrals = ["ext_referrals"] # TODO
 # ext_login_referrals = ["ext_referrals"]   # TODO

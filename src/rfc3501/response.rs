@@ -21,6 +21,8 @@ use nom::{
 use crate::extensions::rfc4987::algorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::enable_data;
+#[cfg(feature = "ext_quota")]
+use crate::extensions::rfc9208::capability_quota;
 use crate::rfc3501::{
     auth_type,
     core::{atom, base64, charset, is_text_char, nz_number, tag_imap, text},
@@ -154,6 +156,8 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
             )),
             |(atom, maybe_params)| Code::Other(atom, maybe_params.map(Cow::Borrowed)),
         ),
+        #[cfg(feature = "ext_quota")]
+        value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
     ))(input)
 }
 
@@ -187,6 +191,8 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
             tuple((tag_no_case(b"COMPRESS="), algorithm)),
             |(_, algorithm)| Capability::Compress { algorithm },
         ),
+        #[cfg(feature = "ext_quota")]
+        capability_quota,
         map(atom, |atom| {
             match atom.as_ref().to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
