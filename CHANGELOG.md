@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* Implemented RFC 9208 (QUOTA Extension) in imap-types. (Thanks, @MinisculeGirraffe!)
+* Implement QUOTA Extension (RFC 9208).
+  * In imap-types. (Thanks, @MinisculeGirraffe!)
+  * In imap-codec.
 
 ## [Version 0.7.0] - 2022-08-05
 
