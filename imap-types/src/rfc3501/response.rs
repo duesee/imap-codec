@@ -844,6 +844,10 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
             "sasl-ir" => Err(()),
             #[cfg(feature = "ext_enable")]
             "enable" => Err(()),
+            #[cfg(feature = "ext_quota")]
+            "quota" => Err(()),
+            #[cfg(feature = "ext_quota")]
+            "quotaset" => Err(()),
             left => {
                 if left.starts_with("auth=") {
                     return Err(());
@@ -851,6 +855,11 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
 
                 #[cfg(feature = "ext_compress")]
                 if left.starts_with("compress=") {
+                    return Err(());
+                }
+
+                #[cfg(feature = "ext_quota")]
+                if left.starts_with("quota=") {
                     return Err(());
                 }
 
