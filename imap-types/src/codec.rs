@@ -99,12 +99,14 @@ impl<'a> Encode for CommandBody<'a> {
             CommandBody::StartTLS => writer.write_all(b"STARTTLS"),
             CommandBody::Authenticate {
                 mechanism,
+                #[cfg(feature = "ext_sasl_ir")]
                 initial_response,
             } => {
                 writer.write_all(b"AUTHENTICATE")?;
                 writer.write_all(b" ")?;
                 mechanism.encode(writer)?;
 
+                #[cfg(feature = "ext_sasl_ir")]
                 if let Some(ir) = initial_response {
                     writer.write_all(b" ")?;
 
@@ -788,6 +790,7 @@ impl<'a> Encode for Capability<'a> {
             Self::MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
             // TODO(#113): Feature-gate LOGIN REFERRALS.
             Self::LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
+            #[cfg(feature = "ext_sasl_ir")]
             Self::SaslIr => writer.write_all(b"SASL-IR"),
             #[cfg(feature = "ext_idle")]
             Self::Idle => writer.write_all(b"IDLE"),
