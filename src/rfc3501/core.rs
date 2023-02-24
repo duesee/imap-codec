@@ -41,6 +41,7 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
 /// Unsigned 63-bit integer (0 <= n <= 9,223,372,036,854,775,807)
 ///
 /// Defined in RFC 9051
+#[cfg(feature = "ext_quota")]
 pub fn number64(input: &[u8]) -> IResult<&[u8], u64> {
     map_res(
         // # Safety
