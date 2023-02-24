@@ -2,7 +2,9 @@
 //!
 //! see <https://tools.ietf.org/html/rfc3501#section-6>
 
-use std::{borrow::Cow, convert::TryInto};
+#[cfg(feature = "ext_sasl_ir")]
+use std::borrow::Cow;
+use std::convert::TryInto;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -247,6 +249,7 @@ pub enum CommandBody<'a> {
     Authenticate {
         mechanism: AuthMechanism<'a>,
         /// Already base64-decoded
+        #[cfg(feature = "ext_sasl_ir")]
         initial_response: Option<Cow<'a, [u8]>>,
     },
 
@@ -1303,6 +1306,12 @@ impl<'a> CommandBody<'a> {
 
     // ----- Constructors -----
 
+    #[cfg(not(feature = "ext_sasl_ir"))]
+    pub fn authenticate(mechanism: AuthMechanism<'a>) -> Self {
+        CommandBody::Authenticate { mechanism }
+    }
+
+    #[cfg(feature = "ext_sasl_ir")]
     pub fn authenticate(mechanism: AuthMechanism<'a>, initial_response: Option<&'a [u8]>) -> Self {
         CommandBody::Authenticate {
             mechanism,
@@ -1742,10 +1751,11 @@ pub enum SearchKey<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::{
-        borrow::Cow,
-        convert::{TryFrom, TryInto},
-    };
+    #[cfg(feature = "ext_sasl_ir")]
+    use std::borrow::Cow;
+    #[cfg(feature = "ext_sasl_ir")]
+    use std::convert::TryFrom;
+    use std::convert::TryInto;
 
     use chrono::DateTime;
 
@@ -1762,11 +1772,13 @@ mod test {
             search::SearchKey,
             status::StatusAttribute,
             store::{StoreResponse, StoreType},
-            Command, CommandBody, ListMailbox,
+            CommandBody, ListMailbox,
         },
         core::{AString, IString},
-        message::{AuthMechanism, Flag, MyDateTime, Part, Section, Tag},
+        message::{AuthMechanism, Flag, MyDateTime, Part, Section},
     };
+    #[cfg(feature = "ext_sasl_ir")]
+    use crate::{command::Command, message::Tag};
 
     #[test]
     fn test_commandbody_new() {
@@ -1776,10 +1788,26 @@ mod test {
             CommandBody::Logout,
             #[cfg(feature = "starttls")]
             CommandBody::StartTLS,
-            CommandBody::authenticate(AuthMechanism::Plain, None),
-            CommandBody::authenticate(AuthMechanism::Login, None),
-            CommandBody::authenticate(AuthMechanism::Plain, Some(b"XXXXXXXX")),
-            CommandBody::authenticate(AuthMechanism::Login, Some(b"YYYYYYYY")),
+            CommandBody::authenticate(
+                AuthMechanism::Plain,
+                #[cfg(feature = "ext_sasl_ir")]
+                None,
+            ),
+            CommandBody::authenticate(
+                AuthMechanism::Login,
+                #[cfg(feature = "ext_sasl_ir")]
+                None,
+            ),
+            CommandBody::authenticate(
+                AuthMechanism::Plain,
+                #[cfg(feature = "ext_sasl_ir")]
+                Some(b"XXXXXXXX"),
+            ),
+            CommandBody::authenticate(
+                AuthMechanism::Login,
+                #[cfg(feature = "ext_sasl_ir")]
+                Some(b"YYYYYYYY"),
+            ),
             CommandBody::login("alice", "I_am_an_atom").unwrap(),
             CommandBody::login("alice", "I am \\ \"quoted\"").unwrap(),
             CommandBody::login("alice", "I am a literal²").unwrap(),
@@ -1933,6 +1961,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "ext_sasl_ir")]
     #[test]
     fn that_empty_ir_is_encoded_correctly() {
         let command = Command::new(

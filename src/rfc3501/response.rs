@@ -207,6 +207,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "mailbox-referrals" => Capability::MailboxReferrals,
                 // TODO(#113): Feature-gate LOGIN REFERRALS.
                 "login-referrals" => Capability::LoginReferrals,
+                #[cfg(feature = "ext_sasl_ir")]
                 "sasl-ir" => Capability::SaslIr,
                 #[cfg(feature = "ext_enable")]
                 "enable" => Capability::Enable,

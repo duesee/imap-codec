@@ -26,6 +26,7 @@ ext_quota = []
 # ext_referrals_login = []
 # TODO(#114): Feature-gate MAILBOX REFERRALS.
 # ext_referrals_mailbox = []
+ext_sasl_ir = []
 
 [dependencies]
 arbitrary = { version = "1", optional = true, features = ["derive"] }

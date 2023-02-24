@@ -1,3 +1,4 @@
+#[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
 use abnf_core::streaming::{CRLF, SP};
@@ -278,7 +279,12 @@ pub fn unsubscribe(input: &[u8]) -> IResult<&[u8], CommandBody> {
 pub fn command_nonauth(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
-        map(authenticate, |(mechanism, initial_response)| {
+        #[cfg(not(feature = "ext_sasl_ir"))]
+        map(authenticate, |mechanism| CommandBody::Authenticate {
+            mechanism,
+        }),
+        #[cfg(feature = "ext_sasl_ir")]
+        map(authenticate_sasl_ir, |(mechanism, initial_response)| {
             CommandBody::Authenticate {
                 mechanism,
                 initial_response,
@@ -317,6 +323,26 @@ pub fn password(input: &[u8]) -> IResult<&[u8], AString> {
 /// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
 ///
 /// ```text
+/// authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)
+///                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+///                |
+///                This is parsed here.
+///                CRLF is parsed by upper command parser.
+/// ```
+#[cfg(not(feature = "ext_sasl_ir"))]
+pub fn authenticate(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
+    let mut parser = preceded(tag_no_case(b"AUTHENTICATE "), auth_type);
+
+    let (remaining, auth_type) = parser(input)?;
+
+    // Server must send continuation ("+ ") at this point...
+
+    Ok((remaining, auth_type))
+}
+
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
+///
+/// ```text
 ///                                            Added by SASL-IR
 ///                                            |
 ///                                            vvvvvvvvvvvvvvvvvvv
@@ -326,10 +352,10 @@ pub fn password(input: &[u8]) -> IResult<&[u8], AString> {
 ///                This is parsed here.
 ///                CRLF is parsed by upper command parser.
 /// ```
-pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[u8]>>)> {
+#[cfg(feature = "ext_sasl_ir")]
+pub fn authenticate_sasl_ir(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[u8]>>)> {
     let mut parser = tuple((
-        tag_no_case(b"AUTHENTICATE"),
-        SP,
+        tag_no_case(b"AUTHENTICATE "),
         auth_type,
         opt(preceded(
             SP,
@@ -340,7 +366,7 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[
         )),
     ));
 
-    let (remaining, (_, _, auth_type, raw_data)) = parser(input)?;
+    let (remaining, (_, auth_type, raw_data)) = parser(input)?;
 
     // Server must send continuation ("+ ") at this point...
 

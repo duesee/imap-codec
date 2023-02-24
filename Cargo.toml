@@ -27,6 +27,7 @@ ext_quota = ["imap-types/ext_quota"]
 # ext_referrals_login = ["imap-types/ext_referrals_login"]
 # TODO(#114): Feature-gate MAILBOX REFERRALS.
 # ext_referrals_mailbox = ["imap-types/ext_referrals_mailbox"]
+ext_sasl_ir = ["imap-types/ext_sasl_ir"]
 
 [dependencies]
 abnf-core = "0.5"

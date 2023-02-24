@@ -787,7 +787,8 @@ pub enum Capability<'a> {
     MailboxReferrals, // RFC 2193
     // TODO(#113): Feature-gate LOGIN REFERRALS.
     LoginReferrals, // RFC 2221
-    SaslIr,         // RFC 4959
+    #[cfg(feature = "ext_sasl_ir")]
+    SaslIr,
     #[cfg(feature = "ext_enable")]
     Enable, // RFC 5161
     #[cfg(feature = "ext_compress")]
@@ -839,6 +840,7 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
             "mailbox-referrals" => Err(()),
             // TODO
             "login-referrals" => Err(()),
+            #[cfg(feature = "ext_sasl_ir")]
             "sasl-ir" => Err(()),
             #[cfg(feature = "ext_enable")]
             "enable" => Err(()),
