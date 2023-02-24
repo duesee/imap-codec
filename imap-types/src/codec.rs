@@ -784,7 +784,9 @@ impl<'a> Encode for Capability<'a> {
             Self::LoginDisabled => writer.write_all(b"LOGINDISABLED"),
             #[cfg(feature = "starttls")]
             Self::StartTls => writer.write_all(b"STARTTLS"),
+            // TODO(#114): Feature-gate MAILBOX REFERRALS.
             Self::MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
+            // TODO(#113): Feature-gate LOGIN REFERRALS.
             Self::LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
             Self::SaslIr => writer.write_all(b"SASL-IR"),
             #[cfg(feature = "ext_idle")]

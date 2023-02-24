@@ -19,15 +19,14 @@ tokio_util_codec = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 starttls = ["imap-types/starttls"]
 
 # IMAP Extensions
-ext_idle = ["imap-types/ext_idle"]
-ext_enable = ["imap-types/ext_enable"]
 ext_compress = ["imap-types/ext_compress"]
+ext_enable = ["imap-types/ext_enable"]
+ext_idle = ["imap-types/ext_idle"]
 ext_quota = ["imap-types/ext_quota"]
-
-# ext_mailbox_referrals = ["ext_referrals"] # TODO
-# ext_login_referrals = ["ext_referrals"]   # TODO
-# ext_referrals = []                        # TODO
-# ext_saslir = []                           # TODO
+# TODO(#113): Feature-gate LOGIN REFERRALS.
+# ext_referrals_login = ["imap-types/ext_referrals_login"]
+# TODO(#114): Feature-gate MAILBOX REFERRALS.
+# ext_referrals_mailbox = ["imap-types/ext_referrals_mailbox"]
 
 [dependencies]
 abnf-core = "0.5"

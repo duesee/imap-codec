@@ -203,9 +203,9 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 // RFC 2177 IMAP4 IDLE command
                 #[cfg(feature = "ext_idle")]
                 "idle" => Capability::Idle,
-                // RFC 2193 IMAP4 Mailbox Referrals
+                // TODO(#114): Feature-gate MAILBOX REFERRALS.
                 "mailbox-referrals" => Capability::MailboxReferrals,
-                // RFC 2221 IMAP4 Login Referrals
+                // TODO(#113): Feature-gate LOGIN REFERRALS.
                 "login-referrals" => Capability::LoginReferrals,
                 "sasl-ir" => Capability::SaslIr,
                 #[cfg(feature = "ext_enable")]
