@@ -829,7 +829,7 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
     type Error = ();
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        // This is not great but it works for now.
+        // TODO(#117): Fix partitioning pattern.
         match atom.as_ref().to_ascii_lowercase().as_ref() {
             "imap4rev1" => Err(()),
             #[cfg(feature = "starttls")]
