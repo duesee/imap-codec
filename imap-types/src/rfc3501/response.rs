@@ -730,7 +730,9 @@ pub enum Code<'a> {
     Other(Atom<'a>, Option<Cow<'a, str>>), // TODO(misuse)
 
     /// IMAP4 Login Referrals (RFC 2221)
-    Referral(Cow<'a, str>), // TODO(misuse): the imap url is more complicated than that...
+    // TODO(#113, #114): Feature-gate {LOGIN/MAILBOX} REFERRALS.
+    // TODO(misuse): the imap url is more complicated than that...
+    Referral(Cow<'a, str>),
 
     #[cfg(feature = "ext_compress")]
     CompressionActive,
@@ -781,9 +783,11 @@ pub enum Capability<'a> {
     // ---
     #[cfg(feature = "ext_idle")]
     Idle, // RFC 2177
+    // TODO(#114): Feature-gate MAILBOX REFERRALS.
     MailboxReferrals, // RFC 2193
-    LoginReferrals,   // RFC 2221
-    SaslIr,           // RFC 4959
+    // TODO(#113): Feature-gate LOGIN REFERRALS.
+    LoginReferrals, // RFC 2221
+    SaslIr,         // RFC 4959
     #[cfg(feature = "ext_enable")]
     Enable, // RFC 5161
     #[cfg(feature = "ext_compress")]
@@ -831,7 +835,9 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
             "logindisabled" | "starttls" => Err(()),
             #[cfg(feature = "ext_idle")]
             "idle" => Err(()),
+            // TODO
             "mailbox-referrals" => Err(()),
+            // TODO
             "login-referrals" => Err(()),
             "sasl-ir" => Err(()),
             #[cfg(feature = "ext_enable")]
