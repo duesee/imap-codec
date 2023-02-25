@@ -8,7 +8,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{IString, NString},
+    core::{IString, NString, NonEmptyVec},
     response::data::Envelope,
 };
 
@@ -240,7 +240,7 @@ pub enum BodyStructure<'a> {
     /// )
     /// ```
     Multi {
-        bodies: Vec<BodyStructure<'a>>,
+        bodies: NonEmptyVec<BodyStructure<'a>>,
         subtype: IString<'a>,
         extension_data: Option<MultiPartExtensionData<'a>>,
     },
