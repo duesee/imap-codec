@@ -49,7 +49,7 @@ use crate::{
             MultiPartExtensionData, QuotedChar, SinglePartExtensionData, SpecificFields,
             StatusAttributeValue,
         },
-        Code, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
+        Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
     utils::escape_quoted,
 };
@@ -925,14 +925,6 @@ impl<'a> Encode for Code<'a> {
                 writer.write_all(b"UNSEEN ")?;
                 seq.encode(writer)
             }
-            Code::Other(atom, params) => match params {
-                Some(params) => {
-                    atom.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    writer.write_all(params.as_bytes())
-                }
-                None => atom.encode(writer),
-            },
             // RFC 2221
             Code::Referral(url) => {
                 writer.write_all(b"REFERRAL ")?;
@@ -942,7 +934,21 @@ impl<'a> Encode for Code<'a> {
             Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
             #[cfg(feature = "ext_quota")]
             Code::OverQuota => writer.write_all(b"OVERQUOTA"),
+            Code::Other(other, text) => match text {
+                Some(text) => {
+                    other.encode(writer)?;
+                    writer.write_all(b" ")?;
+                    text.encode(writer)
+                }
+                None => other.encode(writer),
+            },
         }
+    }
+}
+
+impl<'a> Encode for CodeOther<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.inner().encode(writer)
     }
 }
 

@@ -11,7 +11,7 @@ use crate::{
     message::{AuthMechanismOther, Mailbox, MyDateTime, MyNaiveDate, Tag},
     response::{
         data::{CapabilityOther, QuotedChar},
-        Text,
+        CodeOther, Text,
     },
 };
 
@@ -53,6 +53,7 @@ implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { CapabilityOther<'a>, Atom<'a> }
+implement_tryfrom! { CodeOther<'a>, Atom<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
