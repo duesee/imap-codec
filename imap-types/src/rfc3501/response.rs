@@ -912,18 +912,28 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
             #[cfg(feature = "ext_quota")]
             "quotaset" => Err(()),
             left => {
+                // Idea: If an `Atom` starts with "auth=" ("compress=", "quota=", ...) AND contains
+                // at least one characters after the "=", it's an `AuthMechanism::Other(AuthMechanismOther)
+                // and not a `Capability::Other(...)`.
+
                 if left.starts_with("auth=") {
-                    return Err(());
+                    if left.len() > "auth=".len() {
+                        return Err(());
+                    }
                 }
 
                 #[cfg(feature = "ext_compress")]
                 if left.starts_with("compress=") {
-                    return Err(());
+                    if left.len() > "compress=".len() {
+                        return Err(());
+                    }
                 }
 
                 #[cfg(feature = "ext_quota")]
                 if left.starts_with("quota=") {
-                    return Err(());
+                    if left.len() > "quota=".len() {
+                        return Err(());
+                    }
                 }
 
                 Ok(Self { inner: atom })
