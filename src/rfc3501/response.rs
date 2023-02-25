@@ -140,6 +140,8 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         ),
         #[cfg(feature = "ext_compress")]
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
+        #[cfg(feature = "ext_quota")]
+        value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         map(
             tuple((
                 atom,
@@ -156,8 +158,6 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
             )),
             |(atom, maybe_params)| Code::Other(atom, maybe_params.map(Cow::Borrowed)),
         ),
-        #[cfg(feature = "ext_quota")]
-        value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
     ))(input)
 }
 

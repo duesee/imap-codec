@@ -491,7 +491,7 @@ pub enum Data<'a> {
         /// Quota root.
         root: AString<'a>,
         /// List of quotas.
-        quotas: Vec<QuotaGet<'a>>,
+        quotas: NonEmptyVec<QuotaGet<'a>>,
     },
 
     #[cfg(feature = "ext_quota")]
@@ -555,7 +555,7 @@ impl<'a> Data<'a> {
     pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, ()>
     where
         R: TryInto<AString<'a>>,
-        Q: TryInto<Vec<QuotaGet<'a>>>,
+        Q: TryInto<NonEmptyVec<QuotaGet<'a>>>,
     {
         Ok(Self::Quota {
             root: root.try_into().map_err(|_| ())?,
