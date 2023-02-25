@@ -5,12 +5,12 @@ use imap_types::{
     core::NonEmptyVec,
     response::{
         data::{Capability, CapabilityOther},
-        Code, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
+        Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while1},
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, value},
     multi::separated_list1,
     sequence::{delimited, preceded, terminated, tuple},
@@ -25,7 +25,7 @@ use crate::extensions::rfc5161::enable_data;
 use crate::extensions::rfc9208::capability_quota;
 use crate::rfc3501::{
     auth_type,
-    core::{atom, base64, charset, is_text_char, nz_number, tag_imap, text},
+    core::{atom, base64, charset, nz_number, tag_imap, text},
     fetch_attributes::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
@@ -143,20 +143,8 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         #[cfg(feature = "ext_quota")]
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         map(
-            tuple((
-                atom,
-                opt(preceded(
-                    SP,
-                    map(
-                        take_while1(|byte| is_text_char(byte) && byte != b'"'),
-                        // # Safety
-                        //
-                        // `val` is always UTF-8.
-                        |val| from_utf8(val).unwrap(),
-                    ),
-                )),
-            )),
-            |(atom, maybe_params)| Code::Other(atom, maybe_params.map(Cow::Borrowed)),
+            tuple((atom, opt(preceded(SP, text)))),
+            |(atom, maybe_params)| Code::Other(CodeOther::try_from(atom).unwrap(), maybe_params),
         ),
     ))(input)
 }

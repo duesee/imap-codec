@@ -256,7 +256,7 @@ pub mod response {
 
     pub use crate::rfc3501::{
         core::Text,
-        response::{Code, Continue, Data, Greeting, GreetingKind, Response, Status},
+        response::{Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status},
     };
 
     pub mod data {
