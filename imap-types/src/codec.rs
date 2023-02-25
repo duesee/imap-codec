@@ -1209,7 +1209,7 @@ impl<'a> Encode for BodyStructure<'a> {
                 subtype,
                 extension_data,
             } => {
-                for body in bodies {
+                for body in &bodies.inner {
                     body.encode(writer)?;
                 }
                 writer.write_all(b" ")?;

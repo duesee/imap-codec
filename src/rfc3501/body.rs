@@ -1,8 +1,8 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, convert::TryFrom};
 
 use abnf_core::streaming::SP;
 use imap_types::{
-    core::{IString, NString},
+    core::{IString, NString, NonEmptyVec},
     response::data::{
         BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
         SpecificFields,
@@ -435,7 +435,8 @@ fn body_type_mpart_limited(
     Ok((
         remaining,
         BodyStructure::Multi {
-            bodies,
+            // Safety: `unwrap` can't panic due to the use of `many1`.
+            bodies: NonEmptyVec::try_from(bodies).unwrap(),
             subtype,
             extension_data,
         },
