@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 use abnf_core::streaming::SP;
 use imap_types::{
     command::CommandBody,
-    core::AString,
+    core::{AString, NonEmptyVec},
     extensions::rfc9208::{QuotaGet, QuotaSet, Resource, ResourceOther},
     response::{data::Capability, Data},
 };
@@ -116,7 +116,14 @@ pub fn quota_response(input: &[u8]) -> IResult<&[u8], Data> {
 
     let (remaining, (_, root, _, quotas)) = parser(input)?;
 
-    Ok((remaining, Data::Quota { root, quotas }))
+    Ok((
+        remaining,
+        Data::Quota {
+            root,
+            // Safety: Safe because we use `separated_list1` above.
+            quotas: NonEmptyVec::try_from(quotas).unwrap(),
+        },
+    ))
 }
 
 /// ```abnf
