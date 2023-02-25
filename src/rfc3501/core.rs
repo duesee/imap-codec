@@ -273,8 +273,10 @@ pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
 /// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`
 ///
 /// Note: This was `<any CHAR except CR and LF>` before.
+///
+/// Note: We also exclude `[` and `]` due to the possibility to misuse this as a `Code`.
 pub fn is_text_char(c: u8) -> bool {
-    matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f)
+    matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x5a | 0x5c | 0x5e..=0x7f)
 }
 
 // ----- base64 -----
