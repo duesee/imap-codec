@@ -10,9 +10,7 @@ use imap_types::{
     response::{data::Capability, Data},
 };
 use nom::{
-    branch::alt,
     bytes::{complete::tag, streaming::tag_no_case},
-    combinator::value,
     multi::{many0, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -170,22 +168,25 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
     Ok((remaining, QuotaSet { resource, limit }))
 }
 
-/// ```abnf
-/// capability-quota = "QUOTASET" / capa-quota-res
-/// ```
-///
-/// Note: Extended to ...
-///
-/// ```abnf
-/// capability-quota = "QUOTASET" / capa-quota-res / "QUOTA"
-/// ```
-pub fn capability_quota(input: &[u8]) -> IResult<&[u8], Capability> {
-    alt((
-        value(Capability::QuotaSet, tag_no_case("QUOTASET")),
-        capa_quota_res,
-        value(Capability::Quota, tag_no_case("QUOTA")),
-    ))(input)
-}
+// This had to be inlined into the `capability` parser because `CapabilityOther("QUOTAFOO")` would
+// be parsed as `Capability::Quota` plus an erroneous remainder. The `capability` parser eagerly consumes
+// an `atom` and tries to detect the variants later.
+// /// ```abnf
+// /// capability-quota = "QUOTASET" / capa-quota-res
+// /// ```
+// ///
+// /// Note: Extended to ...
+// ///
+// /// ```abnf
+// /// capability-quota = "QUOTASET" / capa-quota-res / "QUOTA"
+// /// ```
+// pub fn capability_quota(input: &[u8]) -> IResult<&[u8], Capability> {
+//     alt((
+//         value(Capability::QuotaSet, tag_no_case("QUOTASET")),
+//         capa_quota_res,
+//         value(Capability::Quota, tag_no_case("QUOTA")),
+//     ))(input)
+// }
 
 /// ```abnf
 /// capa-quota-res = "QUOTA=RES-" resource-name

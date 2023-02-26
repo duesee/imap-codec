@@ -22,7 +22,7 @@ use crate::extensions::rfc4987::algorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::enable_data;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::capability_quota;
+use crate::extensions::rfc9208::capa_quota_res;
 use crate::rfc3501::{
     auth_type,
     core::{atom, base64, charset, nz_number, tag_imap, text},
@@ -180,7 +180,7 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
             |(_, algorithm)| Capability::Compress { algorithm },
         ),
         #[cfg(feature = "ext_quota")]
-        capability_quota,
+        capa_quota_res,
         map(atom, |atom| {
             match atom.as_ref().to_ascii_lowercase().as_ref() {
                 "imap4rev1" => Capability::Imap4Rev1,
@@ -199,6 +199,10 @@ pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
                 "sasl-ir" => Capability::SaslIr,
                 #[cfg(feature = "ext_enable")]
                 "enable" => Capability::Enable,
+                #[cfg(feature = "ext_quota")]
+                "quota" => Capability::Quota,
+                #[cfg(feature = "ext_quota")]
+                "quotaset" => Capability::QuotaSet,
                 _ => Capability::Other(CapabilityOther::try_from(atom).unwrap()),
             }
         }),
