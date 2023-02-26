@@ -47,10 +47,11 @@
 //! |Feature     |Description                                                                |Enabled by default |
 //! |------------|---------------------------------------------------------------------------|-------------------|
 //! |starttls    |See [STARTTLS](https://datatracker.ietf.org/doc/html/rfc3501#section-6.2.1)|No                 |
-//! |ext_idle    |See [IDLE](https://datatracker.ietf.org/doc/html/rfc2177)                  |No (but may change)|
-//! |ext_enable  |See [ENABLE](https://datatracker.ietf.org/doc/html/rfc5161)                |No (but may change)|
 //! |ext_compress|See [COMPRESS](https://datatracker.ietf.org/doc/html/rfc4978)              |No (but may change)|
+//! |ext_enable  |See [ENABLE](https://datatracker.ietf.org/doc/html/rfc5161)                |No (but may change)|
+//! |ext_idle    |See [IDLE](https://datatracker.ietf.org/doc/html/rfc2177)                  |No (but may change)|
 //! |ext_quota   |See [QUOTA](https://datatracker.ietf.org/doc/html/rfc9208)                 |No (but may change)|
+//! |ext_sasl_ir |See [SASL-IR](https://datatracker.ietf.org/doc/html/rfc4959)               |No (but may change)|
 //!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
 //! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
