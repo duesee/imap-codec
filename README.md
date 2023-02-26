@@ -209,6 +209,6 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 
 <div align="right">
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262095-ab12d43a-ca8a-4d44-b79b-7e99ab91ca01.png"/>
-    <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262734-1d6d8b9a-b6bc-4601-add7-4967abe2643c.png"/>
+    <img height="100px" src="https://user-images.githubusercontent.com/8997731/221422192-60d28ed4-10bb-441e-957d-93af58166707.png"/>
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262235-0db02da9-7c6c-498e-a3d2-7ea7901637bf.png"/>
 </div>
