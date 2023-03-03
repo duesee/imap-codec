@@ -1,5 +1,7 @@
 #![no_main]
 
+#[cfg(feature = "debug")]
+use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
     response::Response,
@@ -7,21 +9,33 @@ use imap_codec::{
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
+    #[cfg(feature = "debug")]
+    println!("[!] Input: {}", escape_byte_string(data));
+
     if let Ok((_rem, parsed1)) = Response::decode(data) {
-        //let input = &data[..data.len() - rem.len()];
+        #[cfg(feature = "debug")]
+        {
+            let input = &data[..data.len() - _rem.len()];
+            println!("[!] Consumed: {}", escape_byte_string(input));
+            println!("[!] Parsed1: {parsed1:?}");
+        }
 
-        //println!("libFuzzer:  {}", String::from_utf8_lossy(input).trim());
-        //println!("parsed:     {:?}", parsed1);
+        let mut output = Vec::with_capacity(data.len() * 2);
+        parsed1.encode(&mut output).unwrap();
+        #[cfg(feature = "debug")]
+        println!("[!] Serialized: {}", escape_byte_string(&output));
 
-        let mut input = Vec::with_capacity(data.len() * 2);
-        parsed1.encode(&mut input).unwrap();
-        //println!("serialized: {}", String::from_utf8_lossy(&input).trim());
-        let (rem, parsed2) = Response::decode(&input).unwrap();
-        //println!("parsed:     {:?}", parsed2);
+        let (rem, parsed2) = Response::decode(&output).unwrap();
+        #[cfg(feature = "debug")]
+        println!("[!] Parsed2: {parsed2:?}");
         assert!(rem.is_empty());
 
         assert_eq!(parsed1, parsed2);
-
-        //println!("\n\n\n");
+    } else {
+        #[cfg(feature = "debug")]
+        println!("[!] <invalid>");
     }
+
+    #[cfg(feature = "debug")]
+    println!("\n\n\n");
 });

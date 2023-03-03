@@ -1,65 +1,92 @@
 #![no_main]
 
+#[cfg(feature = "debug")]
 use std::str::from_utf8;
 
 #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-use imap_codec::response::{Code, Status};
+use imap_codec::response::Status;
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{Data, Response},
+    response::{data::FetchAttributeValue, Code, Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Response| {
-    if matches!(test, Response::Continue(_)) {
-        // FIXME(#30)
-        return;
+    // TODO(#30): Skip certain generations for now as we know they need to be fixed.
+    //            The goal is to not skip anything eventually.
+    match test {
+        Response::Data(ref data) => match data {
+            Data::Fetch { ref attributes, .. } => {
+                for attribute in attributes.as_ref().iter() {
+                    match attribute {
+                        FetchAttributeValue::Body(_) | FetchAttributeValue::BodyStructure(_) => {
+                            // FIXME(#30): Body(Structure)
+                            return;
+                        }
+                        FetchAttributeValue::Flags(_) => {
+                            // FIXME(#30): Flag handling.
+                            return;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Data::List { items, .. } | Data::Lsub { items, .. } if !items.is_empty() => {
+                // FIXME(#30): Flag handling.
+                return;
+            }
+            Data::Flags(_) => {
+                // FIXME(#30): Flag handling.
+                return;
+            }
+            _ => {}
+        },
+        Response::Status(ref status) => {
+            if let Some(ref code) = status.code() {
+                match code {
+                    Code::PermanentFlags(_) => {
+                        // FIXME(#30): Flag handling.
+                        return;
+                    }
+                    #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
+                    Code::Referral(_) => {
+                        // FIXME(#30)
+                        return;
+                    }
+                    Code::Other(_, _) => {
+                        // FIXME(#30)
+                        return;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        Response::Continue(_) => {
+            // FIXME(#30)
+            return;
+        }
     }
 
-    if matches!(test, Response::Data(Data::Flags(..))) {
-        // FIXME(#30)
-        return;
-    }
-
-    if matches!(test, Response::Data(Data::List { .. })) {
-        // FIXME(#30)
-        return;
-    }
-
-    if matches!(test, Response::Data(Data::Lsub { .. })) {
-        // FIXME(#30)
-        return;
-    }
-
-    #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-    if matches!(test, Response::Status(
-        Status::Ok { ref code, .. } |
-        Status::No { ref code, .. } |
-        Status::Bad { ref code, .. } |
-        Status::Bye{ ref code, .. }) if matches!(code, Some(Code::Referral(_))))
-    {
-        // FIXME(#30)
-        return;
-    }
-
-    println!("{test:?}");
+    #[cfg(feature = "debug")]
+    println!("[!] Input: {test:?}");
 
     let mut buffer = Vec::new();
     test.encode(&mut buffer).unwrap();
 
-    //match std::str::from_utf8(&buffer) {
-    //    Ok(str) => println!("{}", str),
-    //    Err(_) => println!("{:?}", buffer),
-    //}
-
-    println!("{:?}", from_utf8(&buffer));
+    #[cfg(feature = "debug")]
+    match from_utf8(&buffer) {
+        Ok(str) => println!("[!] Serialized: {str}"),
+        Err(_) => println!("[!] Serialized: {buffer:?}"),
+    }
 
     let (rem, parsed) = Response::decode(&buffer).unwrap();
     assert!(rem.is_empty());
 
-    println!("{parsed:?}");
+    #[cfg(feature = "debug")]
+    println!("[!] Parsed: {parsed:?}");
 
     assert_eq!(test, parsed);
 
+    #[cfg(feature = "debug")]
     println!("{}", str::repeat("-", 120));
 });
