@@ -251,6 +251,7 @@ pub enum BodyStructure<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// TODO(misuse)
 pub struct SinglePartExtensionData<'a> {
     /// A string giving the body MD5 value as defined in [MD5].
     pub md5: NString<'a>,
