@@ -21,11 +21,9 @@ starttls = []
 ext_compress = []
 ext_enable = []
 ext_idle = []
+ext_login_referrals = []
+ext_mailbox_referrals = []
 ext_quota = []
-# TODO(#113): Feature-gate LOGIN REFERRALS.
-# ext_referrals_login = []
-# TODO(#114): Feature-gate MAILBOX REFERRALS.
-# ext_referrals_mailbox = []
 ext_sasl_ir = []
 
 [dependencies]

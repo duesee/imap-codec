@@ -9,6 +9,7 @@ use imap_codec::{
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Greeting| {
+    #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
     if matches!(&test, Greeting { code, .. } if matches!(code, Some(Code::Referral(_)))) {
         // FIXME(#30)
         return;

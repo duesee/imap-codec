@@ -14,6 +14,8 @@ cargo-fuzz = true
 ext_compress = ["imap-codec/ext_compress"]
 ext_enable = ["imap-codec/ext_enable"]
 ext_idle = ["imap-codec/ext_idle"]
+ext_login_referrals = ["imap-codec/ext_login_referrals"]
+ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_quota = ["imap-codec/ext_quota"]
 ext_sasl_ir = ["imap-codec/ext_sasl_ir"]
 

@@ -786,9 +786,9 @@ impl<'a> Encode for Capability<'a> {
             Self::LoginDisabled => writer.write_all(b"LOGINDISABLED"),
             #[cfg(feature = "starttls")]
             Self::StartTls => writer.write_all(b"STARTTLS"),
-            // TODO(#114): Feature-gate MAILBOX REFERRALS.
+            #[cfg(feature = "ext_mailbox_referrals")]
             Self::MailboxReferrals => writer.write_all(b"MAILBOX-REFERRALS"),
-            // TODO(#113): Feature-gate LOGIN REFERRALS.
+            #[cfg(feature = "ext_login_referrals")]
             Self::LoginReferrals => writer.write_all(b"LOGIN-REFERRALS"),
             #[cfg(feature = "ext_sasl_ir")]
             Self::SaslIr => writer.write_all(b"SASL-IR"),
@@ -926,6 +926,7 @@ impl<'a> Encode for Code<'a> {
                 seq.encode(writer)
             }
             // RFC 2221
+            #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
             Code::Referral(url) => {
                 writer.write_all(b"REFERRAL ")?;
                 writer.write_all(url.as_bytes())
