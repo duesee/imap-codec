@@ -247,6 +247,17 @@ impl<'a> Status<'a> {
             text: text.try_into()?,
         })
     }
+
+    // ---------------------------------------------------------------------------------------------
+
+    pub fn code(&self) -> Option<&Code> {
+        match self {
+            Status::Ok { code, .. }
+            | Status::No { code, .. }
+            | Status::Bad { code, .. }
+            | Status::Bye { code, .. } => code.as_ref(),
+        }
+    }
 }
 
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
