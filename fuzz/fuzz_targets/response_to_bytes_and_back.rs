@@ -2,9 +2,11 @@
 
 use std::str::from_utf8;
 
+#[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
+use imap_codec::response::{Code, Status};
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{Code, Data, Response, Status},
+    response::{Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -29,6 +31,7 @@ fuzz_target!(|test: Response| {
         return;
     }
 
+    #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
     if matches!(test, Response::Status(
         Status::Ok { ref code, .. } |
         Status::No { ref code, .. } |
