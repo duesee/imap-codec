@@ -11,6 +11,7 @@ cargo-fuzz = true
 # Forward features according to ...
 #    https://rust-fuzz.github.io/book/cargo-fuzz/guide.html#cargo-features
 [features]
+debug = []
 ext_compress = ["imap-types/ext_compress"]
 ext_enable = ["imap-types/ext_enable"]
 ext_idle = ["imap-types/ext_idle"]

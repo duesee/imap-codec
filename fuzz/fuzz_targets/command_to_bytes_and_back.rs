@@ -42,52 +42,60 @@ fn ignore_search_key_and(sk: &SearchKey) -> bool {
 }
 
 fuzz_target!(|test: Command| {
-    //println!("{:?}", test);
+    // TODO(#30): Skip certain generations for now as we know they need to be fixed.
+    //            The goal is to not skip anything eventually.
+    match test.body {
+        CommandBody::Store { ref flags, .. } if ignore_flags(flags) => {
+            // FIXME(#30)
+            return;
+        }
+        CommandBody::Append { ref flags, .. } if ignore_flags(flags) => {
+            // FIXME(#30)
+            return;
+        }
+        CommandBody::Search { ref criteria, .. } if ignore_search_key_and(criteria) => {
+            // FIXME(#30)
+            return;
+        }
+        #[cfg(feature = "ext_enable")]
+        CommandBody::Enable {
+            ref capabilities, ..
+        } if ignore_capabilities_enable(capabilities.as_ref()) => {
+            // FIXME(#30)
+            return;
+        }
+        _ => {}
+    }
+
+    #[cfg(feature = "debug")]
+    println!("[!] Input: {test:?}");
 
     let mut buffer = Vec::new();
     test.encode(&mut buffer).unwrap();
 
-    //match std::str::from_utf8(&buffer) {
-    //    Ok(str) => println!("{}", str),
-    //    Err(_) => println!("{:?}", buffer),
-    //}
+    #[cfg(feature = "debug")]
+    match std::str::from_utf8(&buffer) {
+        Ok(str) => println!("[!] Serialzed: {str}"),
+        Err(_) => println!("[!] Serialized: {buffer:?}"),
+    }
 
-    //println!("{:?}", std::str::from_utf8(&buffer));
+    match Command::decode(&buffer) {
+        Ok((rem, parsed)) => {
+            assert!(rem.is_empty());
 
-    match &test.body {
-        CommandBody::Store { flags, .. } if ignore_flags(flags) => {
-            // FIXME(#30)
-        }
-        CommandBody::Append { flags, .. } if ignore_flags(flags) => {
-            // FIXME(#30)
-        }
-        CommandBody::Search { criteria, .. } if ignore_search_key_and(criteria) => {
-            // FIXME(#30)
-        }
-        #[cfg(feature = "ext_enable")]
-        CommandBody::Enable { capabilities, .. }
-            if ignore_capabilities_enable(capabilities.as_ref()) =>
-        {
-            // FIXME(#30)
-        }
-        _ => {
-            match Command::decode(&buffer) {
-                Ok((rem, parsed)) => {
-                    assert!(rem.is_empty());
+            #[cfg(feature = "debug")]
+            println!("[!] Parsed: {parsed:?}");
 
-                    //println!("{:?}", parsed);
-
-                    assert_eq!(test, parsed)
-                }
-                Err(error) => {
-                    // TODO: Signal recursion limit?
-                    // Previously the nom code `nom::error::ErrorKind::TooLarge` signaled
-                    // an exceeded recursion limit. Should the API signal it, too?
-                    panic!("Could not parse produced object. Error: {:?}", error);
-                }
-            }
+            assert_eq!(test, parsed)
+        }
+        Err(error) => {
+            // TODO: Signal recursion limit?
+            // Previously the nom code `nom::error::ErrorKind::TooLarge` signaled
+            // an exceeded recursion limit. Should the API signal it, too?
+            panic!("Could not parse produced object. Error: {:?}", error);
         }
     }
 
-    //println!("{}", str::repeat("-", 120));
+    #[cfg(feature = "debug")]
+    println!("{}", str::repeat("-", 120));
 });
