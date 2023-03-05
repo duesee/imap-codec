@@ -833,6 +833,7 @@ impl<'a> TryFrom<Atom<'a>> for CodeOther<'a> {
             "uidnext" => Err(()),
             "uidvalidity" => Err(()),
             "unseen" => Err(()),
+            #[cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals"))]
             "referral" => Err(()),
             #[cfg(feature = "ext_compress")]
             "compressionactive" => Err(()),
