@@ -13,6 +13,7 @@ use imap_codec::{
         Code, Data, Response, Status,
     },
 };
+use imap_types::response::Greeting;
 
 enum Who {
     Client,
@@ -1015,14 +1016,11 @@ S: A443 OK Expunge completed
 }
 
 #[test]
-#[ignore]
 fn test_response_status_preauth() {
-    // This can only be parsed with `greeting`
     let line = b"* PREAUTH IMAP4rev1 server logged in as Smith\r\n";
 
     println!("S:          {}", String::from_utf8_lossy(line).trim());
-    // FIXME: Greeting != Response
-    let (rem, parsed) = Response::decode(line).unwrap();
+    let (rem, parsed) = Greeting::decode(line).unwrap();
     println!("Parsed:     {:?}", parsed);
     assert!(rem.is_empty());
     let mut serialized = Vec::new();
@@ -1031,8 +1029,7 @@ fn test_response_status_preauth() {
         "Serialized: {}",
         String::from_utf8_lossy(&serialized).trim()
     );
-    // FIXME: Greeting != Response
-    let (rem, parsed2) = Response::decode(&serialized).unwrap();
+    let (rem, parsed2) = Greeting::decode(&serialized).unwrap();
     assert!(rem.is_empty());
     assert_eq!(parsed, parsed2);
     println!()
