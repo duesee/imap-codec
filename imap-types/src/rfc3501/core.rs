@@ -701,8 +701,7 @@ mod test {
             let cs = Charset::try_from(*from).unwrap();
             println!("{:?}", cs);
 
-            let mut out = Vec::new();
-            cs.encode(&mut out).unwrap();
+            let out = cs.encode_detached().unwrap();
             assert_eq!(from_utf8(&out).unwrap(), *expected);
         }
 

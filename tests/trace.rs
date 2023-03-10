@@ -75,8 +75,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = Command::decode(&line).unwrap();
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
-                let mut serialized = Vec::new();
-                parsed.encode(&mut serialized).unwrap();
+                let serialized = parsed.encode_detached().unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -91,8 +90,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = Response::decode(&line).unwrap();
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
-                let mut serialized = Vec::new();
-                parsed.encode(&mut serialized).unwrap();
+                let serialized = parsed.encode_detached().unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -1023,8 +1021,7 @@ fn test_response_status_preauth() {
     let (rem, parsed) = Greeting::decode(line).unwrap();
     println!("Parsed:     {:?}", parsed);
     assert!(rem.is_empty());
-    let mut serialized = Vec::new();
-    parsed.encode(&mut serialized).unwrap();
+    let serialized = parsed.encode_detached().unwrap();
     println!(
         "Serialized: {}",
         String::from_utf8_lossy(&serialized).trim()

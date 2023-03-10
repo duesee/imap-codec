@@ -20,8 +20,7 @@ fuzz_target!(|data: &[u8]| {
             println!("[!] Parsed1: {parsed1:?}");
         }
 
-        let mut output = Vec::with_capacity(data.len() * 2);
-        parsed1.encode(&mut output).unwrap();
+        let output = parsed1.encode_detached().unwrap();
         #[cfg(feature = "debug")]
         println!("[!] Serialized: {}", escape_byte_string(&output));
 

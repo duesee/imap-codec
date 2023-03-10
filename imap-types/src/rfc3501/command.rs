@@ -1954,8 +1954,7 @@ mod test {
             println!("Test: {}, {:?}", no, cmd_body);
 
             let cmd = cmd_body.tag(format!("A{}", no)).unwrap();
-            let mut serialized = Vec::new();
-            cmd.encode(&mut serialized).unwrap();
+            let serialized = cmd.encode_detached().unwrap();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
         }
@@ -1973,8 +1972,7 @@ mod test {
         )
         .unwrap();
 
-        let mut buffer = Vec::new();
-        command.encode(&mut buffer).unwrap();
+        let buffer = command.encode_detached().unwrap();
 
         assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }

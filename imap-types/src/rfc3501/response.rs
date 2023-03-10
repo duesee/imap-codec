@@ -979,8 +979,7 @@ mod test {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            let mut out = Vec::new();
-            parsed.encode(&mut out).unwrap();
+            let out = parsed.encode_detached().unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
@@ -1052,8 +1051,7 @@ mod test {
 
         for (constructed, serialized) in tests {
             let constructed = constructed.unwrap();
-            let mut out = Vec::new();
-            constructed.encode(&mut out).unwrap();
+            let out = constructed.encode_detached().unwrap();
 
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30)
@@ -1095,8 +1093,7 @@ mod test {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            let mut out = Vec::new();
-            parsed.encode(&mut out).unwrap();
+            let out = parsed.encode_detached().unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
@@ -1121,8 +1118,7 @@ mod test {
 
         for (constructed, serialized) in tests.into_iter() {
             let constructed = constructed.unwrap();
-            let mut out = Vec::new();
-            constructed.encode(&mut out).unwrap();
+            let out = constructed.encode_detached().unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
