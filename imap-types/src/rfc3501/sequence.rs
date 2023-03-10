@@ -439,8 +439,7 @@ mod test {
         ];
 
         for (test, expected) in tests {
-            let mut out = Vec::new();
-            test.encode(&mut out).unwrap();
+            let out = test.encode_detached().unwrap();
             assert_eq!(*expected, out);
         }
     }

@@ -208,9 +208,8 @@ mod tests {
 
     fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
         for item in items {
-            let mut writer: Vec<u8> = Vec::new();
-            item.0.unwrap().encode(&mut writer).unwrap();
-            assert_eq!(std::str::from_utf8(&writer).unwrap(), item.1);
+            let out = item.0.unwrap().encode_detached().unwrap();
+            assert_eq!(std::str::from_utf8(&out).unwrap(), item.1);
         }
     }
 

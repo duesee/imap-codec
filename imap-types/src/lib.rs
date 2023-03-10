@@ -56,7 +56,7 @@
 //! ## Serialization of messages.
 //!
 //! All messages implement the `Encode` trait.
-//! You can `use imap_types::Encode` and call the `.encode(...)` method to serialize a message into a writer.
+//! You can `use imap_types::Encode` and call the `.encode(...)` (or `.encode_detached(...)`) method to serialize a message (into a writer).
 //! Note that IMAP traces are not guaranteed to be UTF-8. Thus, be careful when using things like `std::str::from_utf8(...).unwrap()`.
 //! It should generally be better not to think about IMAP as being UTF-8.
 //! This is also why `Display` is not implemented.
@@ -73,11 +73,8 @@
 //! // Create some command.
 //! let cmd = Command::new("A123", CommandBody::login("alice", "password").unwrap()).unwrap();
 //!
-//! // Create something to encode the `cmd` into.
-//! let mut out = Vec::new();
-//!
 //! // Encode the `cmd` into `out`.
-//! cmd.encode(&mut out);
+//! let out = cmd.encode_detached().unwrap();
 //!
 //! // Print the command.
 //! // (Note that IMAP traces are not guaranteed to be valid UTF-8.)

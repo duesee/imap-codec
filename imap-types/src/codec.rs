@@ -12,11 +12,7 @@
 //!
 //! let rsp = Greeting::ok(None, "Hello, World!").unwrap();
 //!
-//! let bytes = {
-//!     let mut out = Vec::new();
-//!     rsp.encode(&mut out).unwrap();
-//!     out
-//! };
+//! let bytes = rsp.encode_detached().unwrap();
 //!
 //! println!("{}", String::from_utf8(bytes).unwrap());
 //! ```
@@ -55,7 +51,14 @@ use crate::{
 };
 
 pub trait Encode {
+    #[must_use]
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()>;
+
+    fn encode_detached(&self) -> std::io::Result<Vec<u8>> {
+        let mut serialized = Vec::new();
+        self.encode(&mut serialized)?;
+        Ok(serialized)
+    }
 }
 
 // ----- Primitive -----
