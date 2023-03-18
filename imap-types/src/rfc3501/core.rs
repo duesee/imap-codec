@@ -210,6 +210,39 @@ pub enum IString<'a> {
     Quoted(Quoted<'a>),
 }
 
+impl<'a> TryFrom<&'a [u8]> for IString<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, ()> {
+        if let Ok(quoted) = Quoted::try_from(value) {
+            return Ok(IString::Quoted(quoted));
+        }
+
+        if let Ok(literal) = Literal::try_from(value) {
+            return Ok(IString::Literal(literal));
+        }
+
+        Err(())
+    }
+}
+
+impl TryFrom<Vec<u8>> for IString<'_> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+        // TODO(efficiency)
+        if let Ok(quoted) = Quoted::try_from(value.clone()) {
+            return Ok(IString::Quoted(quoted));
+        }
+
+        if let Ok(literal) = Literal::try_from(value) {
+            return Ok(IString::Literal(literal));
+        }
+
+        Err(())
+    }
+}
+
 impl<'a> TryFrom<&'a str> for IString<'a> {
     type Error = ();
 
@@ -218,7 +251,7 @@ impl<'a> TryFrom<&'a str> for IString<'a> {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value.as_bytes()) {
+        if let Ok(literal) = Literal::try_from(value) {
             return Ok(IString::Literal(literal));
         }
 
@@ -230,11 +263,12 @@ impl<'a> TryFrom<String> for IString<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, ()> {
+        // TODO(efficiency)
         if let Ok(quoted) = Quoted::try_from(value.clone()) {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value.into_bytes()) {
+        if let Ok(literal) = Literal::try_from(value) {
             return Ok(IString::Literal(literal));
         }
 
@@ -270,8 +304,8 @@ impl<'a> Literal<'a> {
         bytes.iter().all(|b| is_char8(*b))
     }
 
-    pub fn inner(&self) -> &Cow<'a, [u8]> {
-        &self.inner
+    pub fn inner(&self) -> &[u8] {
+        self.inner.as_ref()
     }
 
     /// Create a literal from a byte sequence without checking
@@ -318,6 +352,22 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
     }
 }
 
+impl<'a> TryFrom<&'a str> for Literal<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_bytes())
+    }
+}
+
+impl<'a> TryFrom<String> for Literal<'a> {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_bytes())
+    }
+}
+
 impl<'a> AsRef<[u8]> for Literal<'a> {
     fn as_ref(&self) -> &[u8] {
         &self.inner
@@ -337,12 +387,12 @@ pub struct Quoted<'a> {
 }
 
 impl<'a> Quoted<'a> {
-    pub fn verify(value: &str) -> bool {
-        value.chars().all(|c| c.is_ascii() && is_text_char(c as u8))
+    pub fn verify(value: &[u8]) -> bool {
+        value.iter().all(|b| is_text_char(*b))
     }
 
-    pub fn inner(&self) -> &Cow<'a, str> {
-        &self.inner
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
     }
 
     /// Create a quoted from a string without checking
@@ -355,9 +405,29 @@ impl<'a> Quoted<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(inner.as_bytes()));
 
         Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for Quoted<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl TryFrom<Vec<u8>> for Quoted<'_> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
     }
 }
 
@@ -365,7 +435,7 @@ impl<'a> TryFrom<&'a str> for Quoted<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Quoted::verify(value) {
+        if Quoted::verify(value.as_bytes()) {
             Ok(Quoted {
                 inner: Cow::Borrowed(value),
             })
@@ -379,7 +449,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Quoted::verify(&value) {
+        if Quoted::verify(value.as_bytes()) {
             Ok(Quoted {
                 inner: Cow::Owned(value),
             })
