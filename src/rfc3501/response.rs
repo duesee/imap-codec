@@ -109,7 +109,9 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                     )),
                 )),
             )),
-            |(_, maybe_charsets)| Code::BadCharset(maybe_charsets.unwrap_or_default()),
+            |(_, maybe_charsets)| Code::BadCharset {
+                allowed: maybe_charsets.unwrap_or_default(),
+            },
         ),
         map(capability_data, Code::Capability),
         value(Code::Parse, tag_no_case(b"PARSE")),
@@ -400,7 +402,7 @@ mod test {
             (
                 b"badcharsetaaa".as_slice(),
                 b"aaa".as_slice(),
-                Code::BadCharset(vec![]),
+                Code::BadCharset { allowed: vec![] },
             ),
             (
                 b"UnSEEN 12345aaa".as_slice(),

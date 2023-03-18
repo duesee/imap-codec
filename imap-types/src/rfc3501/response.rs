@@ -663,7 +663,7 @@ pub enum Code<'a> {
     /// this implementation.  If the optional list of charsets is
     /// given, this lists the charsets that are supported by this
     /// implementation.
-    BadCharset(Vec<Charset<'a>>),
+    BadCharset { allowed: Vec<Charset<'a>> },
 
     /// `CAPABILITY`
     ///
@@ -782,6 +782,10 @@ impl<'a> CodeOther<'a> {
 }
 
 impl<'a> Code<'a> {
+    pub fn badcharset(allowed: Vec<Charset<'a>>) -> Self {
+        Self::BadCharset { allowed }
+    }
+
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
         C: TryInto<NonEmptyVec<Capability<'a>>>,

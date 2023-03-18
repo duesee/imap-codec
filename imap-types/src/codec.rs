@@ -894,12 +894,12 @@ impl<'a> Encode for Code<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Code::Alert => writer.write_all(b"ALERT"),
-            Code::BadCharset(charsets) => {
-                if charsets.is_empty() {
+            Code::BadCharset { allowed } => {
+                if allowed.is_empty() {
                     writer.write_all(b"BADCHARSET")
                 } else {
                     writer.write_all(b"BADCHARSET (")?;
-                    join_serializable(charsets, b" ", writer)?;
+                    join_serializable(allowed, b" ", writer)?;
                     writer.write_all(b")")
                 }
             }
