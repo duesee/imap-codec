@@ -33,7 +33,10 @@
 //!     - [StatusAttributeValue::Deleted](crate::response::data::StatusAttributeValue::Deleted)
 //!     - [StatusAttributeValue::DeletedStorage](crate::response::data::StatusAttributeValue::DeletedStorage)
 
-use std::convert::{TryFrom, TryInto};
+use std::{
+    borrow::Cow,
+    convert::{TryFrom, TryInto},
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -42,7 +45,10 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, rfc3501::core::Atom};
+use crate::{
+    codec::Encode,
+    rfc3501::core::{impl_try_from, impl_try_from_try_from, Atom},
+};
 
 /// A resource type for use in IMAP's QUOTA extension.
 ///
@@ -119,6 +125,24 @@ impl<'a> Resource<'a> {
     }
 }
 
+impl_try_from!(Atom, 'a, &'a [u8], Resource<'a>);
+impl_try_from!(Atom, 'a, Vec<u8>, Resource<'a>);
+impl_try_from!(Atom, 'a, &'a str, Resource<'a>);
+impl_try_from!(Atom, 'a, String, Resource<'a>);
+impl_try_from!(Atom, 'a, Cow<'a, str>, Resource<'a>);
+
+impl<'a> From<Atom<'a>> for Resource<'a> {
+    fn from(value: Atom<'a>) -> Self {
+        match value.inner().to_ascii_lowercase().as_ref() {
+            "storage" => Resource::Storage,
+            "message" => Resource::Message,
+            "mailbox" => Resource::Mailbox,
+            "annotation-storage" => Resource::AnnotationStorage,
+            _ => Resource::Other(ResourceOther { inner: value }),
+        }
+    }
+}
+
 impl<'a> Encode for Resource<'a> {
     fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         match self {
@@ -138,6 +162,19 @@ impl<'a> Encode for Resource<'a> {
 pub struct ResourceOther<'a> {
     inner: Atom<'a>,
 }
+
+impl<'a> ResourceOther<'a> {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(atom: Atom<'a>) -> Self {
+        Self { inner: atom }
+    }
+}
+
+impl_try_from_try_from!(Atom, 'a, &'a [u8], ResourceOther<'a>);
+impl_try_from_try_from!(Atom, 'a, Vec<u8>, ResourceOther<'a>);
+impl_try_from_try_from!(Atom, 'a, &'a str, ResourceOther<'a>);
+impl_try_from_try_from!(Atom, 'a, String, ResourceOther<'a>);
+impl_try_from_try_from!(Atom, 'a, Cow<'a, str>, ResourceOther<'a>);
 
 impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
     type Error = ();
@@ -203,7 +240,7 @@ impl<'a> Encode for QuotaSet<'a> {
 mod tests {
     use std::convert::TryInto;
 
-    use super::{QuotaGet, QuotaSet, Resource};
+    use super::*;
     use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
 
     fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
@@ -214,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn command_output() {
+    fn test_command_output() {
         let commands = vec![
             (CommandBody::get_quota("INBOX"), "GETQUOTA INBOX"),
             (CommandBody::get_quota(""), "GETQUOTA \"\""),
@@ -255,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn response_output() {
+    fn test_response_output() {
         let responses = vec![
             (
                 Data::quota(
