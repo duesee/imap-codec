@@ -4,8 +4,8 @@ use abnf_core::streaming::{CRLF, SP};
 use imap_types::{
     core::NonEmptyVec,
     response::{
-        data::{Capability, CapabilityOther},
-        Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
+        data::Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response,
+        Status, Text,
     },
 };
 use nom::{
@@ -17,14 +17,9 @@ use nom::{
     IResult,
 };
 
-#[cfg(feature = "ext_compress")]
-use crate::extensions::rfc4987::algorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::enable_data;
-#[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::capa_quota_res;
 use crate::rfc3501::{
-    auth_type,
     core::{atom, base64, charset, nz_number, tag_imap, text},
     fetch_attributes::msg_att,
     flag::flag_perm,
@@ -162,8 +157,8 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
 pub fn capability_data(input: &[u8]) -> IResult<&[u8], NonEmptyVec<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
-        cut(SP),
-        cut(separated_list1(SP, capability)),
+        SP,
+        separated_list1(SP, capability),
     ));
 
     let (rem, (_, _, caps)) = parser(input)?;
@@ -175,44 +170,7 @@ pub fn capability_data(input: &[u8]) -> IResult<&[u8], NonEmptyVec<Capability>> 
 ///               "COMPRESS=" algorithm / ; RFC 4978
 ///               atom`
 pub fn capability(input: &[u8]) -> IResult<&[u8], Capability> {
-    alt((
-        map(
-            tuple((tag_no_case(b"AUTH="), auth_type)),
-            |(_, mechanism)| Capability::Auth(mechanism),
-        ),
-        #[cfg(feature = "ext_compress")]
-        map(
-            tuple((tag_no_case(b"COMPRESS="), algorithm)),
-            |(_, algorithm)| Capability::Compress { algorithm },
-        ),
-        #[cfg(feature = "ext_quota")]
-        capa_quota_res,
-        map(atom, |atom| {
-            match atom.as_ref().to_ascii_lowercase().as_ref() {
-                "imap4rev1" => Capability::Imap4Rev1,
-                #[cfg(feature = "starttls")]
-                "logindisabled" => Capability::LoginDisabled,
-                #[cfg(feature = "starttls")]
-                "starttls" => Capability::StartTls,
-                // RFC 2177 IMAP4 IDLE command
-                #[cfg(feature = "ext_idle")]
-                "idle" => Capability::Idle,
-                #[cfg(feature = "ext_mailbox_referrals")]
-                "mailbox-referrals" => Capability::MailboxReferrals,
-                #[cfg(feature = "ext_login_referrals")]
-                "login-referrals" => Capability::LoginReferrals,
-                #[cfg(feature = "ext_sasl_ir")]
-                "sasl-ir" => Capability::SaslIr,
-                #[cfg(feature = "ext_enable")]
-                "enable" => Capability::Enable,
-                #[cfg(feature = "ext_quota")]
-                "quota" => Capability::Quota,
-                #[cfg(feature = "ext_quota")]
-                "quotaset" => Capability::QuotaSet,
-                _ => Capability::Other(CapabilityOther::try_from(atom).unwrap()),
-            }
-        }),
-    ))(input)
+    map(atom, Capability::from)(input)
 }
 
 /// `resp-cond-bye = "BYE" SP resp-text`

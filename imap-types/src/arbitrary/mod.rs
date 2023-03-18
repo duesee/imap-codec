@@ -10,7 +10,7 @@ use crate::{
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
     message::{AuthMechanismOther, Mailbox, MailboxOther, MyDateTime, MyNaiveDate, Tag},
     response::{
-        data::{CapabilityOther, QuotedChar},
+        data::{Capability, QuotedChar},
         CodeOther, Text,
     },
 };
@@ -52,7 +52,7 @@ implement_tryfrom! { Text<'a>, &str }
 implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
-implement_tryfrom! { CapabilityOther<'a>, Atom<'a> }
+implement_tryfrom! { Capability<'a>, Atom<'a> }
 implement_tryfrom! { CodeOther<'a>, Atom<'a> }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_quota")]

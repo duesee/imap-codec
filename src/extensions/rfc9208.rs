@@ -7,7 +7,7 @@ use imap_types::{
     command::CommandBody,
     core::{AString, NonEmptyVec},
     extensions::rfc9208::{QuotaGet, QuotaSet, Resource},
-    response::{data::Capability, Data},
+    response::Data,
 };
 use nom::{
     bytes::{complete::tag, streaming::tag_no_case},
@@ -179,16 +179,16 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 //     ))(input)
 // }
 
-/// ```abnf
-/// capa-quota-res = "QUOTA=RES-" resource-name
-/// ```
-pub fn capa_quota_res(input: &[u8]) -> IResult<&[u8], Capability> {
-    let mut parser = preceded(tag_no_case("QUOTA=RES-"), resource_name);
-
-    let (remaining, resource) = parser(input)?;
-
-    Ok((remaining, Capability::QuotaRes(resource)))
-}
+// /// ```abnf
+// /// capa-quota-res = "QUOTA=RES-" resource-name
+// /// ```
+// pub fn capa_quota_res(input: &[u8]) -> IResult<&[u8], Capability> {
+//     let mut parser = preceded(tag_no_case("QUOTA=RES-"), resource_name);
+//
+//     let (remaining, resource) = parser(input)?;
+//
+//     Ok((remaining, Capability::QuotaRes(resource)))
+// }
 
 #[cfg(test)]
 mod test {

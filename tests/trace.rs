@@ -148,12 +148,12 @@ fn test_from_capability() {
                         #[cfg(feature = "starttls")]
                         Capability::StartTls,
                         #[cfg(not(feature = "starttls"))]
-                        Capability::other("STARTTLS").unwrap(),
+                        Capability::try_from("STARTTLS").unwrap(),
                         Capability::Auth(AuthMechanism::try_from("GSSAPI").unwrap()),
                         #[cfg(feature = "starttls")]
                         Capability::LoginDisabled,
                         #[cfg(not(feature = "starttls"))]
-                        Capability::other("LOGINDISABLED").unwrap(),
+                        Capability::try_from("LOGINDISABLED").unwrap(),
                     ])
                     .unwrap(),
                 )),
