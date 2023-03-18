@@ -6,11 +6,12 @@ use abnf_core::streaming::SP;
 use imap_types::{
     command::CommandBody,
     core::{AString, NonEmptyVec},
-    extensions::rfc9208::{QuotaGet, QuotaSet, Resource, ResourceOther},
+    extensions::rfc9208::{QuotaGet, QuotaSet, Resource},
     response::{data::Capability, Data},
 };
 use nom::{
     bytes::{complete::tag, streaming::tag_no_case},
+    combinator::map,
     multi::{many0, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -86,17 +87,7 @@ pub fn quota_resource(input: &[u8]) -> IResult<&[u8], QuotaGet> {
 /// resource-name-ext = atom
 /// ```
 pub fn resource_name(input: &[u8]) -> IResult<&[u8], Resource> {
-    let (remaining, atom) = atom(input)?;
-
-    let resource = match atom.inner().to_ascii_lowercase().as_ref() {
-        "storage" => Resource::Storage,
-        "message" => Resource::Message,
-        "mailbox" => Resource::Mailbox,
-        "annotation-storage" => Resource::AnnotationStorage,
-        _ => Resource::Other(ResourceOther::try_from(atom).unwrap()),
-    };
-
-    Ok((remaining, resource))
+    map(atom, Resource::from)(input)
 }
 
 /// ```abnf
@@ -197,4 +188,34 @@ pub fn capa_quota_res(input: &[u8]) -> IResult<&[u8], Capability> {
     let (remaining, resource) = parser(input)?;
 
     Ok((remaining, Capability::QuotaRes(resource)))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::imap_types::extensions::rfc9208::ResourceOther;
+
+    #[test]
+    fn test_resource() {
+        let tests = [
+            (b"stOragE ".as_ref(), Resource::Storage),
+            (b"mesSaGe ".as_ref(), Resource::Message),
+            (b"maIlbOx ".as_ref(), Resource::Mailbox),
+            (b"anNotatIon-stoRage ".as_ref(), Resource::AnnotationStorage),
+            (
+                b"anNotatIon-stoRageX ".as_ref(),
+                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRageX".as_ref()).unwrap()),
+            ),
+            (
+                b"anNotatIon-stoRagee ".as_ref(),
+                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRagee".as_ref()).unwrap()),
+            ),
+        ];
+
+        for (test, expected) in tests.iter() {
+            let (rem, got) = resource_name(test).unwrap();
+            assert_eq!(*expected, got);
+            assert_eq!(rem, b" ");
+        }
+    }
 }
