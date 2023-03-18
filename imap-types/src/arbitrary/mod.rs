@@ -8,7 +8,7 @@ use crate::extensions::rfc9208::ResourceOther;
 use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
-    message::{AuthMechanismOther, Mailbox, MyDateTime, MyNaiveDate, Tag},
+    message::{AuthMechanismOther, Mailbox, MailboxOther, MyDateTime, MyNaiveDate, Tag},
     response::{
         data::{CapabilityOther, QuotedChar},
         CodeOther, Text,
@@ -54,6 +54,7 @@ implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { CapabilityOther<'a>, Atom<'a> }
 implement_tryfrom! { CodeOther<'a>, Atom<'a> }
+implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
