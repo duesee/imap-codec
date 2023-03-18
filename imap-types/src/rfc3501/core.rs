@@ -611,20 +611,40 @@ pub struct Tag<'a> {
 }
 
 impl<'a> Tag<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(|c| is_astring_char(c) && c != b'+')
+    pub fn verify(value: &[u8]) -> bool {
+        !value.is_empty() && value.iter().all(|c| is_astring_char(*c) && *c != b'+')
     }
 
-    pub fn inner(&self) -> &Cow<'a, str> {
-        &self.inner
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(inner.as_bytes()));
 
         Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
     }
 }
 
@@ -632,7 +652,7 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Borrowed(value),
             })
@@ -646,13 +666,19 @@ impl<'a> TryFrom<String> for Tag<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(&value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Owned(value),
             })
         } else {
             Err(())
         }
+    }
+}
+
+impl<'a> AsRef<str> for Tag<'a> {
+    fn as_ref(&self) -> &str {
+        self.inner.as_ref()
     }
 }
 
