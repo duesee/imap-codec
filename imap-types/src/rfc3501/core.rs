@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom};
+use std::{borrow::Cow, convert::TryFrom, str::from_utf8};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -22,20 +22,44 @@ pub struct Atom<'a> {
 }
 
 impl<'a> Atom<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(is_atom_char)
+    pub fn verify(value: &[u8]) -> bool {
+        !value.is_empty() && value.iter().all(|b| is_atom_char(*b))
     }
 
-    pub fn inner(&self) -> &Cow<'a, str> {
-        &self.inner
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
+    }
+
+    pub fn into_inner(self) -> Cow<'a, str> {
+        self.inner
     }
 
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(inner.as_bytes()));
 
         Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
     }
 }
 
@@ -43,7 +67,7 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Borrowed(value),
             })
@@ -57,10 +81,22 @@ impl<'a> TryFrom<String> for Atom<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(&value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Atom {
                 inner: Cow::Owned(value),
             })
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
+    type Error = ();
+
+    fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
+        if Self::verify(value.as_bytes()) {
+            Ok(Atom { inner: value })
         } else {
             Err(())
         }
@@ -84,20 +120,40 @@ pub struct AtomExt<'a> {
 }
 
 impl<'a> AtomExt<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(is_astring_char)
+    pub fn verify(value: &[u8]) -> bool {
+        !value.is_empty() && value.iter().all(|b| is_astring_char(*b))
     }
 
-    pub fn inner(&self) -> &Cow<'a, str> {
-        &self.inner
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(inner.as_bytes()));
 
         Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
     }
 }
 
@@ -105,7 +161,7 @@ impl<'a> TryFrom<&'a str> for AtomExt<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Borrowed(value),
             })
@@ -119,7 +175,7 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(&value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Owned(value),
             })
@@ -669,6 +725,139 @@ mod test {
 
     use super::*;
     use crate::codec::Encode;
+
+    #[test]
+    fn test_atom() {
+        let tests: Vec<(&[u8], (Result<Atom, ()>, Result<Atom, ()>))> = vec![
+            (
+                b"A",
+                (
+                    Ok(Atom {
+                        inner: Cow::Borrowed("A"),
+                    }),
+                    Ok(Atom {
+                        inner: Cow::Owned("A".into()),
+                    }),
+                ),
+            ),
+            (
+                b"ABC",
+                (
+                    Ok(Atom {
+                        inner: Cow::Borrowed("ABC"),
+                    }),
+                    Ok(Atom {
+                        inner: Cow::Owned("ABC".into()),
+                    }),
+                ),
+            ),
+            (b" A", (Err(()), Err(()))),
+            (b"A ", (Err(()), Err(()))),
+            (b"", (Err(()), Err(()))),
+            (b"A\x00", (Err(()), Err(()))),
+            (b"\x00", (Err(()), Err(()))),
+        ];
+
+        for (test, (expected, expected_owned)) in tests.into_iter() {
+            let got = Atom::try_from(test);
+            assert_eq!(expected, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref().as_bytes(), test);
+            }
+
+            let got = Atom::try_from(test.to_owned());
+            assert_eq!(expected_owned, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref().as_bytes(), test);
+            }
+
+            if let Ok(test_str) = from_utf8(test) {
+                let got = Atom::try_from(test_str);
+                assert_eq!(expected, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref().as_bytes(), test);
+                }
+
+                let got = Atom::try_from(test_str.to_owned());
+                assert_eq!(expected_owned, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref().as_bytes(), test);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_atom_ext() {
+        let tests: Vec<(&[u8], (Result<AtomExt, ()>, Result<AtomExt, ()>))> = vec![
+            (
+                b"A",
+                (
+                    Ok(AtomExt {
+                        inner: Cow::Borrowed("A"),
+                    }),
+                    Ok(AtomExt {
+                        inner: Cow::Owned("A".into()),
+                    }),
+                ),
+            ),
+            (
+                b"ABC",
+                (
+                    Ok(AtomExt {
+                        inner: Cow::Borrowed("ABC"),
+                    }),
+                    Ok(AtomExt {
+                        inner: Cow::Owned("ABC".into()),
+                    }),
+                ),
+            ),
+            (
+                b"!partition/sda4",
+                (
+                    Ok(AtomExt {
+                        inner: Cow::Borrowed("!partition/sda4"),
+                    }),
+                    Ok(AtomExt {
+                        inner: Cow::Owned("!partition/sda4".into()),
+                    }),
+                ),
+            ),
+            (b" A", (Err(()), Err(()))),
+            (b"A ", (Err(()), Err(()))),
+            (b"", (Err(()), Err(()))),
+            (b"A\x00", (Err(()), Err(()))),
+            (b"\x00", (Err(()), Err(()))),
+        ];
+
+        for (test, (expected, expected_owned)) in tests.into_iter() {
+            let got = AtomExt::try_from(test);
+            assert_eq!(expected, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref().as_bytes(), test);
+            }
+
+            let got = AtomExt::try_from(test.to_owned());
+            assert_eq!(expected_owned, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref().as_bytes(), test);
+            }
+
+            if let Ok(test_str) = from_utf8(test) {
+                let got = AtomExt::try_from(test_str);
+                assert_eq!(expected, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref().as_bytes(), test);
+                }
+
+                let got = AtomExt::try_from(test_str.to_owned());
+                assert_eq!(expected_owned, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref().as_bytes(), test);
+                }
+            }
+        }
+    }
 
     #[test]
     fn test_conversion() {
