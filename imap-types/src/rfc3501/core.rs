@@ -489,17 +489,52 @@ pub enum AString<'a> {
     String(IString<'a>), // string
 }
 
+impl<'a> TryFrom<&'a [u8]> for AString<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, ()> {
+        if let Ok(atom) = AtomExt::try_from(value) {
+            return Ok(AString::Atom(atom));
+        }
+
+        if let Ok(istr) = IString::try_from(value) {
+            return Ok(AString::String(istr));
+        }
+
+        Err(())
+    }
+}
+
+impl TryFrom<Vec<u8>> for AString<'_> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+        // TODO(efficiency)
+        if let Ok(atom) = AtomExt::try_from(value.clone()) {
+            return Ok(AString::Atom(atom));
+        }
+
+        if let Ok(istr) = IString::try_from(value) {
+            return Ok(AString::String(istr));
+        }
+
+        Err(())
+    }
+}
+
 impl<'a> TryFrom<&'a str> for AString<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, ()> {
         if let Ok(atom) = AtomExt::try_from(value) {
-            Ok(AString::Atom(atom))
-        } else if let Ok(string) = IString::try_from(value) {
-            Ok(AString::String(string))
-        } else {
-            Err(())
+            return Ok(AString::Atom(atom));
         }
+
+        if let Ok(string) = IString::try_from(value) {
+            return Ok(AString::String(string));
+        }
+
+        Err(())
     }
 }
 
@@ -507,13 +542,16 @@ impl<'a> TryFrom<String> for AString<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, ()> {
+        // TODO(efficiency)
         if let Ok(atom) = AtomExt::try_from(value.clone()) {
-            Ok(AString::Atom(atom))
-        } else if let Ok(string) = IString::try_from(value) {
-            Ok(AString::String(string))
-        } else {
-            Err(())
+            return Ok(AString::Atom(atom));
         }
+
+        if let Ok(string) = IString::try_from(value) {
+            return Ok(AString::String(string));
+        }
+
+        Err(())
     }
 }
 
@@ -930,7 +968,120 @@ mod test {
     }
 
     #[test]
-    fn test_conversion() {
+    fn test_astring() {
+        let tests: Vec<(&[u8], (Result<AString, ()>, Result<AString, ()>))> = vec![
+            (
+                b"A",
+                (
+                    Ok(AString::Atom(AtomExt {
+                        inner: Cow::Borrowed("A"),
+                    })),
+                    Ok(AString::Atom(AtomExt {
+                        inner: Cow::Owned("A".into()),
+                    })),
+                ),
+            ),
+            (
+                b"ABC",
+                (
+                    Ok(AString::Atom(AtomExt {
+                        inner: Cow::Borrowed("ABC"),
+                    })),
+                    Ok(AString::Atom(AtomExt {
+                        inner: Cow::Owned("ABC".into()),
+                    })),
+                ),
+            ),
+            (
+                b"",
+                (
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Borrowed(""),
+                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Owned("".to_owned()),
+                    }))),
+                ),
+            ),
+            (
+                b" A",
+                (
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Borrowed(" A"),
+                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Owned(" A".to_owned()),
+                    }))),
+                ),
+            ),
+            (
+                b"A ",
+                (
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Borrowed("A "),
+                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Owned("A ".to_owned()),
+                    }))),
+                ),
+            ),
+            (
+                b"\"",
+                (
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Borrowed("\""),
+                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Owned("\"".to_owned()),
+                    }))),
+                ),
+            ),
+            (
+                b"\\\"",
+                (
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Borrowed("\\\""),
+                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted {
+                        inner: Cow::Owned("\\\"".to_owned()),
+                    }))),
+                ),
+            ),
+            (b"A\x00", (Err(()), Err(()))),
+            (b"\x00", (Err(()), Err(()))),
+        ];
+
+        for (test, (expected, expected_owned)) in tests.into_iter() {
+            let got = AString::try_from(test);
+            assert_eq!(expected, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref(), test);
+            }
+
+            let got = AString::try_from(test.to_owned());
+            assert_eq!(expected_owned, got);
+            if let Ok(got) = got {
+                assert_eq!(got.as_ref(), test);
+            }
+
+            if let Ok(test_str) = from_utf8(test) {
+                let got = AString::try_from(test_str);
+                assert_eq!(expected, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref(), test);
+                }
+
+                let got = AString::try_from(test_str.to_owned());
+                assert_eq!(expected_owned, got);
+                if let Ok(got) = got {
+                    assert_eq!(got.as_ref(), test);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_istring() {
         assert_eq!(
             IString::try_from("AAA").unwrap(),
             IString::Quoted("AAA".try_into().unwrap()).into()
