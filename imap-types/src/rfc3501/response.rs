@@ -625,15 +625,21 @@ pub enum Continue<'a> {
 }
 
 impl<'a> Continue<'a> {
-    pub fn basic(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn basic<T>(code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
+    where
+        T: TryInto<Text<'a>>,
+    {
         Ok(Continue::Basic {
             code,
             text: text.try_into()?,
         })
     }
 
-    pub fn base64(data: &'a [u8]) -> Self {
-        Continue::Base64(Cow::Borrowed(data))
+    pub fn base64<'data: 'a, D>(data: D) -> Self
+    where
+        D: Into<Cow<'data, [u8]>>,
+    {
+        Continue::Base64(data.into())
     }
 }
 
