@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::{borrow::Cow, convert::TryFrom};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -7,7 +7,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::core::Atom;
+use crate::rfc3501::core::{impl_try_from, impl_try_from_try_from, Atom};
 
 pub mod address;
 pub mod body;
@@ -39,44 +39,11 @@ pub enum AuthMechanism<'a> {
     Other(AuthMechanismOther<'a>),
 }
 
-impl<'a> AuthMechanism<'a> {
-    pub fn other<O>(other: O) -> Result<Self, O::Error>
-    where
-        O: TryInto<AuthMechanismOther<'a>>,
-    {
-        Ok(AuthMechanism::Other(other.try_into()?))
-    }
-}
-
-impl<'a> TryFrom<&'a str> for AuthMechanism<'a> {
-    type Error = ();
-
-    fn try_from(value: &'a str) -> Result<Self, ()> {
-        match value.to_ascii_lowercase().as_str() {
-            "plain" => Ok(AuthMechanism::Plain),
-            "login" => Ok(AuthMechanism::Login),
-            _ => {
-                let inner = Atom::try_from(value)?;
-                Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
-            }
-        }
-    }
-}
-
-impl<'a> TryFrom<String> for AuthMechanism<'a> {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, ()> {
-        match value.to_ascii_lowercase().as_str() {
-            "plain" => Ok(AuthMechanism::Plain),
-            "login" => Ok(AuthMechanism::Login),
-            _ => {
-                let inner = Atom::try_from(value)?;
-                Ok(AuthMechanism::Other(AuthMechanismOther { inner }))
-            }
-        }
-    }
-}
+impl_try_from!(Atom, 'a, &'a [u8], AuthMechanism<'a>);
+impl_try_from!(Atom, 'a, Vec<u8>, AuthMechanism<'a>);
+impl_try_from!(Atom, 'a, &'a str, AuthMechanism<'a>);
+impl_try_from!(Atom, 'a, String, AuthMechanism<'a>);
+impl_try_from!(Atom, 'a, Cow<'a, str>, AuthMechanism<'a>);
 
 impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
     fn from(inner: Atom<'a>) -> Self {
@@ -92,7 +59,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AuthMechanismOther<'a> {
-    pub(crate) inner: Atom<'a>,
+    inner: Atom<'a>,
 }
 
 impl<'a> AuthMechanismOther<'a> {
@@ -101,26 +68,24 @@ impl<'a> AuthMechanismOther<'a> {
     }
 }
 
+impl_try_from_try_from!(Atom, 'a, &'a [u8], AuthMechanismOther<'a>);
+impl_try_from_try_from!(Atom, 'a, Vec<u8>, AuthMechanismOther<'a>);
+impl_try_from_try_from!(Atom, 'a, &'a str, AuthMechanismOther<'a>);
+impl_try_from_try_from!(Atom, 'a, String, AuthMechanismOther<'a>);
+
 impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
     type Error = ();
 
-    fn try_from(inner: Atom<'a>) -> Result<Self, ()> {
-        match inner.as_ref().to_ascii_lowercase().as_str() {
+    fn try_from(atom: Atom<'a>) -> Result<Self, ()> {
+        match atom.as_ref().to_ascii_lowercase().as_ref() {
             "plain" | "login" => Err(()),
-            _ => Ok(AuthMechanismOther { inner }),
+            _ => Ok(Self { inner: atom }),
         }
     }
 }
 
-impl<'a> TryFrom<&'a str> for AuthMechanismOther<'a> {
-    type Error = ();
-
-    fn try_from(inner: &'a str) -> Result<Self, ()> {
-        match inner.to_ascii_lowercase().as_str() {
-            "plain" | "login" => Err(()),
-            _ => Ok(AuthMechanismOther {
-                inner: Atom::try_from(inner)?,
-            }),
-        }
+impl<'a> AsRef<str> for AuthMechanismOther<'a> {
+    fn as_ref(&self) -> &str {
+        self.inner.as_ref()
     }
 }
