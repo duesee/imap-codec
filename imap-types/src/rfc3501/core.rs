@@ -805,17 +805,39 @@ pub enum Charset<'a> {
     Quoted(Quoted<'a>),
 }
 
+impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl<'a> TryFrom<Vec<u8>> for Charset<'a> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
 impl<'a> TryFrom<&'a str> for Charset<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(atom) = Atom::try_from(value) {
-            Ok(Charset::Atom(atom))
-        } else if let Ok(quoted) = Quoted::try_from(value) {
-            Ok(Charset::Quoted(quoted))
-        } else {
-            Err(())
+            return Ok(Charset::Atom(atom));
         }
+
+        if let Ok(quoted) = Quoted::try_from(value) {
+            return Ok(Charset::Quoted(quoted));
+        }
+
+        Err(())
     }
 }
 
@@ -823,12 +845,24 @@ impl<'a> TryFrom<String> for Charset<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
+        // TODO(efficiency)
         if let Ok(atom) = Atom::try_from(value.clone()) {
-            Ok(Charset::Atom(atom))
-        } else if let Ok(quoted) = Quoted::try_from(value) {
-            Ok(Charset::Quoted(quoted))
-        } else {
-            Err(())
+            return Ok(Charset::Atom(atom));
+        }
+
+        if let Ok(quoted) = Quoted::try_from(value) {
+            return Ok(Charset::Quoted(quoted));
+        }
+
+        Err(())
+    }
+}
+
+impl<'a> AsRef<str> for Charset<'a> {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Atom(atom) => atom.as_ref(),
+            Self::Quoted(quoted) => quoted.as_ref(),
         }
     }
 }
