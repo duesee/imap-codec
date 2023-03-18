@@ -795,15 +795,14 @@ pub struct QuotedChar {
 
 impl QuotedChar {
     pub fn verify(input: char) -> bool {
-        if input.is_ascii() {
-            is_any_text_char_except_quoted_specials(input as u8) || input == '\\' || input == '"'
-        } else {
-            false
-        }
+        input.is_ascii()
+            && (is_any_text_char_except_quoted_specials(input as u8)
+                || input == '\\'
+                || input == '"')
     }
 
-    pub fn inner(&self) -> &char {
-        &self.inner
+    pub fn inner(&self) -> char {
+        self.inner
     }
 
     #[cfg(feature = "unchecked")]

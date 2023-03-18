@@ -1093,7 +1093,7 @@ impl Encode for QuotedChar {
         match self.inner() {
             '\\' => writer.write_all(b"\\\\"),
             '"' => writer.write_all(b"\\\""),
-            other => writer.write_all(&[*other as u8]),
+            other => writer.write_all(&[other as u8]),
         }
     }
 }
