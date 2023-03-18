@@ -1,9 +1,9 @@
-use std::{borrow::Cow, convert::TryFrom};
+use std::borrow::Cow;
 
 use abnf_core::streaming::{DQUOTE, SP};
 use imap_types::{
     command::{ListCharString, ListMailbox},
-    message::{FlagNameAttribute, Mailbox, MailboxOther},
+    message::{FlagNameAttribute, Mailbox},
     response::{data::QuotedChar, Data},
 };
 use nom::{
@@ -60,10 +60,7 @@ pub fn is_list_wildcards(i: u8) -> bool {
 ///
 /// Refer to section 5.1 for further semantic details of mailbox names.
 pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
-    map(astring, |astr| match MailboxOther::try_from(astr) {
-        Ok(other) => Mailbox::Other(other),
-        Err(_) => Mailbox::Inbox,
-    })(input)
+    map(astring, Mailbox::from)(input)
 }
 
 /// `mailbox-data = "FLAGS" SP flag-list /

@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{AString, IString},
+    rfc3501::core::{impl_try_from, impl_try_from_try_from},
     utils::indicators::is_list_char,
 };
 
@@ -156,6 +157,23 @@ pub enum Mailbox<'a> {
     Other(MailboxOther<'a>),
 }
 
+impl_try_from!(AString, 'a, &'a [u8], Mailbox<'a>);
+impl_try_from!(AString, 'a, Vec<u8>, Mailbox<'a>);
+impl_try_from!(AString, 'a, &'a str, Mailbox<'a>);
+impl_try_from!(AString, 'a, String, Mailbox<'a>);
+
+impl<'a> From<AString<'a>> for Mailbox<'a> {
+    fn from(value: AString<'a>) -> Self {
+        match from_utf8(value.as_ref()) {
+            Ok(value) if value.to_ascii_lowercase() == "inbox" => Self::Inbox,
+            _ => Self::Other(MailboxOther::try_from(value).unwrap()),
+        }
+    }
+}
+
+// We do not implement `AsRef<...>` for `Mailbox` because we want to enforce that a consumer
+// `match`es on `Mailbox::Inbox`/`Mailbox::Other`.
+
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -163,73 +181,28 @@ pub struct MailboxOther<'a> {
     pub(crate) inner: AString<'a>,
 }
 
+impl_try_from_try_from!(AString, 'a, &'a [u8], MailboxOther<'a>);
+impl_try_from_try_from!(AString, 'a, Vec<u8>, MailboxOther<'a>);
+impl_try_from_try_from!(AString, 'a, &'a str, MailboxOther<'a>);
+impl_try_from_try_from!(AString, 'a, String, MailboxOther<'a>);
+
 impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     type Error = ();
 
     fn try_from(mailbox: AString<'a>) -> Result<Self, Self::Error> {
-        match mailbox {
-            AString::Atom(ref str) => {
-                if str.as_ref().to_ascii_lowercase() == "inbox" {
-                    Err(())
-                } else {
-                    Ok(MailboxOther { inner: mailbox })
-                }
+        if let Ok(str) = from_utf8(mailbox.as_ref()) {
+            if str.to_ascii_lowercase() == "inbox" {
+                return Err(());
             }
-            AString::String(ref imap_str) => match imap_str {
-                IString::Quoted(ref str) => {
-                    if str.as_ref().to_ascii_lowercase() == "inbox" {
-                        Err(())
-                    } else {
-                        Ok(MailboxOther { inner: mailbox })
-                    }
-                }
-                IString::Literal(bytes) => {
-                    // "INBOX" (in any case) is certainly valid ASCII/UTF-8...
-                    if let Ok(str) = from_utf8(bytes.as_ref()) {
-                        // After the conversion we ignore the case...
-                        if str.to_ascii_lowercase() == "inbox" {
-                            // ...and return the Inbox variant.
-                            Err(())
-                        } else {
-                            Ok(MailboxOther { inner: mailbox })
-                        }
-                    } else {
-                        // ... If not, it must be something else.
-                        Ok(MailboxOther { inner: mailbox })
-                    }
-                }
-            },
         }
+
+        Ok(MailboxOther { inner: mailbox })
     }
 }
 
-impl<'a> TryFrom<&'a str> for Mailbox<'a> {
-    type Error = ();
-
-    fn try_from(value: &'a str) -> Result<Self, ()> {
-        if value.to_ascii_lowercase() == "inbox" {
-            Ok(Mailbox::Inbox)
-        } else {
-            let astr = AString::try_from(value)?;
-            let other = MailboxOther::try_from(astr)?;
-
-            Ok(Mailbox::Other(other))
-        }
-    }
-}
-
-impl<'a> TryFrom<String> for Mailbox<'a> {
-    type Error = ();
-
-    fn try_from(value: String) -> Result<Self, ()> {
-        if value.to_ascii_lowercase() == "inbox" {
-            Ok(Mailbox::Inbox)
-        } else {
-            let astr = AString::try_from(value)?;
-            let other = MailboxOther::try_from(astr)?;
-
-            Ok(Mailbox::Other(other))
-        }
+impl<'a> AsRef<[u8]> for MailboxOther<'a> {
+    fn as_ref(&self) -> &[u8] {
+        self.inner.as_ref()
     }
 }
 
