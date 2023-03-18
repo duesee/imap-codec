@@ -765,27 +765,9 @@ pub enum Code<'a> {
     /// atom [SP 1*<any TEXT-CHAR except "]">]`
     /// ```
     ///
-    /// Note: We rely on our modified `text` parser to simplify this to:
-    ///
-    /// ```abnf
-    /// atom [SP text]`
-    /// ```
-    ///
-    /// Our `text` also excludes `[`.
-    Other(CodeOther<'a>, Option<Text<'a>>),
-}
-
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CodeOther<'a> {
-    inner: Atom<'a>,
-}
-
-impl<'a> CodeOther<'a> {
-    pub fn inner(&'a self) -> &'a Atom<'a> {
-        &self.inner
-    }
+    /// Note: We use this as a fallback for everything that was not recognized as
+    ///       `Code`. This includes, e.g., variants with missing parameters, etc.
+    Other(CodeOther<'a>),
 }
 
 impl<'a> Code<'a> {
@@ -815,47 +797,26 @@ impl<'a> Code<'a> {
     pub fn unseen(uidnext: u32) -> Result<Self, TryFromIntError> {
         Ok(Self::Unseen(NonZeroU32::try_from(uidnext)?))
     }
-
-    // TODO
-    // pub fn other() -> Self {
-    //
-    // }
 }
 
-impl<'a> TryFrom<&'a str> for CodeOther<'a> {
-    type Error = ();
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CodeOther<'a> {
+    inner: Cow<'a, [u8]>,
+}
 
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        let atom = Atom::try_from(value)?;
-
-        CodeOther::try_from(atom)
+impl<'a> CodeOther<'a> {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked<D: 'a>(data: D) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        Self { inner: data.into() }
     }
-}
 
-impl<'a> TryFrom<Atom<'a>> for CodeOther<'a> {
-    type Error = ();
-
-    fn try_from(value: Atom<'a>) -> Result<Self, Self::Error> {
-        match value.as_ref().to_ascii_lowercase().as_ref() {
-            "alert" => Err(()),
-            "badcharset" => Err(()),
-            "capability" => Err(()),
-            "parse" => Err(()),
-            "permanentflags" => Err(()),
-            "read-only" => Err(()),
-            "read-write" => Err(()),
-            "trycreate" => Err(()),
-            "uidnext" => Err(()),
-            "uidvalidity" => Err(()),
-            "unseen" => Err(()),
-            #[cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals"))]
-            "referral" => Err(()),
-            #[cfg(feature = "ext_compress")]
-            "compressionactive" => Err(()),
-            #[cfg(feature = "ext_quota")]
-            "overquota" => Err(()),
-            _ => Ok(Self { inner: value }),
-        }
+    pub fn inner(&self) -> &[u8] {
+        self.inner.as_ref()
     }
 }
 

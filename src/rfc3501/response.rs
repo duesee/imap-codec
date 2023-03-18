@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, str::from_utf8};
+use std::str::from_utf8;
 
 use abnf_core::streaming::{CRLF, SP};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
@@ -11,8 +11,8 @@ use imap_types::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_until},
-    combinator::{cut, map, map_res, opt, value},
+    bytes::streaming::{tag, tag_no_case, take_until, take_while},
+    combinator::{map, map_res, opt, value},
     multi::separated_list1,
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
@@ -68,7 +68,16 @@ pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (GreetingKind, (Option<Cod
 pub fn resp_text(input: &[u8]) -> IResult<&[u8], (Option<Code>, Text)> {
     tuple((
         opt(terminated(
-            delimited(tag(b"["), resp_text_code, tag(b"]")),
+            preceded(
+                tag(b"["),
+                alt((
+                    terminated(resp_text_code, tag(b"]")),
+                    map(
+                        terminated(take_while(|b: u8| b != b']'), tag(b"]")),
+                        |bytes: &[u8]| Code::Other(CodeOther::new_unchecked(bytes)),
+                    ),
+                )),
+            ),
             SP,
         )),
         text,
@@ -98,11 +107,7 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
                 tag_no_case(b"BADCHARSET"),
                 opt(preceded(
                     SP,
-                    cut(delimited(
-                        tag(b"("),
-                        separated_list1(SP, charset),
-                        tag(b")"),
-                    )),
+                    delimited(tag(b"("), separated_list1(SP, charset), tag(b")")),
                 )),
             )),
             |(_, maybe_charsets)| Code::BadCharset {
@@ -114,14 +119,14 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         map(
             tuple((
                 tag_no_case(b"PERMANENTFLAGS"),
-                cut(SP),
-                cut(delimited(
+                SP,
+                delimited(
                     tag(b"("),
                     map(opt(separated_list1(SP, flag_perm)), |maybe_flags| {
                         maybe_flags.unwrap_or_default()
                     }),
                     tag(b")"),
-                )),
+                ),
             )),
             |(_, _, flags)| Code::PermanentFlags(flags),
         ),
@@ -129,25 +134,21 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         value(Code::ReadWrite, tag_no_case(b"READ-WRITE")),
         value(Code::TryCreate, tag_no_case(b"TRYCREATE")),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), cut(SP), cut(nz_number))),
+            tuple((tag_no_case(b"UIDNEXT"), SP, nz_number)),
             |(_, _, num)| Code::UidNext(num),
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), cut(SP), cut(nz_number))),
+            tuple((tag_no_case(b"UIDVALIDITY"), SP, nz_number)),
             |(_, _, num)| Code::UidValidity(num),
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), cut(SP), cut(nz_number))),
+            tuple((tag_no_case(b"UNSEEN"), SP, nz_number)),
             |(_, _, num)| Code::Unseen(num),
         ),
         #[cfg(feature = "ext_compress")]
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         #[cfg(feature = "ext_quota")]
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
-        map(
-            tuple((atom, opt(preceded(SP, text)))),
-            |(atom, maybe_params)| Code::Other(CodeOther::try_from(atom).unwrap(), maybe_params),
-        ),
     ))(input)
 }
 
@@ -357,7 +358,6 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::utils::escape_byte_string;
 
     #[test]
     fn test_resp_text_code() {
@@ -384,32 +384,6 @@ mod test {
 
             assert_eq!(*expected_remainder, got_remainder);
             assert_eq!(*expected_code, got_code);
-        }
-    }
-
-    #[test]
-    fn test_resp_text_code_bad() {
-        let tests = [
-            b"badcharset ]".as_slice(),
-            b"badcharset  ".as_slice(),
-            b"capability  ]",
-            b"capability]",
-            b"permanentflags ]",
-            b"uidnext a",
-            b"uidnext ]",
-            b"uidnext\r\n",
-            b"uidvalidity a",
-            b"uidvalidity ]",
-            b"uidvalidity\r\n",
-            b"unseen a",
-            b"unseen ]",
-            b"unseen\r\n",
-        ];
-
-        for input in tests.iter() {
-            println!("{}", escape_byte_string(input));
-            assert!(resp_text_code(input).is_err());
-            println!("");
         }
     }
 

@@ -53,7 +53,7 @@ fuzz_target!(|test: Response| {
                         // FIXME(#30)
                         return;
                     }
-                    Code::Other(_, _) => {
+                    Code::Other(_) => {
                         // FIXME(#30)
                         return;
                     }
