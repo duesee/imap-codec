@@ -690,20 +690,40 @@ pub struct Text<'a> {
 }
 
 impl<'a> Text<'a> {
-    pub fn verify(value: &str) -> bool {
-        !value.is_empty() && value.bytes().all(is_text_char)
+    pub fn verify(value: &[u8]) -> bool {
+        !value.is_empty() && value.iter().all(|b| is_text_char(*b))
     }
 
-    pub fn inner(&self) -> &Cow<'a, str> {
-        &self.inner
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(inner.as_bytes()));
 
         Self { inner }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for Text<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        let str = from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
+    }
+}
+
+impl<'a> TryFrom<Vec<u8>> for Text<'a> {
+    type Error = ();
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let str = String::from_utf8(value).map_err(|_| ())?;
+
+        Self::try_from(str)
     }
 }
 
@@ -711,7 +731,7 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Borrowed(value),
             })
@@ -725,7 +745,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(&value) {
+        if Self::verify(value.as_bytes()) {
             Ok(Self {
                 inner: Cow::Owned(value),
             })
