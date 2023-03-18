@@ -149,7 +149,7 @@ fn test_from_capability() {
                         Capability::StartTls,
                         #[cfg(not(feature = "starttls"))]
                         Capability::other("STARTTLS").unwrap(),
-                        Capability::Auth(AuthMechanism::other("GSSAPI").unwrap()),
+                        Capability::Auth(AuthMechanism::try_from("GSSAPI").unwrap()),
                         #[cfg(feature = "starttls")]
                         Capability::LoginDisabled,
                         #[cfg(not(feature = "starttls"))]
@@ -196,7 +196,7 @@ fn test_from_capability() {
                 Message::Response(Response::Data(
                     Data::capability(vec![
                         Capability::Imap4Rev1,
-                        Capability::Auth(AuthMechanism::other("GSSAPI").unwrap()),
+                        Capability::Auth(AuthMechanism::try_from("GSSAPI").unwrap()),
                         Capability::Auth(AuthMechanism::Plain),
                     ])
                     .unwrap(),

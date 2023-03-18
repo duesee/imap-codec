@@ -23,7 +23,7 @@
 //!
 //! Generally, imap-codec relies a lot on the [From](std::convert::From), [TryFrom](std::convert::TryFrom), [Into](std::convert::Into), and [TryInto](std::convert::TryInto) traits.
 //! Make good use of them.
-//! For types that are more cumbersome to create, there are helper methods such as [AuthMechanism::other(...)](message::AuthMechanism::other).
+//! For types that are more cumbersome to create, there are helper methods available.
 //!
 //! ### Example
 //!
