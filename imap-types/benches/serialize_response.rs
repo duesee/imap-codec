@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{convert::TryInto, num::NonZeroU32};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_types::{
@@ -18,7 +18,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let rsp = Response::Status(
         Status::ok(
             Some("ABC1234567".try_into().unwrap()),
-            Some(Code::Other("XXXXX".try_into().unwrap(), None)),
+            Some(Code::Unseen(NonZeroU32::new(12345).unwrap())),
             "xyz...",
         )
         .unwrap(),

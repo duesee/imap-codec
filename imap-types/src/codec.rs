@@ -938,21 +938,14 @@ impl<'a> Encode for Code<'a> {
             Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
             #[cfg(feature = "ext_quota")]
             Code::OverQuota => writer.write_all(b"OVERQUOTA"),
-            Code::Other(other, text) => match text {
-                Some(text) => {
-                    other.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    text.encode(writer)
-                }
-                None => other.encode(writer),
-            },
+            Code::Other(unknown) => unknown.encode(writer),
         }
     }
 }
 
 impl<'a> Encode for CodeOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.inner().encode(writer)
+        writer.write_all(self.inner())
     }
 }
 

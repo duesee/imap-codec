@@ -22,7 +22,7 @@ fuzz_target!(|test: Greeting| {
                 // FIXME(#30)
                 return;
             }
-            Code::Other(_, _) => {
+            Code::Other(_) => {
                 // FIXME(#30)
                 return;
             }

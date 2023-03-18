@@ -53,7 +53,6 @@ implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { Capability<'a>, Atom<'a> }
-implement_tryfrom! { CodeOther<'a>, Atom<'a> }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
@@ -61,6 +60,13 @@ implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom! { SequenceSet, &str }
 implement_tryfrom! { Literal<'a>, &[u8] }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
+
+impl<'a> Arbitrary<'a> for CodeOther<'a> {
+    fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        // `CodeOther` is a fallback and should usually not be created.
+        Ok(CodeOther::new_unchecked(b"IMAP-CODEC-CODE-OTHER>".as_ref()))
+    }
+}
 
 impl<'a> Arbitrary<'a> for SearchKey<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
