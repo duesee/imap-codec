@@ -20,6 +20,17 @@ ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_quota = ["imap-types/ext_quota"]
 ext_sasl_ir = ["imap-types/ext_sasl_ir"]
+# Use (most) IMAP extensions.
+ext = [
+    "starttls",
+    "ext_compress",
+    "ext_enable",
+    "ext_idle",
+    #"ext_login_referrals",
+    #"ext_mailbox_referrals",
+    "ext_quota",
+    "ext_sasl_ir",
+]
 
 [dependencies]
 bounded-static = "0.4"
