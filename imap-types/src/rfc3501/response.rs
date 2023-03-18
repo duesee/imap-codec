@@ -29,6 +29,7 @@ use crate::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
         Text,
     },
+    rfc3501::core::impl_try_from,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -852,10 +853,10 @@ impl<'a> TryFrom<Atom<'a>> for CodeOther<'a> {
     }
 }
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// TODO: Mark this enum as non-exhaustive?
 pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
@@ -863,32 +864,125 @@ pub enum Capability<'a> {
     LoginDisabled,
     #[cfg(feature = "starttls")]
     StartTls,
-    // ---
     #[cfg(feature = "ext_idle")]
-    Idle, // RFC 2177
+    /// See RFC 2177.
+    Idle,
+    /// See RFC 2193.
     #[cfg(feature = "ext_mailbox_referrals")]
-    MailboxReferrals, // RFC 2193
+    MailboxReferrals,
+    /// See RFC 2221.
     #[cfg(feature = "ext_login_referrals")]
-    LoginReferrals, // RFC 2221
+    LoginReferrals,
     #[cfg(feature = "ext_sasl_ir")]
     SaslIr,
+    /// See RFC 5161.
     #[cfg(feature = "ext_enable")]
-    Enable, // RFC 5161
+    Enable,
     #[cfg(feature = "ext_compress")]
     Compress {
         algorithm: CompressionAlgorithm,
     },
+    /// See RFC 2087 and RFC 9208
     #[cfg(feature = "ext_quota")]
-    Quota, // RFC 2087
+    Quota,
+    /// See RFC 9208.
     #[cfg(feature = "ext_quota")]
-    QuotaRes(Resource<'a>), // RFC 9208
+    QuotaRes(Resource<'a>),
+    /// See RFC 9208.
     #[cfg(feature = "ext_quota")]
-    QuotaSet, // RFC 9208
-    // --- Other ---
-    // TODO: Is this a good idea?
-    // FIXME: mark this enum as non-exhaustive at least?
-    // FIXME: case-sensitive when compared
+    QuotaSet,
+    /// Other/Unknown
     Other(CapabilityOther<'a>),
+}
+
+impl_try_from!(Atom, 'a, &'a [u8], Capability<'a>);
+impl_try_from!(Atom, 'a, Vec<u8>, Capability<'a>);
+impl_try_from!(Atom, 'a, &'a str, Capability<'a>);
+impl_try_from!(Atom, 'a, String, Capability<'a>);
+
+impl<'a> From<Atom<'a>> for Capability<'a> {
+    fn from(atom: Atom<'a>) -> Self {
+        fn split_once_cow<'a>(
+            cow: Cow<'a, str>,
+            pattern: &str,
+        ) -> Option<(Cow<'a, str>, Cow<'a, str>)> {
+            match cow {
+                Cow::Borrowed(str) => {
+                    if let Some((left, right)) = str.split_once(pattern) {
+                        return Some((Cow::Borrowed(left), Cow::Borrowed(right)));
+                    }
+
+                    None
+                }
+                Cow::Owned(string) => {
+                    // TODO(efficiency)
+                    if let Some((left, right)) = string.split_once(pattern) {
+                        return Some((Cow::Owned(left.to_owned()), Cow::Owned(right.to_owned())));
+                    }
+
+                    None
+                }
+            }
+        }
+
+        let cow = atom.into_inner();
+
+        match cow.to_ascii_lowercase().as_ref() {
+            "imap4rev1" => Self::Imap4Rev1,
+            #[cfg(feature = "starttls")]
+            "logindisabled" => Self::LoginDisabled,
+            #[cfg(feature = "starttls")]
+            "starttls" => Self::StartTls,
+            #[cfg(feature = "ext_idle")]
+            "idle" => Self::Idle,
+            #[cfg(feature = "ext_mailbox_referrals")]
+            "mailbox-referrals" => Self::MailboxReferrals,
+            #[cfg(feature = "ext_login_referrals")]
+            "login-referrals" => Self::LoginReferrals,
+            #[cfg(feature = "ext_sasl_ir")]
+            "sasl-ir" => Self::SaslIr,
+            #[cfg(feature = "ext_enable")]
+            "enable" => Self::Enable,
+            #[cfg(feature = "ext_quota")]
+            "quota" => Self::Quota,
+            #[cfg(feature = "ext_quota")]
+            "quotaset" => Self::QuotaSet,
+            _ => {
+                // TODO(efficiency)
+                if let Some((left, right)) = split_once_cow(cow.clone(), "=") {
+                    match left.as_ref().to_ascii_lowercase().as_ref() {
+                        "auth" => {
+                            if let Ok(mechanism) = AuthMechanism::try_from(right) {
+                                return Self::Auth(mechanism);
+                            }
+                        }
+                        #[cfg(feature = "ext_compress")]
+                        "compress" => {
+                            if let Ok(algorithm) = CompressionAlgorithm::try_from(right) {
+                                return Self::Compress { algorithm };
+                            }
+                        }
+                        #[cfg(feature = "ext_quota")]
+                        "quota" => {
+                            if let Some((_, right)) =
+                                right.as_ref().to_ascii_lowercase().split_once("res-")
+                            {
+                                // TODO(efficiency)
+                                if let Ok(resource) = Resource::try_from(right.to_owned()) {
+                                    return Self::QuotaRes(resource);
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                Self::Other(CapabilityOther {
+                    inner: Atom { inner: cow },
+                })
+            }
+        }
+    }
 }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -898,76 +992,14 @@ pub struct CapabilityOther<'a> {
     pub(crate) inner: Atom<'a>,
 }
 
-impl<'a> TryFrom<&'a str> for CapabilityOther<'a> {
-    type Error = ();
-
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        let atom = Atom::try_from(value).map_err(|_| ())?;
-
-        CapabilityOther::try_from(atom)
+impl<'a> CapabilityOther<'a> {
+    #[cfg(feature = "unchecked")]
+    pub fn new_unchecked(inner: Atom<'a>) -> Self {
+        Self { inner }
     }
-}
 
-impl<'a> TryFrom<Atom<'a>> for CapabilityOther<'a> {
-    type Error = ();
-
-    fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        // TODO(#117): Fix partitioning pattern.
-        match atom.as_ref().to_ascii_lowercase().as_ref() {
-            "imap4rev1" => Err(()),
-            #[cfg(feature = "starttls")]
-            "logindisabled" | "starttls" => Err(()),
-            #[cfg(feature = "ext_idle")]
-            "idle" => Err(()),
-            #[cfg(feature = "ext_mailbox_referrals")]
-            "mailbox-referrals" => Err(()),
-            #[cfg(feature = "ext_login_referrals")]
-            "login-referrals" => Err(()),
-            #[cfg(feature = "ext_sasl_ir")]
-            "sasl-ir" => Err(()),
-            #[cfg(feature = "ext_enable")]
-            "enable" => Err(()),
-            #[cfg(feature = "ext_quota")]
-            "quota" => Err(()),
-            #[cfg(feature = "ext_quota")]
-            "quotaset" => Err(()),
-            left => {
-                // Idea: If an `Atom` starts with "auth=" ("compress=", "quota=", ...) AND contains
-                // at least one characters after the "=", it's an `AuthMechanism::Other(AuthMechanismOther)
-                // and not a `Capability::Other(...)`.
-
-                if left.starts_with("auth=") {
-                    if left.len() > "auth=".len() {
-                        return Err(());
-                    }
-                }
-
-                #[cfg(feature = "ext_compress")]
-                if left.starts_with("compress=") {
-                    if left.len() > "compress=".len() {
-                        return Err(());
-                    }
-                }
-
-                #[cfg(feature = "ext_quota")]
-                if left.starts_with("quota=") {
-                    if left.len() > "quota=".len() {
-                        return Err(());
-                    }
-                }
-
-                Ok(Self { inner: atom })
-            }
-        }
-    }
-}
-
-impl<'a> Capability<'a> {
-    pub fn other<O>(other: O) -> Result<Self, O::Error>
-    where
-        O: TryInto<CapabilityOther<'a>>,
-    {
-        Ok(Self::Other(other.try_into()?))
+    pub fn inner(&self) -> &str {
+        self.inner.as_ref()
     }
 }
 
