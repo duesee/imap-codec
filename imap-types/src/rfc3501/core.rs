@@ -11,6 +11,41 @@ use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
 };
 
+#[allow(unused)]
+macro_rules! impl_try_from {
+    ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
+        impl<$lifetime> TryFrom<$from> for $target {
+            type Error = ();
+
+            fn try_from(value: $from) -> Result<Self, Self::Error> {
+                let value = <$via>::try_from(value)?;
+
+                Ok(Self::from(value))
+            }
+        }
+    };
+}
+
+#[allow(unused)]
+macro_rules! impl_try_from_try_from {
+    ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
+        impl<$lifetime> TryFrom<$from> for $target {
+            type Error = ();
+
+            fn try_from(value: $from) -> Result<Self, Self::Error> {
+                let value = <$via>::try_from(value)?;
+
+                Self::try_from(value)
+            }
+        }
+    };
+}
+
+#[allow(unused)]
+pub(crate) use impl_try_from;
+#[allow(unused)]
+pub(crate) use impl_try_from_try_from;
+
 /// An atom.
 ///
 /// "An atom consists of one or more non-special characters." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
