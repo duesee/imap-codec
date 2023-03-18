@@ -1,6 +1,7 @@
-use std::{borrow::Cow, convert::TryFrom, str::from_utf8};
+use std::{convert::TryFrom, str::from_utf8};
 
 use abnf_core::streaming::{CRLF, SP};
+use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
     core::NonEmptyVec,
     response::{
@@ -10,8 +11,8 @@ use imap_types::{
 };
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case},
-    combinator::{cut, map, opt, value},
+    bytes::streaming::{tag, tag_no_case, take_until},
+    combinator::{cut, map, map_res, opt, value},
     multi::separated_list1,
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
@@ -20,7 +21,7 @@ use nom::{
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::enable_data;
 use crate::rfc3501::{
-    core::{atom, base64, charset, nz_number, tag_imap, text},
+    core::{atom, charset, nz_number, tag_imap, text},
     fetch_attributes::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
@@ -201,16 +202,20 @@ pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
 pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continue> {
     let mut parser = tuple((
-        tag(b"+"),
-        SP,
+        tag(b"+ "),
         alt((
-            map(resp_text, |(code, text)| Continue::Basic { code, text }),
-            map(base64, |data| Continue::Base64(Cow::Owned(data))),
+            map(
+                map_res(take_until("\r\n"), |input| _base64.decode(input)),
+                |data| Continue::base64(data),
+            ),
+            map(resp_text, |(code, text)| {
+                Continue::basic(code, text).unwrap()
+            }),
         )),
         CRLF,
     ));
 
-    let (remaining, (_, _, continue_request, _)) = parser(input)?;
+    let (remaining, (_, continue_request, _)) = parser(input)?;
 
     Ok((remaining, continue_request))
 }
@@ -405,6 +410,19 @@ mod test {
             println!("{}", escape_byte_string(input));
             assert!(resp_text_code(input).is_err());
             println!("");
+        }
+    }
+
+    #[test]
+    fn test_continue_req() {
+        let tests = vec![(
+            "+ \x01\r\n".as_bytes(),
+            Ok((b"".as_slice(), Continue::basic(None, "\x01").unwrap())),
+        )];
+
+        for (test, expected) in tests.into_iter() {
+            let got = continue_req(test);
+            assert_eq!(expected, got);
         }
     }
 }
