@@ -747,7 +747,7 @@ fn search_key_limited<'a>(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::{
         convert::{TryFrom, TryInto},
         num::NonZeroU32,

@@ -356,7 +356,7 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]

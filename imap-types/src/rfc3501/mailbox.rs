@@ -207,7 +207,7 @@ impl<'a> AsRef<[u8]> for MailboxOther<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::{borrow::Cow, convert::TryFrom};
 
     use crate::{

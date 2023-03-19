@@ -52,7 +52,7 @@ pub fn unescape_quoted(escaped: &str) -> Cow<str> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]

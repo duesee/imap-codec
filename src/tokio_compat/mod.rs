@@ -78,7 +78,7 @@ fn parse_literal_enclosing(line: &[u8]) -> Result<Option<&[u8]>, LiteralError> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]

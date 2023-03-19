@@ -938,7 +938,7 @@ impl<T> AsRef<[T]> for NonEmptyVec<T> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::{convert::TryInto, str::from_utf8};
 
     use super::*;

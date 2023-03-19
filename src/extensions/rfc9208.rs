@@ -191,7 +191,7 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 // }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::convert::TryInto;
 
     use imap_types::{

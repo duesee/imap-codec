@@ -99,7 +99,7 @@ impl<'a> Decode<'a> for Response<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::{convert::TryFrom, num::NonZeroU32};
 
     use imap_types::{

@@ -186,7 +186,7 @@ impl<'a> Encoder<&Response<'a>> for ImapServerCodec {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::convert::TryFrom;
 
     use bytes::BytesMut;
