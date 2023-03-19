@@ -218,34 +218,46 @@ pub enum Status<'a> {
 }
 
 impl<'a> Status<'a> {
-    pub fn ok(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn ok<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    where
+        T: TryInto<Text<'a>>,
+    {
         Ok(Status::Ok {
             tag,
             code,
-            text: text.try_into()?,
+            text: text.try_into().map_err(|_| ())?,
         })
     }
 
-    pub fn no(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn no<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    where
+        T: TryInto<Text<'a>>,
+    {
         Ok(Status::No {
             tag,
             code,
-            text: text.try_into()?,
+            text: text.try_into().map_err(|_| ())?,
         })
     }
 
-    pub fn bad(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn bad<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    where
+        T: TryInto<Text<'a>>,
+    {
         Ok(Status::Bad {
             tag,
             code,
-            text: text.try_into()?,
+            text: text.try_into().map_err(|_| ())?,
         })
     }
 
-    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn bye<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    where
+        T: TryInto<Text<'a>>,
+    {
         Ok(Status::Bye {
             code,
-            text: text.try_into()?,
+            text: text.try_into().map_err(|_| ())?,
         })
     }
 
