@@ -932,17 +932,17 @@ fn test_transcript_from_rfc() {
                             peek: false,
                             partial: None,
                         }], false).unwrap()).unwrap())),
-            //             (b"* 12 FETCH (BODY[HEADER] {342}\r
-            // Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\r
-            // From: Terry Gray <gray@cac.washington.edu>\r
-            // Subject: IMAP4rev1 WG mtg summary and minutes\r
-            // To: imap@cac.washington.edu\r
-            // cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>\r
-            // Message-Id: <B27397-0100000@cac.washington.edu>\r
-            // MIME-Version: 1.0\r
-            // Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
-            // \r
-            // )\r\n", Message::Response()),
+                         (b"* 12 FETCH (BODY[HEADER] {342}\r
+Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\r
+From: Terry Gray <gray@cac.washington.edu>\r
+Subject: IMAP4rev1 WG mtg summary and minutes\r
+To: imap@cac.washington.edu\r
+cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>\r
+Message-Id: <B27397-0100000@cac.washington.edu>\r
+MIME-Version: 1.0\r
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
+\r
+)\r\n", Message::ResponseSkip),
                         (b"004 OK FETCH completed\r\n", Message::ResponseSkip),
                         (b"005 store 12 +flags \\deleted\r\n", Message::CommandSkip),
                         (b"* 12 FETCH (FLAGS (\\Seen \\Deleted))\r\n", Message::ResponseSkip),
