@@ -98,7 +98,7 @@ pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 pub fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AString>> {
     map(
         delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
-        |vec| NonEmptyVec::new_unchecked(vec),
+        NonEmptyVec::new_unchecked,
     )(input)
 }
 
