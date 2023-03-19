@@ -207,7 +207,7 @@ pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continue> {
         alt((
             map(
                 map_res(take_until("\r\n"), |input| _base64.decode(input)),
-                |data| Continue::base64(data),
+                Continue::base64,
             ),
             map(resp_text, |(code, text)| {
                 Continue::basic(code, text).unwrap()

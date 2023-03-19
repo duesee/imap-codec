@@ -126,7 +126,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        |c| QuotedChar::new_unchecked(c),
+        QuotedChar::new_unchecked,
     )(input)
 }
 

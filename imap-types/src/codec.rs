@@ -51,7 +51,6 @@ use crate::{
 };
 
 pub trait Encode {
-    #[must_use]
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()>;
 
     fn encode_detached(&self) -> std::io::Result<Vec<u8>> {
