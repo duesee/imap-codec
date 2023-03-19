@@ -106,28 +106,57 @@ fn test_lines_of_trace(trace: &[u8]) {
 
 fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
     for (test, expected) in tests.into_iter() {
+        println!("// {}", std::str::from_utf8(test).unwrap().trim());
         match expected {
             Message::Command(expected) => {
                 let (rem, got) = Command::decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
+                println!("{:?}", got);
+                println!(
+                    "// {}",
+                    String::from_utf8(got.encode_detached().unwrap())
+                        .unwrap()
+                        .trim()
+                );
             }
             Message::Response(expected) => {
                 let (rem, got) = Response::decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
+                println!("{:?}", got);
+                println!(
+                    "// {}",
+                    String::from_utf8(got.encode_detached().unwrap())
+                        .unwrap()
+                        .trim()
+                );
             }
             Message::CommandSkip => {
                 let (rem, got) = Command::decode(test).unwrap();
                 assert!(rem.is_empty());
                 println!("{:?}", got);
+                println!(
+                    "// {}",
+                    String::from_utf8(got.encode_detached().unwrap())
+                        .unwrap()
+                        .trim()
+                );
             }
             Message::ResponseSkip => {
                 let (rem, got) = Response::decode(test).unwrap();
                 assert!(rem.is_empty());
                 println!("{:?}", got);
+                println!(
+                    "// {}",
+                    String::from_utf8(got.encode_detached().unwrap())
+                        .unwrap()
+                        .trim()
+                );
             }
-        }
+        };
+
+        println!("");
     }
 }
 
@@ -865,22 +894,22 @@ fn test_transcript_from_rfc() {
                 )),
             ),
             (
-                b"001 login mrc secret\r\n",
+                b"a001 login mrc secret\r\n",
                 Message::Command(
-                    Command::new("001", CommandBody::login("mrc", "secret").unwrap()).unwrap(),
+                    Command::new("a001", CommandBody::login("mrc", "secret").unwrap()).unwrap(),
                 ),
             ),
             (
-                b"001 OK LOGIN completed\r\n",
+                b"a001 OK LOGIN completed\r\n",
                 Message::Response(Response::Status(
-                    Status::ok(Some(Tag::try_from("001").unwrap()), None, "LOGIN completed")
+                    Status::ok(Some(Tag::try_from("a001").unwrap()), None, "LOGIN completed")
                         .unwrap(),
                 )),
             ),
             (
-                b"002 select inbox\r\n",
+                b"a002 select inbox\r\n",
                 Message::Command(
-                    Command::new("002", CommandBody::select("inbox").unwrap()).unwrap(),
+                    Command::new("a002", CommandBody::select("inbox").unwrap()).unwrap(),
                 ),
             ),
             (
@@ -922,12 +951,12 @@ fn test_transcript_from_rfc() {
                                  .unwrap(),
                          )),
             ),
-                        (b"002 OK [READ-WRITE] SELECT completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("002").unwrap()), Some(Code::ReadWrite), "SELECT completed").unwrap()))),
-                        (b"003 fetch 12 full\r\n", Message::Command(Command::new("003", CommandBody::fetch("12", Macro::Full,false).unwrap()).unwrap())),
+                        (b"a002 OK [READ-WRITE] SELECT completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("a002").unwrap()), Some(Code::ReadWrite), "SELECT completed").unwrap()))),
+                        (b"a003 fetch 12 full\r\n", Message::Command(Command::new("a003", CommandBody::fetch("12", Macro::Full,false).unwrap()).unwrap())),
                             // FIXME
                         (b"* 12 FETCH (FLAGS (\\Seen) INTERNALDATE \"17-Jul-1996 02:44:25 -0700\" RFC822.SIZE 4286 ENVELOPE (\"Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\" \"IMAP4rev1 WG mtg summary and minutes\" ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((NIL NIL \"imap\" \"cac.washington.edu\")) ((NIL NIL \"minutes\" \"CNRI.Reston.VA.US\")(\"John Klensin\" NIL \"KLENSIN\" \"MIT.EDU\")) NIL NIL \"<B27397-0100000@cac.washington.edu>\") BODY (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 3028 92))\r\n", Message::ResponseSkip),
-                        (b"003 OK FETCH completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("003").unwrap()), None, "FETCH completed").unwrap()))),
-                        (b"004 fetch 12 body[header]\r\n", Message::Command(Command::new("004", CommandBody::fetch("12", vec![FetchAttribute::BodyExt {
+                        (b"a003 OK FETCH completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("a003").unwrap()), None, "FETCH completed").unwrap()))),
+                        (b"a004 fetch 12 body[header]\r\n", Message::Command(Command::new("a004", CommandBody::fetch("12", vec![FetchAttribute::BodyExt {
                             section: Some(Section::Header(None)),
                             peek: false,
                             partial: None,
@@ -943,13 +972,13 @@ MIME-Version: 1.0\r
 Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
 \r
 )\r\n", Message::ResponseSkip),
-                        (b"004 OK FETCH completed\r\n", Message::ResponseSkip),
-                        (b"005 store 12 +flags \\deleted\r\n", Message::CommandSkip),
+                        (b"a004 OK FETCH completed\r\n", Message::ResponseSkip),
+                        (b"a005 store 12 +flags \\deleted\r\n", Message::CommandSkip),
                         (b"* 12 FETCH (FLAGS (\\Seen \\Deleted))\r\n", Message::ResponseSkip),
-                        (b"005 OK +FLAGS completed\r\n", Message::ResponseSkip),
-                        (b"006 logout\r\n", Message::CommandSkip),
+                        (b"a005 OK +FLAGS completed\r\n", Message::ResponseSkip),
+                        (b"a006 logout\r\n", Message::CommandSkip),
                         (b"* BYE IMAP4rev1 server terminating connection\r\n", Message::ResponseSkip),
-                        (b"006 OK LOGOUT completed\r\n", Message::ResponseSkip),
+                        (b"a006 OK LOGOUT completed\r\n", Message::ResponseSkip),
         ]
     };
 
