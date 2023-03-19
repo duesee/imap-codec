@@ -1,7 +1,7 @@
 #![no_main]
 
-// use std::str::from_utf8;
-
+#[cfg(feature = "debug")]
+use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
     response::{Code, Greeting},
@@ -34,14 +34,10 @@ fuzz_target!(|test: Greeting| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let mut buffer = Vec::new();
-    test.encode(&mut buffer).unwrap();
+    let buffer = test.encode_detached().unwrap();
 
     #[cfg(feature = "debug")]
-    match std::str::from_utf8(&buffer) {
-        Ok(str) => println!("[!] Serialized: {str}"),
-        Err(_) => println!("[!] Serialized: {buffer:?}"),
-    }
+    println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
     let (rem, parsed) = Greeting::decode(&buffer).unwrap();
     assert!(rem.is_empty());

@@ -1,10 +1,7 @@
 #![no_main]
 
 #[cfg(feature = "debug")]
-use std::str::from_utf8;
-
-#[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-use imap_codec::response::Status;
+use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
     response::{data::FetchAttributeValue, Code, Data, Response},
@@ -70,14 +67,10 @@ fuzz_target!(|test: Response| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let mut buffer = Vec::new();
-    test.encode(&mut buffer).unwrap();
+    let buffer = test.encode_detached().unwrap();
 
     #[cfg(feature = "debug")]
-    match from_utf8(&buffer) {
-        Ok(str) => println!("[!] Serialized: {str}"),
-        Err(_) => println!("[!] Serialized: {buffer:?}"),
-    }
+    println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
     let (rem, parsed) = Response::decode(&buffer).unwrap();
     assert!(rem.is_empty());

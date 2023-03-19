@@ -2,6 +2,8 @@
 
 #[cfg(feature = "ext_enable")]
 use imap_codec::message::CapabilityEnable;
+#[cfg(feature = "debug")]
+use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
     command::{search::SearchKey, Command, CommandBody},
@@ -70,14 +72,10 @@ fuzz_target!(|test: Command| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let mut buffer = Vec::new();
-    test.encode(&mut buffer).unwrap();
+    let buffer = test.encode_detached().unwrap();
 
     #[cfg(feature = "debug")]
-    match std::str::from_utf8(&buffer) {
-        Ok(str) => println!("[!] Serialzed: {str}"),
-        Err(_) => println!("[!] Serialized: {buffer:?}"),
-    }
+    println!("[!] Serialzed: {}", escape_byte_string(&buffer));
 
     match Command::decode(&buffer) {
         Ok((rem, parsed)) => {
