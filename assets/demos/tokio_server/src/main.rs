@@ -83,7 +83,7 @@ async fn main() {
                     }
                     (tag, body) => {
                         let text = format!("{} not supported", body.name());
-                        let rsp = Response::Status(Status::no(Some(tag), None, &text).unwrap());
+                        let rsp = Response::Status(Status::no(Some(tag), None, text).unwrap());
                         framed.send(&rsp).await.unwrap();
                         println!("S: {rsp:?}");
                     }
