@@ -814,9 +814,7 @@ impl<'a> Code<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CodeOther<'a> {
-    inner: Cow<'a, [u8]>,
-}
+pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 impl<'a> CodeOther<'a> {
     #[cfg(feature = "unchecked")]
@@ -824,11 +822,11 @@ impl<'a> CodeOther<'a> {
     where
         D: Into<Cow<'a, [u8]>>,
     {
-        Self { inner: data.into() }
+        Self(data.into())
     }
 
     pub fn inner(&self) -> &[u8] {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 }
 
@@ -956,9 +954,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                     }
                 }
 
-                Self::Other(CapabilityOther {
-                    inner: Atom { inner: cow },
-                })
+                Self::Other(CapabilityOther { inner: Atom(cow) })
             }
         }
     }

@@ -50,7 +50,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
         match inner.as_ref().to_ascii_lowercase().as_str() {
             "plain" => AuthMechanism::Plain,
             "login" => AuthMechanism::Login,
-            _ => AuthMechanism::Other(AuthMechanismOther { inner }),
+            _ => AuthMechanism::Other(AuthMechanismOther(inner)),
         }
     }
 }
@@ -58,13 +58,11 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthMechanismOther<'a> {
-    inner: Atom<'a>,
-}
+pub struct AuthMechanismOther<'a>(Atom<'a>);
 
 impl<'a> AuthMechanismOther<'a> {
     pub fn inner(&self) -> &Atom<'a> {
-        &self.inner
+        &self.0
     }
 }
 
@@ -79,13 +77,13 @@ impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
     fn try_from(atom: Atom<'a>) -> Result<Self, ()> {
         match atom.as_ref().to_ascii_lowercase().as_ref() {
             "plain" | "login" => Err(()),
-            _ => Ok(Self { inner: atom }),
+            _ => Ok(Self(atom)),
         }
     }
 }
 
 impl<'a> AsRef<str> for AuthMechanismOther<'a> {
     fn as_ref(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 }

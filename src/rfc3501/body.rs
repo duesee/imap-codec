@@ -349,7 +349,7 @@ pub fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IStrin
 /// `body-fld-lang = nstring / "(" string *(SP string) ")"`
 pub fn body_fld_lang(input: &[u8]) -> IResult<&[u8], Vec<IString>> {
     alt((
-        map(nstring, |nstring| match nstring.inner {
+        map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
             None => vec![],
         }),
