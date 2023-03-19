@@ -205,6 +205,16 @@ pub struct QuotaGet<'a> {
     pub limit: u64,
 }
 
+impl<'a> QuotaGet<'a> {
+    pub fn new(resource: Resource<'a>, usage: u64, limit: u64) -> Self {
+        Self {
+            resource,
+            usage,
+            limit,
+        }
+    }
+}
+
 impl<'a> Encode for QuotaGet<'a> {
     fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         self.resource.encode(writer)?;
