@@ -1,10 +1,11 @@
 #![no_main]
 
+use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{data::FetchAttributeValue, Code, Data, Response},
+    response::{data::FetchAttributeValue, Code, Continue, Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -50,18 +51,34 @@ fuzz_target!(|test: Response| {
                         // FIXME(#30)
                         return;
                     }
-                    Code::Other(_) => {
-                        // FIXME(#30)
-                        return;
-                    }
                     _ => {}
                 }
             }
         }
-        Response::Continue(_) => {
-            // FIXME(#30)
-            return;
-        }
+        Response::Continue(ref continue_request) => match continue_request {
+            Continue::Basic {
+                code: Some(code), ..
+            } => match code {
+                Code::PermanentFlags(_) => {
+                    // FIXME(#30): Flag handling.
+                    return;
+                }
+                #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
+                Code::Referral(_) => {
+                    // FIXME(#30)
+                    return;
+                }
+                _ => {}
+            },
+            // Oh, IMAP :-/
+            Continue::Basic { code: None, text } => {
+                if _base64.decode(text.inner()).is_ok() {
+                    // FIXME(#30): Flag handling.
+                    return;
+                }
+            }
+            _ => {}
+        },
     }
 
     #[cfg(feature = "debug")]
