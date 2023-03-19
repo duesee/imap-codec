@@ -152,6 +152,7 @@
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
 mod rfc3501;
+pub mod security;
 mod utils;
 
 // -- API -----------------------------------------------------------------------------------

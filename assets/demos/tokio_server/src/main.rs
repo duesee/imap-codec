@@ -4,7 +4,6 @@ use imap_codec::{
     response::{data::Capability, Continue, Data, Greeting, Response, Status},
     tokio_compat::server::{Action, ImapServerCodec, OutcomeServer},
 };
-use subtle::ConstantTimeEq;
 use tokio::{self, net::TcpListener};
 use tokio_util::codec::Decoder;
 
@@ -52,13 +51,8 @@ async fn main() {
                         println!("S: {rsp:?}");
                     }
                     (tag, CommandBody::Login { username, password }) => {
-                        // Convert `AString`s to `&[u8]` ...
-                        let (username, password) = (username.as_ref(), password.as_ref());
-
-                        // ... and compare them with something. (In this example we compare the
-                        // hard-codec username and password in constant time by using the "subtle" crate.)
-                        let rsp = if username.ct_eq(b"alice").unwrap_u8() == 1
-                            && password.ct_eq(b"password").unwrap_u8() == 1
+                        let rsp = if username.as_ref() == b"alice"
+                            && password.compare_ct("password")
                         {
                             Response::Status(
                                 Status::ok(Some(tag), None, "LOGIN succeeded").unwrap(),

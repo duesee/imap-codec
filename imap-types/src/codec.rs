@@ -129,7 +129,7 @@ impl<'a> Encode for CommandBody<'a> {
                 writer.write_all(b" ")?;
                 username.encode(writer)?;
                 writer.write_all(b" ")?;
-                password.encode(writer)
+                password.expose_secret().encode(writer)
             }
             CommandBody::Select { mailbox } => {
                 writer.write_all(b"SELECT")?;
