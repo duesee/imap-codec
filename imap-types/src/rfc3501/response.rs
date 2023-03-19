@@ -793,6 +793,10 @@ impl<'a> Code<'a> {
         Ok(Self::Capability(caps.try_into()?))
     }
 
+    pub fn permanentflags(flags: Vec<Flag<'a>>) -> Self {
+        Self::PermanentFlags(flags)
+    }
+
     pub fn uidnext(uidnext: u32) -> Result<Self, TryFromIntError> {
         Ok(Self::UidNext(NonZeroU32::try_from(uidnext)?))
     }
