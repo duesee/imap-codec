@@ -138,7 +138,7 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
             "message" => Resource::Message,
             "mailbox" => Resource::Mailbox,
             "annotation-storage" => Resource::AnnotationStorage,
-            _ => Resource::Other(ResourceOther { inner: value }),
+            _ => Resource::Other(ResourceOther(value)),
         }
     }
 }
@@ -159,14 +159,12 @@ impl<'a> Encode for Resource<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ResourceOther<'a> {
-    inner: Atom<'a>,
-}
+pub struct ResourceOther<'a>(Atom<'a>);
 
 impl<'a> ResourceOther<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(atom: Atom<'a>) -> Self {
-        Self { inner: atom }
+        Self(atom)
     }
 }
 
@@ -180,16 +178,16 @@ impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
     type Error = ();
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        match atom.inner.to_lowercase().as_ref() {
+        match atom.0.to_lowercase().as_ref() {
             "storage" | "message" | "mailbox" | "annotation-storage" => Err(()),
-            _ => Ok(Self { inner: atom }),
+            _ => Ok(Self(atom)),
         }
     }
 }
 
 impl<'a> Encode for ResourceOther<'a> {
     fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.inner.encode(writer)
+        self.0.encode(writer)
     }
 }
 

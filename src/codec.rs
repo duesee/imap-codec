@@ -219,11 +219,9 @@ mod tests {
                     Response::Data(Data::Fetch {
                         seq_or_uid: NonZeroU32::new(1).unwrap(),
                         attributes: NonEmptyVec::try_from(vec![FetchAttributeValue::Rfc822(
-                            NString {
-                                inner: Some(IString::Literal(
-                                    Literal::try_from(b"hello".as_ref()).unwrap(),
-                                )),
-                            },
+                            NString(Some(IString::Literal(
+                                Literal::try_from(b"hello".as_ref()).unwrap(),
+                            ))),
                         )])
                         .unwrap(),
                     }),

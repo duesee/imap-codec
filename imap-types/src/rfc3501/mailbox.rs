@@ -20,9 +20,7 @@ use crate::{
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ListCharString<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct ListCharString<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> ListCharString<'a> {
     pub fn verify(value: &str) -> bool {
@@ -34,7 +32,7 @@ impl<'a> ListCharString<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -43,9 +41,7 @@ impl<'a> TryFrom<&'a str> for ListCharString<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Self::verify(value) {
-            Ok(Self {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Self(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -57,9 +53,7 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::verify(&value) {
-            Ok(Self {
-                inner: Cow::Owned(value),
-            })
+            Ok(Self(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -68,7 +62,7 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
 
 impl<'a> AsRef<[u8]> for ListCharString<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.inner.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -177,9 +171,7 @@ impl<'a> From<AString<'a>> for Mailbox<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MailboxOther<'a> {
-    pub(crate) inner: AString<'a>,
-}
+pub struct MailboxOther<'a>(pub(crate) AString<'a>);
 
 impl_try_from_try_from!(AString, 'a, &'a [u8], MailboxOther<'a>);
 impl_try_from_try_from!(AString, 'a, Vec<u8>, MailboxOther<'a>);
@@ -196,13 +188,13 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
             }
         }
 
-        Ok(MailboxOther { inner: mailbox })
+        Ok(MailboxOther(mailbox))
     }
 }
 
 impl<'a> AsRef<[u8]> for MailboxOther<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 }
 
@@ -225,11 +217,9 @@ mod tests {
             ("INBOX", Mailbox::Inbox),
             (
                 "INBO²",
-                Mailbox::Other(MailboxOther {
-                    inner: AString::String(IString::Literal(Literal {
-                        inner: Cow::Borrowed("INBO²".as_bytes()),
-                    })),
-                }),
+                Mailbox::Other(MailboxOther(AString::String(IString::Literal(Literal(
+                    Cow::Borrowed("INBO²".as_bytes()),
+                ))))),
             ),
         ];
 

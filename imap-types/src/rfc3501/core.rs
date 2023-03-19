@@ -48,9 +48,7 @@ pub(crate) use impl_try_from_try_from;
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Atom<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Atom<'a> {
     pub fn verify(value: &[u8]) -> bool {
@@ -58,11 +56,11 @@ impl<'a> Atom<'a> {
     }
 
     pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     pub fn into_inner(self) -> Cow<'a, str> {
-        self.inner
+        self.0
     }
 
     #[cfg(feature = "unchecked")]
@@ -70,7 +68,7 @@ impl<'a> Atom<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner.as_bytes()));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -99,9 +97,7 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Self(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -113,9 +109,7 @@ impl<'a> TryFrom<String> for Atom<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Atom {
-                inner: Cow::Owned(value),
-            })
+            Ok(Atom(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -127,7 +121,7 @@ impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
 
     fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Atom { inner: value })
+            Ok(Atom(value))
         } else {
             Err(())
         }
@@ -136,7 +130,7 @@ impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
 
 impl<'a> AsRef<str> for Atom<'a> {
     fn as_ref(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 }
 
@@ -146,9 +140,7 @@ impl<'a> AsRef<str> for Atom<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AtomExt<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> AtomExt<'a> {
     pub fn verify(value: &[u8]) -> bool {
@@ -156,7 +148,7 @@ impl<'a> AtomExt<'a> {
     }
 
     pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
@@ -164,7 +156,7 @@ impl<'a> AtomExt<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner.as_bytes()));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -193,9 +185,7 @@ impl<'a> TryFrom<&'a str> for AtomExt<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Self(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -207,9 +197,7 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Owned(value),
-            })
+            Ok(Self(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -218,7 +206,7 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
 
 impl<'a> AsRef<str> for AtomExt<'a> {
     fn as_ref(&self) -> &str {
-        &self.inner
+        &self.0
     }
 }
 
@@ -326,9 +314,7 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Literal<'a> {
-    pub(crate) inner: Cow<'a, [u8]>,
-}
+pub struct Literal<'a>(pub(crate) Cow<'a, [u8]>);
 
 impl<'a> Literal<'a> {
     pub fn verify(bytes: &[u8]) -> bool {
@@ -336,7 +322,7 @@ impl<'a> Literal<'a> {
     }
 
     pub fn inner(&self) -> &[u8] {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     /// Create a literal from a byte sequence without checking
@@ -351,7 +337,7 @@ impl<'a> Literal<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -360,9 +346,7 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if Literal::verify(value) {
-            Ok(Literal {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Literal(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -374,9 +358,7 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if Literal::verify(&value) {
-            Ok(Literal {
-                inner: Cow::Owned(value),
-            })
+            Ok(Literal(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -401,7 +383,7 @@ impl<'a> TryFrom<String> for Literal<'a> {
 
 impl<'a> AsRef<[u8]> for Literal<'a> {
     fn as_ref(&self) -> &[u8] {
-        &self.inner
+        &self.0
     }
 }
 
@@ -413,9 +395,7 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Quoted<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Quoted<'a> {
     pub fn verify(value: &[u8]) -> bool {
@@ -423,7 +403,7 @@ impl<'a> Quoted<'a> {
     }
 
     pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     /// Create a quoted from a string without checking
@@ -438,7 +418,7 @@ impl<'a> Quoted<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner.as_bytes()));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -467,9 +447,7 @@ impl<'a> TryFrom<&'a str> for Quoted<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Quoted::verify(value.as_bytes()) {
-            Ok(Quoted {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Quoted(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -481,9 +459,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Quoted::verify(value.as_bytes()) {
-            Ok(Quoted {
-                inner: Cow::Owned(value),
-            })
+            Ok(Quoted(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -492,7 +468,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
 
 impl<'a> AsRef<str> for Quoted<'a> {
     fn as_ref(&self) -> &str {
-        &self.inner
+        &self.0
     }
 }
 
@@ -503,11 +479,11 @@ impl<'a> AsRef<str> for Quoted<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NString<'a> {
+pub struct NString<'a>(
     // This wrapper is merely used for formatting.
     // The inner value can be public.
-    pub inner: Option<IString<'a>>,
-}
+    pub Option<IString<'a>>,
+);
 
 /// Either an (extended) atom or a string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -637,9 +613,7 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct Tag<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Tag<'a> {
     pub fn verify(value: &[u8]) -> bool {
@@ -647,7 +621,7 @@ impl<'a> Tag<'a> {
     }
 
     pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
@@ -655,7 +629,7 @@ impl<'a> Tag<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner.as_bytes()));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -684,9 +658,7 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Self(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -698,9 +670,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Owned(value),
-            })
+            Ok(Self(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -709,16 +679,14 @@ impl<'a> TryFrom<String> for Tag<'a> {
 
 impl<'a> AsRef<str> for Tag<'a> {
     fn as_ref(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct Text<'a> {
-    pub(crate) inner: Cow<'a, str>,
-}
+pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Text<'a> {
     pub fn verify(value: &[u8]) -> bool {
@@ -726,7 +694,7 @@ impl<'a> Text<'a> {
     }
 
     pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+        self.0.as_ref()
     }
 
     #[cfg(feature = "unchecked")]
@@ -734,7 +702,7 @@ impl<'a> Text<'a> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner.as_bytes()));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -763,9 +731,7 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Borrowed(value),
-            })
+            Ok(Self(Cow::Borrowed(value)))
         } else {
             Err(())
         }
@@ -777,9 +743,7 @@ impl<'a> TryFrom<String> for Text<'a> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::verify(value.as_bytes()) {
-            Ok(Self {
-                inner: Cow::Owned(value),
-            })
+            Ok(Self(Cow::Owned(value)))
         } else {
             Err(())
         }
@@ -789,9 +753,7 @@ impl<'a> TryFrom<String> for Text<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
-pub struct QuotedChar {
-    inner: char,
-}
+pub struct QuotedChar(char);
 
 impl QuotedChar {
     pub fn verify(input: char) -> bool {
@@ -802,7 +764,7 @@ impl QuotedChar {
     }
 
     pub fn inner(&self) -> char {
-        self.inner
+        self.0
     }
 
     #[cfg(feature = "unchecked")]
@@ -810,7 +772,7 @@ impl QuotedChar {
         #[cfg(debug_assertions)]
         assert!(Self::verify(inner));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -819,7 +781,7 @@ impl TryFrom<char> for QuotedChar {
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         if Self::verify(value) {
-            Ok(QuotedChar { inner: value })
+            Ok(QuotedChar(value))
         } else {
             Err(())
         }
@@ -901,9 +863,7 @@ impl<'a> AsRef<str> for Charset<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NonEmptyVec<T> {
-    pub(crate) inner: Vec<T>,
-}
+pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
 
 impl<T> NonEmptyVec<T> {
     pub fn verify(value: &[T]) -> bool {
@@ -915,7 +875,7 @@ impl<T> NonEmptyVec<T> {
         #[cfg(debug_assertions)]
         assert!(Self::verify(&inner));
 
-        Self { inner }
+        Self(inner)
     }
 }
 
@@ -924,7 +884,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
         if Self::verify(&inner) {
-            Ok(Self { inner })
+            Ok(Self(inner))
         } else {
             Err(())
         }
@@ -933,7 +893,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
 
 impl<T> AsRef<[T]> for NonEmptyVec<T> {
     fn as_ref(&self) -> &[T] {
-        &self.inner
+        &self.0
     }
 }
 
@@ -950,23 +910,15 @@ mod tests {
             (
                 b"A",
                 (
-                    Ok(Atom {
-                        inner: Cow::Borrowed("A"),
-                    }),
-                    Ok(Atom {
-                        inner: Cow::Owned("A".into()),
-                    }),
+                    Ok(Atom(Cow::Borrowed("A"))),
+                    Ok(Atom(Cow::Owned("A".into()))),
                 ),
             ),
             (
                 b"ABC",
                 (
-                    Ok(Atom {
-                        inner: Cow::Borrowed("ABC"),
-                    }),
-                    Ok(Atom {
-                        inner: Cow::Owned("ABC".into()),
-                    }),
+                    Ok(Atom(Cow::Borrowed("ABC"))),
+                    Ok(Atom(Cow::Owned("ABC".into()))),
                 ),
             ),
             (b" A", (Err(()), Err(()))),
@@ -1011,34 +963,22 @@ mod tests {
             (
                 b"A",
                 (
-                    Ok(AtomExt {
-                        inner: Cow::Borrowed("A"),
-                    }),
-                    Ok(AtomExt {
-                        inner: Cow::Owned("A".into()),
-                    }),
+                    Ok(AtomExt(Cow::Borrowed("A"))),
+                    Ok(AtomExt(Cow::Owned("A".into()))),
                 ),
             ),
             (
                 b"ABC",
                 (
-                    Ok(AtomExt {
-                        inner: Cow::Borrowed("ABC"),
-                    }),
-                    Ok(AtomExt {
-                        inner: Cow::Owned("ABC".into()),
-                    }),
+                    Ok(AtomExt(Cow::Borrowed("ABC"))),
+                    Ok(AtomExt(Cow::Owned("ABC".into()))),
                 ),
             ),
             (
                 b"!partition/sda4",
                 (
-                    Ok(AtomExt {
-                        inner: Cow::Borrowed("!partition/sda4"),
-                    }),
-                    Ok(AtomExt {
-                        inner: Cow::Owned("!partition/sda4".into()),
-                    }),
+                    Ok(AtomExt(Cow::Borrowed("!partition/sda4"))),
+                    Ok(AtomExt(Cow::Owned("!partition/sda4".into()))),
                 ),
             ),
             (b" A", (Err(()), Err(()))),
@@ -1083,78 +1023,68 @@ mod tests {
             (
                 b"A",
                 (
-                    Ok(AString::Atom(AtomExt {
-                        inner: Cow::Borrowed("A"),
-                    })),
-                    Ok(AString::Atom(AtomExt {
-                        inner: Cow::Owned("A".into()),
-                    })),
+                    Ok(AString::Atom(AtomExt(Cow::Borrowed("A")))),
+                    Ok(AString::Atom(AtomExt(Cow::Owned("A".into())))),
                 ),
             ),
             (
                 b"ABC",
                 (
-                    Ok(AString::Atom(AtomExt {
-                        inner: Cow::Borrowed("ABC"),
-                    })),
-                    Ok(AString::Atom(AtomExt {
-                        inner: Cow::Owned("ABC".into()),
-                    })),
+                    Ok(AString::Atom(AtomExt(Cow::Borrowed("ABC")))),
+                    Ok(AString::Atom(AtomExt(Cow::Owned("ABC".into())))),
                 ),
             ),
             (
                 b"",
                 (
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Borrowed(""),
-                    }))),
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Owned("".to_owned()),
-                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Borrowed(""))))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Owned(
+                        "".to_owned(),
+                    ))))),
                 ),
             ),
             (
                 b" A",
                 (
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Borrowed(" A"),
-                    }))),
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Owned(" A".to_owned()),
-                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Borrowed(
+                        " A",
+                    ))))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Owned(
+                        " A".to_owned(),
+                    ))))),
                 ),
             ),
             (
                 b"A ",
                 (
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Borrowed("A "),
-                    }))),
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Owned("A ".to_owned()),
-                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Borrowed(
+                        "A ",
+                    ))))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Owned(
+                        "A ".to_owned(),
+                    ))))),
                 ),
             ),
             (
                 b"\"",
                 (
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Borrowed("\""),
-                    }))),
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Owned("\"".to_owned()),
-                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Borrowed(
+                        "\"",
+                    ))))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Owned(
+                        "\"".to_owned(),
+                    ))))),
                 ),
             ),
             (
                 b"\\\"",
                 (
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Borrowed("\\\""),
-                    }))),
-                    Ok(AString::String(IString::Quoted(Quoted {
-                        inner: Cow::Owned("\\\"".to_owned()),
-                    }))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Borrowed(
+                        "\\\"",
+                    ))))),
+                    Ok(AString::String(IString::Quoted(Quoted(Cow::Owned(
+                        "\\\"".to_owned(),
+                    ))))),
                 ),
             ),
             (b"A\x00", (Err(()), Err(()))),

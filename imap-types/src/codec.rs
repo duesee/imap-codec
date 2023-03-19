@@ -426,7 +426,7 @@ impl<'a> Encode for Mailbox<'a> {
 
 impl<'a> Encode for MailboxOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.inner.encode(writer)
+        self.0.encode(writer)
     }
 }
 
@@ -1188,7 +1188,7 @@ impl<'a> Encode for FetchAttributeValue<'a> {
 
 impl<'a> Encode for NString<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match &self.inner {
+        match &self.0 {
             Some(imap_str) => imap_str.encode(writer),
             None => writer.write_all(b"NIL"),
         }
@@ -1211,7 +1211,7 @@ impl<'a> Encode for BodyStructure<'a> {
                 subtype,
                 extension_data,
             } => {
-                for body in &bodies.inner {
+                for body in &bodies.0 {
                     body.encode(writer)?;
                 }
                 writer.write_all(b" ")?;

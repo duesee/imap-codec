@@ -88,14 +88,12 @@ mod tests {
         assert_eq!(
             val,
             Address {
-                name: NString { inner: None },
-                adl: NString {
-                    inner: Some(IString::Literal(b"xxx".as_slice().try_into().unwrap()))
-                },
-                mailbox: NString {
-                    inner: Some(IString::Quoted("xxx".try_into().unwrap()))
-                },
-                host: NString { inner: None },
+                name: NString(None),
+                adl: NString(Some(IString::Literal(
+                    b"xxx".as_slice().try_into().unwrap()
+                ))),
+                mailbox: NString(Some(IString::Quoted("xxx".try_into().unwrap()))),
+                host: NString(None),
             }
         );
         assert_eq!(rem, b"");

@@ -111,10 +111,10 @@
 //!                 body: Body {
 //!                     basic: BasicFields {
 //!                         parameter_list: vec![],
-//!                         id: NString { inner: None },
-//!                         description: NString {
-//!                             inner: Some(IString::try_from("Important message.").unwrap()),
-//!                         },
+//!                         id: NString(None),
+//!                         description: NString(Some(
+//!                             IString::try_from("Important message.").unwrap(),
+//!                         )),
 //!                         content_transfer_encoding: IString::try_from("base64").unwrap(),
 //!                         size: 512,
 //!                     },
@@ -124,7 +124,7 @@
 //!                     },
 //!                 },
 //!                 extension: Some(SinglePartExtensionData {
-//!                     md5: NString { inner: None },
+//!                     md5: NString(None),
 //!                     disposition: None,
 //!                     language: None,
 //!                     location: None,
