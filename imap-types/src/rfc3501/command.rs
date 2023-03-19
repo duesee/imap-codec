@@ -1750,7 +1750,7 @@ pub enum SearchKey<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     #[cfg(feature = "ext_sasl_ir")]
     use std::borrow::Cow;
     #[cfg(feature = "ext_sasl_ir")]

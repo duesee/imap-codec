@@ -83,7 +83,7 @@ pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::convert::TryInto;
 
     use super::*;

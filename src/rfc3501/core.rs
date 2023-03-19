@@ -324,7 +324,7 @@ pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::convert::TryInto;
 
     use imap_types::core::Quoted;

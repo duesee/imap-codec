@@ -561,7 +561,7 @@ pub fn media_text(input: &[u8]) -> IResult<&[u8], IString> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]

@@ -983,7 +983,7 @@ impl<'a> CapabilityOther<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::convert::TryFrom;
 
     use super::*;

@@ -256,7 +256,7 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::{
         convert::{TryFrom, TryInto},
         num::NonZeroU32,
