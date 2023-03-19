@@ -193,6 +193,7 @@ mod tests {
     use imap_types::{
         command::{Command, CommandBody},
         core::{AString, AtomExt, IString, Literal},
+        security::Secret,
     };
     use tokio_util::codec::Decoder;
 
@@ -256,7 +257,9 @@ mod tests {
                             username: AString::String(IString::Literal(
                                 Literal::try_from(b"alice".as_ref()).unwrap(),
                             )),
-                            password: AString::Atom(AtomExt::try_from("password").unwrap()),
+                            password: Secret::new(AString::Atom(
+                                AtomExt::try_from("password").unwrap(),
+                            )),
                         },
                     )
                     .unwrap(),

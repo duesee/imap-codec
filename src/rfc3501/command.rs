@@ -11,6 +11,7 @@ use imap_types::{
     },
     core::{AString, NonEmptyVec},
     message::{AuthMechanism, Flag},
+    security::Secret,
 };
 use nom::{
     branch::alt,
@@ -305,7 +306,13 @@ pub fn login(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
     let (remaining, (_, _, username, _, password)) = parser(input)?;
 
-    Ok((remaining, CommandBody::Login { username, password }))
+    Ok((
+        remaining,
+        CommandBody::Login {
+            username,
+            password: Secret::new(password),
+        },
+    ))
 }
 
 #[inline]

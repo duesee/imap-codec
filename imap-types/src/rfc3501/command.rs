@@ -28,6 +28,7 @@ use crate::{
     },
     core::{AString, Atom, Literal, NonEmptyVec},
     message::{AuthMechanism, Charset, Flag, Mailbox, MyDateTime, MyNaiveDate, Tag},
+    security::Secret,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -293,7 +294,7 @@ pub enum CommandBody<'a> {
     ///   LOGINDISABLED capability is advertised.
     Login {
         username: AString<'a>,
-        password: AString<'a>,
+        password: Secret<AString<'a>>,
     },
 
     // ----- Authenticated State (https://tools.ietf.org/html/rfc3501#section-6.3) -----
@@ -1326,7 +1327,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Login {
             username: username.try_into().map_err(|_| ())?,
-            password: password.try_into().map_err(|_| ())?,
+            password: Secret::new(password.try_into().map_err(|_| ())?),
         })
     }
 

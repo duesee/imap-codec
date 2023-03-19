@@ -13,7 +13,7 @@ use imap_codec::{
         Code, Data, Response, Status,
     },
 };
-use imap_types::response::Greeting;
+use imap_types::{response::Greeting, security::Secret};
 
 enum Who {
     Client,
@@ -381,7 +381,7 @@ fn test_from_login() {
                                 Quoted::try_from("SMITH").unwrap(),
                             )),
                             // ... and an atom (knowing that `AString::try_from(...)` will create it.
-                            password: AString::try_from("SESAME").unwrap(),
+                            password: Secret::new(AString::try_from("SESAME").unwrap()),
                         },
                     )
                     .unwrap(),
