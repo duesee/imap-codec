@@ -192,8 +192,261 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
+    use imap_types::{
+        core::IString,
+        message::Tag,
+        response::{
+            data::{Capability, StatusAttributeValue},
+            Code, Response, Status,
+        },
+    };
+
     use super::*;
-    use crate::imap_types::extensions::rfc9208::ResourceOther;
+    use crate::{
+        codec::Decode,
+        command::{status::StatusAttribute, Command, CommandBody},
+        imap_types::extensions::rfc9208::ResourceOther,
+        message::Mailbox,
+    };
+
+    #[test]
+    fn test_trace_command() {
+        let tests = [
+            (
+                "A001 SETQUOTA \"\" (STORAGE 512)\r\n",
+                CommandBody::set_quota("", vec![QuotaSet::new(Resource::Storage, 512)])
+                    .unwrap()
+                    .tag("A001")
+                    .unwrap(),
+            ),
+            (
+                "A003 GETQUOTA \"\"\r\n",
+                CommandBody::get_quota("").unwrap().tag("A003").unwrap(),
+            ),
+            (
+                "A003 GETQUOTAROOT INBOX\r\n",
+                CommandBody::get_quota_root(Mailbox::Inbox)
+                    .unwrap()
+                    .tag("A003")
+                    .unwrap(),
+            ),
+            (
+                "G0001 GETQUOTA \"!partition/sda4\"\r\n",
+                CommandBody::get_quota(AString::String(
+                    IString::try_from("!partition/sda4").unwrap(),
+                ))
+                .unwrap()
+                .tag("G0001")
+                .unwrap(),
+            ),
+            (
+                "G0002 GETQUOTAROOT INBOX\r\n",
+                CommandBody::get_quota_root("inbox")
+                    .unwrap()
+                    .tag("G0002")
+                    .unwrap(),
+            ),
+            (
+                "S0000 GETQUOTA \"#user/alice\"\r\n",
+                CommandBody::get_quota(AString::String(IString::try_from("#user/alice").unwrap()))
+                    .unwrap()
+                    .tag("S0000")
+                    .unwrap(),
+            ),
+            (
+                "S0001 SETQUOTA \"#user/alice\" (STORAGE 510)\r\n",
+                CommandBody::set_quota(
+                    AString::String(IString::try_from("#user/alice").unwrap()),
+                    vec![QuotaSet::new(Resource::Storage, 510)],
+                )
+                .unwrap()
+                .tag("S0001")
+                .unwrap(),
+            ),
+            (
+                "S0002 SETQUOTA \"!partition/sda4\" (STORAGE 99999999)\r\n",
+                CommandBody::set_quota(
+                    AString::String(IString::try_from("!partition/sda4").unwrap()),
+                    vec![QuotaSet::new(Resource::Storage, 99999999)],
+                )
+                .unwrap()
+                .tag("S0002")
+                .unwrap(),
+            ),
+            (
+                "S0003 STATUS INBOX (MESSAGES DELETED DELETED-STORAGE)\r\n",
+                CommandBody::status(
+                    "inbox",
+                    vec![
+                        StatusAttribute::Messages,
+                        StatusAttribute::Deleted,
+                        StatusAttribute::DeletedStorage,
+                    ],
+                )
+                .unwrap()
+                .tag("S0003")
+                .unwrap(),
+            ),
+        ];
+
+        for (test, expected) in tests {
+            let (got_rem, got_cmd) = Command::decode(test.as_bytes()).unwrap();
+            assert!(got_rem.is_empty());
+            assert_eq!(expected, got_cmd);
+        }
+    }
+
+    #[test]
+    fn test_trace_response() {
+        let tests = [
+            (
+                "A003 NO [OVERQUOTA] APPEND Failed\r\n",
+                Response::Status(
+                    Status::no(
+                        Some(Tag::try_from("A003").unwrap()),
+                        Some(Code::OverQuota),
+                        "APPEND Failed",
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* CAPABILITY QUOTA QUOTA=RES-STORAGE\r\n",
+                Response::Data(
+                    Data::capability(vec![
+                        Capability::Quota,
+                        Capability::QuotaRes(Resource::Storage),
+                    ])
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* CAPABILITY QUOTA QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                Response::Data(
+                    Data::capability(vec![
+                        Capability::Quota,
+                        Capability::QuotaRes(Resource::Storage),
+                        Capability::QuotaRes(Resource::Message),
+                    ])
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* CAPABILITY QUOTA QUOTASET QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                Response::Data(
+                    Data::capability(vec![
+                        Capability::Quota,
+                        Capability::QuotaSet,
+                        Capability::QuotaRes(Resource::Storage),
+                        Capability::QuotaRes(Resource::Message),
+                    ])
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* NO [OVERQUOTA] Soft quota has been exceeded\r\n",
+                Response::Status(
+                    Status::no(None, Some(Code::OverQuota), "Soft quota has been exceeded")
+                        .unwrap(),
+                ),
+            ),
+            (
+                "* QUOTA \"!partition/sda4\" (STORAGE 104 10923847)\r\n",
+                Response::Data(
+                    Data::quota(
+                        AString::String(IString::try_from("!partition/sda4").unwrap()),
+                        vec![QuotaGet::new(Resource::Storage, 104, 10923847)],
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* QUOTAROOT comp.mail.mime\r\n",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::try_from("comp.mail.mime").unwrap(),
+                    roots: vec![],
+                }),
+            ),
+            (
+                "* QUOTAROOT INBOX \"\"\r\n",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::Inbox,
+                    roots: vec!["".try_into().unwrap()],
+                }),
+            ),
+            (
+                "* QUOTAROOT INBOX \"#user/alice\" \"!partition/sda4\"\r\n",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::try_from("inbox").unwrap(),
+                    roots: vec![
+                        AString::String(IString::try_from("#user/alice").unwrap()),
+                        AString::String(IString::try_from("!partition/sda4").unwrap()),
+                    ],
+                }),
+            ),
+            (
+                "* QUOTA \"\" (STORAGE 10 512)\r\n",
+                Response::Data(Data::Quota {
+                    root: "".try_into().unwrap(),
+                    quotas: vec![QuotaGet::new(Resource::Storage, 10, 512)]
+                        .try_into()
+                        .unwrap(),
+                }),
+            ),
+            (
+                "* QUOTA \"#user/alice\" (MESSAGE 42 1000)\r\n",
+                Response::Data(Data::Quota {
+                    root: AString::String(IString::try_from("#user/alice").unwrap()),
+                    quotas: vec![QuotaGet::new(Resource::Message, 42, 1000)]
+                        .try_into()
+                        .unwrap(),
+                }),
+            ),
+            (
+                "* QUOTA \"#user/alice\" (STORAGE 54 111 MESSAGE 42 1000)\r\n",
+                Response::Data(
+                    Data::quota(
+                        AString::String(IString::try_from("#user/alice").unwrap()),
+                        vec![
+                            QuotaGet::new(Resource::Storage, 54, 111),
+                            QuotaGet::new(Resource::Message, 42, 1000),
+                        ],
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* QUOTA \"#user/alice\" (STORAGE 58 512)\r\n",
+                Response::Data(
+                    Data::quota(
+                        AString::String(IString::try_from("#user/alice").unwrap()),
+                        vec![QuotaGet::new(Resource::Storage, 58, 512)],
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                "* STATUS INBOX (MESSAGES 12 DELETED 4 DELETED-STORAGE 8)\r\n",
+                Response::Data(Data::Status {
+                    mailbox: Mailbox::Inbox,
+                    attributes: vec![
+                        StatusAttributeValue::Messages(12),
+                        StatusAttributeValue::Deleted(4),
+                        StatusAttributeValue::DeletedStorage(8),
+                    ],
+                }),
+            ),
+        ];
+
+        for (test, expected) in tests {
+            let (got_rem, got_rsp) = Response::decode(test.as_bytes()).unwrap();
+            println!("{expected:?} == {got_rsp:?}");
+            assert!(got_rem.is_empty());
+            assert_eq!(expected, got_rsp);
+        }
+    }
 
     #[test]
     fn test_resource() {
