@@ -81,7 +81,7 @@ Status(Ok { tag: None, code: None, text: Text("IMAP4rev1 Service Ready") })
 // * OK IMAP4rev1 Service Ready
 
 // a001 login mrc secret
-Command { tag: Tag("a001"), body: Login { username: Atom(Atom("mrc")), password: Atom(Atom("secret")) } }
+Command { tag: Tag("a001"), body: Login { username: Atom(AtomExt("mrc")), password: [[REDACTED]] } }
 // a001 LOGIN mrc secret
 
 // a001 OK LOGIN completed
@@ -117,11 +117,11 @@ Status(Ok { tag: Some(Tag("a002")), code: Some(ReadWrite), text: Text("SELECT co
 // a002 OK [READ-WRITE] SELECT completed
 
 // a003 fetch 12 full
-Command { tag: Tag("a003"), body: Fetch { sequence_set: SequenceSet([Single(Value(12))]), attributes: Macro(Full), uid: false } }
+Command { tag: Tag("a003"), body: Fetch { sequence_set: SequenceSet(NonEmptyVec([Single(Value(12))])), attributes: Macro(Full), uid: false } }
 // a003 FETCH 12 FULL
 
 // * 12 FETCH (FLAGS (\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700" RFC822.SIZE 4286 ENVELOPE ("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)" "IMAP4rev1 WG mtg summary and minutes" (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) ((NIL NIL "imap" "cac.washington.edu")) ((NIL NIL "minutes" "CNRI.Reston.VA.US")("John Klensin" NIL "KLENSIN" "MIT.EDU")) NIL NIL "<B27397-0100000@cac.washington.edu>") BODY ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 3028 92))
-Data(Fetch { seq_or_uid: 12, attributes: [Flags([Seen]), InternalDate(1996-07-17T02:44:25-07:00), Rfc822Size(4286), Envelope(Envelope { date: NString(Some(Quoted(Quoted("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)")))), subject: NString(Some(Quoted(Quoted("IMAP4rev1 WG mtg summary and minutes")))), from: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], sender: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], reply_to: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], to: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("imap")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], cc: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("minutes")))), host: NString(Some(Quoted(Quoted("CNRI.Reston.VA.US")))) }, Address { name: NString(Some(Quoted(Quoted("John Klensin")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("KLENSIN")))), host: NString(Some(Quoted(Quoted("MIT.EDU")))) }], bcc: [], in_reply_to: NString(None), message_id: NString(Some(Quoted(Quoted("<B27397-0100000@cac.washington.edu>")))) }), Body(Single { body: Body { basic: BasicFields { parameter_list: [(Quoted(Quoted("CHARSET")), Quoted(Quoted("US-ASCII")))], id: NString(None), description: NString(None), content_transfer_encoding: Quoted(Quoted("7BIT")), size: 3028 }, specific: Text { subtype: Quoted(Quoted("PLAIN")), number_of_lines: 92 } }, extension: None })] })
+Data(Fetch { seq_or_uid: 12, attributes: NonEmptyVec([Flags([Seen]), InternalDate(1996-07-17T02:44:25-07:00), Rfc822Size(4286), Envelope(Envelope { date: NString(Some(Quoted(Quoted("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)")))), subject: NString(Some(Quoted(Quoted("IMAP4rev1 WG mtg summary and minutes")))), from: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], sender: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], reply_to: [Address { name: NString(Some(Quoted(Quoted("Terry Gray")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("gray")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], to: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("imap")))), host: NString(Some(Quoted(Quoted("cac.washington.edu")))) }], cc: [Address { name: NString(None), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("minutes")))), host: NString(Some(Quoted(Quoted("CNRI.Reston.VA.US")))) }, Address { name: NString(Some(Quoted(Quoted("John Klensin")))), adl: NString(None), mailbox: NString(Some(Quoted(Quoted("KLENSIN")))), host: NString(Some(Quoted(Quoted("MIT.EDU")))) }], bcc: [], in_reply_to: NString(None), message_id: NString(Some(Quoted(Quoted("<B27397-0100000@cac.washington.edu>")))) }), Body(Single { body: Body { basic: BasicFields { parameter_list: [(Quoted(Quoted("CHARSET")), Quoted(Quoted("US-ASCII")))], id: NString(None), description: NString(None), content_transfer_encoding: Quoted(Quoted("7BIT")), size: 3028 }, specific: Text { subtype: Quoted(Quoted("PLAIN")), number_of_lines: 92 } }, extension: None })]) })
 // * 12 FETCH (FLAGS (\Seen) INTERNALDATE "17-Jul-1996 02:44:25 -0700" RFC822.SIZE 4286 ENVELOPE ("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)" "IMAP4rev1 WG mtg summary and minutes" (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) (("Terry Gray" NIL "gray" "cac.washington.edu")) ((NIL NIL "imap" "cac.washington.edu")) ((NIL NIL "minutes" "CNRI.Reston.VA.US")("John Klensin" NIL "KLENSIN" "MIT.EDU")) NIL NIL "<B27397-0100000@cac.washington.edu>") BODY ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 3028 92))
 
 // a003 OK FETCH completed
@@ -129,19 +129,43 @@ Status(Ok { tag: Some(Tag("a003")), code: None, text: Text("FETCH completed") })
 // a003 OK FETCH completed
 
 // a004 fetch 12 body[header]
-Command { tag: Tag("a004"), body: Fetch { sequence_set: SequenceSet([Single(Value(12))]), attributes: FetchAttributes([BodyExt { section: Some(Header(None)), partial: None, peek: false }]), uid: false } }
+Command { tag: Tag("a004"), body: Fetch { sequence_set: SequenceSet(NonEmptyVec([Single(Value(12))])), attributes: FetchAttributes([BodyExt { section: Some(Header(None)), partial: None, peek: false }]), uid: false } }
 // a004 FETCH 12 BODY[HEADER]
+
+// * 12 FETCH (BODY[HEADER] {342}
+// Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)
+// From: Terry Gray <gray@cac.washington.edu>
+// Subject: IMAP4rev1 WG mtg summary and minutes
+// To: imap@cac.washington.edu
+// cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>
+// Message-Id: <B27397-0100000@cac.washington.edu>
+// MIME-Version: 1.0
+// Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+// 
+// )
+Data(Fetch { seq_or_uid: 12, attributes: NonEmptyVec([BodyExt { section: Some(Header(None)), origin: None, data: NString(Some(Literal(Literal([68, 97, 116, 101, 58, 32, 87, 101, 100, 44, 32, 49, 55, 32, 74, 117, 108, 32, 49, 57, 57, 54, 32, 48, 50, 58, 50, 51, 58, 50, 53, 32, 45, 48, 55, 48, 48, 32, 40, 80, 68, 84, 41, 13, 10, 70, 114, 111, 109, 58, 32, 84, 101, 114, 114, 121, 32, 71, 114, 97, 121, 32, 60, 103, 114, 97, 121, 64, 99, 97, 99, 46, 119, 97, 115, 104, 105, 110, 103, 116, 111, 110, 46, 101, 100, 117, 62, 13, 10, 83, 117, 98, 106, 101, 99, 116, 58, 32, 73, 77, 65, 80, 52, 114, 101, 118, 49, 32, 87, 71, 32, 109, 116, 103, 32, 115, 117, 109, 109, 97, 114, 121, 32, 97, 110, 100, 32, 109, 105, 110, 117, 116, 101, 115, 13, 10, 84, 111, 58, 32, 105, 109, 97, 112, 64, 99, 97, 99, 46, 119, 97, 115, 104, 105, 110, 103, 116, 111, 110, 46, 101, 100, 117, 13, 10, 99, 99, 58, 32, 109, 105, 110, 117, 116, 101, 115, 64, 67, 78, 82, 73, 46, 82, 101, 115, 116, 111, 110, 46, 86, 65, 46, 85, 83, 44, 32, 74, 111, 104, 110, 32, 75, 108, 101, 110, 115, 105, 110, 32, 60, 75, 76, 69, 78, 83, 73, 78, 64, 77, 73, 84, 46, 69, 68, 85, 62, 13, 10, 77, 101, 115, 115, 97, 103, 101, 45, 73, 100, 58, 32, 60, 66, 50, 55, 51, 57, 55, 45, 48, 49, 48, 48, 48, 48, 48, 64, 99, 97, 99, 46, 119, 97, 115, 104, 105, 110, 103, 116, 111, 110, 46, 101, 100, 117, 62, 13, 10, 77, 73, 77, 69, 45, 86, 101, 114, 115, 105, 111, 110, 58, 32, 49, 46, 48, 13, 10, 67, 111, 110, 116, 101, 110, 116, 45, 84, 121, 112, 101, 58, 32, 84, 69, 88, 84, 47, 80, 76, 65, 73, 78, 59, 32, 67, 72, 65, 82, 83, 69, 84, 61, 85, 83, 45, 65, 83, 67, 73, 73, 13, 10, 13, 10])))) }]) })
+// * 12 FETCH (BODY[HEADER] {342}
+// Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)
+// From: Terry Gray <gray@cac.washington.edu>
+// Subject: IMAP4rev1 WG mtg summary and minutes
+// To: imap@cac.washington.edu
+// cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>
+// Message-Id: <B27397-0100000@cac.washington.edu>
+// MIME-Version: 1.0
+// Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+// 
+// )
 
 // a004 OK FETCH completed
 Status(Ok { tag: Some(Tag("a004")), code: None, text: Text("FETCH completed") })
 // a004 OK FETCH completed
 
 // a005 store 12 +flags \deleted
-Command { tag: Tag("a005"), body: Store { sequence_set: SequenceSet([Single(Value(12))]), kind: Add, response: Answer, flags: [Deleted], uid: false } }
+Command { tag: Tag("a005"), body: Store { sequence_set: SequenceSet(NonEmptyVec([Single(Value(12))])), kind: Add, response: Answer, flags: [Deleted], uid: false } }
 // a005 STORE 12 +FLAGS (\Deleted)
 
 // * 12 FETCH (FLAGS (\Seen \Deleted))
-Data(Fetch { seq_or_uid: 12, attributes: [Flags([Seen, Deleted])] })
+Data(Fetch { seq_or_uid: 12, attributes: NonEmptyVec([Flags([Seen, Deleted])]) })
 // * 12 FETCH (FLAGS (\Seen \Deleted))
 
 // a005 OK +FLAGS completed
