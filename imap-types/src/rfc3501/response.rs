@@ -983,7 +983,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::*;
-    use crate::codec::Encode;
+    use crate::codec::{Context, Encode};
 
     #[test]
     fn test_greeting() {
@@ -994,7 +994,7 @@ mod tests {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            let out = parsed.encode_detached().unwrap();
+            let out = parsed.encode_detached(&Context::default()).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
@@ -1066,7 +1066,7 @@ mod tests {
 
         for (constructed, serialized) in tests {
             let constructed = constructed.unwrap();
-            let out = constructed.encode_detached().unwrap();
+            let out = constructed.encode_detached(&Context::default()).unwrap();
 
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30)
@@ -1108,7 +1108,7 @@ mod tests {
 
         for (parsed, serialized) in tests.into_iter() {
             eprintln!("{:?}", parsed);
-            let out = parsed.encode_detached().unwrap();
+            let out = parsed.encode_detached(&Context::default()).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
@@ -1133,7 +1133,7 @@ mod tests {
 
         for (constructed, serialized) in tests.into_iter() {
             let constructed = constructed.unwrap();
-            let out = constructed.encode_detached().unwrap();
+            let out = constructed.encode_detached(&Context::default()).unwrap();
             assert_eq!(out, serialized.to_vec());
             // FIXME(#30):
             //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);

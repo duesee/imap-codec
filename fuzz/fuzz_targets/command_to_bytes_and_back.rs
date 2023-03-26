@@ -5,7 +5,7 @@ use imap_codec::message::CapabilityEnable;
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
-    codec::{Decode, Encode},
+    codec::{Context, Decode, Encode},
     command::{search::SearchKey, Command, CommandBody},
     message::Flag,
 };
@@ -72,7 +72,7 @@ fuzz_target!(|test: Command| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let buffer = test.encode_detached().unwrap();
+    let buffer = test.encode_detached(&Context::default()).unwrap();
 
     #[cfg(feature = "debug")]
     println!("[!] Serialzed: {}", escape_byte_string(&buffer));

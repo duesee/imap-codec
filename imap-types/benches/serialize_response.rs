@@ -2,12 +2,12 @@ use std::{convert::TryInto, num::NonZeroU32};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_types::{
-    codec::Encode,
+    codec::{Context, Encode},
     response::{Code, Response, Status},
 };
 
 fn serialize_response(rsp: &Response, out: &mut Vec<u8>) {
-    rsp.encode(out).unwrap();
+    rsp.encode(out, &Context::default()).unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

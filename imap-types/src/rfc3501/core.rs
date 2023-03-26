@@ -902,7 +902,7 @@ mod tests {
     use std::{convert::TryInto, str::from_utf8};
 
     use super::*;
-    use crate::codec::Encode;
+    use crate::codec::{Context, Encode};
 
     #[test]
     fn test_atom() {
@@ -1151,7 +1151,7 @@ mod tests {
             let cs = Charset::try_from(*from).unwrap();
             println!("{:?}", cs);
 
-            let out = cs.encode_detached().unwrap();
+            let out = cs.encode_detached(&Context::default()).unwrap();
             assert_eq!(from_utf8(&out).unwrap(), *expected);
         }
 

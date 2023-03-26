@@ -4,7 +4,7 @@ use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
-    codec::{Decode, Encode},
+    codec::{Context, Decode, Encode},
     response::{data::FetchAttributeValue, Code, Continue, Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
@@ -84,7 +84,7 @@ fuzz_target!(|test: Response| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let buffer = test.encode_detached().unwrap();
+    let buffer = test.encode_detached(&Context::default()).unwrap();
 
     #[cfg(feature = "debug")]
     println!("[!] Serialized: {}", escape_byte_string(&buffer));

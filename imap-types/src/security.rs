@@ -59,7 +59,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
-        codec::Encode,
+        codec::{Context, Encode},
         command::{AuthenticateData, CommandBody},
         message::AuthMechanism,
         security::Secret,
@@ -92,7 +92,7 @@ mod tests {
         for test in tests.into_iter() {
             println!(
                 "Serialized: {:?}",
-                String::from_utf8(test.encode_detached().unwrap()),
+                String::from_utf8(test.encode_detached(&Context::default()).unwrap()),
             );
 
             let got = format!("{:?}", test);
@@ -109,7 +109,7 @@ mod tests {
         let test = AuthenticateData(Secret::new(b"xyz123".to_vec()));
         println!(
             "Serialized: {:?}",
-            String::from_utf8(test.encode_detached().unwrap()),
+            String::from_utf8(test.encode_detached(&Context::default()).unwrap()),
         );
 
         let got = format!("{:?}", test);

@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use imap_codec::{
-    codec::{Decode, Encode},
+    codec::{Context, Decode, Encode},
     command::{
         fetch::{FetchAttribute, Macro},
         Command, CommandBody,
@@ -75,7 +75,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = Command::decode(&line).unwrap();
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
-                let serialized = parsed.encode_detached().unwrap();
+                let serialized = parsed.encode_detached(&Context::default()).unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -90,7 +90,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 let (rem, parsed) = Response::decode(&line).unwrap();
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
-                let serialized = parsed.encode_detached().unwrap();
+                let serialized = parsed.encode_detached(&Context::default()).unwrap();
                 println!(
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
@@ -115,7 +115,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 println!("{:?}", got);
                 println!(
                     "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
+                    String::from_utf8(got.encode_detached(&Context::default()).unwrap())
                         .unwrap()
                         .trim()
                 );
@@ -127,7 +127,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 println!("{:?}", got);
                 println!(
                     "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
+                    String::from_utf8(got.encode_detached(&Context::default()).unwrap())
                         .unwrap()
                         .trim()
                 );
@@ -138,7 +138,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 println!("{:?}", got);
                 println!(
                     "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
+                    String::from_utf8(got.encode_detached(&Context::default()).unwrap())
                         .unwrap()
                         .trim()
                 );
@@ -149,7 +149,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 println!("{:?}", got);
                 println!(
                     "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
+                    String::from_utf8(got.encode_detached(&Context::default()).unwrap())
                         .unwrap()
                         .trim()
                 );
@@ -1050,7 +1050,7 @@ fn test_response_status_preauth() {
     let (rem, parsed) = Greeting::decode(line).unwrap();
     println!("Parsed:     {:?}", parsed);
     assert!(rem.is_empty());
-    let serialized = parsed.encode_detached().unwrap();
+    let serialized = parsed.encode_detached(&Context::default()).unwrap();
     println!(
         "Serialized: {}",
         String::from_utf8_lossy(&serialized).trim()

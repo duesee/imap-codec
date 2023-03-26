@@ -3,7 +3,7 @@
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
-    codec::{Decode, Encode},
+    codec::{Context, Decode, Encode},
     response::{Code, Greeting},
 };
 use libfuzzer_sys::fuzz_target;
@@ -33,7 +33,7 @@ fuzz_target!(|test: Greeting| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let buffer = test.encode_detached().unwrap();
+    let buffer = test.encode_detached(&Context::default()).unwrap();
 
     #[cfg(feature = "debug")]
     println!("[!] Serialized: {}", escape_byte_string(&buffer));

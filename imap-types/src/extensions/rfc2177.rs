@@ -22,7 +22,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::codec::Encode;
+use crate::codec::{Context, Encode};
 
 /// Denotes the continuation data message "DONE\r\n" to end the IDLE command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -32,7 +32,7 @@ use crate::codec::Encode;
 pub struct IdleDone;
 
 impl Encode for IdleDone {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(b"DONE\r\n")
     }
 }

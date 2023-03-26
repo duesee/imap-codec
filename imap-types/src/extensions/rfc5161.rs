@@ -15,7 +15,10 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, core::Atom};
+use crate::{
+    codec::{Context, Encode},
+    core::Atom,
+};
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -36,11 +39,11 @@ pub enum Utf8Kind {
 }
 
 impl<'a> Encode for CapabilityEnable<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
             Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
-            Self::Other(atom) => atom.encode(writer),
+            Self::Other(atom) => atom.encode(writer, ctx),
         }
     }
 }

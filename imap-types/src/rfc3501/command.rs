@@ -1765,7 +1765,7 @@ mod tests {
     #[cfg(feature = "ext_quota")]
     use crate::extensions::rfc9208::{QuotaSet, Resource};
     use crate::{
-        codec::Encode,
+        codec::{Context, Encode},
         command::{
             fetch::{FetchAttribute, Macro},
             search::SearchKey,
@@ -1953,7 +1953,7 @@ mod tests {
             println!("Test: {}, {:?}", no, cmd_body);
 
             let cmd = cmd_body.tag(format!("A{}", no)).unwrap();
-            let serialized = cmd.encode_detached().unwrap();
+            let serialized = cmd.encode_detached(&Context::default()).unwrap();
             let printable = String::from_utf8_lossy(&serialized);
             print!("Serialized: {}", printable);
         }
@@ -1971,7 +1971,7 @@ mod tests {
         )
         .unwrap();
 
-        let buffer = command.encode_detached().unwrap();
+        let buffer = command.encode_detached(&Context::default()).unwrap();
 
         assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }

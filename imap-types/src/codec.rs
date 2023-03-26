@@ -6,13 +6,13 @@
 //!
 //! ```rust
 //! use imap_types::{
-//!     codec::Encode,
+//!     codec::{Context, Encode},
 //!     response::{Greeting, Response},
 //! };
 //!
 //! let rsp = Greeting::ok(None, "Hello, World!").unwrap();
 //!
-//! let bytes = rsp.encode_detached().unwrap();
+//! let bytes = rsp.encode_detached(&Context::default()).unwrap();
 //!
 //! println!("{}", String::from_utf8(bytes).unwrap());
 //! ```
@@ -51,25 +51,63 @@ use crate::{
 };
 
 pub trait Encode {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()>;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()>;
 
-    fn encode_detached(&self) -> std::io::Result<Vec<u8>> {
+    fn encode_detached(&self, ctx: &Context) -> std::io::Result<Vec<u8>> {
         let mut serialized = Vec::new();
-        self.encode(&mut serialized)?;
+        self.encode(&mut serialized, ctx)?;
         Ok(serialized)
     }
+}
+
+// ----- Context -----
+
+#[derive(Clone, Debug, Default)]
+pub struct ContextBuilder {
+    // TODO: Guard with `ext_literal_plus` feature.
+    capability_literal: Option<CapabilityLiteral>,
+}
+
+impl ContextBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn capability_literal(mut self, capability_literal: CapabilityLiteral) -> Self {
+        self.capability_literal = Some(capability_literal);
+        self
+    }
+
+    pub fn finish(self) -> Context {
+        Context {
+            capability_literal: self.capability_literal,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+pub struct Context {
+    // TODO: Guard with `ext_literal_plus` feature.
+    capability_literal: Option<CapabilityLiteral>,
+}
+
+// TODO: Guard with ext_literal_plus feature.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum CapabilityLiteral {
+    Plus,
+    Minus,
 }
 
 // ----- Primitive -----
 
 impl Encode for u32 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.to_string().as_bytes())
     }
 }
 
 impl Encode for u64 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.to_string().as_bytes())
     }
 }
@@ -77,22 +115,22 @@ impl Encode for u64 {
 // ----- Command -----
 
 impl<'a> Encode for Command<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.tag.encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.tag.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.body.encode(writer)?;
+        self.body.encode(writer, ctx)?;
         writer.write_all(b"\r\n")
     }
 }
 
 impl<'a> Encode for Tag<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
     }
 }
 
 impl<'a> Encode for CommandBody<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             CommandBody::Capability => writer.write_all(b"CAPABILITY"),
             CommandBody::Noop => writer.write_all(b"NOOP"),
@@ -106,7 +144,7 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"AUTHENTICATE")?;
                 writer.write_all(b" ")?;
-                mechanism.encode(writer)?;
+                mechanism.encode(writer, ctx)?;
 
                 #[cfg(feature = "ext_sasl_ir")]
                 if let Some(ir) = initial_response {
@@ -127,29 +165,29 @@ impl<'a> Encode for CommandBody<'a> {
             CommandBody::Login { username, password } => {
                 writer.write_all(b"LOGIN")?;
                 writer.write_all(b" ")?;
-                username.encode(writer)?;
+                username.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                password.expose_secret().encode(writer)
+                password.expose_secret().encode(writer, ctx)
             }
             CommandBody::Select { mailbox } => {
                 writer.write_all(b"SELECT")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::Examine { mailbox } => {
                 writer.write_all(b"EXAMINE")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::Create { mailbox } => {
                 writer.write_all(b"CREATE")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::Delete { mailbox } => {
                 writer.write_all(b"DELETE")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::Rename {
                 mailbox,
@@ -157,19 +195,19 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"RENAME")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                new_mailbox.encode(writer)
+                new_mailbox.encode(writer, ctx)
             }
             CommandBody::Subscribe { mailbox } => {
                 writer.write_all(b"SUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::Unsubscribe { mailbox } => {
                 writer.write_all(b"UNSUBSCRIBE")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             CommandBody::List {
                 reference,
@@ -177,9 +215,9 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"LIST")?;
                 writer.write_all(b" ")?;
-                reference.encode(writer)?;
+                reference.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                mailbox_wildcard.encode(writer)
+                mailbox_wildcard.encode(writer, ctx)
             }
             CommandBody::Lsub {
                 reference,
@@ -187,9 +225,9 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"LSUB")?;
                 writer.write_all(b" ")?;
-                reference.encode(writer)?;
+                reference.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                mailbox_wildcard.encode(writer)
+                mailbox_wildcard.encode(writer, ctx)
             }
             CommandBody::Status {
                 mailbox,
@@ -197,10 +235,10 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"STATUS")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
                 writer.write_all(b"(")?;
-                join_serializable(attributes, b" ", writer)?;
+                join_serializable(attributes, b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             CommandBody::Append {
@@ -211,18 +249,18 @@ impl<'a> Encode for CommandBody<'a> {
             } => {
                 writer.write_all(b"APPEND")?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
 
                 if !flags.is_empty() {
                     writer.write_all(b" ")?;
                     writer.write_all(b"(")?;
-                    join_serializable(flags, b" ", writer)?;
+                    join_serializable(flags, b" ", writer, ctx)?;
                     writer.write_all(b")")?;
                 }
 
                 if let Some(date) = date {
                     writer.write_all(b" ")?;
-                    date.encode(writer)?;
+                    date.encode(writer, ctx)?;
                 }
 
                 writer.write_all(b" ")?;
@@ -244,13 +282,13 @@ impl<'a> Encode for CommandBody<'a> {
                 }
                 if let Some(charset) = charset {
                     writer.write_all(b" CHARSET ")?;
-                    charset.encode(writer)?;
+                    charset.encode(writer, ctx)?;
                 }
                 writer.write_all(b" ")?;
                 if let SearchKey::And(search_keys) = criteria {
-                    join_serializable(search_keys.as_ref(), b" ", writer) // TODO: use List1?
+                    join_serializable(search_keys.as_ref(), b" ", writer, ctx) // TODO: use List1?
                 } else {
-                    criteria.encode(writer)
+                    criteria.encode(writer, ctx)
                 }
             }
             CommandBody::Fetch {
@@ -264,9 +302,9 @@ impl<'a> Encode for CommandBody<'a> {
                     writer.write_all(b"FETCH ")?;
                 }
 
-                sequence_set.encode(writer)?;
+                sequence_set.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                attributes.encode(writer)
+                attributes.encode(writer, ctx)
             }
             CommandBody::Store {
                 sequence_set,
@@ -281,7 +319,7 @@ impl<'a> Encode for CommandBody<'a> {
                     writer.write_all(b"STORE ")?;
                 }
 
-                sequence_set.encode(writer)?;
+                sequence_set.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
 
                 match kind {
@@ -298,7 +336,7 @@ impl<'a> Encode for CommandBody<'a> {
                 }
 
                 writer.write_all(b" (")?;
-                join_serializable(flags, b" ", writer)?;
+                join_serializable(flags, b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             CommandBody::Copy {
@@ -311,38 +349,38 @@ impl<'a> Encode for CommandBody<'a> {
                 } else {
                     writer.write_all(b"COPY ")?;
                 }
-                sequence_set.encode(writer)?;
+                sequence_set.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             #[cfg(feature = "ext_idle")]
             CommandBody::Idle => writer.write_all(b"IDLE"),
             #[cfg(feature = "ext_enable")]
             CommandBody::Enable { capabilities } => {
                 writer.write_all(b"ENABLE ")?;
-                join_serializable(capabilities.as_ref(), b" ", writer)
+                join_serializable(capabilities.as_ref(), b" ", writer, ctx)
             }
             #[cfg(feature = "ext_compress")]
             CommandBody::Compress { algorithm } => {
                 writer.write_all(b"COMPRESS ")?;
-                algorithm.encode(writer)
+                algorithm.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             CommandBody::GetQuota { root } => {
                 writer.write_all(b"GETQUOTA ")?;
-                root.encode(writer)
+                root.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             CommandBody::GetQuotaRoot { mailbox } => {
                 writer.write_all(b"GETQUOTAROOT ")?;
-                mailbox.encode(writer)
+                mailbox.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             CommandBody::SetQuota { root, quotas } => {
                 writer.write_all(b"SETQUOTA ")?;
-                root.encode(writer)?;
+                root.encode(writer, ctx)?;
                 writer.write_all(b" (")?;
-                join_serializable(quotas.as_ref(), b" ", writer)?;
+                join_serializable(quotas.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
         }
@@ -350,103 +388,119 @@ impl<'a> Encode for CommandBody<'a> {
 }
 
 impl<'a> Encode for AuthMechanism<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match &self {
             AuthMechanism::Plain => writer.write_all(b"PLAIN"),
             AuthMechanism::Login => writer.write_all(b"LOGIN"),
-            AuthMechanism::Other(other) => other.encode(writer),
+            AuthMechanism::Other(other) => other.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for AuthMechanismOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.inner().encode(writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.inner().encode(writer, ctx)
     }
 }
 
 impl Encode for AuthenticateData {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         let encoded = base64.encode(self.0.expose_secret());
         writer.write_all(encoded.as_bytes())
     }
 }
 
 impl<'a> Encode for AString<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            AString::Atom(atom) => atom.encode(writer),
-            AString::String(imap_str) => imap_str.encode(writer),
+            AString::Atom(atom) => atom.encode(writer, ctx),
+            AString::String(imap_str) => imap_str.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for Atom<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
     }
 }
 
 impl<'a> Encode for AtomExt<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
     }
 }
 
 impl<'a> Encode for IString<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            Self::Literal(val) => val.encode(writer),
-            Self::Quoted(val) => val.encode(writer),
+            Self::Literal(val) => val.encode(writer, ctx),
+            Self::Quoted(val) => val.encode(writer, ctx),
         }
     }
 }
 
+// TODO: Guard with `ext_literal_plus`.
 impl<'a> Encode for Literal<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        match ctx.capability_literal {
+            Some(CapabilityLiteral::Plus) => {
+                write!(writer, "{{{}+}}\r\n", self.as_ref().len())?;
+            }
+            Some(CapabilityLiteral::Minus) => {
+                if self.as_ref().len() <= 4096 {
+                    write!(writer, "{{{}+}}\r\n", self.as_ref().len())?;
+                } else {
+                    write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+                }
+            }
+            _ => {
+                write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+            }
+        }
+
         writer.write_all(self.as_ref())
     }
 }
 
 impl<'a> Encode for Quoted<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         write!(writer, "\"{}\"", escape_quoted(self.inner()))
     }
 }
 
 impl<'a> Encode for Mailbox<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => writer.write_all(b"INBOX"),
-            Mailbox::Other(other) => other.encode(writer),
+            Mailbox::Other(other) => other.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for MailboxOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.0.encode(writer, ctx)
     }
 }
 
 impl<'a> Encode for ListMailbox<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            ListMailbox::Token(lcs) => lcs.encode(writer),
-            ListMailbox::String(istr) => istr.encode(writer),
+            ListMailbox::Token(lcs) => lcs.encode(writer, ctx),
+            ListMailbox::String(istr) => istr.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for ListCharString<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.as_ref())
     }
 }
 
 impl Encode for StatusAttribute {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self {
             StatusAttribute::Messages => writer.write_all(b"MESSAGES"),
             StatusAttribute::Recent => writer.write_all(b"RECENT"),
@@ -462,7 +516,7 @@ impl Encode for StatusAttribute {
 }
 
 impl<'a> Encode for Flag<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             // ----- System -----
             Flag::Seen => writer.write_all(b"\\Seen"),
@@ -475,139 +529,139 @@ impl<'a> Encode for Flag<'a> {
             Flag::Recent => writer.write_all(b"\\Recent"),
 
             // ----- Selectability -----
-            Flag::NameAttribute(flag) => flag.encode(writer),
+            Flag::NameAttribute(flag) => flag.encode(writer, ctx),
 
             // ----- Keyword -----
             Flag::Permanent => writer.write_all(b"\\*"),
-            Flag::Keyword(atom) => atom.encode(writer),
+            Flag::Keyword(atom) => atom.encode(writer, ctx),
 
             // ----- Others -----
             Flag::Extension(atom) => {
                 writer.write_all(b"\\")?;
-                atom.encode(writer)
+                atom.encode(writer, ctx)
             }
         }
     }
 }
 
 impl Encode for MyDateTime {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.0.encode(writer, ctx)
     }
 }
 
 impl<'a> Encode for Charset<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            Charset::Atom(atom) => atom.encode(writer),
-            Charset::Quoted(quoted) => quoted.encode(writer),
+            Charset::Atom(atom) => atom.encode(writer, ctx),
+            Charset::Quoted(quoted) => quoted.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for SearchKey<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             SearchKey::All => writer.write_all(b"ALL"),
             SearchKey::Answered => writer.write_all(b"ANSWERED"),
             SearchKey::Bcc(astring) => {
                 writer.write_all(b"BCC ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Before(date) => {
                 writer.write_all(b"BEFORE ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::Body(astring) => {
                 writer.write_all(b"BODY ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Cc(astring) => {
                 writer.write_all(b"CC ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Deleted => writer.write_all(b"DELETED"),
             SearchKey::Flagged => writer.write_all(b"FLAGGED"),
             SearchKey::From(astring) => {
                 writer.write_all(b"FROM ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Keyword(flag_keyword) => {
                 writer.write_all(b"KEYWORD ")?;
-                flag_keyword.encode(writer)
+                flag_keyword.encode(writer, ctx)
             }
             SearchKey::New => writer.write_all(b"NEW"),
             SearchKey::Old => writer.write_all(b"OLD"),
             SearchKey::On(date) => {
                 writer.write_all(b"ON ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::Recent => writer.write_all(b"RECENT"),
             SearchKey::Seen => writer.write_all(b"SEEN"),
             SearchKey::Since(date) => {
                 writer.write_all(b"SINCE ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::Subject(astring) => {
                 writer.write_all(b"SUBJECT ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Text(astring) => {
                 writer.write_all(b"TEXT ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::To(astring) => {
                 writer.write_all(b"TO ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Unanswered => writer.write_all(b"UNANSWERED"),
             SearchKey::Undeleted => writer.write_all(b"UNDELETED"),
             SearchKey::Unflagged => writer.write_all(b"UNFLAGGED"),
             SearchKey::Unkeyword(flag_keyword) => {
                 writer.write_all(b"UNKEYWORD ")?;
-                flag_keyword.encode(writer)
+                flag_keyword.encode(writer, ctx)
             }
             SearchKey::Unseen => writer.write_all(b"UNSEEN"),
             SearchKey::Draft => writer.write_all(b"DRAFT"),
             SearchKey::Header(header_fld_name, astring) => {
                 writer.write_all(b"HEADER ")?;
-                header_fld_name.encode(writer)?;
+                header_fld_name.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                astring.encode(writer)
+                astring.encode(writer, ctx)
             }
             SearchKey::Larger(number) => write!(writer, "LARGER {number}"),
             SearchKey::Not(search_key) => {
                 writer.write_all(b"NOT ")?;
-                search_key.encode(writer)
+                search_key.encode(writer, ctx)
             }
             SearchKey::Or(search_key_a, search_key_b) => {
                 writer.write_all(b"OR ")?;
-                search_key_a.encode(writer)?;
+                search_key_a.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                search_key_b.encode(writer)
+                search_key_b.encode(writer, ctx)
             }
             SearchKey::SentBefore(date) => {
                 writer.write_all(b"SENTBEFORE ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::SentOn(date) => {
                 writer.write_all(b"SENTON ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::SentSince(date) => {
                 writer.write_all(b"SENTSINCE ")?;
-                date.encode(writer)
+                date.encode(writer, ctx)
             }
             SearchKey::Smaller(number) => write!(writer, "SMALLER {number}"),
             SearchKey::Uid(sequence_set) => {
                 writer.write_all(b"UID ")?;
-                sequence_set.encode(writer)
+                sequence_set.encode(writer, ctx)
             }
             SearchKey::Undraft => writer.write_all(b"UNDRAFT"),
-            SearchKey::SequenceSet(sequence_set) => sequence_set.encode(writer),
+            SearchKey::SequenceSet(sequence_set) => sequence_set.encode(writer, ctx),
             SearchKey::And(search_keys) => {
                 writer.write_all(b"(")?;
-                join_serializable(search_keys.as_ref(), b" ", writer)?;
+                join_serializable(search_keys.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
         }
@@ -615,26 +669,26 @@ impl<'a> Encode for SearchKey<'a> {
 }
 
 impl Encode for SequenceSet {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(self.0.as_ref(), b",", writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        join_serializable(self.0.as_ref(), b",", writer, ctx)
     }
 }
 
 impl Encode for Sequence {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            Sequence::Single(seq_no) => seq_no.encode(writer),
+            Sequence::Single(seq_no) => seq_no.encode(writer, ctx),
             Sequence::Range(from, to) => {
-                from.encode(writer)?;
+                from.encode(writer, ctx)?;
                 writer.write_all(b":")?;
-                to.encode(writer)
+                to.encode(writer, ctx)
             }
         }
     }
 }
 
 impl Encode for SeqNo {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self {
             SeqNo::Value(number) => write!(writer, "{number}"),
             SeqNo::Largest => writer.write_all(b"*"),
@@ -643,21 +697,21 @@ impl Encode for SeqNo {
 }
 
 impl Encode for MyNaiveDate {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         write!(writer, "\"{}\"", self.0.format("%d-%b-%Y"))
     }
 }
 
 impl<'a> Encode for MacroOrFetchAttributes<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            MacroOrFetchAttributes::Macro(m) => m.encode(writer),
+            MacroOrFetchAttributes::Macro(m) => m.encode(writer, ctx),
             MacroOrFetchAttributes::FetchAttributes(attributes) => {
                 if attributes.len() == 1 {
-                    attributes[0].encode(writer)
+                    attributes[0].encode(writer, ctx)
                 } else {
                     writer.write_all(b"(")?;
-                    join_serializable(attributes.as_slice(), b" ", writer)?;
+                    join_serializable(attributes.as_slice(), b" ", writer, ctx)?;
                     writer.write_all(b")")
                 }
             }
@@ -666,7 +720,7 @@ impl<'a> Encode for MacroOrFetchAttributes<'a> {
 }
 
 impl Encode for Macro {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self {
             Macro::All => writer.write_all(b"ALL"),
             Macro::Fast => writer.write_all(b"FAST"),
@@ -676,7 +730,7 @@ impl Encode for Macro {
 }
 
 impl<'a> Encode for FetchAttribute<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             FetchAttribute::Body => writer.write_all(b"BODY"),
             FetchAttribute::BodyExt {
@@ -690,7 +744,7 @@ impl<'a> Encode for FetchAttribute<'a> {
                     writer.write_all(b"BODY[")?;
                 }
                 if let Some(section) = section {
-                    section.encode(writer)?;
+                    section.encode(writer, ctx)?;
                 }
                 writer.write_all(b"]")?;
                 if let Some((a, b)) = partial {
@@ -713,12 +767,12 @@ impl<'a> Encode for FetchAttribute<'a> {
 }
 
 impl<'a> Encode for Section<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            Section::Part(part) => part.encode(writer),
+            Section::Part(part) => part.encode(writer, ctx),
             Section::Header(maybe_part) => match maybe_part {
                 Some(part) => {
-                    part.encode(writer)?;
+                    part.encode(writer, ctx)?;
                     writer.write_all(b".HEADER")
                 }
                 None => writer.write_all(b"HEADER"),
@@ -726,34 +780,34 @@ impl<'a> Encode for Section<'a> {
             Section::HeaderFields(maybe_part, header_list) => {
                 match maybe_part {
                     Some(part) => {
-                        part.encode(writer)?;
+                        part.encode(writer, ctx)?;
                         writer.write_all(b".HEADER.FIELDS (")?;
                     }
                     None => writer.write_all(b"HEADER.FIELDS (")?,
                 };
-                join_serializable(header_list.as_ref(), b" ", writer)?;
+                join_serializable(header_list.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             Section::HeaderFieldsNot(maybe_part, header_list) => {
                 match maybe_part {
                     Some(part) => {
-                        part.encode(writer)?;
+                        part.encode(writer, ctx)?;
                         writer.write_all(b".HEADER.FIELDS.NOT (")?;
                     }
                     None => writer.write_all(b"HEADER.FIELDS.NOT (")?,
                 };
-                join_serializable(header_list.as_ref(), b" ", writer)?;
+                join_serializable(header_list.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             Section::Text(maybe_part) => match maybe_part {
                 Some(part) => {
-                    part.encode(writer)?;
+                    part.encode(writer, ctx)?;
                     writer.write_all(b".TEXT")
                 }
                 None => writer.write_all(b"TEXT"),
             },
             Section::Mime(part) => {
-                part.encode(writer)?;
+                part.encode(writer, ctx)?;
                 writer.write_all(b".MIME")
             }
         }
@@ -761,19 +815,19 @@ impl<'a> Encode for Section<'a> {
 }
 
 impl Encode for Part {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        join_serializable(self.0.as_ref(), b".", writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        join_serializable(self.0.as_ref(), b".", writer, ctx)
     }
 }
 
 impl Encode for NonZeroU32 {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         write!(writer, "{self}")
     }
 }
 
 impl<'a> Encode for Capability<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Self::Imap4Rev1 => writer.write_all(b"IMAP4REV1"),
             Self::Auth(mechanism) => match mechanism {
@@ -781,7 +835,7 @@ impl<'a> Encode for Capability<'a> {
                 AuthMechanism::Login => writer.write_all(b"AUTH=LOGIN"),
                 AuthMechanism::Other(other) => {
                     writer.write_all(b"AUTH=")?;
-                    other.encode(writer)
+                    other.encode(writer, ctx)
                 }
             },
             #[cfg(feature = "starttls")]
@@ -807,11 +861,11 @@ impl<'a> Encode for Capability<'a> {
             #[cfg(feature = "ext_quota")]
             Self::QuotaRes(resource) => {
                 writer.write_all(b"QUOTA=RES-")?;
-                resource.encode(writer)
+                resource.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             Self::QuotaSet => writer.write_all(b"QUOTASET"),
-            Self::Other(other) => other.inner.encode(writer),
+            Self::Other(other) => other.inner.encode(writer, ctx),
         }
     }
 }
@@ -819,34 +873,34 @@ impl<'a> Encode for Capability<'a> {
 // ----- Responses -----
 
 impl<'a> Encode for Response<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
-            Response::Status(status) => status.encode(writer),
-            Response::Data(data) => data.encode(writer),
-            Response::Continue(continue_request) => continue_request.encode(writer),
+            Response::Status(status) => status.encode(writer, ctx),
+            Response::Data(data) => data.encode(writer, ctx),
+            Response::Continue(continue_request) => continue_request.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for Greeting<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         writer.write_all(b"* ")?;
-        self.kind.encode(writer)?;
+        self.kind.encode(writer, ctx)?;
         writer.write_all(b" ")?;
 
         if let Some(ref code) = self.code {
             writer.write_all(b"[")?;
-            code.encode(writer)?;
+            code.encode(writer, ctx)?;
             writer.write_all(b"] ")?;
         }
 
-        self.text.encode(writer)?;
+        self.text.encode(writer, ctx)?;
         writer.write_all(b"\r\n")
     }
 }
 
 impl Encode for GreetingKind {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self {
             GreetingKind::Ok => writer.write_all(b"OK"),
             GreetingKind::PreAuth => writer.write_all(b"PREAUTH"),
@@ -856,16 +910,17 @@ impl Encode for GreetingKind {
 }
 
 impl<'a> Encode for Status<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         fn format_status(
             tag: &Option<Tag>,
             status: &str,
             code: &Option<Code>,
             comment: &Text,
             writer: &mut impl Write,
+            ctx: &Context,
         ) -> std::io::Result<()> {
             match tag {
-                Some(tag) => tag.encode(writer)?,
+                Some(tag) => tag.encode(writer, ctx)?,
                 None => writer.write_all(b"*")?,
             }
             writer.write_all(b" ")?;
@@ -873,24 +928,24 @@ impl<'a> Encode for Status<'a> {
             writer.write_all(b" ")?;
             if let Some(code) = code {
                 writer.write_all(b"[")?;
-                code.encode(writer)?;
+                code.encode(writer, ctx)?;
                 writer.write_all(b"] ")?;
             }
-            comment.encode(writer)?;
+            comment.encode(writer, ctx)?;
             writer.write_all(b"\r\n")
         }
 
         match self {
-            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, writer),
-            Status::No { tag, code, text } => format_status(tag, "NO", code, text, writer),
-            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, writer),
-            Status::Bye { code, text } => format_status(&None, "BYE", code, text, writer),
+            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, writer, ctx),
+            Status::No { tag, code, text } => format_status(tag, "NO", code, text, writer, ctx),
+            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, writer, ctx),
+            Status::Bye { code, text } => format_status(&None, "BYE", code, text, writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for Code<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Code::Alert => writer.write_all(b"ALERT"),
             Code::BadCharset { allowed } => {
@@ -898,18 +953,18 @@ impl<'a> Encode for Code<'a> {
                     writer.write_all(b"BADCHARSET")
                 } else {
                     writer.write_all(b"BADCHARSET (")?;
-                    join_serializable(allowed, b" ", writer)?;
+                    join_serializable(allowed, b" ", writer, ctx)?;
                     writer.write_all(b")")
                 }
             }
             Code::Capability(caps) => {
                 writer.write_all(b"CAPABILITY ")?;
-                join_serializable(caps.as_ref(), b" ", writer)
+                join_serializable(caps.as_ref(), b" ", writer, ctx)
             }
             Code::Parse => writer.write_all(b"PARSE"),
             Code::PermanentFlags(flags) => {
                 writer.write_all(b"PERMANENTFLAGS (")?;
-                join_serializable(flags, b" ", writer)?;
+                join_serializable(flags, b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             Code::ReadOnly => writer.write_all(b"READ-ONLY"),
@@ -917,15 +972,15 @@ impl<'a> Encode for Code<'a> {
             Code::TryCreate => writer.write_all(b"TRYCREATE"),
             Code::UidNext(next) => {
                 writer.write_all(b"UIDNEXT ")?;
-                next.encode(writer)
+                next.encode(writer, ctx)
             }
             Code::UidValidity(validity) => {
                 writer.write_all(b"UIDVALIDITY ")?;
-                validity.encode(writer)
+                validity.encode(writer, ctx)
             }
             Code::Unseen(seq) => {
                 writer.write_all(b"UNSEEN ")?;
-                seq.encode(writer)
+                seq.encode(writer, ctx)
             }
             // RFC 2221
             #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
@@ -937,29 +992,29 @@ impl<'a> Encode for Code<'a> {
             Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
             #[cfg(feature = "ext_quota")]
             Code::OverQuota => writer.write_all(b"OVERQUOTA"),
-            Code::Other(unknown) => unknown.encode(writer),
+            Code::Other(unknown) => unknown.encode(writer, ctx),
         }
     }
 }
 
 impl<'a> Encode for CodeOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.inner())
     }
 }
 
 impl<'a> Encode for Text<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         writer.write_all(self.inner().as_bytes())
     }
 }
 
 impl<'a> Encode for Data<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Data::Capability(caps) => {
                 writer.write_all(b"* CAPABILITY ")?;
-                join_serializable(caps.as_ref(), b" ", writer)?;
+                join_serializable(caps.as_ref(), b" ", writer, ctx)?;
             }
             Data::List {
                 items,
@@ -967,18 +1022,18 @@ impl<'a> Encode for Data<'a> {
                 mailbox,
             } => {
                 writer.write_all(b"* LIST (")?;
-                join_serializable(items, b" ", writer)?;
+                join_serializable(items, b" ", writer, ctx)?;
                 writer.write_all(b") ")?;
 
                 if let Some(delimiter) = delimiter {
                     writer.write_all(b"\"")?;
-                    delimiter.encode(writer)?;
+                    delimiter.encode(writer, ctx)?;
                     writer.write_all(b"\"")?;
                 } else {
                     writer.write_all(b"NIL")?;
                 }
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
             }
             Data::Lsub {
                 items,
@@ -986,27 +1041,27 @@ impl<'a> Encode for Data<'a> {
                 mailbox,
             } => {
                 writer.write_all(b"* LSUB (")?;
-                join_serializable(items, b" ", writer)?;
+                join_serializable(items, b" ", writer, ctx)?;
                 writer.write_all(b") ")?;
 
                 if let Some(delimiter) = delimiter {
                     writer.write_all(b"\"")?;
-                    delimiter.encode(writer)?;
+                    delimiter.encode(writer, ctx)?;
                     writer.write_all(b"\"")?;
                 } else {
                     writer.write_all(b"NIL")?;
                 }
                 writer.write_all(b" ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
             }
             Data::Status {
                 mailbox,
                 attributes,
             } => {
                 writer.write_all(b"* STATUS ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
                 writer.write_all(b" (")?;
-                join_serializable(attributes, b" ", writer)?;
+                join_serializable(attributes, b" ", writer, ctx)?;
                 writer.write_all(b")")?;
             }
             Data::Search(seqs) => {
@@ -1014,12 +1069,12 @@ impl<'a> Encode for Data<'a> {
                     writer.write_all(b"* SEARCH")?;
                 } else {
                     writer.write_all(b"* SEARCH ")?;
-                    join_serializable(seqs, b" ", writer)?;
+                    join_serializable(seqs, b" ", writer, ctx)?;
                 }
             }
             Data::Flags(flags) => {
                 writer.write_all(b"* FLAGS (")?;
-                join_serializable(flags, b" ", writer)?;
+                join_serializable(flags, b" ", writer, ctx)?;
                 writer.write_all(b")")?;
             }
             Data::Exists(count) => write!(writer, "* {count} EXISTS")?,
@@ -1030,7 +1085,7 @@ impl<'a> Encode for Data<'a> {
                 attributes,
             } => {
                 write!(writer, "* {seq_or_uid} FETCH (")?;
-                join_serializable(attributes.as_ref(), b" ", writer)?;
+                join_serializable(attributes.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")?;
             }
             #[cfg(feature = "ext_enable")]
@@ -1039,24 +1094,24 @@ impl<'a> Encode for Data<'a> {
 
                 for cap in capabilities {
                     writer.write_all(b" ")?;
-                    cap.encode(writer)?;
+                    cap.encode(writer, ctx)?;
                 }
             }
             #[cfg(feature = "ext_quota")]
             Data::Quota { root, quotas } => {
                 writer.write_all(b"* QUOTA ")?;
-                root.encode(writer)?;
+                root.encode(writer, ctx)?;
                 writer.write_all(b" (")?;
-                join_serializable(quotas.as_ref(), b" ", writer)?;
+                join_serializable(quotas.as_ref(), b" ", writer, ctx)?;
                 writer.write_all(b")")?;
             }
             #[cfg(feature = "ext_quota")]
             Data::QuotaRoot { mailbox, roots } => {
                 writer.write_all(b"* QUOTAROOT ")?;
-                mailbox.encode(writer)?;
+                mailbox.encode(writer, ctx)?;
                 for root in roots {
                     writer.write_all(b" ")?;
-                    root.encode(writer)?;
+                    root.encode(writer, ctx)?;
                 }
             }
         }
@@ -1066,7 +1121,7 @@ impl<'a> Encode for Data<'a> {
 }
 
 impl<'a> Encode for FlagNameAttribute<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Self::Noinferiors => writer.write_all(b"\\Noinferiors"),
             Self::Noselect => writer.write_all(b"\\Noselect"),
@@ -1074,14 +1129,14 @@ impl<'a> Encode for FlagNameAttribute<'a> {
             Self::Unmarked => writer.write_all(b"\\Unmarked"),
             Self::Extension(atom) => {
                 writer.write_all(b"\\")?;
-                atom.encode(writer)
+                atom.encode(writer, ctx)
             }
         }
     }
 }
 
 impl Encode for QuotedChar {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self.inner() {
             '\\' => writer.write_all(b"\\\\"),
             '"' => writer.write_all(b"\\\""),
@@ -1091,44 +1146,44 @@ impl Encode for QuotedChar {
 }
 
 impl Encode for StatusAttributeValue {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Self::Messages(count) => {
                 writer.write_all(b"MESSAGES ")?;
-                count.encode(writer)
+                count.encode(writer, ctx)
             }
             Self::Recent(count) => {
                 writer.write_all(b"RECENT ")?;
-                count.encode(writer)
+                count.encode(writer, ctx)
             }
             Self::UidNext(next) => {
                 writer.write_all(b"UIDNEXT ")?;
-                next.encode(writer)
+                next.encode(writer, ctx)
             }
             Self::UidValidity(identifier) => {
                 writer.write_all(b"UIDVALIDITY ")?;
-                identifier.encode(writer)
+                identifier.encode(writer, ctx)
             }
             Self::Unseen(count) => {
                 writer.write_all(b"UNSEEN ")?;
-                count.encode(writer)
+                count.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             Self::Deleted(count) => {
                 writer.write_all(b"DELETED ")?;
-                count.encode(writer)
+                count.encode(writer, ctx)
             }
             #[cfg(feature = "ext_quota")]
             Self::DeletedStorage(count) => {
                 writer.write_all(b"DELETED-STORAGE ")?;
-                count.encode(writer)
+                count.encode(writer, ctx)
             }
         }
     }
 }
 
 impl<'a> Encode for FetchAttributeValue<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Self::BodyExt {
                 section,
@@ -1137,49 +1192,49 @@ impl<'a> Encode for FetchAttributeValue<'a> {
             } => {
                 writer.write_all(b"BODY[")?;
                 if let Some(section) = section {
-                    section.encode(writer)?;
+                    section.encode(writer, ctx)?;
                 }
                 writer.write_all(b"]")?;
                 if let Some(origin) = origin {
                     write!(writer, "<{origin}>")?;
                 }
                 writer.write_all(b" ")?;
-                data.encode(writer)
+                data.encode(writer, ctx)
             }
             // FIXME: do not return body-ext-1part and body-ext-mpart here
             Self::Body(body) => {
                 writer.write_all(b"BODY ")?;
-                body.encode(writer)
+                body.encode(writer, ctx)
             }
             Self::BodyStructure(body) => {
                 writer.write_all(b"BODYSTRUCTURE ")?;
-                body.encode(writer)
+                body.encode(writer, ctx)
             }
             Self::Envelope(envelope) => {
                 writer.write_all(b"ENVELOPE ")?;
-                envelope.encode(writer)
+                envelope.encode(writer, ctx)
             }
             Self::Flags(flags) => {
                 writer.write_all(b"FLAGS (")?;
-                join_serializable(flags, b" ", writer)?;
+                join_serializable(flags, b" ", writer, ctx)?;
                 writer.write_all(b")")
             }
             Self::InternalDate(datetime) => {
                 writer.write_all(b"INTERNALDATE ")?;
-                datetime.encode(writer)
+                datetime.encode(writer, ctx)
             }
             Self::Rfc822(nstring) => {
                 writer.write_all(b"RFC822 ")?;
-                nstring.encode(writer)
+                nstring.encode(writer, ctx)
             }
             Self::Rfc822Header(nstring) => {
                 writer.write_all(b"RFC822.HEADER ")?;
-                nstring.encode(writer)
+                nstring.encode(writer, ctx)
             }
             Self::Rfc822Size(size) => write!(writer, "RFC822.SIZE {size}"),
             Self::Rfc822Text(nstring) => {
                 writer.write_all(b"RFC822.TEXT ")?;
-                nstring.encode(writer)
+                nstring.encode(writer, ctx)
             }
             Self::Uid(uid) => write!(writer, "UID {uid}"),
         }
@@ -1187,23 +1242,23 @@ impl<'a> Encode for FetchAttributeValue<'a> {
 }
 
 impl<'a> Encode for NString<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match &self.0 {
-            Some(imap_str) => imap_str.encode(writer),
+            Some(imap_str) => imap_str.encode(writer, ctx),
             None => writer.write_all(b"NIL"),
         }
     }
 }
 
 impl<'a> Encode for BodyStructure<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         writer.write_all(b"(")?;
         match self {
             BodyStructure::Single { body, extension } => {
-                body.encode(writer)?;
+                body.encode(writer, ctx)?;
                 if let Some(extension) = extension {
                     writer.write_all(b" ")?;
-                    extension.encode(writer)?;
+                    extension.encode(writer, ctx)?;
                 }
             }
             BodyStructure::Multi {
@@ -1212,14 +1267,14 @@ impl<'a> Encode for BodyStructure<'a> {
                 extension_data,
             } => {
                 for body in &bodies.0 {
-                    body.encode(writer)?;
+                    body.encode(writer, ctx)?;
                 }
                 writer.write_all(b" ")?;
-                subtype.encode(writer)?;
+                subtype.encode(writer, ctx)?;
 
                 if let Some(extension) = extension_data {
                     writer.write_all(b" ")?;
-                    extension.encode(writer)?;
+                    extension.encode(writer, ctx)?;
                 }
             }
         }
@@ -1228,17 +1283,17 @@ impl<'a> Encode for BodyStructure<'a> {
 }
 
 impl<'a> Encode for Body<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self.specific {
             SpecificFields::Basic {
                 ref type_,
                 ref subtype,
             } => {
-                type_.encode(writer)?;
+                type_.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                subtype.encode(writer)?;
+                subtype.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                self.basic.encode(writer)
+                self.basic.encode(writer, ctx)
             }
             SpecificFields::Message {
                 ref envelope,
@@ -1246,11 +1301,11 @@ impl<'a> Encode for Body<'a> {
                 number_of_lines,
             } => {
                 writer.write_all(b"\"MESSAGE\" \"RFC822\" ")?;
-                self.basic.encode(writer)?;
+                self.basic.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                envelope.encode(writer)?;
+                envelope.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                body_structure.encode(writer)?;
+                body_structure.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
                 write!(writer, "{number_of_lines}")
             }
@@ -1259,9 +1314,9 @@ impl<'a> Encode for Body<'a> {
                 number_of_lines,
             } => {
                 writer.write_all(b"\"TEXT\" ")?;
-                subtype.encode(writer)?;
+                subtype.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                self.basic.encode(writer)?;
+                self.basic.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
                 write!(writer, "{number_of_lines}")
             }
@@ -1270,55 +1325,55 @@ impl<'a> Encode for Body<'a> {
 }
 
 impl<'a> Encode for BasicFields<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        List1AttributeValueOrNil(&self.parameter_list).encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.id.encode(writer)?;
+        self.id.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.description.encode(writer)?;
+        self.description.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.content_transfer_encoding.encode(writer)?;
+        self.content_transfer_encoding.encode(writer, ctx)?;
         writer.write_all(b" ")?;
         write!(writer, "{}", self.size)
     }
 }
 
 impl<'a> Encode for Envelope<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         writer.write_all(b"(")?;
-        self.date.encode(writer)?;
+        self.date.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.subject.encode(writer)?;
+        self.subject.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.from, b"").encode(writer)?;
+        List1OrNil(&self.from, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.sender, b"").encode(writer)?;
+        List1OrNil(&self.sender, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.reply_to, b"").encode(writer)?;
+        List1OrNil(&self.reply_to, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.to, b"").encode(writer)?;
+        List1OrNil(&self.to, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.cc, b"").encode(writer)?;
+        List1OrNil(&self.cc, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        List1OrNil(&self.bcc, b"").encode(writer)?;
+        List1OrNil(&self.bcc, b"").encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.in_reply_to.encode(writer)?;
+        self.in_reply_to.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.message_id.encode(writer)?;
+        self.message_id.encode(writer, ctx)?;
         writer.write_all(b")")
     }
 }
 
 impl<'a> Encode for Address<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         writer.write_all(b"(")?;
-        self.name.encode(writer)?;
+        self.name.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.adl.encode(writer)?;
+        self.adl.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.mailbox.encode(writer)?;
+        self.mailbox.encode(writer, ctx)?;
         writer.write_all(b" ")?;
-        self.host.encode(writer)?;
+        self.host.encode(writer, ctx)?;
         writer.write_all(b")")?;
 
         Ok(())
@@ -1326,17 +1381,17 @@ impl<'a> Encode for Address<'a> {
 }
 
 impl<'a> Encode for SinglePartExtensionData<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.md5.encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.md5.encode(writer, ctx)?;
         if let Some(ref dsp) = self.disposition {
             writer.write_all(b" ")?;
 
             match dsp {
                 Some((s, param)) => {
                     writer.write_all(b"(")?;
-                    s.encode(writer)?;
+                    s.encode(writer, ctx)?;
                     writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(param).encode(writer)?;
+                    List1AttributeValueOrNil(param).encode(writer, ctx)?;
                     writer.write_all(b")")?;
                 }
                 None => writer.write_all(b"NIL")?,
@@ -1344,11 +1399,11 @@ impl<'a> Encode for SinglePartExtensionData<'a> {
 
             if let Some(ref lang) = self.language {
                 writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
+                List1OrNil(lang, b" ").encode(writer, ctx)?;
 
                 if let Some(ref loc) = self.location {
                     writer.write_all(b" ")?;
-                    loc.encode(writer)?;
+                    loc.encode(writer, ctx)?;
 
                     if !self.extension.is_empty() {
                         // FIXME: Extension includes the SP for now, as it is unparsed.
@@ -1364,8 +1419,8 @@ impl<'a> Encode for SinglePartExtensionData<'a> {
 }
 
 impl<'a> Encode for MultiPartExtensionData<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        List1AttributeValueOrNil(&self.parameter_list).encode(writer, ctx)?;
 
         if let Some(ref dsp) = self.disposition {
             writer.write_all(b" ")?;
@@ -1373,9 +1428,9 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
             match dsp {
                 Some((s, param)) => {
                     writer.write_all(b"(")?;
-                    s.encode(writer)?;
+                    s.encode(writer, ctx)?;
                     writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(param).encode(writer)?;
+                    List1AttributeValueOrNil(param).encode(writer, ctx)?;
                     writer.write_all(b")")?;
                 }
                 None => writer.write_all(b"NIL")?,
@@ -1383,11 +1438,11 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
 
             if let Some(ref lang) = self.language {
                 writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
+                List1OrNil(lang, b" ").encode(writer, ctx)?;
 
                 if let Some(ref loc) = self.location {
                     writer.write_all(b" ")?;
-                    loc.encode(writer)?;
+                    loc.encode(writer, ctx)?;
 
                     if !self.extension.is_empty() {
                         // FIXME: Extension includes the SP for now, as it is unparsed.
@@ -1403,25 +1458,25 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
 }
 
 impl Encode for DateTime<FixedOffset> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         write!(writer, "\"{}\"", self.format("%d-%b-%Y %H:%M:%S %z"))
     }
 }
 
 impl<'a> Encode for Continue<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Continue::Basic { code, text } => match code {
                 Some(ref code) => {
                     writer.write_all(b"+ [")?;
-                    code.encode(writer)?;
+                    code.encode(writer, ctx)?;
                     writer.write_all(b"] ")?;
-                    text.encode(writer)?;
+                    text.encode(writer, ctx)?;
                     writer.write_all(b"\r\n")
                 }
                 None => {
                     writer.write_all(b"+ ")?;
-                    text.encode(writer)?;
+                    text.encode(writer, ctx)?;
                     writer.write_all(b"\r\n")
                 }
             },
@@ -1438,7 +1493,7 @@ impl<'a> Encode for Continue<'a> {
 pub(crate) mod utils {
     use std::io::Write;
 
-    use super::Encode;
+    use super::{Context, Encode};
 
     pub(crate) struct List1OrNil<'a, T>(pub(crate) &'a Vec<T>, pub(crate) &'a [u8]);
 
@@ -1448,14 +1503,15 @@ pub(crate) mod utils {
         elements: &[I],
         sep: &[u8],
         writer: &mut impl Write,
+        ctx: &Context,
     ) -> std::io::Result<()> {
         if let Some((last, head)) = elements.split_last() {
             for item in head {
-                item.encode(writer)?;
+                item.encode(writer, ctx)?;
                 writer.write_all(sep)?;
             }
 
-            last.encode(writer)
+            last.encode(writer, ctx)
         } else {
             Ok(())
         }
@@ -1465,16 +1521,16 @@ pub(crate) mod utils {
     where
         T: Encode,
     {
-        fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
             if let Some((last, head)) = self.0.split_last() {
                 writer.write_all(b"(")?;
 
                 for item in head {
-                    item.encode(writer)?;
+                    item.encode(writer, ctx)?;
                     writer.write_all(self.1)?;
                 }
 
-                last.encode(writer)?;
+                last.encode(writer, ctx)?;
 
                 writer.write_all(b")")
             } else {
@@ -1487,26 +1543,103 @@ pub(crate) mod utils {
     where
         T: Encode,
     {
-        fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
             if let Some((last, head)) = self.0.split_last() {
                 writer.write_all(b"(")?;
 
                 for (attribute, value) in head {
-                    attribute.encode(writer)?;
+                    attribute.encode(writer, ctx)?;
                     writer.write_all(b" ")?;
-                    value.encode(writer)?;
+                    value.encode(writer, ctx)?;
                     writer.write_all(b" ")?;
                 }
 
                 let (attribute, value) = last;
-                attribute.encode(writer)?;
+                attribute.encode(writer, ctx)?;
                 writer.write_all(b" ")?;
-                value.encode(writer)?;
+                value.encode(writer, ctx)?;
 
                 writer.write_all(b")")
             } else {
                 writer.write_all(b"NIL")
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use crate::{
+        codec::{CapabilityLiteral, Context, ContextBuilder, Encode},
+        core::Literal,
+    };
+
+    #[test]
+    fn test_literal_plus() {
+        let tests = vec![
+            (
+                b"{8}\r\nLITERAL+".to_vec(),
+                Literal::try_from("LITERAL+").unwrap(),
+                Context::default(),
+            ),
+            (
+                b"{8+}\r\nLITERAL+".to_vec(),
+                Literal::try_from("LITERAL+").unwrap(),
+                ContextBuilder::new()
+                    .capability_literal(CapabilityLiteral::Plus)
+                    .finish(),
+            ),
+            (
+                {
+                    let mut buf = b"{4096+}\r\n".to_vec();
+                    buf.extend_from_slice(&[0xFFu8; 4096]);
+                    buf
+                },
+                Literal::try_from([0xFFu8; 4096].as_ref()).unwrap(),
+                ContextBuilder::new()
+                    .capability_literal(CapabilityLiteral::Plus)
+                    .finish(),
+            ),
+            (
+                {
+                    let mut buf = b"{4097+}\r\n".to_vec();
+                    buf.extend_from_slice(&[0xFFu8; 4097]);
+                    buf
+                },
+                Literal::try_from([0xFFu8; 4097].as_ref()).unwrap(),
+                ContextBuilder::new()
+                    .capability_literal(CapabilityLiteral::Plus)
+                    .finish(),
+            ),
+            (
+                {
+                    let mut buf = b"{4096+}\r\n".to_vec();
+                    buf.extend_from_slice(&[0xFFu8; 4096]);
+                    buf
+                },
+                Literal::try_from([0xFFu8; 4096].as_ref()).unwrap(),
+                ContextBuilder::new()
+                    .capability_literal(CapabilityLiteral::Minus)
+                    .finish(),
+            ),
+            (
+                {
+                    let mut buf = b"{4097}\r\n".to_vec();
+                    buf.extend_from_slice(&[0xFFu8; 4097]);
+                    buf
+                },
+                Literal::try_from([0xFFu8; 4097].as_ref()).unwrap(),
+                ContextBuilder::new()
+                    .capability_literal(CapabilityLiteral::Minus)
+                    .finish(),
+            ),
+        ];
+
+        for (expected, test, context) in tests.into_iter() {
+            let got = test.encode_detached(&context).unwrap();
+            assert_eq!(expected, got);
         }
     }
 }

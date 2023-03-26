@@ -33,7 +33,7 @@ fn main() {
     let (remainder, parsed) = Command::decode(input).unwrap();
     println!("# Parsed\n\n{:#?}\n\n", parsed);
 
-    let buffer = parsed.encode_detached().unwrap();
+    let buffer = parsed.encode_detached(&Context::default()).unwrap();
 
     // Note: IMAP4rev1 may produce messages that are not valid UTF-8.
     println!("# Serialized\n\n{:?}", std::str::from_utf8(&buffer));

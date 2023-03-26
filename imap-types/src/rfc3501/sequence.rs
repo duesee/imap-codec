@@ -263,7 +263,10 @@ mod tests {
     };
 
     use super::{SeqNo, Sequence, Strategy};
-    use crate::{codec::Encode, command::SequenceSet};
+    use crate::{
+        codec::{Context, Encode},
+        command::SequenceSet,
+    };
 
     #[test]
     fn creation_of_sequence_from_range() {
@@ -439,7 +442,7 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let out = test.encode_detached().unwrap();
+            let out = test.encode_detached(&Context::default()).unwrap();
             assert_eq!(*expected, out);
         }
     }

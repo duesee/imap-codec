@@ -32,7 +32,7 @@
 //! println!("// Parsed:");
 //! println!("{:#?}", parsed);
 //!
-//! let serialized = parsed.encode_detached().unwrap();
+//! let serialized = parsed.encode_detached(&Context::default()).unwrap();
 //!
 //! let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
 //! println!("// Serialized:"); // We just ignore that, so that we can print the message.

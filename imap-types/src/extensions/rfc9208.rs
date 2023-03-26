@@ -36,6 +36,7 @@
 use std::{
     borrow::Cow,
     convert::{TryFrom, TryInto},
+    io::Write,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -46,7 +47,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    codec::Encode,
+    codec::{Context, Encode},
     rfc3501::core::{impl_try_from, impl_try_from_try_from, Atom},
 };
 
@@ -144,13 +145,13 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
 }
 
 impl<'a> Encode for Resource<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
         match self {
             Resource::Storage => writer.write_all(b"STORAGE"),
             Resource::Message => writer.write_all(b"MESSAGE"),
             Resource::Mailbox => writer.write_all(b"MAILBOX"),
             Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
-            Resource::Other(atom) => atom.encode(writer),
+            Resource::Other(atom) => atom.encode(writer, ctx),
         }
     }
 }
@@ -186,8 +187,8 @@ impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
 }
 
 impl<'a> Encode for ResourceOther<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.0.encode(writer, ctx)
     }
 }
 
@@ -214,8 +215,8 @@ impl<'a> QuotaGet<'a> {
 }
 
 impl<'a> Encode for QuotaGet<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.resource.encode(writer, ctx)?;
         write!(writer, " {} {}", self.usage, self.limit)
     }
 }
@@ -238,8 +239,8 @@ impl<'a> QuotaSet<'a> {
 }
 
 impl<'a> Encode for QuotaSet<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
+    fn encode(&self, writer: &mut impl Write, ctx: &Context) -> std::io::Result<()> {
+        self.resource.encode(writer, ctx)?;
         write!(writer, " {}", self.limit)
     }
 }
@@ -253,7 +254,11 @@ mod tests {
 
     fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
         for item in items {
-            let out = item.0.unwrap().encode_detached().unwrap();
+            let out = item
+                .0
+                .unwrap()
+                .encode_detached(&Context::default())
+                .unwrap();
             assert_eq!(std::str::from_utf8(&out).unwrap(), item.1);
         }
     }

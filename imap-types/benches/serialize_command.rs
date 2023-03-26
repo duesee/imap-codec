@@ -2,7 +2,7 @@ use std::{convert::TryFrom, num::NonZeroU32};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_types::{
-    codec::Encode,
+    codec::{Context, Encode},
     command::{
         fetch::{FetchAttribute, MacroOrFetchAttributes},
         Command, CommandBody,
@@ -11,7 +11,7 @@ use imap_types::{
 };
 
 fn serialize_command(cmd: &Command, out: &mut Vec<u8>) {
-    cmd.encode(out).unwrap();
+    cmd.encode(out, &Context::default()).unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

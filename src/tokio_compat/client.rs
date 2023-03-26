@@ -1,7 +1,7 @@
 use std::io::Error;
 
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::bounded_static::IntoBoundedStatic;
+use imap_types::{bounded_static::IntoBoundedStatic, codec::Context};
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
@@ -17,6 +17,7 @@ pub struct ImapClientCodec {
     state: LiteralFramingState,
     imap_state: ImapState<'static>,
     max_literal_size: usize,
+    context: Context,
 }
 
 impl ImapClientCodec {
@@ -25,6 +26,7 @@ impl ImapClientCodec {
             state: LiteralFramingState::ReadLine { to_consume_acc: 0 },
             imap_state: ImapState::Greeting,
             max_literal_size,
+            context: Context::default(),
         }
     }
 }
@@ -182,7 +184,7 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
     fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), std::io::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        item.encode(&mut writer, &self.context).unwrap();
         Ok(())
     }
 }

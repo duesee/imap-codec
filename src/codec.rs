@@ -1,4 +1,4 @@
-pub use imap_types::codec::Encode;
+pub use imap_types::codec::{Context, Encode};
 #[cfg(feature = "ext_idle")]
 use imap_types::command::idle::IdleDone;
 use imap_types::{

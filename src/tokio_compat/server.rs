@@ -1,7 +1,7 @@
 use std::io::Error;
 
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::{bounded_static::IntoBoundedStatic, response::Greeting};
+use imap_types::{bounded_static::IntoBoundedStatic, codec::Context, response::Greeting};
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
@@ -15,6 +15,7 @@ use crate::{
 pub struct ImapServerCodec {
     state: LiteralFramingState,
     max_literal_size: usize,
+    context: Context,
 }
 
 impl ImapServerCodec {
@@ -22,6 +23,7 @@ impl ImapServerCodec {
         Self {
             state: LiteralFramingState::ReadLine { to_consume_acc: 0 },
             max_literal_size,
+            context: Context::default(),
         }
     }
 }
@@ -169,7 +171,7 @@ impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
     fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), std::io::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        item.encode(&mut writer, &self.context).unwrap();
         Ok(())
     }
 }
@@ -180,7 +182,7 @@ impl<'a> Encoder<&Response<'a>> for ImapServerCodec {
     fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), std::io::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        item.encode(&mut writer, &self.context).unwrap();
         Ok(())
     }
 }

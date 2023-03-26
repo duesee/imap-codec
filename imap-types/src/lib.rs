@@ -74,7 +74,7 @@
 //! let cmd = Command::new("A123", CommandBody::login("alice", "password").unwrap()).unwrap();
 //!
 //! // Encode the `cmd` into `out`.
-//! let out = cmd.encode_detached().unwrap();
+//! let out = cmd.encode_detached(&Context::default()).unwrap();
 //!
 //! // Print the command.
 //! // (Note that IMAP traces are not guaranteed to be valid UTF-8.)

@@ -19,7 +19,11 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::Encode, core::Atom, rfc3501::core::impl_try_from_try_from};
+use crate::{
+    codec::{Context, Encode},
+    core::Atom,
+    rfc3501::core::impl_try_from_try_from,
+};
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -55,7 +59,7 @@ impl AsRef<str> for CompressionAlgorithm {
 }
 
 impl Encode for CompressionAlgorithm {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write, _: &Context) -> std::io::Result<()> {
         match self {
             CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
         }
