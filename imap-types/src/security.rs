@@ -41,7 +41,7 @@ where
 
 impl<T> Debug for Secret<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[[REDACTED]]")
+        write!(f, "/* REDACTED */")
     }
 }
 
@@ -58,7 +58,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{command::CommandBody, security::Secret};
+    #[cfg(feature = "ext_literal")]
+    use crate::message::AuthMechanism;
+    use crate::{
+        codec::Encode,
+        command::{AuthenticateData, CommandBody},
+        security::Secret,
+    };
 
     #[test]
     #[allow(clippy::redundant_clone)]
@@ -68,13 +74,47 @@ mod tests {
         println!("{}", got);
         assert!(!got.contains("xyz123"));
 
-        let cmd = CommandBody::login("alice", "xyz123")
-            .unwrap()
-            .tag("A")
-            .unwrap();
-        let got = format!("{:?}", cmd);
-        println!("{}", got);
+        println!("-----");
+
+        let tests = vec![
+            CommandBody::login("alice", "xyz123")
+                .unwrap()
+                .tag("A")
+                .unwrap(),
+            #[cfg(feature = "ext_sasl_ir")]
+            CommandBody::authenticate(AuthMechanism::Plain, Some(b"xyz123"))
+                .tag("A")
+                .unwrap(),
+        ];
+
+        for test in tests.into_iter() {
+            println!(
+                "Serialized: {:?}",
+                String::from_utf8(test.encode_detached().unwrap()),
+            );
+
+            let got = format!("{:?}", test);
+            println!("Debug: {}", got);
+            assert!(got.contains("/* REDACTED */"));
+            assert!(!got.contains("xyz123"));
+            assert!(!got.contains("eHl6MTIz"));
+
+            println!();
+        }
+
+        println!("-----");
+
+        let test = AuthenticateData(Secret::new(b"xyz123".to_vec()));
+        println!(
+            "Serialized: {:?}",
+            String::from_utf8(test.encode_detached().unwrap()),
+        );
+
+        let got = format!("{:?}", test);
+        println!("Debug: {}", got);
+        assert!(got.contains("/* REDACTED */"));
         assert!(!got.contains("xyz123"));
+        assert!(!got.contains("eHl6MTIz"));
     }
 
     /// A best effort test to ensure that constant-time comparison works.
