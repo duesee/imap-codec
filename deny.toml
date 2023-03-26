@@ -3,4 +3,4 @@ unknown-registry = "deny"
 unknown-git      = "deny"
 
 [licenses]
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016" ]
+allow = [ "Apache-2.0", "MIT", "BSD-3-Clause", "Unicode-DFS-2016" ]
