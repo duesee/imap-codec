@@ -11,8 +11,8 @@ use libfuzzer_sys::fuzz_target;
 fuzz_target!(|test: Greeting| {
     // TODO(#30): Skip certain generations for now as we know they need to be fixed.
     //            The goal is to not skip anything eventually.
-    match test.code {
-        Some(ref code) => match code {
+    if let Some(ref code) = test.code {
+        match code {
             Code::PermanentFlags(_) => {
                 // FIXME(#30)
                 return;
@@ -27,8 +27,7 @@ fuzz_target!(|test: Greeting| {
                 return;
             }
             _ => {}
-        },
-        _ => {}
+        }
     }
 
     #[cfg(feature = "debug")]

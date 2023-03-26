@@ -405,7 +405,7 @@ mod tests {
             ),
         ];
 
-        for (test, expected) in tests.into_iter() {
+        for (test, expected) in tests.iter() {
             let got = SequenceSet::try_from(*test).unwrap();
             assert_eq!(*expected, got);
         }

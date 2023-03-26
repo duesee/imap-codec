@@ -367,7 +367,7 @@ impl<'a> Encode for AuthMechanismOther<'a> {
 
 impl Encode for AuthenticateData {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        let encoded = base64.encode(&self.0.expose_secret());
+        let encoded = base64.encode(self.0.expose_secret());
         writer.write_all(encoded.as_bytes())
     }
 }

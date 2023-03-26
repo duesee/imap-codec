@@ -156,7 +156,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
             }
         };
 
-        println!("");
+        println!();
     }
 }
 

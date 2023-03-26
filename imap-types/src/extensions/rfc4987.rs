@@ -46,7 +46,7 @@ impl<'a> TryFrom<Atom<'a>> for CompressionAlgorithm {
     }
 }
 
-impl<'a> AsRef<str> for CompressionAlgorithm {
+impl AsRef<str> for CompressionAlgorithm {
     fn as_ref(&self) -> &str {
         match self {
             CompressionAlgorithm::Deflate => "deflate",

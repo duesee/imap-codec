@@ -61,6 +61,7 @@ mod tests {
     use crate::{command::CommandBody, security::Secret};
 
     #[test]
+    #[allow(clippy::redundant_clone)]
     fn test_that_secret_is_redacted() {
         let secret = Secret("xyz123");
         let got = format!("{:?}", secret);
@@ -78,6 +79,7 @@ mod tests {
 
     /// A best effort test to ensure that constant-time comparison works.
     #[test]
+    #[allow(clippy::redundant_clone)]
     fn test_that_eq_is_constant_time() {
         let took_constant = {
             fn compare_eq(a: Secret<String>, b: Secret<String>) -> u128 {
@@ -150,6 +152,7 @@ mod tests {
 
     /// A best effort test to ensure that constant-time comparison works.
     #[test]
+    #[allow(clippy::redundant_clone)]
     fn test_that_compare_ct_is_constant_time() {
         let took_constant = {
             fn compare_eq(a: Secret<String>, b: Secret<String>) -> u128 {

@@ -87,5 +87,5 @@ pub fn read_line(prompt: &str) -> String {
 
     print!("{}", ColorClient.suffix());
 
-    line.replace("\n", "\r\n")
+    line.replace('\n', "\r\n")
 }
