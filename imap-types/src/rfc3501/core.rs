@@ -1124,16 +1124,16 @@ mod tests {
     fn test_istring() {
         assert_eq!(
             IString::try_from("AAA").unwrap(),
-            IString::Quoted("AAA".try_into().unwrap()).into()
+            IString::Quoted("AAA".try_into().unwrap())
         );
         assert_eq!(
             IString::try_from("\"AAA").unwrap(),
-            IString::Quoted("\"AAA".try_into().unwrap()).into()
+            IString::Quoted("\"AAA".try_into().unwrap())
         );
 
         assert_ne!(
             IString::try_from("\"AAA").unwrap(),
-            IString::Quoted("\\\"AAA".try_into().unwrap()).into()
+            IString::Quoted("\\\"AAA".try_into().unwrap())
         );
     }
 
