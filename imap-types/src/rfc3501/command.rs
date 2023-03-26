@@ -251,7 +251,7 @@ pub enum CommandBody<'a> {
         mechanism: AuthMechanism<'a>,
         /// Already base64-decoded
         #[cfg(feature = "ext_sasl_ir")]
-        initial_response: Option<Cow<'a, [u8]>>,
+        initial_response: Option<Secret<Cow<'a, [u8]>>>,
     },
 
     /// ### 6.2.3.  LOGIN Command
@@ -1316,7 +1316,7 @@ impl<'a> CommandBody<'a> {
     pub fn authenticate(mechanism: AuthMechanism<'a>, initial_response: Option<&'a [u8]>) -> Self {
         CommandBody::Authenticate {
             mechanism,
-            initial_response: initial_response.map(Cow::Borrowed),
+            initial_response: initial_response.map(|ir| Secret::new(Cow::Borrowed(ir))),
         }
     }
 
@@ -1595,9 +1595,7 @@ impl<'a> CommandBody<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthenticateData {
-    pub data: Vec<u8>,
-}
+pub struct AuthenticateData(pub Secret<Vec<u8>>);
 
 /// The defined search keys.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -1779,7 +1777,7 @@ mod tests {
         message::{AuthMechanism, Flag, MyDateTime, Part, Section},
     };
     #[cfg(feature = "ext_sasl_ir")]
-    use crate::{command::Command, message::Tag};
+    use crate::{command::Command, message::Tag, security::Secret};
 
     #[test]
     fn test_commandbody_new() {
@@ -1968,7 +1966,7 @@ mod tests {
             Tag::try_from("A").unwrap(),
             CommandBody::Authenticate {
                 mechanism: AuthMechanism::Plain,
-                initial_response: Some(Cow::Borrowed(&b""[..])),
+                initial_response: Some(Secret::new(Cow::Borrowed(&b""[..]))),
             },
         )
         .unwrap();
