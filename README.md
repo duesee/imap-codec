@@ -81,7 +81,7 @@ Status(Ok { tag: None, code: None, text: Text("IMAP4rev1 Service Ready") })
 // * OK IMAP4rev1 Service Ready
 
 // a001 login mrc secret
-Command { tag: Tag("a001"), body: Login { username: Atom(AtomExt("mrc")), password: [[REDACTED]] } }
+Command { tag: Tag("a001"), body: Login { username: Atom(AtomExt("mrc")), password: /* REDACTED */ } }
 // a001 LOGIN mrc secret
 
 // a001 OK LOGIN completed
