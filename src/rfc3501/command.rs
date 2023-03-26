@@ -360,15 +360,17 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 ///                CRLF is parsed by upper command parser.
 /// ```
 #[cfg(feature = "ext_sasl_ir")]
-pub fn authenticate_sasl_ir(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Option<Cow<[u8]>>)> {
+pub fn authenticate_sasl_ir(
+    input: &[u8],
+) -> IResult<&[u8], (AuthMechanism, Option<Secret<Cow<[u8]>>>)> {
     let mut parser = tuple((
         tag_no_case(b"AUTHENTICATE "),
         auth_type,
         opt(preceded(
             SP,
             alt((
-                map(base64, Cow::Owned),
-                value(Cow::Borrowed(&b""[..]), tag("=")),
+                map(base64, |data| Secret::new(Cow::Owned(data))),
+                value(Secret::new(Cow::Borrowed(&b""[..])), tag("=")),
             )),
         )),
     ));
@@ -391,7 +393,9 @@ pub fn authenticate_sasl_ir(input: &[u8]) -> IResult<&[u8], (AuthMechanism, Opti
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
 pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], AuthenticateData> {
-    map(terminated(base64, CRLF), |data| AuthenticateData { data })(input) // FIXME: many0 deleted
+    map(terminated(base64, CRLF), |data| {
+        AuthenticateData(Secret::new(data))
+    })(input) // FIXME: many0 deleted
 }
 
 // # Command Select

@@ -115,10 +115,10 @@ impl<'a> Encode for CommandBody<'a> {
                     // RFC 4959 (https://datatracker.ietf.org/doc/html/rfc4959#section-3)
                     // "To send a zero-length initial response, the client MUST send a single pad character ("=").
                     // This indicates that the response is present, but is a zero-length string."
-                    if ir.is_empty() {
+                    if ir.expose_secret().is_empty() {
                         writer.write_all(b"=")?;
                     } else {
-                        writer.write_all(base64.encode(ir).as_bytes())?;
+                        writer.write_all(base64.encode(ir.expose_secret()).as_bytes())?;
                     };
                 };
 
@@ -367,7 +367,7 @@ impl<'a> Encode for AuthMechanismOther<'a> {
 
 impl Encode for AuthenticateData {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        let encoded = base64.encode(&self.data);
+        let encoded = base64.encode(&self.0.expose_secret());
         writer.write_all(encoded.as_bytes())
     }
 }
