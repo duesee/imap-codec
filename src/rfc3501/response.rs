@@ -49,6 +49,7 @@ pub fn greeting(input: &[u8]) -> IResult<&[u8], Greeting> {
 /// `resp-cond-auth = ("OK" / "PREAUTH") SP resp-text`
 ///
 /// Authentication condition
+#[allow(clippy::type_complexity)]
 pub fn resp_cond_auth(input: &[u8]) -> IResult<&[u8], (GreetingKind, (Option<Code>, Text))> {
     let mut parser = tuple((
         alt((

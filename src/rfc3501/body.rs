@@ -332,6 +332,7 @@ pub fn body_fld_md5(input: &[u8]) -> IResult<&[u8], NString> {
 }
 
 /// `body-fld-dsp = "(" string SP body-fld-param ")" / nil`
+#[allow(clippy::type_complexity)]
 pub fn body_fld_dsp(input: &[u8]) -> IResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
     alt((
         delimited(
