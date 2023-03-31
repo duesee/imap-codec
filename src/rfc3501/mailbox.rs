@@ -127,6 +127,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 /// `mailbox-list = "(" [mbx-list-flags] ")" SP
 ///                 (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
 ///                 mailbox`
+#[allow(clippy::type_complexity)]
 pub fn mailbox_list(
     input: &[u8],
 ) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {

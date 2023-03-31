@@ -959,6 +959,7 @@ mod tests {
 
     #[test]
     fn test_atom() {
+        #[allow(clippy::type_complexity)]
         let tests: Vec<(&[u8], (Result<Atom, ()>, Result<Atom, ()>))> = vec![
             (
                 b"A",
@@ -1012,6 +1013,7 @@ mod tests {
 
     #[test]
     fn test_atom_ext() {
+        #[allow(clippy::type_complexity)]
         let tests: Vec<(&[u8], (Result<AtomExt, ()>, Result<AtomExt, ()>))> = vec![
             (
                 b"A",
@@ -1072,6 +1074,7 @@ mod tests {
 
     #[test]
     fn test_astring() {
+        #[allow(clippy::type_complexity)]
         let tests: Vec<(&[u8], (Result<AString, ()>, Result<AString, ()>))> = vec![
             (
                 b"A",
