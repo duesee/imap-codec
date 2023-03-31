@@ -31,7 +31,7 @@ impl ImapClientCodec {
 
 #[derive(Debug)]
 pub enum ImapClientCodecError {
-    Io(std::io::Error),
+    Io(Error),
     Line(LineError),
     Literal(LiteralError),
     ResponseParsingFailed,
@@ -49,7 +49,7 @@ impl PartialEq for ImapClientCodecError {
     }
 }
 
-impl From<std::io::Error> for ImapClientCodecError {
+impl From<Error> for ImapClientCodecError {
     fn from(error: Error) -> Self {
         Self::Io(error)
     }
@@ -177,9 +177,9 @@ impl Decoder for ImapClientCodec {
 }
 
 impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
-    type Error = std::io::Error;
+    type Error = Error;
 
-    fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), std::io::Error> {
+    fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         item.encode(&mut writer).unwrap();
