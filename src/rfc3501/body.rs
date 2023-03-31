@@ -146,7 +146,7 @@ fn body_type_msg_limited<'a>(
         (
             basic,
             SpecificFields::Message {
-                envelope,
+                envelope: Box::new(envelope),
                 body_structure: Box::new(body_structure),
                 number_of_lines,
             },
