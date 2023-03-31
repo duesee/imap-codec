@@ -75,7 +75,7 @@ fuzz_target!(|test: Command| {
     let buffer = test.encode_detached().unwrap();
 
     #[cfg(feature = "debug")]
-    println!("[!] Serialzed: {}", escape_byte_string(&buffer));
+    println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
     match Command::decode(&buffer) {
         Ok((rem, parsed)) => {
