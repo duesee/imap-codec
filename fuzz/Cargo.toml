@@ -16,6 +16,7 @@ starttls = ["imap-codec/starttls"]
 ext_compress = ["imap-codec/ext_compress"]
 ext_enable = ["imap-codec/ext_enable"]
 ext_idle = ["imap-codec/ext_idle"]
+ext_literal = ["imap-codec/ext_literal"]
 ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_quota = ["imap-codec/ext_quota"]
@@ -26,6 +27,7 @@ ext = [
     "ext_compress",
     "ext_enable",
     "ext_idle",
+    "ext_literal",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
     "ext_quota",

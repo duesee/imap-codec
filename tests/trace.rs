@@ -6,7 +6,7 @@ use imap_codec::{
         fetch::{FetchAttribute, Macro},
         Command, CommandBody,
     },
-    core::{AString, IString, Quoted},
+    core::{AString, IString, Literal, Quoted},
     message::{AuthMechanism, Flag, Section, Tag},
     response::{
         data::{Capability, FetchAttributeValue},
@@ -1162,4 +1162,23 @@ S: A044 BAD No such command as "BLURDYBLOOP"
 "#;
 
     test_lines_of_trace(trace);
+}
+
+#[cfg(feature = "ext_literal")]
+#[test]
+fn test_trace_rfc2088() {
+    let test = b"A001 LOGIN {11+}\r\nFRED FOOBAR {7+}\r\nfat man\r\n".as_ref();
+
+    let (rem, got) = Command::decode(test).unwrap();
+    assert!(rem.is_empty());
+    assert_eq!(got, {
+        let username = Literal::try_from("FRED FOOBAR").unwrap().into_non_sync();
+        let password = Literal::try_from("fat man").unwrap().into_non_sync();
+
+        Command::new(
+            Tag::try_from("A001").unwrap(),
+            CommandBody::login(username, password).unwrap(),
+        )
+        .unwrap()
+    })
 }

@@ -217,9 +217,11 @@ mod tests {
             ("INBOX", Mailbox::Inbox),
             (
                 "INBO²",
-                Mailbox::Other(MailboxOther(AString::String(IString::Literal(Literal(
-                    Cow::Borrowed("INBO²".as_bytes()),
-                ))))),
+                Mailbox::Other(MailboxOther(AString::String(IString::Literal(Literal {
+                    data: Cow::Borrowed("INBO²".as_bytes()),
+                    #[cfg(feature = "ext_literal")]
+                    sync: true,
+                })))),
             ),
         ];
 
