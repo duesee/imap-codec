@@ -43,20 +43,21 @@
 //!
 //! This crate uses the following features to enable IMAP extensions:
 //!
-//! |Feature              |Description                                                                |Enabled by default |
-//! |---------------------|---------------------------------------------------------------------------|-------------------|
-//! |ext_compress         |See [COMPRESS](https://datatracker.ietf.org/doc/html/rfc4978)              |No (but may change)|
-//! |ext_enable           |See [ENABLE](https://datatracker.ietf.org/doc/html/rfc5161)                |No (but may change)|
-//! |ext_idle             |See [IDLE](https://datatracker.ietf.org/doc/html/rfc2177)                  |No (but may change)|
-//! |ext_login_referrals  |See [LOGIN-REFERRALS](https://datatracker.ietf.org/doc/html/rfc2221)       |No (but may change)|
-//! |ext_mailbox_referrals|See [MAILBOX-REFERRALS](https://datatracker.ietf.org/doc/html/rfc2193)     |No (but may change)|
-//! |ext_quota            |See [QUOTA](https://datatracker.ietf.org/doc/html/rfc9208)                 |No (but may change)|
-//! |ext_sasl_ir          |See [SASL-IR](https://datatracker.ietf.org/doc/html/rfc4959)               |No (but may change)|
-//! |starttls             |See [STARTTLS](https://datatracker.ietf.org/doc/html/rfc3501#section-6.2.1)|No                 |
+//! |Feature              |Description                                                 |Enabled by default |
+//! |---------------------|------------------------------------------------------------|-------------------|
+//! |ext_compress         |The IMAP COMPRESS Extension ([RFC 4978])                    |No (but may change)|
+//! |ext_enable           |The IMAP ENABLE Extension ([RFC 5161])                      |No (but may change)|
+//! |ext_idle             |IMAP4 IDLE command ([RFC 2177])                             |No (but may change)|
+//! |ext_literal          |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])   |No (but may change)|
+//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                          |No (but may change)|
+//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                        |No (but may change)|
+//! |ext_quota            |IMAP QUOTA Extension ([RFC 9208])                           |No (but may change)|
+//! |ext_sasl_ir          |IMAP Extension for SASL Initial Client Response ([RFC 4959])|No (but may change)|
+//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                       |No                 |
 //!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
 //! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
-//! It would be best if you always used IMAPS, i.e., IMAP-over-TLS on port 993, instead of STARTTLS.
+//! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
 //!
 //! Furthermore, imap-codec uses the following features to facilitate interoperability:
 //!
@@ -74,6 +75,17 @@
 //! See the
 //! [tokio client](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client) and
 //! [tokio server](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server) demos.
+//!
+//! [RFC 2088]: https://datatracker.ietf.org/doc/html/rfc2088
+//! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
+//! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
+//! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
+//! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
+//! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
+//! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
+//! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
+//! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
+//! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
