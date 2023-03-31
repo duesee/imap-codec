@@ -295,6 +295,18 @@ impl<'a> TryFrom<String> for IString<'a> {
     }
 }
 
+impl<'a> From<Literal<'a>> for IString<'a> {
+    fn from(value: Literal<'a>) -> Self {
+        Self::Literal(value)
+    }
+}
+
+impl<'a> From<Quoted<'a>> for IString<'a> {
+    fn from(value: Quoted<'a>) -> Self {
+        Self::Quoted(value)
+    }
+}
+
 impl<'a> AsRef<[u8]> for IString<'a> {
     fn as_ref(&self) -> &[u8] {
         match self {
@@ -559,6 +571,12 @@ impl<'a> TryFrom<String> for AString<'a> {
         }
 
         Err(())
+    }
+}
+
+impl<'a> From<Literal<'a>> for AString<'a> {
+    fn from(value: Literal<'a>) -> Self {
+        AString::String(IString::Literal(value))
     }
 }
 
