@@ -28,7 +28,7 @@ impl ImapServerCodec {
 
 #[derive(Debug)]
 pub enum ImapServerCodecError {
-    Io(std::io::Error),
+    Io(Error),
     Line(LineError),
     Literal(LiteralError),
     CommandParsingFailed,
@@ -48,7 +48,7 @@ impl PartialEq for ImapServerCodecError {
     }
 }
 
-impl From<std::io::Error> for ImapServerCodecError {
+impl From<Error> for ImapServerCodecError {
     fn from(error: Error) -> Self {
         Self::Io(error)
     }
@@ -164,9 +164,9 @@ impl Decoder for ImapServerCodec {
 }
 
 impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
-    type Error = std::io::Error;
+    type Error = Error;
 
-    fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), std::io::Error> {
+    fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         item.encode(&mut writer).unwrap();
@@ -175,9 +175,9 @@ impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
 }
 
 impl<'a> Encoder<&Response<'a>> for ImapServerCodec {
-    type Error = std::io::Error;
+    type Error = Error;
 
-    fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), std::io::Error> {
+    fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         item.encode(&mut writer).unwrap();

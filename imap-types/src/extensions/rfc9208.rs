@@ -36,6 +36,7 @@
 use std::{
     borrow::Cow,
     convert::{TryFrom, TryInto},
+    io::Write,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -144,7 +145,7 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
 }
 
 impl<'a> Encode for Resource<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
             Resource::Storage => writer.write_all(b"STORAGE"),
             Resource::Message => writer.write_all(b"MESSAGE"),
@@ -186,7 +187,7 @@ impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
 }
 
 impl<'a> Encode for ResourceOther<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.0.encode(writer)
     }
 }
@@ -214,7 +215,7 @@ impl<'a> QuotaGet<'a> {
 }
 
 impl<'a> Encode for QuotaGet<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.resource.encode(writer)?;
         write!(writer, " {} {}", self.usage, self.limit)
     }
@@ -238,7 +239,7 @@ impl<'a> QuotaSet<'a> {
 }
 
 impl<'a> Encode for QuotaSet<'a> {
-    fn encode(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.resource.encode(writer)?;
         write!(writer, " {}", self.limit)
     }
