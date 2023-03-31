@@ -125,7 +125,7 @@ pub enum SpecificFields<'a> {
     /// A body type of type MESSAGE and subtype RFC822 contains, immediately after the basic fields,
     Message {
         /// the envelope structure,
-        envelope: Envelope<'a>,
+        envelope: Box<Envelope<'a>>,
         /// body structure,
         body_structure: Box<BodyStructure<'a>>,
         /// and size in text lines of the encapsulated message.
