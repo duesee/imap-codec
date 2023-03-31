@@ -58,8 +58,22 @@ implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom! { SequenceSet, &str }
-implement_tryfrom! { Literal<'a>, &[u8] }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
+
+impl<'a> Arbitrary<'a> for Literal<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        match Literal::try_from(<&[u8]>::arbitrary(u)?) {
+            #[cfg(not(feature = "ext_literal"))]
+            Ok(passed) => Ok(passed),
+            #[cfg(feature = "ext_literal")]
+            Ok(mut passed) => {
+                passed.sync = bool::arbitrary(u)?;
+                Ok(passed)
+            }
+            Err(_) => Err(arbitrary::Error::IncorrectFormat),
+        }
+    }
+}
 
 impl<'a> Arbitrary<'a> for CodeOther<'a> {
     fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {

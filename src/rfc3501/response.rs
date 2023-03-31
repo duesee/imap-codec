@@ -149,6 +149,8 @@ pub fn resp_text_code(input: &[u8]) -> IResult<&[u8], Code> {
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         #[cfg(feature = "ext_quota")]
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
+        #[cfg(feature = "ext_literal")]
+        value(Code::TooBig, tag_no_case(b"TOOBIG")),
     ))(input)
 }
 

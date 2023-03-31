@@ -7,6 +7,8 @@ use imap_types::{
     message::{Charset, Tag},
     response::{data::QuotedChar, Text},
 };
+#[cfg(feature = "ext_literal")]
+use nom::character::streaming::char;
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
@@ -142,11 +144,30 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// `literal = "{" number "}" CRLF *CHAR8`
 ///
 /// Number represents the number of CHAR8s
+///
+/// # For IMAP4 Non-synchronizing Literals only (feature = `ext_literal`)
+///
+/// ```abnf
+/// literal  = "{" number ["+"] "}" CRLF *CHAR8
+///              ; Number represents the number of CHAR8 octets
+///
+/// CHAR8    = <defined in RFC 3501>
+///
+/// literal8 = <defined in RFC 4466>
+/// ```
+/// -- https://datatracker.ietf.org/doc/html/rfc7888#section-8
 pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
+    #[cfg(not(feature = "ext_literal"))]
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
+    #[cfg(feature = "ext_literal")]
+    let (remaining, (number, plus)) = terminated(
+        delimited(tag(b"{"), tuple((number, opt(char('+')))), tag(b"}")),
+        CRLF,
+    )(input)?;
+
     // TODO(#40)
-    // Signal that an continuation request is required.
+    // Signal that an continuation request *could be* required.
     // There are some issues with this ...
     //   * The return type is ad-hoc and does not tell *how* many bytes are about to be send
     //   * It doesn't capture the case when there is something in the buffer already.
@@ -162,7 +183,16 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     let (remaining, data) = take(number)(remaining)?;
 
     match Literal::try_from(data) {
+        #[cfg(not(feature = "ext_literal"))]
         Ok(literal) => Ok((remaining, literal)),
+        #[cfg(feature = "ext_literal")]
+        Ok(mut literal) => {
+            if plus.is_some() {
+                literal.sync = false;
+            }
+
+            Ok((remaining, literal))
+        }
         Err(_) => Err(nom::Err::Failure(nom::error::Error::new(
             remaining,
             ErrorKind::Verify,

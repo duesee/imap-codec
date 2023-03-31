@@ -226,8 +226,7 @@ impl<'a> Encode for CommandBody<'a> {
                 }
 
                 writer.write_all(b" ")?;
-                writer.write_all(format!("{{{}}}\r\n", message.as_ref().len()).as_bytes())?;
-                writer.write_all(message.as_ref())
+                message.encode(writer)
             }
             CommandBody::Check => writer.write_all(b"CHECK"),
             CommandBody::Close => writer.write_all(b"CLOSE"),
@@ -404,7 +403,16 @@ impl<'a> Encode for IString<'a> {
 
 impl<'a> Encode for Literal<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        #[cfg(not(feature = "ext_literal"))]
         write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+
+        #[cfg(feature = "ext_literal")]
+        if self.sync {
+            write!(writer, "{{{}}}\r\n", self.as_ref().len())?;
+        } else {
+            write!(writer, "{{{}+}}\r\n", self.as_ref().len())?;
+        }
+
         writer.write_all(self.as_ref())
     }
 }
@@ -811,6 +819,8 @@ impl<'a> Encode for Capability<'a> {
             }
             #[cfg(feature = "ext_quota")]
             Self::QuotaSet => writer.write_all(b"QUOTASET"),
+            #[cfg(feature = "ext_literal")]
+            Self::Literal(literal_capability) => literal_capability.encode(writer),
             Self::Other(other) => other.inner.encode(writer),
         }
     }
@@ -937,6 +947,8 @@ impl<'a> Encode for Code<'a> {
             Code::CompressionActive => writer.write_all(b"COMPRESSIONACTIVE"),
             #[cfg(feature = "ext_quota")]
             Code::OverQuota => writer.write_all(b"OVERQUOTA"),
+            #[cfg(feature = "ext_literal")]
+            Code::TooBig => writer.write_all(b"TOOBIG"),
             Code::Other(unknown) => unknown.encode(writer),
         }
     }

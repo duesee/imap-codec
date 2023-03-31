@@ -326,15 +326,38 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Literal<'a>(pub(crate) Cow<'a, [u8]>);
+pub struct Literal<'a> {
+    pub(crate) data: Cow<'a, [u8]>,
+    #[cfg(feature = "ext_literal")]
+    /// Specifies whether this is a synchronizing or non-synchronizing literal.
+    ///
+    /// `true` (default) denotes a synchronizing literal, e.g., `{3}\r\nfoo`.
+    /// `false` denotes a non-synchronizing literal, e.g., `{3+}\r\nfoo`.
+    ///
+    /// Note: In the special case that a server advertised a `LITERAL-` capability, AND the literal
+    /// has more than 4096 bytes a non-synchronizing literal must still be treated as synchronizing.
+    pub sync: bool,
+}
 
 impl<'a> Literal<'a> {
     pub fn verify(bytes: &[u8]) -> bool {
         bytes.iter().all(|b| is_char8(*b))
     }
 
-    pub fn inner(&self) -> &[u8] {
-        self.0.as_ref()
+    pub fn data(&self) -> &[u8] {
+        self.data.as_ref()
+    }
+
+    #[cfg(feature = "ext_literal")]
+    pub fn into_sync(mut self) -> Self {
+        self.sync = true;
+        self
+    }
+
+    #[cfg(feature = "ext_literal")]
+    pub fn into_non_sync(mut self) -> Self {
+        self.sync = false;
+        self
     }
 
     /// Create a literal from a byte sequence without checking
@@ -345,11 +368,15 @@ impl<'a> Literal<'a> {
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, [u8]>) -> Self {
+    pub fn new_unchecked(data: Cow<'a, [u8]>, #[cfg(feature = "ext_literal")] sync: bool) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        assert!(Self::verify(&data));
 
-        Self(inner)
+        Self {
+            data,
+            #[cfg(feature = "ext_literal")]
+            sync,
+        }
     }
 }
 
@@ -358,7 +385,11 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if Literal::verify(value) {
-            Ok(Literal(Cow::Borrowed(value)))
+            Ok(Literal {
+                data: Cow::Borrowed(value),
+                #[cfg(feature = "ext_literal")]
+                sync: true,
+            })
         } else {
             Err(())
         }
@@ -370,7 +401,11 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if Literal::verify(&value) {
-            Ok(Literal(Cow::Owned(value)))
+            Ok(Literal {
+                data: Cow::Owned(value),
+                #[cfg(feature = "ext_literal")]
+                sync: true,
+            })
         } else {
             Err(())
         }
@@ -395,7 +430,7 @@ impl<'a> TryFrom<String> for Literal<'a> {
 
 impl<'a> AsRef<[u8]> for Literal<'a> {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        &self.data
     }
 }
 

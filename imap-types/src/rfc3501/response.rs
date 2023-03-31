@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
+#[cfg(feature = "ext_literal")]
+use crate::extensions::rfc7888::LiteralCapability;
 #[cfg(feature = "ext_quota")]
 use crate::{
     core::AString,
@@ -766,6 +768,10 @@ pub enum Code<'a> {
     #[cfg(feature = "ext_quota")]
     OverQuota,
 
+    /// Server got a non-synchronizing literal larger than 4096 bytes.
+    #[cfg(feature = "ext_literal")]
+    TooBig,
+
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
@@ -868,6 +874,9 @@ pub enum Capability<'a> {
     /// See RFC 9208.
     #[cfg(feature = "ext_quota")]
     QuotaSet,
+    /// See RFC 7888.
+    #[cfg(feature = "ext_literal")]
+    Literal(LiteralCapability),
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -924,6 +933,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "quota" => Self::Quota,
             #[cfg(feature = "ext_quota")]
             "quotaset" => Self::QuotaSet,
+            #[cfg(feature = "ext_literal")]
+            "literal+" => Self::Literal(LiteralCapability::Plus),
+            #[cfg(feature = "ext_literal")]
+            "literal-" => Self::Literal(LiteralCapability::Minus),
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {

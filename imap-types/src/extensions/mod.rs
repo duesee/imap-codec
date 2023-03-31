@@ -4,5 +4,7 @@ pub mod rfc2177;
 pub mod rfc4987;
 #[cfg(feature = "ext_enable")]
 pub mod rfc5161;
+#[cfg(feature = "ext_literal")]
+pub mod rfc7888;
 #[cfg(feature = "ext_quota")]
 pub mod rfc9208;
