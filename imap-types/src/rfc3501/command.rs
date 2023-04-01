@@ -1763,7 +1763,7 @@ mod tests {
     #[cfg(feature = "ext_enable")]
     use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
     #[cfg(feature = "ext_quota")]
-    use crate::extensions::rfc9208::{QuotaSet, Resource};
+    use crate::extensions::rfc9208::{QuotaSet, Resource, ResourceOther};
     use crate::{
         codec::Encode,
         command::{
@@ -1943,7 +1943,7 @@ mod tests {
                 "",
                 vec![
                     QuotaSet::new(Resource::Message, 1337),
-                    QuotaSet::new(Resource::other("spam").unwrap(), 0),
+                    QuotaSet::new(Resource::Other(ResourceOther::try_from("spam").unwrap()), 0),
                 ],
             )
             .unwrap(),

@@ -107,23 +107,9 @@ pub enum Resource<'a> {
     /// "QUOTA=RES-ANNOTATION-STORAGE" capability.
     AnnotationStorage,
     /// Other.
-    Other(ResourceOther<'a>),
-}
-
-impl<'a> Resource<'a> {
-    /// Try to create a non-standard resource from a value.
     ///
     /// Note: The value must be semantically different from the supported variants.
-    pub fn other<A>(other: A) -> Result<Self, ()>
-    where
-        A: TryInto<Atom<'a>>,
-    {
-        let atom = other.try_into().map_err(|_| ())?;
-
-        Ok(Resource::Other(
-            ResourceOther::try_from(atom).map_err(|_| ())?,
-        ))
-    }
+    Other(ResourceOther<'a>),
 }
 
 impl_try_from!(Atom, 'a, &'a [u8], Resource<'a>);
