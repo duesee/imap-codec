@@ -151,6 +151,10 @@ impl<'a> AtomExt<'a> {
         self.0.as_ref()
     }
 
+    pub fn into_inner(self) -> Cow<'a, str> {
+        self.0
+    }
+
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
@@ -453,6 +457,10 @@ impl<'a> Quoted<'a> {
         self.0.as_ref()
     }
 
+    pub fn into_inner(self) -> Cow<'a, str> {
+        self.0
+    }
+
     /// Create a quoted from a string without checking
     /// that it to conforms to IMAP's quoted specification.
     ///
@@ -748,6 +756,10 @@ impl<'a> Text<'a> {
 
     pub fn inner(&self) -> &str {
         self.0.as_ref()
+    }
+
+    pub fn into_inner(self) -> Cow<'a, str> {
+        self.0
     }
 
     #[cfg(feature = "unchecked")]
