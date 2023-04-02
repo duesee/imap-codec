@@ -6,6 +6,7 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
@@ -14,7 +15,7 @@ use crate::utils::indicators::{
 macro_rules! impl_try_from {
     ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
         impl<$lifetime> TryFrom<$from> for $target {
-            type Error = ();
+            type Error = <$via as TryFrom<$from>>::Error;
 
             fn try_from(value: $from) -> Result<Self, Self::Error> {
                 let value = <$via>::try_from(value)?;
@@ -25,22 +26,7 @@ macro_rules! impl_try_from {
     };
 }
 
-macro_rules! impl_try_from_try_from {
-    ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
-        impl<$lifetime> TryFrom<$from> for $target {
-            type Error = ();
-
-            fn try_from(value: $from) -> Result<Self, Self::Error> {
-                let value = <$via>::try_from(value)?;
-
-                Self::try_from(value)
-            }
-        }
-    };
-}
-
 pub(crate) use impl_try_from;
-pub(crate) use impl_try_from_try_from;
 
 /// An atom.
 ///
@@ -51,8 +37,21 @@ pub(crate) use impl_try_from_try_from;
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Atom<'a> {
-    pub fn verify(value: &[u8]) -> bool {
-        !value.is_empty() && value.iter().all(|b| is_atom_char(*b))
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), AtomError> {
+        let value = value.as_ref();
+
+        if value.is_empty() {
+            return Err(AtomError::Empty);
+        }
+
+        if let Some(position) = value.iter().position(|b| !is_atom_char(*b)) {
+            return Err(AtomError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn inner(&self) -> &str {
@@ -66,65 +65,61 @@ impl<'a> Atom<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner.as_bytes()));
+        Self::verify(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
-    type Error = ();
+    type Error = AtomError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        Self::verify(value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
-    type Error = ();
+    type Error = AtomError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        Self::verify(&value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<&'a str> for Atom<'a> {
-    type Error = ();
+    type Error = AtomError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Borrowed(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(Self(Cow::Borrowed(value)))
     }
 }
 
 impl<'a> TryFrom<String> for Atom<'a> {
-    type Error = ();
+    type Error = AtomError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Atom(Cow::Owned(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(&value)?;
+
+        Ok(Atom(Cow::Owned(value)))
     }
 }
 
 impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
-    type Error = ();
+    type Error = AtomError;
 
     fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Atom(value))
-        } else {
-            Err(())
-        }
+        Self::verify(value.as_bytes())?;
+
+        Ok(Atom(value))
     }
 }
 
@@ -132,6 +127,14 @@ impl<'a> AsRef<str> for Atom<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum AtomError {
+    #[error("Must not be empty.")]
+    Empty,
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// An (extended) atom.
@@ -143,8 +146,21 @@ impl<'a> AsRef<str> for Atom<'a> {
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> AtomExt<'a> {
-    pub fn verify(value: &[u8]) -> bool {
-        !value.is_empty() && value.iter().all(|b| is_astring_char(*b))
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), AtomExtError> {
+        let value = value.as_ref();
+
+        if value.is_empty() {
+            return Err(AtomExtError::Empty);
+        }
+
+        if let Some(position) = value.iter().position(|b| !is_astring_char(*b)) {
+            return Err(AtomExtError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn inner(&self) -> &str {
@@ -158,53 +174,51 @@ impl<'a> AtomExt<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner.as_bytes()));
+        Self::verify(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
-    type Error = ();
+    type Error = AtomExtError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        Self::verify(value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
-    type Error = ();
+    type Error = AtomExtError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        Self::verify(&value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<&'a str> for AtomExt<'a> {
-    type Error = ();
+    type Error = AtomExtError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Borrowed(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(Self(Cow::Borrowed(value)))
     }
 }
 
 impl<'a> TryFrom<String> for AtomExt<'a> {
-    type Error = ();
+    type Error = AtomExtError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Owned(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(&value)?;
+
+        Ok(Self(Cow::Owned(value)))
     }
 }
 
@@ -212,6 +226,14 @@ impl<'a> AsRef<str> for AtomExt<'a> {
     fn as_ref(&self) -> &str {
         &self.0
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum AtomExtError {
+    #[error("Must not be empty.")]
+    Empty,
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
 }
 
 // ## 4.2. Number
@@ -234,68 +256,52 @@ pub enum IString<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for IString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: &'a [u8]) -> Result<Self, ()> {
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if let Ok(quoted) = Quoted::try_from(value) {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value) {
-            return Ok(IString::Literal(literal));
-        }
-
-        Err(())
+        Ok(IString::Literal(Literal::try_from(value)?))
     }
 }
 
 impl TryFrom<Vec<u8>> for IString<'_> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         // TODO(efficiency)
         if let Ok(quoted) = Quoted::try_from(value.clone()) {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value) {
-            return Ok(IString::Literal(literal));
-        }
-
-        Err(())
+        Ok(IString::Literal(Literal::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<&'a str> for IString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: &'a str) -> Result<Self, ()> {
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(quoted) = Quoted::try_from(value) {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value) {
-            return Ok(IString::Literal(literal));
-        }
-
-        Err(())
+        Ok(IString::Literal(Literal::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<String> for IString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: String) -> Result<Self, ()> {
+    fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
         if let Ok(quoted) = Quoted::try_from(value.clone()) {
             return Ok(IString::Quoted(quoted));
         }
 
-        if let Ok(literal) = Literal::try_from(value) {
-            return Ok(IString::Literal(literal));
-        }
-
-        Err(())
+        Ok(IString::Literal(Literal::try_from(value)?))
     }
 }
 
@@ -344,8 +350,17 @@ pub struct Literal<'a> {
 }
 
 impl<'a> Literal<'a> {
-    pub fn verify(bytes: &[u8]) -> bool {
-        bytes.iter().all(|b| is_char8(*b))
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), LiteralError> {
+        let value = value.as_ref();
+
+        if let Some(position) = value.iter().position(|b| !is_char8(*b)) {
+            return Err(LiteralError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn data(&self) -> &[u8] {
@@ -374,7 +389,7 @@ impl<'a> Literal<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(data: Cow<'a, [u8]>, #[cfg(feature = "ext_literal")] sync: bool) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&data));
+        Self::verify(&data).unwrap();
 
         Self {
             data,
@@ -385,50 +400,58 @@ impl<'a> Literal<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        if Literal::verify(value) {
-            Ok(Literal {
-                data: Cow::Borrowed(value),
-                #[cfg(feature = "ext_literal")]
-                sync: true,
-            })
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(Literal {
+            data: Cow::Borrowed(value),
+            #[cfg(feature = "ext_literal")]
+            sync: true,
+        })
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if Literal::verify(&value) {
-            Ok(Literal {
-                data: Cow::Owned(value),
-                #[cfg(feature = "ext_literal")]
-                sync: true,
-            })
-        } else {
-            Err(())
-        }
+        Self::verify(&value)?;
+
+        Ok(Literal {
+            data: Cow::Owned(value),
+            #[cfg(feature = "ext_literal")]
+            sync: true,
+        })
     }
 }
 
 impl<'a> TryFrom<&'a str> for Literal<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_bytes())
+        Self::verify(value)?;
+
+        Ok(Literal {
+            data: Cow::Borrowed(value.as_bytes()),
+            #[cfg(feature = "ext_literal")]
+            sync: true,
+        })
     }
 }
 
 impl<'a> TryFrom<String> for Literal<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::try_from(value.into_bytes())
+        Self::verify(&value)?;
+
+        Ok(Literal {
+            data: Cow::Owned(value.into_bytes()),
+            #[cfg(feature = "ext_literal")]
+            sync: true,
+        })
     }
 }
 
@@ -436,6 +459,12 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
     fn as_ref(&self) -> &[u8] {
         &self.data
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum LiteralError {
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// A quoted string.
@@ -449,8 +478,17 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Quoted<'a> {
-    pub fn verify(value: &[u8]) -> bool {
-        value.iter().all(|b| is_text_char(*b))
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), QuotedError> {
+        let value = value.as_ref();
+
+        if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
+            return Err(QuotedError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn inner(&self) -> &str {
@@ -471,54 +509,58 @@ impl<'a> Quoted<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner.as_bytes()));
+        Self::verify(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Quoted<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        Quoted::verify(value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Quoted(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
 
 impl TryFrom<Vec<u8>> for Quoted<'_> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        Quoted::verify(&value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Quoted(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<&'a str> for Quoted<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Quoted::verify(value.as_bytes()) {
-            Ok(Quoted(Cow::Borrowed(value)))
-        } else {
-            Err(())
-        }
+        Quoted::verify(value)?;
+
+        Ok(Quoted(Cow::Borrowed(value)))
     }
 }
 
 impl<'a> TryFrom<String> for Quoted<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Quoted::verify(value.as_bytes()) {
-            Ok(Quoted(Cow::Owned(value)))
-        } else {
-            Err(())
-        }
+        Quoted::verify(&value)?;
+
+        Ok(Quoted(Cow::Owned(value)))
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum QuotedError {
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
 }
 
 impl<'a> AsRef<str> for Quoted<'a> {
@@ -552,68 +594,52 @@ pub enum AString<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for AString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: &'a [u8]) -> Result<Self, ()> {
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if let Ok(atom) = AtomExt::try_from(value) {
             return Ok(AString::Atom(atom));
         }
 
-        if let Ok(istr) = IString::try_from(value) {
-            return Ok(AString::String(istr));
-        }
-
-        Err(())
+        Ok(AString::String(IString::try_from(value)?))
     }
 }
 
 impl TryFrom<Vec<u8>> for AString<'_> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, ()> {
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         // TODO(efficiency)
         if let Ok(atom) = AtomExt::try_from(value.clone()) {
             return Ok(AString::Atom(atom));
         }
 
-        if let Ok(istr) = IString::try_from(value) {
-            return Ok(AString::String(istr));
-        }
-
-        Err(())
+        Ok(AString::String(IString::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<&'a str> for AString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: &'a str) -> Result<Self, ()> {
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(atom) = AtomExt::try_from(value) {
             return Ok(AString::Atom(atom));
         }
 
-        if let Ok(string) = IString::try_from(value) {
-            return Ok(AString::String(string));
-        }
-
-        Err(())
+        Ok(AString::String(IString::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<String> for AString<'a> {
-    type Error = ();
+    type Error = LiteralError;
 
-    fn try_from(value: String) -> Result<Self, ()> {
+    fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
         if let Ok(atom) = AtomExt::try_from(value.clone()) {
             return Ok(AString::Atom(atom));
         }
 
-        if let Ok(string) = IString::try_from(value) {
-            return Ok(AString::String(string));
-        }
-
-        Err(())
+        Ok(AString::String(IString::try_from(value)?))
     }
 }
 
@@ -683,8 +709,24 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Tag<'a> {
-    pub fn verify(value: &[u8]) -> bool {
-        !value.is_empty() && value.iter().all(|c| is_astring_char(*c) && *c != b'+')
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), TagError> {
+        let value = value.as_ref();
+
+        if value.is_empty() {
+            return Err(TagError::Empty);
+        }
+
+        if let Some(position) = value
+            .iter()
+            .position(|b| !is_astring_char(*b) || *b == b'+')
+        {
+            return Err(TagError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn inner(&self) -> &str {
@@ -694,53 +736,51 @@ impl<'a> Tag<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner.as_bytes()));
+        Self::verify(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
-    type Error = ();
+    type Error = TagError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        Self::verify(value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't fail due to `verify`.
+        Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
-    type Error = ();
+    type Error = TagError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        Self::verify(&value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't fail due to `verify`.
+        Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<&'a str> for Tag<'a> {
-    type Error = ();
+    type Error = TagError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Borrowed(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(Self(Cow::Borrowed(value)))
     }
 }
 
 impl<'a> TryFrom<String> for Tag<'a> {
-    type Error = ();
+    type Error = TagError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Owned(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(&value)?;
+
+        Ok(Self(Cow::Owned(value)))
     }
 }
 
@@ -750,14 +790,35 @@ impl<'a> AsRef<str> for Tag<'a> {
     }
 }
 
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum TagError {
+    #[error("Must not be empty.")]
+    Empty,
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
+}
+
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Text<'a> {
-    pub fn verify(value: &[u8]) -> bool {
-        !value.is_empty() && value.iter().all(|b| is_text_char(*b))
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), TextError> {
+        let value = value.as_ref();
+
+        if value.is_empty() {
+            return Err(TextError::Empty);
+        }
+
+        if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
+            return Err(TextError::ByteNotAllowed {
+                found: value[position],
+                position,
+            });
+        };
+
+        Ok(())
     }
 
     pub fn inner(&self) -> &str {
@@ -771,54 +832,60 @@ impl<'a> Text<'a> {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner.as_bytes()));
+        Self::verify(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Text<'a> {
-    type Error = ();
+    type Error = TextError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        Self::verify(value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for Text<'a> {
-    type Error = ();
+    type Error = TextError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        Self::verify(&value)?;
 
-        Self::try_from(str)
+        // Safety: `unwrap` can't panic due to `verify`.
+        Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
 
 impl<'a> TryFrom<&'a str> for Text<'a> {
-    type Error = ();
+    type Error = TextError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Borrowed(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(Self(Cow::Borrowed(value)))
     }
 }
 
 impl<'a> TryFrom<String> for Text<'a> {
-    type Error = ();
+    type Error = TextError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if Self::verify(value.as_bytes()) {
-            Ok(Self(Cow::Owned(value)))
-        } else {
-            Err(())
-        }
+        Self::verify(&value)?;
+
+        Ok(Self(Cow::Owned(value)))
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum TextError {
+    #[error("Must not be empty.")]
+    Empty,
+    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    ByteNotAllowed { found: u8, position: usize },
 }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -827,11 +894,16 @@ impl<'a> TryFrom<String> for Text<'a> {
 pub struct QuotedChar(char);
 
 impl QuotedChar {
-    pub fn verify(input: char) -> bool {
-        input.is_ascii()
+    pub fn verify(input: char) -> Result<(), QuotedCharError> {
+        if input.is_ascii()
             && (is_any_text_char_except_quoted_specials(input as u8)
                 || input == '\\'
                 || input == '"')
+        {
+            Ok(())
+        } else {
+            Err(QuotedCharError::Invalid(input))
+        }
     }
 
     pub fn inner(&self) -> char {
@@ -841,22 +913,26 @@ impl QuotedChar {
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: char) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(inner));
+        Self::verify(inner).unwrap();
 
         Self(inner)
     }
 }
 
 impl TryFrom<char> for QuotedChar {
-    type Error = ();
+    type Error = QuotedCharError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
-        if Self::verify(value) {
-            Ok(QuotedChar(value))
-        } else {
-            Err(())
-        }
+        Self::verify(value)?;
+
+        Ok(QuotedChar(value))
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum QuotedCharError {
+    #[error("Invalid character `{0}`.")]
+    Invalid(char),
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -869,55 +945,52 @@ pub enum Charset<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        let str = from_utf8(value).map_err(|_| ())?;
+        if let Ok(atom) = Atom::try_from(value) {
+            return Ok(Self::Atom(atom));
+        }
 
-        Self::try_from(str)
+        Ok(Self::Quoted(Quoted::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<Vec<u8>> for Charset<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let str = String::from_utf8(value).map_err(|_| ())?;
+        // TODO(efficiency)
+        if let Ok(atom) = Atom::try_from(value.clone()) {
+            return Ok(Self::Atom(atom));
+        }
 
-        Self::try_from(str)
+        Ok(Self::Quoted(Quoted::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<&'a str> for Charset<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(atom) = Atom::try_from(value) {
-            return Ok(Charset::Atom(atom));
+            return Ok(Self::Atom(atom));
         }
 
-        if let Ok(quoted) = Quoted::try_from(value) {
-            return Ok(Charset::Quoted(quoted));
-        }
-
-        Err(())
+        Ok(Self::Quoted(Quoted::try_from(value)?))
     }
 }
 
 impl<'a> TryFrom<String> for Charset<'a> {
-    type Error = ();
+    type Error = QuotedError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
         if let Ok(atom) = Atom::try_from(value.clone()) {
-            return Ok(Charset::Atom(atom));
+            return Ok(Self::Atom(atom));
         }
 
-        if let Ok(quoted) = Quoted::try_from(value) {
-            return Ok(Charset::Quoted(quoted));
-        }
-
-        Err(())
+        Ok(Self::Quoted(Quoted::try_from(value)?))
     }
 }
 
@@ -937,29 +1010,37 @@ impl<'a> AsRef<str> for Charset<'a> {
 pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
 
 impl<T> NonEmptyVec<T> {
-    pub fn verify(value: &[T]) -> bool {
-        !value.is_empty()
+    pub fn verify(value: &[T]) -> Result<(), NonEmptyVecError> {
+        if value.is_empty() {
+            return Err(NonEmptyVecError::Empty);
+        }
+
+        Ok(())
     }
 
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
-        assert!(Self::verify(&inner));
+        Self::verify(&inner).unwrap();
 
         Self(inner)
     }
 }
 
 impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
-    type Error = ();
+    type Error = NonEmptyVecError;
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
-        if Self::verify(&inner) {
-            Ok(Self(inner))
-        } else {
-            Err(())
-        }
+        Self::verify(&inner)?;
+
+        Ok(Self(inner))
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum NonEmptyVecError {
+    #[error("Must not be empty.")]
+    Empty,
 }
 
 impl<T> AsRef<[T]> for NonEmptyVec<T> {
@@ -978,7 +1059,7 @@ mod tests {
     #[test]
     fn test_atom() {
         #[allow(clippy::type_complexity)]
-        let tests: Vec<(&[u8], (Result<Atom, ()>, Result<Atom, ()>))> = vec![
+        let tests: Vec<(&[u8], (Result<Atom, AtomError>, Result<Atom, AtomError>))> = vec![
             (
                 b"A",
                 (
@@ -993,11 +1074,59 @@ mod tests {
                     Ok(Atom(Cow::Owned("ABC".into()))),
                 ),
             ),
-            (b" A", (Err(()), Err(()))),
-            (b"A ", (Err(()), Err(()))),
-            (b"", (Err(()), Err(()))),
-            (b"A\x00", (Err(()), Err(()))),
-            (b"\x00", (Err(()), Err(()))),
+            (
+                b" A",
+                (
+                    Err(AtomError::ByteNotAllowed {
+                        found: b' ',
+                        position: 0,
+                    }),
+                    Err(AtomError::ByteNotAllowed {
+                        found: b' ',
+                        position: 0,
+                    }),
+                ),
+            ),
+            (
+                b"A ",
+                (
+                    Err(AtomError::ByteNotAllowed {
+                        found: b' ',
+                        position: 1,
+                    }),
+                    Err(AtomError::ByteNotAllowed {
+                        found: b' ',
+                        position: 1,
+                    }),
+                ),
+            ),
+            (b"", (Err(AtomError::Empty), Err(AtomError::Empty))),
+            (
+                b"A\x00",
+                (
+                    Err(AtomError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                    Err(AtomError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                ),
+            ),
+            (
+                b"A\x00",
+                (
+                    Err(AtomError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                    Err(AtomError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                ),
+            ),
         ];
 
         for (test, (expected, expected_owned)) in tests.into_iter() {
@@ -1032,7 +1161,10 @@ mod tests {
     #[test]
     fn test_atom_ext() {
         #[allow(clippy::type_complexity)]
-        let tests: Vec<(&[u8], (Result<AtomExt, ()>, Result<AtomExt, ()>))> = vec![
+        let tests: Vec<(
+            &[u8],
+            (Result<AtomExt, AtomExtError>, Result<AtomExt, AtomExtError>),
+        )> = vec![
             (
                 b"A",
                 (
@@ -1054,11 +1186,59 @@ mod tests {
                     Ok(AtomExt(Cow::Owned("!partition/sda4".into()))),
                 ),
             ),
-            (b" A", (Err(()), Err(()))),
-            (b"A ", (Err(()), Err(()))),
-            (b"", (Err(()), Err(()))),
-            (b"A\x00", (Err(()), Err(()))),
-            (b"\x00", (Err(()), Err(()))),
+            (
+                b" A",
+                (
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: b' ',
+                        position: 0,
+                    }),
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: b' ',
+                        position: 0,
+                    }),
+                ),
+            ),
+            (
+                b"A ",
+                (
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: b' ',
+                        position: 1,
+                    }),
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: b' ',
+                        position: 1,
+                    }),
+                ),
+            ),
+            (b"", (Err(AtomExtError::Empty), Err(AtomExtError::Empty))),
+            (
+                b"A\x00",
+                (
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 1,
+                    }),
+                ),
+            ),
+            (
+                b"\x00",
+                (
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 0,
+                    }),
+                    Err(AtomExtError::ByteNotAllowed {
+                        found: 0x00,
+                        position: 0,
+                    }),
+                ),
+            ),
         ];
 
         for (test, (expected, expected_owned)) in tests.into_iter() {
@@ -1093,7 +1273,10 @@ mod tests {
     #[test]
     fn test_astring() {
         #[allow(clippy::type_complexity)]
-        let tests: Vec<(&[u8], (Result<AString, ()>, Result<AString, ()>))> = vec![
+        let tests: Vec<(
+            &[u8],
+            (Result<AString, LiteralError>, Result<AString, LiteralError>),
+        )> = vec![
             (
                 b"A",
                 (
@@ -1161,8 +1344,32 @@ mod tests {
                     ))))),
                 ),
             ),
-            (b"A\x00", (Err(()), Err(()))),
-            (b"\x00", (Err(()), Err(()))),
+            (
+                b"A\x00",
+                (
+                    Err(LiteralError::ByteNotAllowed {
+                        found: 0,
+                        position: 1,
+                    }),
+                    Err(LiteralError::ByteNotAllowed {
+                        found: 0,
+                        position: 1,
+                    }),
+                ),
+            ),
+            (
+                b"\x00",
+                (
+                    Err(LiteralError::ByteNotAllowed {
+                        found: 0,
+                        position: 0,
+                    }),
+                    Err(LiteralError::ByteNotAllowed {
+                        found: 0,
+                        position: 0,
+                    }),
+                ),
+            ),
         ];
 
         for (test, (expected, expected_owned)) in tests.into_iter() {

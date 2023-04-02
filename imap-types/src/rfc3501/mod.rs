@@ -6,8 +6,9 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::rfc3501::core::{impl_try_from, impl_try_from_try_from, Atom};
+use crate::rfc3501::core::{impl_try_from, Atom, AtomError};
 
 pub mod address;
 pub mod body;
@@ -39,11 +40,11 @@ pub enum AuthMechanism<'a> {
     Other(AuthMechanismOther<'a>),
 }
 
-impl_try_from!(Atom, 'a, &'a [u8], AuthMechanism<'a>);
-impl_try_from!(Atom, 'a, Vec<u8>, AuthMechanism<'a>);
-impl_try_from!(Atom, 'a, &'a str, AuthMechanism<'a>);
-impl_try_from!(Atom, 'a, String, AuthMechanism<'a>);
-impl_try_from!(Atom, 'a, Cow<'a, str>, AuthMechanism<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a [u8], AuthMechanism<'a>);
+impl_try_from!(Atom<'a>, 'a, Vec<u8>, AuthMechanism<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a str, AuthMechanism<'a>);
+impl_try_from!(Atom<'a>, 'a, String, AuthMechanism<'a>);
+impl_try_from!(Atom<'a>, 'a, Cow<'a, str>, AuthMechanism<'a>);
 
 impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
     fn from(inner: Atom<'a>) -> Self {
@@ -61,24 +62,50 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 pub struct AuthMechanismOther<'a>(Atom<'a>);
 
 impl<'a> AuthMechanismOther<'a> {
+    pub fn verify(atom: &Atom<'a>) -> Result<(), AuthMechanismOtherError> {
+        if matches!(
+            atom.as_ref().to_ascii_lowercase().as_ref(),
+            "plain" | "login",
+        ) {
+            return Err(AuthMechanismOtherError::Reserved);
+        }
+
+        Ok(())
+    }
+
     pub fn inner(&self) -> &Atom<'a> {
         &self.0
     }
 }
 
-impl_try_from_try_from!(Atom, 'a, &'a [u8], AuthMechanismOther<'a>);
-impl_try_from_try_from!(Atom, 'a, Vec<u8>, AuthMechanismOther<'a>);
-impl_try_from_try_from!(Atom, 'a, &'a str, AuthMechanismOther<'a>);
-impl_try_from_try_from!(Atom, 'a, String, AuthMechanismOther<'a>);
+macro_rules! impl_try_from {
+    ($from:ty) => {
+        impl<'a> TryFrom<$from> for AuthMechanismOther<'a> {
+            type Error = AuthMechanismOtherError;
+
+            fn try_from(value: $from) -> Result<Self, Self::Error> {
+                let atom = Atom::try_from(value)?;
+
+                Self::verify(&atom)?;
+
+                Ok(Self(atom))
+            }
+        }
+    };
+}
+
+impl_try_from!(&'a [u8]);
+impl_try_from!(Vec<u8>);
+impl_try_from!(&'a str);
+impl_try_from!(String);
 
 impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
-    type Error = ();
+    type Error = AuthMechanismOtherError;
 
-    fn try_from(atom: Atom<'a>) -> Result<Self, ()> {
-        match atom.as_ref().to_ascii_lowercase().as_ref() {
-            "plain" | "login" => Err(()),
-            _ => Ok(Self(atom)),
-        }
+    fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
+        Self::verify(&atom)?;
+
+        Ok(Self(atom))
     }
 }
 
@@ -86,4 +113,12 @@ impl<'a> AsRef<str> for AuthMechanismOther<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum AuthMechanismOtherError {
+    #[error(transparent)]
+    Atom(#[from] AtomError),
+    #[error("Reserved. Please use one of the typed variants.")]
+    Reserved,
 }

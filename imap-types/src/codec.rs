@@ -152,8 +152,8 @@ impl<'a> Encode for CommandBody<'a> {
                 mailbox.encode(writer)
             }
             CommandBody::Rename {
-                mailbox,
-                new_mailbox,
+                from: mailbox,
+                to: new_mailbox,
             } => {
                 writer.write_all(b"RENAME")?;
                 writer.write_all(b" ")?;

@@ -12,13 +12,14 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::rfc5161::CapabilityEnable;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::QuotaSet;
+use crate::extensions::rfc9208::{QuotaSet, SetQuotaError};
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
@@ -41,12 +42,12 @@ pub struct Command<'a> {
 }
 
 impl<'a> Command<'a> {
-    pub fn new<T>(tag: T, body: CommandBody<'a>) -> Result<Self, ()>
+    pub fn new<T>(tag: T, body: CommandBody<'a>) -> Result<Self, T::Error>
     where
         T: TryInto<Tag<'a>>,
     {
         Ok(Self {
-            tag: tag.try_into().map_err(|_| ())?,
+            tag: tag.try_into()?,
             body,
         })
     }
@@ -513,10 +514,7 @@ pub enum CommandBody<'a> {
     /// leaving INBOX empty.  If the server implementation supports
     /// inferior hierarchical names of INBOX, these are unaffected by a
     /// rename of INBOX.
-    Rename {
-        mailbox: Mailbox<'a>,
-        new_mailbox: Mailbox<'a>,
-    },
+    Rename { from: Mailbox<'a>, to: Mailbox<'a> },
 
     /// ### 6.3.6.  SUBSCRIBE Command
     ///
@@ -1295,12 +1293,12 @@ pub enum CommandBody<'a> {
 }
 
 impl<'a> CommandBody<'a> {
-    pub fn tag<T>(self, tag: T) -> Result<Command<'a>, ()>
+    pub fn tag<T>(self, tag: T) -> Result<Command<'a>, T::Error>
     where
         T: TryInto<Tag<'a>>,
     {
         Ok(Command {
-            tag: tag.try_into().map_err(|_| ())?,
+            tag: tag.try_into()?,
             body: self,
         })
     }
@@ -1320,14 +1318,14 @@ impl<'a> CommandBody<'a> {
         }
     }
 
-    pub fn login<U, P>(username: U, password: P) -> Result<Self, ()>
+    pub fn login<U, P>(username: U, password: P) -> Result<Self, LoginError<U::Error, P::Error>>
     where
         U: TryInto<AString<'a>>,
         P: TryInto<AString<'a>>,
     {
         Ok(CommandBody::Login {
-            username: username.try_into().map_err(|_| ())?,
-            password: Secret::new(password.try_into().map_err(|_| ())?),
+            username: username.try_into().map_err(LoginError::Username)?,
+            password: Secret::new(password.try_into().map_err(LoginError::Password)?),
         })
     }
 
@@ -1367,14 +1365,14 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    pub fn rename<M1, M2>(mailbox: M1, new_mailbox: M2) -> Result<Self, ()>
+    pub fn rename<F, T>(mailbox: F, new_mailbox: T) -> Result<Self, RenameError<F::Error, T::Error>>
     where
-        M1: TryInto<Mailbox<'a>>,
-        M2: TryInto<Mailbox<'a>>,
+        F: TryInto<Mailbox<'a>>,
+        T: TryInto<Mailbox<'a>>,
     {
         Ok(CommandBody::Rename {
-            mailbox: mailbox.try_into().map_err(|_| ())?,
-            new_mailbox: new_mailbox.try_into().map_err(|_| ())?,
+            from: mailbox.try_into().map_err(RenameError::From)?,
+            to: new_mailbox.try_into().map_err(RenameError::To)?,
         })
     }
 
@@ -1396,25 +1394,31 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    pub fn list<A, B>(reference: A, mailbox_wildcard: B) -> Result<Self, ()>
+    pub fn list<A, B>(
+        reference: A,
+        mailbox_wildcard: B,
+    ) -> Result<Self, ListError<A::Error, B::Error>>
     where
         A: TryInto<Mailbox<'a>>,
         B: TryInto<ListMailbox<'a>>,
     {
         Ok(CommandBody::List {
-            reference: reference.try_into().map_err(|_| ())?,
-            mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
+            reference: reference.try_into().map_err(ListError::Reference)?,
+            mailbox_wildcard: mailbox_wildcard.try_into().map_err(ListError::Mailbox)?,
         })
     }
 
-    pub fn lsub<A, B>(reference: A, mailbox_wildcard: B) -> Result<Self, ()>
+    pub fn lsub<A, B>(
+        reference: A,
+        mailbox_wildcard: B,
+    ) -> Result<Self, ListError<A::Error, B::Error>>
     where
         A: TryInto<Mailbox<'a>>,
         B: TryInto<ListMailbox<'a>>,
     {
         Ok(CommandBody::Lsub {
-            reference: reference.try_into().map_err(|_| ())?,
-            mailbox_wildcard: mailbox_wildcard.try_into().map_err(|_| ())?,
+            reference: reference.try_into().map_err(ListError::Reference)?,
+            mailbox_wildcard: mailbox_wildcard.try_into().map_err(ListError::Mailbox)?,
         })
     }
 
@@ -1433,16 +1437,16 @@ impl<'a> CommandBody<'a> {
         flags: Vec<Flag<'a>>,
         date: Option<MyDateTime>,
         message: D,
-    ) -> Result<Self, ()>
+    ) -> Result<Self, AppendError<M::Error, D::Error>>
     where
         M: TryInto<Mailbox<'a>>,
         D: TryInto<Literal<'a>>,
     {
         Ok(CommandBody::Append {
-            mailbox: mailbox.try_into().map_err(|_| ())?,
+            mailbox: mailbox.try_into().map_err(AppendError::Mailbox)?,
             flags,
             date,
-            message: message.try_into().map_err(|_| ())?,
+            message: message.try_into().map_err(AppendError::Data)?,
         })
     }
 
@@ -1489,14 +1493,18 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    pub fn copy<S, M>(sequence_set: S, mailbox: M, uid: bool) -> Result<Self, ()>
+    pub fn copy<S, M>(
+        sequence_set: S,
+        mailbox: M,
+        uid: bool,
+    ) -> Result<Self, CopyError<S::Error, M::Error>>
     where
         S: TryInto<SequenceSet>,
         M: TryInto<Mailbox<'a>>,
     {
         Ok(CommandBody::Copy {
-            sequence_set: sequence_set.try_into().map_err(|_| ())?,
-            mailbox: mailbox.try_into().map_err(|_| ())?,
+            sequence_set: sequence_set.try_into().map_err(CopyError::Sequence)?,
+            mailbox: mailbox.try_into().map_err(CopyError::Mailbox)?,
             uid,
         })
     }
@@ -1537,14 +1545,14 @@ impl<'a> CommandBody<'a> {
     }
 
     #[cfg(feature = "ext_quota")]
-    pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, ()>
+    pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, SetQuotaError<R::Error, S::Error>>
     where
         R: TryInto<AString<'a>>,
         S: TryInto<Vec<QuotaSet<'a>>>,
     {
         Ok(CommandBody::SetQuota {
-            root: root.try_into().map_err(|_| ())?,
-            quotas: quotas.try_into().map_err(|_| ())?,
+            root: root.try_into().map_err(SetQuotaError::Root)?,
+            quotas: quotas.try_into().map_err(SetQuotaError::QuotaSet)?,
         })
     }
 
@@ -1589,6 +1597,46 @@ impl<'a> CommandBody<'a> {
             Self::SetQuota { .. } => "SETQUOTA",
         }
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum LoginError<U, P> {
+    #[error("Invalid username: {0:?}")]
+    Username(U),
+    #[error("Invalid password: {0:?}")]
+    Password(P),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum RenameError<F, T> {
+    #[error("Invalid mailbox (from): {0:?}")]
+    From(F),
+    #[error("Invalid mailbox (to): {0:?}")]
+    To(T),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ListError<R, M> {
+    #[error("Invalid reference: {0:?}")]
+    Reference(R),
+    #[error("Invalid mailbox: {0:?}")]
+    Mailbox(M),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum AppendError<M, D> {
+    #[error("Invalid mailbox: {0:?}")]
+    Mailbox(M),
+    #[error("Invalid data: {0:?}")]
+    Data(D),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum CopyError<S, M> {
+    #[error("Invalid sequence: {0:?}")]
+    Sequence(S),
+    #[error("Invalid mailbox: {0:?}")]
+    Mailbox(M),
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
