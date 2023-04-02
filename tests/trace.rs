@@ -1,12 +1,14 @@
 use std::convert::TryFrom;
 
+#[cfg(feature = "ext_literal")]
+use imap_codec::core::Literal;
 use imap_codec::{
     codec::{Decode, Encode},
     command::{
         fetch::{FetchAttribute, Macro},
         Command, CommandBody,
     },
-    core::{AString, IString, Literal, Quoted},
+    core::{AString, IString, Quoted},
     message::{AuthMechanism, Flag, Section, Tag},
     response::{
         data::{Capability, FetchAttributeValue},
