@@ -220,7 +220,7 @@ pub mod command {
             RenameError,
         },
         mailbox::{ListCharString, ListMailbox},
-        sequence::{SeqNo, Sequence, SequenceSet, Strategy},
+        sequence::{SeqOrUid, Sequence, SequenceSet, Strategy},
     };
 
     pub mod status {

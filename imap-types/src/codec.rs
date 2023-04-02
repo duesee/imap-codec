@@ -31,7 +31,7 @@ use crate::{
         search::SearchKey,
         status::StatusAttribute,
         store::{StoreResponse, StoreType},
-        AuthenticateData, Command, CommandBody, ListCharString, ListMailbox, SeqNo, Sequence,
+        AuthenticateData, Command, CommandBody, ListCharString, ListMailbox, SeqOrUid, Sequence,
         SequenceSet,
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
@@ -641,11 +641,11 @@ impl Encode for Sequence {
     }
 }
 
-impl Encode for SeqNo {
+impl Encode for SeqOrUid {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            SeqNo::Value(number) => write!(writer, "{number}"),
-            SeqNo::Largest => writer.write_all(b"*"),
+            SeqOrUid::Value(number) => write!(writer, "{number}"),
+            SeqOrUid::Asterisk => writer.write_all(b"*"),
         }
     }
 }
