@@ -617,6 +617,12 @@ impl<'a> TryFrom<String> for AString<'a> {
     }
 }
 
+impl<'a> From<Quoted<'a>> for AString<'a> {
+    fn from(value: Quoted<'a>) -> Self {
+        AString::String(IString::Quoted(value))
+    }
+}
+
 impl<'a> From<Literal<'a>> for AString<'a> {
     fn from(value: Literal<'a>) -> Self {
         AString::String(IString::Literal(value))
