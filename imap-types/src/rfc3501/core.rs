@@ -361,7 +361,7 @@ impl<'a> Literal<'a> {
     }
 
     /// Create a literal from a byte sequence without checking
-    /// that it to conforms to IMAP's literal specification.
+    /// that it conforms to IMAP's literal specification.
     ///
     /// # Safety
     ///
