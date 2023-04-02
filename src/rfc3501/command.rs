@@ -218,8 +218,8 @@ pub fn rename(input: &[u8]) -> IResult<&[u8], CommandBody> {
     Ok((
         remaining,
         CommandBody::Rename {
-            mailbox,
-            new_mailbox,
+            from: mailbox,
+            to: new_mailbox,
         },
     ))
 }

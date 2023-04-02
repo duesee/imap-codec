@@ -12,6 +12,7 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
@@ -22,7 +23,7 @@ use crate::extensions::rfc7888::LiteralCapability;
 #[cfg(feature = "ext_quota")]
 use crate::{
     core::AString,
-    extensions::rfc9208::{QuotaGet, Resource},
+    extensions::rfc9208::{QuotaError, QuotaGet, QuotaRootError, Resource},
 };
 use crate::{
     core::{Atom, NonEmptyVec},
@@ -31,7 +32,7 @@ use crate::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
         Text,
     },
-    rfc3501::core::impl_try_from,
+    rfc3501::core::{impl_try_from, TextError},
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -45,7 +46,11 @@ pub struct Greeting<'a> {
 }
 
 impl<'a> Greeting<'a> {
-    pub fn new(kind: GreetingKind, code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn new(
+        kind: GreetingKind,
+        code: Option<Code<'a>>,
+        text: &'a str,
+    ) -> Result<Self, TextError> {
         Ok(Greeting {
             kind,
             code,
@@ -53,7 +58,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn ok(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn ok(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
         Ok(Greeting {
             kind: GreetingKind::Ok,
             code,
@@ -61,7 +66,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
         Ok(Greeting {
             kind: GreetingKind::PreAuth,
             code,
@@ -69,7 +74,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ()> {
+    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
         Ok(Greeting {
             kind: GreetingKind::Bye,
             code,
@@ -220,46 +225,46 @@ pub enum Status<'a> {
 }
 
 impl<'a> Status<'a> {
-    pub fn ok<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    pub fn ok<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
         Ok(Status::Ok {
             tag,
             code,
-            text: text.try_into().map_err(|_| ())?,
+            text: text.try_into()?,
         })
     }
 
-    pub fn no<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    pub fn no<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
         Ok(Status::No {
             tag,
             code,
-            text: text.try_into().map_err(|_| ())?,
+            text: text.try_into()?,
         })
     }
 
-    pub fn bad<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    pub fn bad<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
         Ok(Status::Bad {
             tag,
             code,
-            text: text.try_into().map_err(|_| ())?,
+            text: text.try_into()?,
         })
     }
 
-    pub fn bye<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ()>
+    pub fn bye<T>(code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
         Ok(Status::Bye {
             code,
-            text: text.try_into().map_err(|_| ())?,
+            text: text.try_into()?,
         })
     }
 
@@ -566,38 +571,41 @@ impl<'a> Data<'a> {
         Ok(Self::Expunge(NonZeroU32::try_from(seq_or_uid)?))
     }
 
-    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Self, ()>
+    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Self, FetchError<I::Error, A::Error>>
     where
         I: TryInto<NonZeroU32>,
         A: TryInto<NonEmptyVec<FetchAttributeValue<'a>>>,
     {
         Ok(Self::Fetch {
-            seq_or_uid: seq_or_uid.try_into().map_err(|_| ())?, // TODO: better error
-            attributes: attributes.try_into().map_err(|_| ())?, // TODO: better error
+            seq_or_uid: seq_or_uid.try_into().map_err(FetchError::SeqOrUid)?,
+            attributes: attributes.try_into().map_err(FetchError::Attributes)?,
         })
     }
 
     #[cfg(feature = "ext_quota")]
-    pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, ()>
+    pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, QuotaError<R::Error, Q::Error>>
     where
         R: TryInto<AString<'a>>,
         Q: TryInto<NonEmptyVec<QuotaGet<'a>>>,
     {
         Ok(Self::Quota {
-            root: root.try_into().map_err(|_| ())?,
-            quotas: quotas.try_into().map_err(|_| ())?,
+            root: root.try_into().map_err(QuotaError::Root)?,
+            quotas: quotas.try_into().map_err(QuotaError::Quotas)?,
         })
     }
 
     #[cfg(feature = "ext_quota")]
-    pub fn quota_root<M, R>(mailbox: M, roots: R) -> Result<Self, ()>
+    pub fn quota_root<M, R>(
+        mailbox: M,
+        roots: R,
+    ) -> Result<Self, QuotaRootError<M::Error, R::Error>>
     where
         M: TryInto<Mailbox<'a>>,
         R: TryInto<Vec<AString<'a>>>,
     {
         Ok(Self::QuotaRoot {
-            mailbox: mailbox.try_into().map_err(|_| ())?,
-            roots: roots.try_into().map_err(|_| ())?,
+            mailbox: mailbox.try_into().map_err(QuotaRootError::Mailbox)?,
+            roots: roots.try_into().map_err(QuotaRootError::Roots)?,
         })
     }
 
@@ -606,6 +614,14 @@ impl<'a> Data<'a> {
     // pub fn enable() -> Self {
     //     unimplemented!()
     // }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum FetchError<I, A> {
+    #[error("Invalid sequence or UID: {0:?}")]
+    SeqOrUid(I),
+    #[error("Invalid attributes: {0:?}")]
+    Attributes(A),
 }
 
 /// ## 7.5. Server Responses - Command Continuation Request
@@ -881,10 +897,10 @@ pub enum Capability<'a> {
     Other(CapabilityOther<'a>),
 }
 
-impl_try_from!(Atom, 'a, &'a [u8], Capability<'a>);
-impl_try_from!(Atom, 'a, Vec<u8>, Capability<'a>);
-impl_try_from!(Atom, 'a, &'a str, Capability<'a>);
-impl_try_from!(Atom, 'a, String, Capability<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a [u8], Capability<'a>);
+impl_try_from!(Atom<'a>, 'a, Vec<u8>, Capability<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a str, Capability<'a>);
+impl_try_from!(Atom<'a>, 'a, String, Capability<'a>);
 
 impl<'a> From<Atom<'a>> for Capability<'a> {
     fn from(atom: Atom<'a>) -> Self {
@@ -948,8 +964,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                         }
                         #[cfg(feature = "ext_compress")]
                         "compress" => {
-                            if let Ok(algorithm) = CompressionAlgorithm::try_from(right) {
-                                return Self::Compress { algorithm };
+                            if let Ok(atom) = Atom::try_from(right) {
+                                if let Ok(algorithm) = CompressionAlgorithm::try_from(atom) {
+                                    return Self::Compress { algorithm };
+                                }
                             }
                         }
                         #[cfg(feature = "ext_quota")]

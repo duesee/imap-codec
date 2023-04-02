@@ -1,7 +1,8 @@
 use std::{
     convert::{TryFrom, TryInto},
-    num::{NonZeroU32, TryFromIntError},
+    num::{NonZeroU32, ParseIntError, TryFromIntError},
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    str::FromStr,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -10,6 +11,7 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::core::NonEmptyVec;
 
@@ -49,7 +51,7 @@ impl<'a> SequenceSet {
 }
 
 impl TryFrom<&str> for SequenceSet {
-    type Error = ();
+    type Error = SequenceSetError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let mut results = vec![];
@@ -58,24 +60,34 @@ impl TryFrom<&str> for SequenceSet {
             results.push(Sequence::try_from(seq)?);
         }
 
-        Ok(SequenceSet(NonEmptyVec::try_from(results)?))
+        Ok(SequenceSet(
+            NonEmptyVec::try_from(results).map_err(|_| SequenceSetError::Empty)?,
+        ))
     }
 }
 
 impl TryFrom<String> for SequenceSet {
-    type Error = ();
+    type Error = SequenceSetError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
     }
 }
 
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
+pub enum SequenceSetError {
+    #[error("Must not be empty.")]
+    Empty,
+    #[error("Sequence: {0}")]
+    Sequence(#[from] SequenceError),
+}
+
 impl TryFrom<&str> for Sequence {
-    type Error = ();
+    type Error = SequenceError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.split(':').count() {
-            0 => Err(()),
+            0 => Err(SequenceError::Empty),
             1 => Ok(Sequence::Single(SeqNo::try_from(value)?)),
             2 => {
                 let mut split = value.split(':');
@@ -88,7 +100,7 @@ impl TryFrom<&str> for Sequence {
                     SeqNo::try_from(end)?,
                 ))
             }
-            _ => Err(()),
+            _ => Err(SequenceError::Invalid),
         }
     }
 }
@@ -183,6 +195,16 @@ impl From<Sequence> for SequenceSet {
 //     }
 // }
 
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
+pub enum SequenceError {
+    #[error("Sequence must not be empty.")]
+    Empty,
+    #[error("Invalid sequence.")]
+    Invalid,
+    #[error("SeqNo: {0}")]
+    SeqNo(#[from] SeqNoError),
+}
+
 impl SeqNo {
     pub fn expand(&self, largest: NonZeroU32) -> NonZeroU32 {
         match self {
@@ -193,7 +215,7 @@ impl SeqNo {
 }
 
 impl TryFrom<&str> for SeqNo {
-    type Error = ();
+    type Error = SeqNoError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if value == "*" {
@@ -203,12 +225,20 @@ impl TryFrom<&str> for SeqNo {
             // Rust's `parse::<NonZeroU32>` function accepts numbers that start with 0.
             // For example, 00001, is interpreted as 1. But this is not allowed in IMAP.
             if value.starts_with('0') {
-                Err(())
+                Err(SeqNoError::LeadingZero)
             } else {
-                Ok(SeqNo::Value(value.parse::<NonZeroU32>().map_err(|_| ())?))
+                Ok(SeqNo::Value(NonZeroU32::from_str(value)?))
             }
         }
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
+pub enum SeqNoError {
+    #[error("Must not start with \"0\".")]
+    LeadingZero,
+    #[error("Parse: {0}")]
+    Parse(#[from] ParseIntError),
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -415,12 +445,13 @@ mod tests {
     fn creation_of_sequence_set_from_str_negative() {
         let tests = &[
             "", "* ", " *", " * ", "1 ", " 1", " 1 ", "01", " 01", "01 ", " 01 ", "*1", ":", ":*",
-            "*:", "*: ",
+            "*:", "*: ", "1:2:3",
         ];
 
         for test in tests {
             let got = SequenceSet::try_from(*test);
-            assert_eq!(Err(()), got);
+            print!("\"{}\" | {:?} | ", test, got.clone().unwrap_err());
+            println!("{}", got.unwrap_err());
         }
     }
 

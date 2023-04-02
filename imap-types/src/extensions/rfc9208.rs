@@ -33,11 +33,7 @@
 //!     - [StatusAttributeValue::Deleted](crate::response::data::StatusAttributeValue::Deleted)
 //!     - [StatusAttributeValue::DeletedStorage](crate::response::data::StatusAttributeValue::DeletedStorage)
 
-use std::{
-    borrow::Cow,
-    convert::{TryFrom, TryInto},
-    io::Write,
-};
+use std::{borrow::Cow, convert::TryFrom, io::Write};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -45,10 +41,11 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{
     codec::Encode,
-    rfc3501::core::{impl_try_from, impl_try_from_try_from, Atom},
+    rfc3501::core::{impl_try_from, Atom, AtomError},
 };
 
 /// A resource type for use in IMAP's QUOTA extension.
@@ -112,11 +109,11 @@ pub enum Resource<'a> {
     Other(ResourceOther<'a>),
 }
 
-impl_try_from!(Atom, 'a, &'a [u8], Resource<'a>);
-impl_try_from!(Atom, 'a, Vec<u8>, Resource<'a>);
-impl_try_from!(Atom, 'a, &'a str, Resource<'a>);
-impl_try_from!(Atom, 'a, String, Resource<'a>);
-impl_try_from!(Atom, 'a, Cow<'a, str>, Resource<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a [u8], Resource<'a>);
+impl_try_from!(Atom<'a>, 'a, Vec<u8>, Resource<'a>);
+impl_try_from!(Atom<'a>, 'a, &'a str, Resource<'a>);
+impl_try_from!(Atom<'a>, 'a, String, Resource<'a>);
+impl_try_from!(Atom<'a>, 'a, Cow<'a, str>, Resource<'a>);
 
 impl<'a> From<Atom<'a>> for Resource<'a> {
     fn from(value: Atom<'a>) -> Self {
@@ -149,27 +146,60 @@ impl<'a> Encode for Resource<'a> {
 pub struct ResourceOther<'a>(Atom<'a>);
 
 impl<'a> ResourceOther<'a> {
+    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), ResourceOtherError> {
+        if matches!(
+            value.as_ref().to_ascii_lowercase().as_slice(),
+            b"storage" | b"message" | b"mailbox" | b"annotation-storage",
+        ) {
+            return Err(ResourceOtherError::Reserved);
+        }
+
+        Ok(())
+    }
+
     #[cfg(feature = "unchecked")]
     pub fn new_unchecked(atom: Atom<'a>) -> Self {
         Self(atom)
     }
 }
 
-impl_try_from_try_from!(Atom, 'a, &'a [u8], ResourceOther<'a>);
-impl_try_from_try_from!(Atom, 'a, Vec<u8>, ResourceOther<'a>);
-impl_try_from_try_from!(Atom, 'a, &'a str, ResourceOther<'a>);
-impl_try_from_try_from!(Atom, 'a, String, ResourceOther<'a>);
-impl_try_from_try_from!(Atom, 'a, Cow<'a, str>, ResourceOther<'a>);
+macro_rules! impl_try_from {
+    ($from:ty) => {
+        impl<'a> TryFrom<$from> for ResourceOther<'a> {
+            type Error = ResourceOtherError;
+
+            fn try_from(value: $from) -> Result<Self, Self::Error> {
+                let atom = Atom::try_from(value)?;
+
+                Self::verify(atom.as_ref())?;
+
+                Ok(Self(atom))
+            }
+        }
+    };
+}
+
+impl_try_from!(&'a [u8]);
+impl_try_from!(Vec<u8>);
+impl_try_from!(&'a str);
+impl_try_from!(String);
 
 impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
-    type Error = ();
+    type Error = ResourceOtherError;
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        match atom.0.to_lowercase().as_ref() {
-            "storage" | "message" | "mailbox" | "annotation-storage" => Err(()),
-            _ => Ok(Self(atom)),
-        }
+        Self::verify(atom.as_ref())?;
+
+        Ok(Self(atom))
     }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ResourceOtherError {
+    #[error(transparent)]
+    Atom(#[from] AtomError),
+    #[error("Reserved. Please use one of the typed variants.")]
+    Reserved,
 }
 
 impl<'a> Encode for ResourceOther<'a> {
@@ -231,6 +261,30 @@ impl<'a> Encode for QuotaSet<'a> {
     }
 }
 
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum QuotaError<R, Q> {
+    #[error("Invalid root: {0:?}")]
+    Root(R),
+    #[error("Invalid quotas: {0:?}")]
+    Quotas(Q),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum QuotaRootError<M, R> {
+    #[error("Invalid root: {0:?}")]
+    Mailbox(M),
+    #[error("Invalid quotas: {0:?}")]
+    Roots(R),
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum SetQuotaError<R, S> {
+    #[error("Invalid root: {0:?}")]
+    Root(R),
+    #[error("Invalid quota set: {0:?}")]
+    QuotaSet(S),
+}
+
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
@@ -238,9 +292,9 @@ mod tests {
     use super::*;
     use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
 
-    fn compare_output(items: Vec<(Result<impl Encode, ()>, &str)>) {
+    fn compare_output(items: Vec<(impl Encode, &str)>) {
         for item in items {
-            let out = item.0.unwrap().encode_detached().unwrap();
+            let out = item.0.encode_detached().unwrap();
             assert_eq!(std::str::from_utf8(&out).unwrap(), item.1);
         }
     }
@@ -248,13 +302,16 @@ mod tests {
     #[test]
     fn test_command_output() {
         let commands = vec![
-            (CommandBody::get_quota("INBOX"), "GETQUOTA INBOX"),
-            (CommandBody::get_quota(""), "GETQUOTA \"\""),
+            (CommandBody::get_quota("INBOX").unwrap(), "GETQUOTA INBOX"),
+            (CommandBody::get_quota("").unwrap(), "GETQUOTA \"\""),
             (
-                CommandBody::get_quota_root("MAILBOX"),
+                CommandBody::get_quota_root("MAILBOX").unwrap(),
                 "GETQUOTAROOT MAILBOX",
             ),
-            (CommandBody::set_quota("INBOX", vec![]), "SETQUOTA INBOX ()"),
+            (
+                CommandBody::set_quota("INBOX", vec![]).unwrap(),
+                "SETQUOTA INBOX ()",
+            ),
             (
                 CommandBody::set_quota(
                     "INBOX",
@@ -262,7 +319,8 @@ mod tests {
                         resource: Resource::Storage,
                         limit: 256,
                     }],
-                ),
+                )
+                .unwrap(),
                 "SETQUOTA INBOX (STORAGE 256)",
             ),
             (
@@ -278,7 +336,8 @@ mod tests {
                             limit: 512,
                         },
                     ],
-                ),
+                )
+                .unwrap(),
                 "SETQUOTA INBOX (MESSAGE 256 STORAGE 512)",
             ),
         ];
@@ -297,15 +356,20 @@ mod tests {
                         usage: 1024,
                         limit: 2048,
                     }],
-                ),
+                )
+                .unwrap(),
                 "* QUOTA INBOX (MESSAGE 1024 2048)\r\n",
             ),
-            (Data::quota_root("INBOX", vec![]), "* QUOTAROOT INBOX\r\n"),
+            (
+                Data::quota_root("INBOX", vec![]).unwrap(),
+                "* QUOTAROOT INBOX\r\n",
+            ),
             (
                 Data::quota_root(
                     "INBOX",
                     vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
-                ),
+                )
+                .unwrap(),
                 "* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
             ),
         ];

@@ -215,7 +215,10 @@ pub mod command {
     //! # Types used in commands
 
     pub use crate::rfc3501::{
-        command::{AuthenticateData, Command, CommandBody},
+        command::{
+            AppendError, AuthenticateData, Command, CommandBody, CopyError, ListError, LoginError,
+            RenameError,
+        },
         mailbox::{ListCharString, ListMailbox},
         sequence::{SeqNo, Sequence, SequenceSet, Strategy},
     };
@@ -241,6 +244,11 @@ pub mod command {
     pub mod store {
         //! # Types used in STORE command
         pub use crate::rfc3501::flag::{StoreResponse, StoreType};
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub mod quota {
+        pub use crate::extensions::rfc9208::SetQuotaError;
     }
 
     #[cfg(feature = "ext_idle")]
@@ -271,6 +279,11 @@ pub mod response {
             response::{Capability, CapabilityOther},
             status_attributes::StatusAttributeValue,
         };
+    }
+
+    #[cfg(feature = "ext_quota")]
+    pub mod quota {
+        pub use crate::extensions::rfc9208::{QuotaError, QuotaRootError};
     }
 }
 
