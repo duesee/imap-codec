@@ -1,5 +1,5 @@
 use imap_types::{
-    command::{SeqNo, Sequence, SequenceSet},
+    command::{SeqOrUid, Sequence, SequenceSet},
     core::NonEmptyVec,
 };
 use nom::{
@@ -54,7 +54,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
 ///
 /// Example: a unique identifier sequence range of 3291:* includes the UID
 ///          of the last message in the mailbox, even if that value is less than 3291.
-pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
+pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqOrUid, SeqOrUid)> {
     let mut parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
@@ -75,10 +75,10 @@ pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqNo, SeqNo)> {
 /// The server should respond with a tagged BAD response to a command that uses a message
 /// sequence number greater than the number of messages in the selected mailbox.
 /// This includes "*" if the selected mailbox is empty.
-pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqNo> {
+pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqOrUid> {
     alt((
-        map(nz_number, SeqNo::Value),
-        value(SeqNo::Largest, tag(b"*")),
+        map(nz_number, SeqOrUid::Value),
+        value(SeqOrUid::Asterisk, tag(b"*")),
     ))(input)
 }
 
@@ -116,17 +116,17 @@ mod tests {
 
         assert_eq!(
             (
-                SeqNo::Value(1.try_into().unwrap()),
-                SeqNo::Value(2.try_into().unwrap())
+                SeqOrUid::Value(1.try_into().unwrap()),
+                SeqOrUid::Value(2.try_into().unwrap())
             ),
             seq_range(b"1:2?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Value(1.try_into().unwrap()), SeqNo::Largest),
+            (SeqOrUid::Value(1.try_into().unwrap()), SeqOrUid::Asterisk),
             seq_range(b"1:*?").unwrap().1
         );
         assert_eq!(
-            (SeqNo::Largest, SeqNo::Value(10.try_into().unwrap())),
+            (SeqOrUid::Asterisk, SeqOrUid::Value(10.try_into().unwrap())),
             seq_range(b"*:10?").unwrap().1
         );
     }

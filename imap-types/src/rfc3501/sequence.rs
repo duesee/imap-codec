@@ -25,17 +25,17 @@ pub struct SequenceSet(pub NonEmptyVec<Sequence>);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sequence {
-    Single(SeqNo),
-    Range(SeqNo, SeqNo),
+    Single(SeqOrUid),
+    Range(SeqOrUid, SeqOrUid),
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub enum SeqNo {
+pub enum SeqOrUid {
     Value(NonZeroU32),
-    Largest,
+    Asterisk,
 }
 
 impl<'a> SequenceSet {
@@ -88,7 +88,7 @@ impl TryFrom<&str> for Sequence {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.split(':').count() {
             0 => Err(SequenceError::Empty),
-            1 => Ok(Sequence::Single(SeqNo::try_from(value)?)),
+            1 => Ok(Sequence::Single(SeqOrUid::try_from(value)?)),
             2 => {
                 let mut split = value.split(':');
 
@@ -96,8 +96,8 @@ impl TryFrom<&str> for Sequence {
                 let end = split.next().unwrap();
 
                 Ok(Sequence::Range(
-                    SeqNo::try_from(start)?,
-                    SeqNo::try_from(end)?,
+                    SeqOrUid::try_from(start)?,
+                    SeqOrUid::try_from(end)?,
                 ))
             }
             _ => Err(SequenceError::Invalid),
@@ -107,7 +107,10 @@ impl TryFrom<&str> for Sequence {
 
 impl From<RangeFull> for Sequence {
     fn from(_: RangeFull) -> Self {
-        Sequence::Range(SeqNo::Value(NonZeroU32::new(1).unwrap()), SeqNo::Largest)
+        Sequence::Range(
+            SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+            SeqOrUid::Asterisk,
+        )
     }
 }
 
@@ -117,7 +120,7 @@ impl TryFrom<RangeFrom<u32>> for Sequence {
     fn try_from(range: RangeFrom<u32>) -> Result<Sequence, Self::Error> {
         let start = NonZeroU32::try_from(range.start)?;
 
-        Ok(Sequence::Range(SeqNo::Value(start), SeqNo::Largest))
+        Ok(Sequence::Range(SeqOrUid::Value(start), SeqOrUid::Asterisk))
     }
 }
 
@@ -128,7 +131,10 @@ impl TryFrom<Range<u32>> for Sequence {
         let start = NonZeroU32::try_from(range.start)?;
         let end = NonZeroU32::try_from(range.end.saturating_sub(1))?;
 
-        Ok(Sequence::Range(SeqNo::Value(start), SeqNo::Value(end)))
+        Ok(Sequence::Range(
+            SeqOrUid::Value(start),
+            SeqOrUid::Value(end),
+        ))
     }
 }
 
@@ -139,7 +145,10 @@ impl TryFrom<RangeInclusive<u32>> for Sequence {
         let start = NonZeroU32::try_from(*range.start())?;
         let end = NonZeroU32::try_from(*range.end())?;
 
-        Ok(Sequence::Range(SeqNo::Value(start), SeqNo::Value(end)))
+        Ok(Sequence::Range(
+            SeqOrUid::Value(start),
+            SeqOrUid::Value(end),
+        ))
     }
 }
 
@@ -150,7 +159,10 @@ impl TryFrom<RangeTo<u32>> for Sequence {
         let start = NonZeroU32::new(1).unwrap();
         let end = NonZeroU32::try_from(range.end.saturating_sub(1))?;
 
-        Ok(Sequence::Range(SeqNo::Value(start), SeqNo::Value(end)))
+        Ok(Sequence::Range(
+            SeqOrUid::Value(start),
+            SeqOrUid::Value(end),
+        ))
     }
 }
 
@@ -161,7 +173,10 @@ impl TryFrom<RangeToInclusive<u32>> for Sequence {
         let start = NonZeroU32::new(1).unwrap();
         let end = NonZeroU32::try_from(range.end)?;
 
-        Ok(Sequence::Range(SeqNo::Value(start), SeqNo::Value(end)))
+        Ok(Sequence::Range(
+            SeqOrUid::Value(start),
+            SeqOrUid::Value(end),
+        ))
     }
 }
 
@@ -205,21 +220,21 @@ pub enum SequenceError {
     SeqNo(#[from] SeqNoError),
 }
 
-impl SeqNo {
+impl SeqOrUid {
     pub fn expand(&self, largest: NonZeroU32) -> NonZeroU32 {
         match self {
-            SeqNo::Value(value) => *value,
-            SeqNo::Largest => largest,
+            SeqOrUid::Value(value) => *value,
+            SeqOrUid::Asterisk => largest,
         }
     }
 }
 
-impl TryFrom<&str> for SeqNo {
+impl TryFrom<&str> for SeqOrUid {
     type Error = SeqNoError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if value == "*" {
-            Ok(SeqNo::Largest)
+            Ok(SeqOrUid::Asterisk)
         } else {
             // This is to align parsing here with the IMAP grammar:
             // Rust's `parse::<NonZeroU32>` function accepts numbers that start with 0.
@@ -227,7 +242,7 @@ impl TryFrom<&str> for SeqNo {
             if value.starts_with('0') {
                 Err(SeqNoError::LeadingZero)
             } else {
-                Ok(SeqNo::Value(NonZeroU32::from_str(value)?))
+                Ok(SeqOrUid::Value(NonZeroU32::from_str(value)?))
             }
         }
     }
@@ -292,7 +307,7 @@ mod tests {
         num::NonZeroU32,
     };
 
-    use super::{SeqNo, Sequence, Strategy};
+    use super::{SeqOrUid, Sequence, Strategy};
     use crate::{codec::Encode, command::SequenceSet};
 
     #[test]
@@ -302,7 +317,10 @@ mod tests {
         let seq = Sequence::from(range);
         assert_eq!(
             seq,
-            Sequence::Range(SeqNo::Value(NonZeroU32::new(1).unwrap()), SeqNo::Largest)
+            Sequence::Range(
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Asterisk
+            )
         );
 
         // 1:*
@@ -310,7 +328,10 @@ mod tests {
         let seq = Sequence::try_from(range).unwrap();
         assert_eq!(
             seq,
-            Sequence::Range(SeqNo::Value(NonZeroU32::new(1).unwrap()), SeqNo::Largest)
+            Sequence::Range(
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Asterisk
+            )
         );
 
         // 1337:*
@@ -318,7 +339,10 @@ mod tests {
         let seq = Sequence::try_from(range).unwrap();
         assert_eq!(
             seq,
-            Sequence::Range(SeqNo::Value(NonZeroU32::new(1337).unwrap()), SeqNo::Largest)
+            Sequence::Range(
+                SeqOrUid::Value(NonZeroU32::new(1337).unwrap()),
+                SeqOrUid::Asterisk
+            )
         );
 
         // 1:1336
@@ -327,8 +351,8 @@ mod tests {
         assert_eq!(
             seq,
             Sequence::Range(
-                SeqNo::Value(NonZeroU32::new(1).unwrap()),
-                SeqNo::Value(NonZeroU32::new(1336).unwrap())
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Value(NonZeroU32::new(1336).unwrap())
             )
         );
 
@@ -338,8 +362,8 @@ mod tests {
         assert_eq!(
             seq,
             Sequence::Range(
-                SeqNo::Value(NonZeroU32::new(1).unwrap()),
-                SeqNo::Value(NonZeroU32::new(1337).unwrap())
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Value(NonZeroU32::new(1337).unwrap())
             )
         );
 
@@ -349,8 +373,8 @@ mod tests {
         assert_eq!(
             seq,
             Sequence::Range(
-                SeqNo::Value(NonZeroU32::new(1).unwrap()),
-                SeqNo::Value(NonZeroU32::new(1336).unwrap())
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Value(NonZeroU32::new(1336).unwrap())
             )
         );
 
@@ -360,8 +384,8 @@ mod tests {
         assert_eq!(
             seq,
             Sequence::Range(
-                SeqNo::Value(NonZeroU32::new(1).unwrap()),
-                SeqNo::Value(NonZeroU32::new(1337).unwrap())
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap()),
+                SeqOrUid::Value(NonZeroU32::new(1337).unwrap())
             )
         );
     }
@@ -372,7 +396,7 @@ mod tests {
             (
                 "1",
                 SequenceSet(
-                    vec![Sequence::Single(SeqNo::Value(1.try_into().unwrap()))]
+                    vec![Sequence::Single(SeqOrUid::Value(1.try_into().unwrap()))]
                         .try_into()
                         .unwrap(),
                 ),
@@ -381,9 +405,9 @@ mod tests {
                 "1,2,3",
                 SequenceSet(
                     vec![
-                        Sequence::Single(SeqNo::Value(1.try_into().unwrap())),
-                        Sequence::Single(SeqNo::Value(2.try_into().unwrap())),
-                        Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
+                        Sequence::Single(SeqOrUid::Value(1.try_into().unwrap())),
+                        Sequence::Single(SeqOrUid::Value(2.try_into().unwrap())),
+                        Sequence::Single(SeqOrUid::Value(3.try_into().unwrap())),
                     ]
                     .try_into()
                     .unwrap(),
@@ -391,14 +415,18 @@ mod tests {
             ),
             (
                 "*",
-                SequenceSet(vec![Sequence::Single(SeqNo::Largest)].try_into().unwrap()),
+                SequenceSet(
+                    vec![Sequence::Single(SeqOrUid::Asterisk)]
+                        .try_into()
+                        .unwrap(),
+                ),
             ),
             (
                 "1:2",
                 SequenceSet(
                     vec![Sequence::Range(
-                        SeqNo::Value(1.try_into().unwrap()),
-                        SeqNo::Value(2.try_into().unwrap()),
+                        SeqOrUid::Value(1.try_into().unwrap()),
+                        SeqOrUid::Value(2.try_into().unwrap()),
                     )]
                     .try_into()
                     .unwrap(),
@@ -409,10 +437,10 @@ mod tests {
                 SequenceSet(
                     vec![
                         Sequence::Range(
-                            SeqNo::Value(1.try_into().unwrap()),
-                            SeqNo::Value(2.try_into().unwrap()),
+                            SeqOrUid::Value(1.try_into().unwrap()),
+                            SeqOrUid::Value(2.try_into().unwrap()),
                         ),
-                        Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
+                        Sequence::Single(SeqOrUid::Value(3.try_into().unwrap())),
                     ]
                     .try_into()
                     .unwrap(),
@@ -423,11 +451,11 @@ mod tests {
                 SequenceSet(
                     vec![
                         Sequence::Range(
-                            SeqNo::Value(1.try_into().unwrap()),
-                            SeqNo::Value(2.try_into().unwrap()),
+                            SeqOrUid::Value(1.try_into().unwrap()),
+                            SeqOrUid::Value(2.try_into().unwrap()),
                         ),
-                        Sequence::Single(SeqNo::Value(3.try_into().unwrap())),
-                        Sequence::Single(SeqNo::Largest),
+                        Sequence::Single(SeqOrUid::Value(3.try_into().unwrap())),
+                        Sequence::Single(SeqOrUid::Asterisk),
                     ]
                     .try_into()
                     .unwrap(),
@@ -459,12 +487,12 @@ mod tests {
     fn serialization_of_some_sequence_sets() {
         let tests = [
             (
-                Sequence::Single(SeqNo::Value(1.try_into().unwrap())),
+                Sequence::Single(SeqOrUid::Value(1.try_into().unwrap())),
                 b"1".as_ref(),
             ),
-            (Sequence::Single(SeqNo::Largest), b"*".as_ref()),
+            (Sequence::Single(SeqOrUid::Asterisk), b"*".as_ref()),
             (
-                Sequence::Range(SeqNo::Value(1.try_into().unwrap()), SeqNo::Largest),
+                Sequence::Range(SeqOrUid::Value(1.try_into().unwrap()), SeqOrUid::Asterisk),
                 b"1:*".as_ref(),
             ),
         ];
