@@ -258,6 +258,7 @@ pub struct SinglePartExtensionData<'a> {
 
     /// A parenthesized list with the same content and function as
     /// the body disposition for a multipart body part.
+    #[allow(clippy::type_complexity)]
     pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
 
     /// A string or parenthesized list giving the body language
@@ -301,6 +302,7 @@ pub struct MultiPartExtensionData<'a> {
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
     /// attribute/value pairs as defined in [DISPOSITION].
+    #[allow(clippy::type_complexity)]
     pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
 
     /// `body language`
