@@ -7,22 +7,8 @@ use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
     command::{search::SearchKey, Command, CommandBody},
-    message::Flag,
 };
 use libfuzzer_sys::fuzz_target;
-
-fn ignore_flags(flags: &[Flag]) -> bool {
-    flags.iter().any(|flag| {
-        matches!(
-            flag,
-            Flag::Keyword(_)
-                | Flag::Extension(_)
-                | Flag::Permanent
-                | Flag::Recent
-                | Flag::NameAttribute(_)
-        )
-    })
-}
 
 #[cfg(feature = "ext_enable")]
 fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
@@ -47,14 +33,6 @@ fuzz_target!(|test: Command| {
     // TODO(#30): Skip certain generations for now as we know they need to be fixed.
     //            The goal is to not skip anything eventually.
     match test.body {
-        CommandBody::Store { ref flags, .. } if ignore_flags(flags) => {
-            // FIXME(#30)
-            return;
-        }
-        CommandBody::Append { ref flags, .. } if ignore_flags(flags) => {
-            // FIXME(#30)
-            return;
-        }
         CommandBody::Search { ref criteria, .. } if ignore_search_key_and(criteria) => {
             // FIXME(#30)
             return;

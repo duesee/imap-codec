@@ -9,13 +9,13 @@ use imap_codec::{
         Command, CommandBody,
     },
     core::{AString, IString, Quoted},
-    message::{AuthMechanism, Flag, Section, Tag},
+    message::{AuthMechanism, Flag, FlagPerm, Section, Tag},
     response::{
         data::{Capability, FetchAttributeValue},
         Code, Data, Response, Status,
     },
 };
-use imap_types::{response::Greeting, security::Secret};
+use imap_types::{message::FlagFetch, response::Greeting, security::Secret};
 
 enum Who {
     Client,
@@ -289,7 +289,10 @@ fn test_from_noop() {
                 Message::Response(Response::Data(
                     Data::fetch(
                         14,
-                        vec![FetchAttributeValue::Flags(vec![Flag::Seen, Flag::Deleted])],
+                        vec![FetchAttributeValue::Flags(vec![
+                            FlagFetch::Flag(Flag::Seen),
+                            FlagFetch::Flag(Flag::Deleted),
+                        ])],
                     )
                     .unwrap(),
                 )),
@@ -503,9 +506,9 @@ fn test_from_select() {
                     Status::ok(
                         None,
                         Some(Code::PermanentFlags(vec![
-                            Flag::Deleted,
-                            Flag::Seen,
-                            Flag::Permanent,
+                            FlagPerm::Flag(Flag::Deleted),
+                            FlagPerm::Flag(Flag::Seen),
+                            FlagPerm::AllowNewKeywords,
                         ])),
                         "Limited",
                     )

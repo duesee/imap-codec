@@ -27,7 +27,7 @@ use crate::{
 };
 use crate::{
     core::{Atom, NonEmptyVec},
-    message::{AuthMechanism, Charset, Flag, FlagNameAttribute, Mailbox, Tag},
+    message::{AuthMechanism, Charset, Flag, FlagNameAttribute, FlagPerm, Mailbox, Tag},
     response::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
         Text,
@@ -730,7 +730,7 @@ pub enum Code<'a> {
     /// The PERMANENTFLAGS list can also include the special flag \*,
     /// which indicates that it is possible to create new keywords by
     /// attempting to store those flags in the mailbox.
-    PermanentFlags(Vec<Flag<'a>>),
+    PermanentFlags(Vec<FlagPerm<'a>>),
 
     /// `READ-ONLY`
     ///
@@ -816,7 +816,7 @@ impl<'a> Code<'a> {
         Ok(Self::Capability(caps.try_into()?))
     }
 
-    pub fn permanentflags(flags: Vec<Flag<'a>>) -> Self {
+    pub fn permanentflags(flags: Vec<FlagPerm<'a>>) -> Self {
         Self::PermanentFlags(flags)
     }
 

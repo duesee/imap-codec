@@ -1,64 +1,150 @@
 // ### 2.3.2. Flags Message Attribute
 
+use std::convert::{TryFrom, TryInto};
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::core::Atom;
+use crate::{core::Atom, rfc3501::core::AtomError};
 
-/// A list of zero or more named tokens associated with the message.  A
-/// flag is set by its addition to this list, and is cleared by its
-/// removal.  There are two types of flags in IMAP4rev1. A flag of either
-/// type can be permanent or session-only.
-/// TODO(#7): this struct is not very usable currently...
+/// There are two types of flags in IMAP4rev1: System and keyword flags.
+///
+/// A system flag is a flag name that is pre-defined in RFC3501.
+/// All system flags begin with "\" and certain system flags (`\Deleted` and `\Seen`) have special semantics.
+/// Flags that begin with "\" but are not pre-defined system flags, are extension flags.
+/// Clients MUST accept them and servers MUST NOT send them except when defined by future standard or standards-track revisions.
+///
+/// A keyword is defined by the server implementation.
+/// Keywords do not begin with "\" and servers may permit the client to define new ones
+/// in the mailbox by sending the "\*" flag ([`FlagPerm::AllowNewKeyword`]) in the PERMANENTFLAGS response..
+///
+/// Note that a flag of either type can be permanent or session-only.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Flag<'a> {
-    // ----- System -----
-    //
-    // A system flag is a flag name that is pre-defined in this
-    // specification.  All system flags begin with "\".  Certain system
-    // flags (\Deleted and \Seen) have special semantics described elsewhere.
-    /// Message has been read (`\Seen`)
+    /// Message has been read (`\Seen`).
     Seen,
-    /// Message has been answered (`\Answered`)
+    /// Message has been answered (`\Answered`).
     Answered,
-    /// Message is "flagged" for urgent/special attention (`\Flagged`)
+    /// Message is "flagged" for urgent/special attention (`\Flagged`).
     Flagged,
-    /// Message is "deleted" for removal by later EXPUNGE (`\Deleted`)
+    /// Message is "deleted" for removal by later EXPUNGE (`\Deleted`).
     Deleted,
-    /// Message has not completed composition (marked as a draft). (`\Draft`)
+    /// Message has not completed composition (marked as a draft) (`\Draft`).
     Draft,
+    /// A future expansion of a system flag.
+    Extension(FlagExtension<'a>),
+    /// A keyword.
+    Keyword(Atom<'a>),
+}
 
-    // ----- Fetch -----
+impl<'a> Flag<'a> {
+    pub fn system<A>(value: A) -> Result<Self, FlagError<'a, A::Error>>
+    where
+        A: TryInto<Atom<'a>>,
+    {
+        let atom = value.try_into()?;
+
+        match atom.as_ref().to_ascii_lowercase().as_ref() {
+            "answered" => Ok(Self::Answered),
+            "flagged" => Ok(Self::Flagged),
+            "deleted" => Ok(Self::Deleted),
+            "seen" => Ok(Self::Seen),
+            "draft" => Ok(Self::Draft),
+            _ => Err(FlagError::IsAnExtensionFlag { candidate: atom }),
+        }
+    }
+
+    pub fn extension<A>(value: A) -> Result<Self, FlagError<'a, A::Error>>
+    where
+        A: TryInto<Atom<'a>>,
+    {
+        let atom = value.try_into()?;
+
+        match atom.as_ref().to_ascii_lowercase().as_ref() {
+            "answered" | "flagged" | "deleted" | "seen" | "draft" => {
+                Err(FlagError::IsASystemFlag { candidate: atom })
+            }
+            _ => Ok(Self::Extension(FlagExtension(atom))),
+        }
+    }
+
+    pub fn system_or_extension(atom: Atom<'a>) -> Self {
+        match Self::system(atom) {
+            Ok(system) => system,
+            Err(FlagError::Atom(_)) => unreachable!(),
+            Err(FlagError::IsASystemFlag { .. }) => unreachable!(),
+            Err(FlagError::IsAnExtensionFlag { candidate }) => {
+                Self::Extension(FlagExtension(candidate))
+            }
+        }
+    }
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FlagFetch<'a> {
+    Flag(Flag<'a>),
+
     /// Message is "recently" arrived in this mailbox. (`\Recent`)
     ///
-    /// This session is the first session to have been notified about this
-    /// message; if the session is read-write, subsequent sessions
-    /// will not see \Recent set for this message.  This flag can not
-    /// be altered by the client.
+    /// This session is the first session to have been notified about this message; if the session
+    /// is read-write, subsequent sessions will not see \Recent set for this message.
+    ///
+    /// Note: This flag can not be altered by the client.
     Recent,
+}
 
-    // ----- Selectability -----
-    NameAttribute(FlagNameAttribute<'a>),
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FlagPerm<'a> {
+    Flag(Flag<'a>),
 
-    // ----- Keyword -----
     /// Indicates that it is possible to create new keywords by
-    /// attempting to store those flags in the mailbox. (`\*`)
-    Permanent,
-    /// A keyword is defined by the server implementation.  Keywords do not
-    /// begin with "\".  Servers MAY permit the client to define new keywords
-    /// in the mailbox (see the description of the PERMANENTFLAGS response
-    /// code for more information).
-    Keyword(Atom<'a>),
+    /// attempting to store those flags in the mailbox (`\*`).
+    AllowNewKeywords,
+}
 
-    // ----- Others -----
-    Extension(Atom<'a>), // FIXME(#32): How to treat Extension(Atom("Recent"))
+/// Client implementations MUST accept flag-extension flags.
+/// Server implementations MUST NOT generate flag-extension flags
+/// except as defined by future standard or standards-track revisions of this specification.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FlagExtension<'a>(pub(crate) Atom<'a>);
+
+impl<'a> TryFrom<Atom<'a>> for FlagExtension<'a> {
+    type Error = FlagError<'a, AtomError>;
+
+    fn try_from(value: Atom<'a>) -> Result<Self, Self::Error> {
+        match value.as_ref().to_ascii_lowercase().as_ref() {
+            "answered" | "flagged" | "deleted" | "seen" | "draft" => {
+                Err(FlagError::IsASystemFlag { candidate: value })
+            }
+            _ => Ok(Self(value)),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum FlagError<'a, A> {
+    #[error(transparent)]
+    Atom(#[from] A),
+    #[error("Is a system flag.")]
+    IsASystemFlag { candidate: Atom<'a> },
+    #[error("Is an extension flag.")]
+    IsAnExtensionFlag { candidate: Atom<'a> },
 }
 
 /// Four name attributes are defined.
