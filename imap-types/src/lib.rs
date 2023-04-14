@@ -204,7 +204,7 @@ pub mod message {
     pub use crate::rfc3501::{
         core::{Charset, Tag},
         datetime::{MyDateTime, MyNaiveDate},
-        flag::{Flag, FlagNameAttribute},
+        flag::{Flag, FlagError, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
         mailbox::{Mailbox, MailboxOther},
         section::{Part, PartSpecifier, Section},
         AuthMechanism, AuthMechanismOther,

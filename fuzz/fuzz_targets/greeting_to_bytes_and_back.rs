@@ -13,10 +13,6 @@ fuzz_target!(|test: Greeting| {
     //            The goal is to not skip anything eventually.
     if let Some(ref code) = test.code {
         match code {
-            Code::PermanentFlags(_) => {
-                // FIXME(#30)
-                return;
-            }
             #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
             Code::Referral(_) => {
                 // FIXME(#30)

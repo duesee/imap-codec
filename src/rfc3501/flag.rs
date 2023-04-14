@@ -1,59 +1,78 @@
 use abnf_core::streaming::SP;
 use imap_types::{
     core::Atom,
-    message::{Flag, FlagNameAttribute},
+    message::{Flag, FlagFetch, FlagNameAttribute, FlagPerm},
 };
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, value},
+    character::streaming::char,
+    combinator::{map, recognize, value},
     multi::{separated_list0, separated_list1},
-    sequence::{delimited, preceded},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
 
 use crate::rfc3501::core::atom;
 
-/// `flag = "\Answered" /
-///         "\Flagged" /
-///         "\Deleted" /
-///         "\Seen" /
-///         "\Draft" /
-///         flag-keyword /
-///         flag-extension`
+/// ```abnf
+/// flag = "\Answered" /
+///        "\Flagged" /
+///        "\Deleted" /
+///        "\Seen" /
+///        "\Draft" /
+///        flag-keyword /
+///        flag-extension
+/// ```
 ///
 /// Note: Does not include "\Recent"
 pub fn flag(input: &[u8]) -> IResult<&[u8], Flag> {
     alt((
-        value(Flag::Answered, tag_no_case(b"\\Answered")),
-        value(Flag::Flagged, tag_no_case(b"\\Flagged")),
-        value(Flag::Deleted, tag_no_case(b"\\Deleted")),
-        value(Flag::Seen, tag_no_case(b"\\Seen")),
-        value(Flag::Draft, tag_no_case(b"\\Draft")),
-        flag_keyword,
-        map(flag_extension, Flag::Extension),
+        map(preceded(char('\\'), atom), Flag::system_or_extension),
+        map(atom, Flag::Keyword),
     ))(input)
 }
 
-/// `flag-fetch = flag / "\Recent"`
-pub fn flag_fetch(input: &[u8]) -> IResult<&[u8], Flag> {
-    alt((flag, value(Flag::Recent, tag_no_case(b"\\Recent"))))(input)
-}
+// Note(duesee): This was inlined into [`flag`].
+// #[inline]
+// /// `flag-keyword = atom`
+// pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
+//     map(atom, Flag::Keyword)(input)
+// }
 
-/// `flag-perm = flag / "\*"`
-pub fn flag_perm(input: &[u8]) -> IResult<&[u8], Flag> {
-    alt((flag, value(Flag::Permanent, tag(b"\\*"))))(input)
-}
-
-#[inline]
-/// `flag-keyword = atom`
-pub fn flag_keyword(input: &[u8]) -> IResult<&[u8], Flag> {
-    map(atom, Flag::Keyword)(input)
+/// `flag-extension = "\" atom`
+///
+/// Future expansion.
+///
+/// Client implementations MUST accept flag-extension flags.
+/// Server implementations MUST NOT generate flag-extension flags
+/// except as defined by future standard or standards-track revisions of this specification.
+pub fn flag_extension(input: &[u8]) -> IResult<&[u8], Atom> {
+    preceded(tag(b"\\"), atom)(input)
 }
 
 /// `flag-list = "(" [flag *(SP flag)] ")"`
 pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
     delimited(tag(b"("), separated_list0(SP, flag), tag(b")"))(input)
+}
+
+/// `flag-fetch = flag / "\Recent"`
+pub fn flag_fetch(input: &[u8]) -> IResult<&[u8], FlagFetch> {
+    if let Ok((rem, peek)) = recognize(tuple((char('\\'), atom)))(input) {
+        if peek.to_ascii_lowercase() == b"\\recent" {
+            return Ok((rem, FlagFetch::Recent));
+        }
+    }
+
+    map(flag, FlagFetch::Flag)(input)
+}
+
+/// `flag-perm = flag / "\*"`
+pub fn flag_perm(input: &[u8]) -> IResult<&[u8], FlagPerm> {
+    alt((
+        value(FlagPerm::AllowNewKeywords, tag("\\*")),
+        map(flag, FlagPerm::Flag),
+    ))(input)
 }
 
 /// `mbx-list-flags = *(mbx-list-oflag SP) mbx-list-sflag *(SP mbx-list-oflag) /
@@ -64,17 +83,18 @@ pub fn flag_list(input: &[u8]) -> IResult<&[u8], Vec<Flag>> {
 pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) = separated_list1(SP, alt((mbx_list_sflag, mbx_list_oflag)))(input)?;
 
-    let sflag_count = flags
-        .iter()
-        .filter(|&flag| FlagNameAttribute::is_selectability(flag))
-        .count();
-
-    if sflag_count > 1 {
-        return Err(nom::Err::Failure(nom::error::make_error(
-            input,
-            nom::error::ErrorKind::Verify,
-        )));
-    }
+    // TODO: Do we really want to enforce this?
+    // let sflag_count = flags
+    //     .iter()
+    //     .filter(|&flag| FlagNameAttribute::is_selectability(flag))
+    //     .count();
+    //
+    // if sflag_count > 1 {
+    //     return Err(nom::Err::Failure(nom::error::make_error(
+    //         input,
+    //         nom::error::ErrorKind::Verify,
+    //     )));
+    // }
 
     Ok((remaining, flags))
 }
@@ -103,13 +123,38 @@ pub fn mbx_list_sflag(input: &[u8]) -> IResult<&[u8], FlagNameAttribute> {
     ))(input)
 }
 
-/// `flag-extension = "\" atom`
-///
-/// Future expansion.
-///
-/// Client implementations MUST accept flag-extension flags.
-/// Server implementations MUST NOT generate flag-extension flags
-/// except as defined by future standard or standards-track revisions of this specification.
-pub fn flag_extension(input: &[u8]) -> IResult<&[u8], Atom> {
-    preceded(tag(b"\\"), atom)(input)
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use super::*;
+
+    #[test]
+    fn test_flag_fetch() {
+        let tests = [(
+            "iS)",
+            FlagFetch::Flag(Flag::Keyword(Atom::try_from("iS").unwrap())),
+        )];
+
+        for (test, expected) in tests {
+            let (rem, got) = flag_fetch(test.as_bytes()).unwrap();
+            assert_eq!(rem.len(), 1);
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_flag_perm() {
+        let tests = [
+            ("\\Deleted)", FlagPerm::Flag(Flag::Deleted)),
+            ("\\Seen ", FlagPerm::Flag(Flag::Seen)),
+            ("\\*)", FlagPerm::AllowNewKeywords),
+        ];
+
+        for (test, expected) in tests {
+            let (rem, got) = flag_perm(test.as_bytes()).unwrap();
+            assert_eq!(rem.len(), 1);
+            assert_eq!(expected, got);
+        }
+    }
 }

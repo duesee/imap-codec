@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::NString,
-    message::{Flag, MyDateTime, Section},
+    message::{FlagFetch, MyDateTime, Section},
     response::data::{BodyStructure, Envelope},
 };
 
@@ -243,7 +243,7 @@ pub enum FetchAttributeValue<'a> {
     /// A parenthesized list of flags that are set for this message.
     ///
     /// `FLAGS`
-    Flags(Vec<Flag<'a>>),
+    Flags(Vec<FlagFetch<'a>>),
 
     /// A string representing the internal date of the message.
     ///

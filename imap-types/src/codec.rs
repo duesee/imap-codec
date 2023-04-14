@@ -36,8 +36,8 @@ use crate::{
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{
-        AuthMechanism, AuthMechanismOther, Charset, Flag, FlagNameAttribute, Mailbox, MailboxOther,
-        MyDateTime, MyNaiveDate, Part, Section, Tag,
+        AuthMechanism, AuthMechanismOther, Charset, Flag, FlagFetch, FlagNameAttribute, FlagPerm,
+        Mailbox, MailboxOther, MyDateTime, MyNaiveDate, Part, Section, Tag,
     },
     response::{
         data::{
@@ -47,6 +47,7 @@ use crate::{
         },
         Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
+    rfc3501::flag::FlagExtension,
     utils::escape_quoted,
 };
 
@@ -472,29 +473,39 @@ impl Encode for StatusAttribute {
 impl<'a> Encode for Flag<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            // ----- System -----
             Flag::Seen => writer.write_all(b"\\Seen"),
             Flag::Answered => writer.write_all(b"\\Answered"),
             Flag::Flagged => writer.write_all(b"\\Flagged"),
             Flag::Deleted => writer.write_all(b"\\Deleted"),
             Flag::Draft => writer.write_all(b"\\Draft"),
-
-            // ----- Fetch -----
-            Flag::Recent => writer.write_all(b"\\Recent"),
-
-            // ----- Selectability -----
-            Flag::NameAttribute(flag) => flag.encode(writer),
-
-            // ----- Keyword -----
-            Flag::Permanent => writer.write_all(b"\\*"),
+            Flag::Extension(other) => other.encode(writer),
             Flag::Keyword(atom) => atom.encode(writer),
-
-            // ----- Others -----
-            Flag::Extension(atom) => {
-                writer.write_all(b"\\")?;
-                atom.encode(writer)
-            }
         }
+    }
+}
+
+impl<'a> Encode for FlagFetch<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            Self::Flag(flag) => flag.encode(writer),
+            Self::Recent => writer.write_all(b"\\Recent"),
+        }
+    }
+}
+
+impl<'a> Encode for FlagPerm<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            Self::Flag(flag) => flag.encode(writer),
+            Self::AllowNewKeywords => writer.write_all(b"\\*"),
+        }
+    }
+}
+
+impl<'a> Encode for FlagExtension<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"\\")?;
+        self.0.encode(writer)
     }
 }
 
