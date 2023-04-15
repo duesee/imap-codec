@@ -28,7 +28,7 @@ use crate::{
         ListMailbox, SequenceSet,
     },
     core::{AString, Atom, Literal, NonEmptyVec},
-    message::{AuthMechanism, Charset, Flag, Mailbox, MyDateTime, MyNaiveDate, Tag},
+    message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, MyNaiveDate, Tag},
     security::Secret,
 };
 
@@ -836,7 +836,7 @@ pub enum CommandBody<'a> {
     Append {
         mailbox: Mailbox<'a>,
         flags: Vec<Flag<'a>>,
-        date: Option<MyDateTime>,
+        date: Option<DateTime>,
         message: Literal<'a>,
     },
 
@@ -1435,7 +1435,7 @@ impl<'a> CommandBody<'a> {
     pub fn append<M, D>(
         mailbox: M,
         flags: Vec<Flag<'a>>,
-        date: Option<MyDateTime>,
+        date: Option<DateTime>,
         message: D,
     ) -> Result<Self, AppendError<M::Error, D::Error>>
     where
@@ -1804,7 +1804,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::convert::TryInto;
 
-    use chrono::DateTime;
+    use chrono::DateTime as ChronoDateTime;
 
     #[cfg(feature = "ext_compress")]
     use crate::extensions::rfc4987::CompressionAlgorithm;
@@ -1822,7 +1822,7 @@ mod tests {
             CommandBody, ListMailbox,
         },
         core::{AString, IString},
-        message::{AuthMechanism, Flag, MyDateTime, Part, Section},
+        message::{AuthMechanism, DateTime, Flag, Part, Section},
     };
     #[cfg(feature = "ext_sasl_ir")]
     use crate::{command::Command, message::Tag, security::Secret};
@@ -1897,8 +1897,8 @@ mod tests {
             CommandBody::append(
                 "inbox",
                 vec![],
-                Some(MyDateTime(
-                    DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
+                Some(DateTime(
+                    ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
                 )),
                 vec![0xff, 0xff, 0xff],
             )
@@ -1906,8 +1906,8 @@ mod tests {
             CommandBody::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
-                Some(MyDateTime(
-                    DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
+                Some(DateTime(
+                    ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
                 )),
                 vec![0xff, 0xff, 0xff],
             )

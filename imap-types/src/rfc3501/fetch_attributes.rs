@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::NString,
-    message::{FlagFetch, MyDateTime, Section},
+    message::{DateTime, FlagFetch, Section},
     response::data::{BodyStructure, Envelope},
 };
 
@@ -248,7 +248,7 @@ pub enum FetchAttributeValue<'a> {
     /// A string representing the internal date of the message.
     ///
     /// `INTERNALDATE`
-    InternalDate(MyDateTime),
+    InternalDate(DateTime),
 
     /// Equivalent to BODY[].
     ///

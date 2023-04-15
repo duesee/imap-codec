@@ -20,7 +20,7 @@
 use std::{io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime as ChronoDateTime, FixedOffset};
 
 #[cfg(feature = "ext_compress")]
 use crate::extensions::rfc4987::CompressionAlgorithm;
@@ -36,8 +36,8 @@ use crate::{
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{
-        AuthMechanism, AuthMechanismOther, Charset, Flag, FlagFetch, FlagNameAttribute, FlagPerm,
-        Mailbox, MailboxOther, MyDateTime, MyNaiveDate, Part, Section, Tag,
+        AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagFetch, FlagNameAttribute,
+        FlagPerm, Mailbox, MailboxOther, MyNaiveDate, Part, Section, Tag,
     },
     response::{
         data::{
@@ -509,7 +509,7 @@ impl<'a> Encode for FlagExtension<'a> {
     }
 }
 
-impl Encode for MyDateTime {
+impl Encode for DateTime {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.0.encode(writer)
     }
@@ -1425,7 +1425,7 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
     }
 }
 
-impl Encode for DateTime<FixedOffset> {
+impl Encode for ChronoDateTime<FixedOffset> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "\"{}\"", self.format("%d-%b-%Y %H:%M:%S %z"))
     }
