@@ -17,18 +17,20 @@ use crate::rfc3501::{
     core::{nil, nstring},
 };
 
-/// `envelope = "("
-///             env-date SP
-///             env-subject SP
-///             env-from SP
-///             env-sender SP
-///             env-reply-to SP
-///             env-to SP
-///             env-cc SP
-///             env-bcc SP
-///             env-in-reply-to SP
-///             env-message-id
-///             ")"`
+/// ```abnf
+/// envelope = "("
+///              env-date SP
+///              env-subject SP
+///              env-from SP
+///              env-sender SP
+///              env-reply-to SP
+///              env-to SP
+///              env-cc SP
+///              env-bcc SP
+///              env-in-reply-to SP
+///              env-message-id
+///            ")"
+/// ```
 pub fn envelope(input: &[u8]) -> IResult<&[u8], Envelope> {
     let mut parser = delimited(
         tag(b"("),
