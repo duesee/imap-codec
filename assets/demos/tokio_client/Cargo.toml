@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3"
-imap-codec = { path = "../../../", features = ["tokio_util_codec"] }
+imap-codec = { path = "../../../", features = ["tokio"] }
 tokio = { version = "*", features = ["full"] }
 tokio-util = { version = "*", features = ["codec"] }

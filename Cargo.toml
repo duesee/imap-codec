@@ -13,7 +13,7 @@ default = []
 arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["imap-types/bounded-static"]
 serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
-tokio_util_codec = ["dep:bytes", "dep:tokio-util", "bounded-static"]
+tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 
 # IMAP
 starttls = ["imap-types/starttls"]

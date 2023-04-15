@@ -61,11 +61,11 @@
 //!
 //! Furthermore, imap-codec uses the following features to facilitate interoperability:
 //!
-//! |Feature           |Description                     |Enabled by default|
-//! |-----------------|--------------------------------|------------------|
-//! |arbitrary        |`derive(Arbitrary)`             |No                |
-//! |serde            |`derive(Serialize, Deserialize)`|No                |
-//! |tokio_util_codec |`pub use tokio_compat;`         |No                |
+//! | Feature          | Description                                                    | Enabled by default |
+//! |------------------|----------------------------------------------------------------|--------------------|
+//! | arbitrary        | Derive `Arbitrary` implementations.                            | No                 |
+//! | serde            | Derive `serdes` `Serialize` and `Deserialize` implementations. | No                 |
+//! | tokio            | Provide `tokio` support.                                       | No                 |
 //!
 //! When using "arbitrary", all types defined in imap-codec implement the [Arbitrary](https://docs.rs/arbitrary/1.1.0/arbitrary/trait.Arbitrary.html)
 //! trait to ease testing.
@@ -105,12 +105,12 @@ pub use imap_types::{command, core, message, response, state};
 
 // ----------- Compatibility modules -----------
 
-#[cfg(any(feature = "tokio_util_codec"))]
-pub mod tokio_compat;
+#[cfg(any(feature = "tokio"))]
+pub mod tokio;
 
 // ----------- Re-exports -----------
 
 pub use imap_types;
 pub use nom;
-#[cfg(any(feature = "tokio_util_codec"))]
+#[cfg(any(feature = "tokio"))]
 pub use tokio_util;
