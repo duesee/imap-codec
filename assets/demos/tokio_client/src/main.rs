@@ -3,7 +3,7 @@ use imap_codec::{
     command::{Command, CommandBody},
     message::Tag,
     response::{Response, Status},
-    tokio_compat::client::{ImapClientCodec, OutcomeClient},
+    tokio::client::{ImapClientCodec, OutcomeClient},
 };
 use tokio::{self, net::TcpStream};
 use tokio_util::codec::Decoder;
