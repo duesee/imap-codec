@@ -1,24 +1,22 @@
 #![no_main]
 
+#[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
+use imap_codec::response::Code;
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{Code, Greeting},
+    response::Greeting,
 };
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Greeting| {
     // TODO(#30): Skip certain generations for now as we know they need to be fixed.
     //            The goal is to not skip anything eventually.
+    #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
     if let Some(ref code) = test.code {
         match code {
-            #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
             Code::Referral(_) => {
-                // FIXME(#30)
-                return;
-            }
-            Code::Other(_) => {
                 // FIXME(#30)
                 return;
             }

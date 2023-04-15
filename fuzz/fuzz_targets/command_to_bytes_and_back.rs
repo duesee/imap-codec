@@ -1,7 +1,5 @@
 #![no_main]
 
-#[cfg(feature = "ext_enable")]
-use imap_codec::message::CapabilityEnable;
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
@@ -9,13 +7,6 @@ use imap_codec::{
     command::{search::SearchKey, Command, CommandBody},
 };
 use libfuzzer_sys::fuzz_target;
-
-#[cfg(feature = "ext_enable")]
-fn ignore_capabilities_enable(capabilities: &[CapabilityEnable]) -> bool {
-    capabilities
-        .iter()
-        .any(|capability| matches!(capability, CapabilityEnable::Other(_)))
-}
 
 fn ignore_search_key_and(sk: &SearchKey) -> bool {
     match sk {
@@ -34,13 +25,6 @@ fuzz_target!(|test: Command| {
     //            The goal is to not skip anything eventually.
     match test.body {
         CommandBody::Search { ref criteria, .. } if ignore_search_key_and(criteria) => {
-            // FIXME(#30)
-            return;
-        }
-        #[cfg(feature = "ext_enable")]
-        CommandBody::Enable {
-            ref capabilities, ..
-        } if ignore_capabilities_enable(capabilities.as_ref()) => {
             // FIXME(#30)
             return;
         }
