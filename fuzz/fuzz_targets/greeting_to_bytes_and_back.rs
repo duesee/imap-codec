@@ -14,14 +14,9 @@ fuzz_target!(|test: Greeting| {
     // TODO(#30): Skip certain generations for now as we know they need to be fixed.
     //            The goal is to not skip anything eventually.
     #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-    if let Some(ref code) = test.code {
-        match code {
-            Code::Referral(_) => {
-                // FIXME(#30)
-                return;
-            }
-            _ => {}
-        }
+    if let Some(Code::Referral(_)) = test.code {
+        // FIXME(#30)
+        return;
     }
 
     #[cfg(feature = "debug")]
