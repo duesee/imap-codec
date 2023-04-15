@@ -28,8 +28,8 @@ fuzz_target!(|test: Response| {
                 }
             }
         }
-        #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
         Response::Status(ref status) => {
+            #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
             if let Some(Code::Referral(_)) = status.code() {
                 // FIXME(#30)
                 return;
@@ -53,7 +53,6 @@ fuzz_target!(|test: Response| {
             }
             _ => {}
         },
-        _ => {}
     }
 
     #[cfg(feature = "debug")]
