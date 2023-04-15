@@ -1,6 +1,6 @@
 use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
 use chrono::{FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
-use imap_types::message::{MyDateTime, MyNaiveDate};
+use imap_types::message::{DateTime, MyNaiveDate};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
@@ -78,7 +78,7 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 ///              date-day-fixed "-" date-month "-" date-year SP
 ///              time SP zone
 ///              DQUOTE`
-pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
+pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
     let mut parser = delimited(
         DQUOTE,
         tuple((
@@ -105,7 +105,7 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], MyDateTime> {
 
             // TODO: Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, MyDateTime(datetime)))
+                Ok((remaining, DateTime(datetime)))
             } else {
                 Err(nom::Err::Failure(nom::error::Error::new(
                     remaining,
@@ -323,7 +323,7 @@ mod tests {
             NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
-        let datetime = MyDateTime(
+        let datetime = DateTime(
             FixedOffset::east_opt(3600)
                 .unwrap()
                 .from_local_datetime(&local_datetime)

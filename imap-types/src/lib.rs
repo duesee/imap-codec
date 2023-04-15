@@ -203,7 +203,7 @@ pub mod message {
     pub use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
     pub use crate::rfc3501::{
         core::{Charset, Tag},
-        datetime::{MyDateTime, MyNaiveDate},
+        datetime::{DateTime, MyNaiveDate},
         flag::{Flag, FlagError, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
         mailbox::{Mailbox, MailboxOther},
         section::{Part, PartSpecifier, Section},

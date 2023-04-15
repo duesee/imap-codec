@@ -9,7 +9,7 @@ use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
     message::{
-        AuthMechanismOther, FlagExtension, Mailbox, MailboxOther, MyDateTime, MyNaiveDate, Tag,
+        AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, MyNaiveDate, Tag,
     },
     response::{
         data::{Capability, QuotedChar},
@@ -201,7 +201,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
     }
 }
 
-impl<'a> Arbitrary<'a> for MyDateTime {
+impl<'a> Arbitrary<'a> for DateTime {
     fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         // FIXME(#30): make arbitrary :-)
 
@@ -210,7 +210,7 @@ impl<'a> Arbitrary<'a> for MyDateTime {
             NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
-        Ok(MyDateTime(
+        Ok(DateTime(
             FixedOffset::east_opt(3600)
                 .unwrap()
                 .from_local_datetime(&local_datetime)
