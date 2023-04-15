@@ -15,44 +15,28 @@ fuzz_target!(|test: Response| {
     // TODO(#30): Skip certain generations for now as we know they need to be fixed.
     //            The goal is to not skip anything eventually.
     match test {
-        Response::Data(ref data) => {
-            if let Data::Fetch { ref attributes, .. } = data {
-                for attribute in attributes.as_ref().iter() {
-                    match attribute {
-                        FetchAttributeValue::Body(_) | FetchAttributeValue::BodyStructure(_) => {
-                            // FIXME(#30): Body(Structure)
-                            return;
-                        }
-                        _ => {}
+        Response::Data(Data::Fetch { ref attributes, .. }) => {
+            for attribute in attributes.as_ref().iter() {
+                match attribute {
+                    FetchAttributeValue::Body(_) | FetchAttributeValue::BodyStructure(_) => {
+                        // FIXME(#30): Body(Structure)
+                        return;
                     }
+                    _ => {}
                 }
             }
         }
-        Response::Status(ref status) => {
-            #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-            if let Some(Code::Referral(_)) = status.code() {
-                // FIXME(#30)
-                return;
-            }
-        }
-        Response::Continue(ref continue_request) => match continue_request {
-            #[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-            Continue::Basic {
-                code: Some(Code::Referral(_)),
-                ..
-            } => {
-                // FIXME(#30)
-                return;
-            }
+        Response::Continue(Continue::Basic {
+            code: None,
+            ref text,
+        }) => {
             // Oh, IMAP :-/
-            Continue::Basic { code: None, text } => {
-                if _base64.decode(text.inner()).is_ok() {
-                    // FIXME(#30)
-                    return;
-                }
+            if _base64.decode(text.inner()).is_ok() {
+                // FIXME(#30)
+                return;
             }
-            _ => {}
-        },
+        }
+        _ => {}
     }
 
     #[cfg(feature = "debug")]
