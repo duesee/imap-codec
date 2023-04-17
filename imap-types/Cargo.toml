@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [features]
+arbitrary = ["dep:arbitrary", "unchecked"]
 default = []
 bounded-static = ["dep:bounded-static", "bounded-static/derive"]
 serde = ["dep:serde", "chrono/serde"]
