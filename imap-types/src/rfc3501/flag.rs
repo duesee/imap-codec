@@ -183,6 +183,18 @@ impl<'a> FlagNameAttribute<'a> {
     }
 }
 
+impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
+    fn from(atom: Atom<'a>) -> Self {
+        match atom.as_ref().to_ascii_lowercase().as_ref() {
+            "noinferiors" => Self::Noinferiors,
+            "noselect" => Self::Noselect,
+            "marked" => Self::Marked,
+            "unmarked" => Self::Unmarked,
+            _ => Self::Extension(atom),
+        }
+    }
+}
+
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
