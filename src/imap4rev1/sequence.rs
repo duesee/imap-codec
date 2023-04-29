@@ -11,7 +11,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::core::nz_number;
+use crate::imap4rev1::core::nz_number;
 
 /// `sequence-set = (seq-number / seq-range) ["," sequence-set]`
 ///

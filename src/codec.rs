@@ -7,8 +7,8 @@ use imap_types::{
 };
 
 #[cfg(feature = "ext_idle")]
-use crate::extensions::rfc2177::idle_done;
-use crate::rfc3501::{
+use crate::extensions::idle::idle_done;
+use crate::imap4rev1::{
     command::{authenticate_data, command},
     response::{greeting, response},
 };

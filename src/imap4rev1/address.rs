@@ -6,7 +6,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::core::nstring;
+use crate::imap4rev1::core::nstring;
 
 /// `address = "("
 ///             addr-name SP

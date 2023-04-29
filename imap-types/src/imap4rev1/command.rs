@@ -15,11 +15,11 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
-use crate::extensions::rfc4987::CompressionAlgorithm;
+use crate::extensions::compress::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
-use crate::extensions::rfc5161::CapabilityEnable;
+use crate::extensions::enable::CapabilityEnable;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::{QuotaSet, SetQuotaError};
+use crate::extensions::quota::{QuotaSet, SetQuotaError};
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
@@ -1807,11 +1807,11 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     #[cfg(feature = "ext_compress")]
-    use crate::extensions::rfc4987::CompressionAlgorithm;
+    use crate::extensions::compress::CompressionAlgorithm;
     #[cfg(feature = "ext_enable")]
-    use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
+    use crate::extensions::enable::{CapabilityEnable, Utf8Kind};
     #[cfg(feature = "ext_quota")]
-    use crate::extensions::rfc9208::{QuotaSet, Resource, ResourceOther};
+    use crate::extensions::quota::{QuotaSet, Resource, ResourceOther};
     use crate::{
         codec::Encode,
         command::{

@@ -10,7 +10,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{core::Atom, rfc3501::core::AtomError};
+use crate::{core::Atom, imap4rev1::core::AtomError};
 
 /// There are two types of flags in IMAP4rev1: System and keyword flags.
 ///

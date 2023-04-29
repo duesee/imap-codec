@@ -22,15 +22,15 @@ use nom::{
     IResult,
 };
 
-#[cfg(feature = "ext_idle")]
-use crate::extensions::rfc2177::idle;
 #[cfg(feature = "ext_compress")]
-use crate::extensions::rfc4987::compress;
+use crate::extensions::compress::compress;
 #[cfg(feature = "ext_enable")]
-use crate::extensions::rfc5161::enable;
+use crate::extensions::enable::enable;
+#[cfg(feature = "ext_idle")]
+use crate::extensions::idle::idle;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::{getquota, getquotaroot, setquota};
-use crate::rfc3501::{
+use crate::extensions::quota::{getquota, getquotaroot, setquota};
+use crate::imap4rev1::{
     auth_type,
     core::{astring, atom, base64, charset, literal, number, tag_imap},
     datetime::{date, date_time},

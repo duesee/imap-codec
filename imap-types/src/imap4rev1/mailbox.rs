@@ -14,7 +14,7 @@ use thiserror::Error;
 
 use crate::{
     core::{AString, IString},
-    rfc3501::core::{impl_try_from, LiteralError},
+    imap4rev1::core::{impl_try_from, LiteralError},
     utils::indicators::is_list_char,
 };
 

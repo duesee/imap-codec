@@ -15,24 +15,24 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
-use crate::extensions::rfc4987::CompressionAlgorithm;
+use crate::extensions::compress::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
-use crate::extensions::rfc5161::CapabilityEnable;
+use crate::extensions::enable::CapabilityEnable;
 #[cfg(feature = "ext_literal")]
-use crate::extensions::rfc7888::LiteralCapability;
+use crate::extensions::literal::LiteralCapability;
 #[cfg(feature = "ext_quota")]
 use crate::{
     core::AString,
-    extensions::rfc9208::{QuotaError, QuotaGet, QuotaRootError, Resource},
+    extensions::quota::{QuotaError, QuotaGet, QuotaRootError, Resource},
 };
 use crate::{
     core::{Atom, NonEmptyVec},
+    imap4rev1::core::{impl_try_from, TextError},
     message::{AuthMechanism, Charset, Flag, FlagNameAttribute, FlagPerm, Mailbox, Tag},
     response::{
         data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
         Text,
     },
-    rfc3501::core::{impl_try_from, TextError},
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

@@ -23,7 +23,7 @@ use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
 
 #[cfg(feature = "ext_compress")]
-use crate::extensions::rfc4987::CompressionAlgorithm;
+use crate::extensions::compress::CompressionAlgorithm;
 use crate::{
     codec::utils::{join_serializable, List1AttributeValueOrNil, List1OrNil},
     command::{
@@ -36,8 +36,8 @@ use crate::{
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{
-        AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagFetch, FlagNameAttribute,
-        FlagPerm, Mailbox, MailboxOther, MyNaiveDate, Part, Section, Tag,
+        AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagExtension, FlagFetch,
+        FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, MyNaiveDate, Part, Section, Tag,
     },
     response::{
         data::{
@@ -47,7 +47,6 @@ use crate::{
         },
         Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
-    rfc3501::flag::FlagExtension,
     utils::escape_quoted,
 };
 

@@ -10,8 +10,8 @@ use nom::{
 };
 
 #[cfg(feature = "ext_quota")]
-use crate::rfc3501::core::number64;
-use crate::rfc3501::core::{number, nz_number};
+use crate::imap4rev1::core::number64;
+use crate::imap4rev1::core::{number, nz_number};
 
 /// `status-att = "MESSAGES" /
 ///               "RECENT" /

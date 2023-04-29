@@ -6,7 +6,7 @@ use abnf_core::streaming::SP;
 use imap_types::{
     command::CommandBody,
     core::{AString, NonEmptyVec},
-    extensions::rfc9208::{QuotaGet, QuotaSet, Resource},
+    extensions::quota::{QuotaGet, QuotaSet, Resource},
     response::Data,
 };
 use nom::{
@@ -17,7 +17,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::{
+use crate::imap4rev1::{
     core::{astring, atom, number64},
     mailbox::mailbox,
 };
@@ -207,7 +207,7 @@ mod tests {
     use crate::{
         codec::Decode,
         command::{status::StatusAttribute, Command, CommandBody},
-        imap_types::extensions::rfc9208::ResourceOther,
+        imap_types::extensions::quota::ResourceOther,
         message::Mailbox,
     };
 
