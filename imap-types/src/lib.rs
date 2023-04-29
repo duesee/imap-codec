@@ -151,7 +151,7 @@
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
-mod rfc3501;
+mod imap4rev1;
 pub mod security;
 mod utils;
 
@@ -189,7 +189,7 @@ pub mod core {
     //!             └───────┘ └──────┘
     //! ```
 
-    pub use crate::rfc3501::core::{
+    pub use crate::imap4rev1::core::{
         AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted,
     };
 }
@@ -198,10 +198,10 @@ pub mod message {
     //! # Types used in commands and responses
 
     #[cfg(feature = "ext_compress")]
-    pub use crate::extensions::rfc4987::CompressionAlgorithm;
+    pub use crate::extensions::compress::CompressionAlgorithm;
     #[cfg(feature = "ext_enable")]
-    pub use crate::extensions::rfc5161::{CapabilityEnable, Utf8Kind};
-    pub use crate::rfc3501::{
+    pub use crate::extensions::enable::{CapabilityEnable, Utf8Kind};
+    pub use crate::imap4rev1::{
         core::{Charset, Tag},
         datetime::{DateTime, MyNaiveDate},
         flag::{Flag, FlagError, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
@@ -214,7 +214,7 @@ pub mod message {
 pub mod command {
     //! # Types used in commands
 
-    pub use crate::rfc3501::{
+    pub use crate::imap4rev1::{
         command::{
             AppendError, AuthenticateData, Command, CommandBody, CopyError, ListError, LoginError,
             RenameError,
@@ -226,47 +226,49 @@ pub mod command {
     pub mod status {
         //! # Types used in STATUS command
 
-        pub use crate::rfc3501::status_attributes::StatusAttribute;
+        pub use crate::imap4rev1::status_attributes::StatusAttribute;
     }
 
     pub mod search {
         //! # Types used in SEARCH command
 
-        pub use crate::rfc3501::command::SearchKey;
+        pub use crate::imap4rev1::command::SearchKey;
     }
 
     pub mod fetch {
         //! # Types used in FETCH command
 
-        pub use crate::rfc3501::fetch_attributes::{FetchAttribute, Macro, MacroOrFetchAttributes};
+        pub use crate::imap4rev1::fetch_attributes::{
+            FetchAttribute, Macro, MacroOrFetchAttributes,
+        };
     }
 
     pub mod store {
         //! # Types used in STORE command
-        pub use crate::rfc3501::flag::{StoreResponse, StoreType};
+        pub use crate::imap4rev1::flag::{StoreResponse, StoreType};
     }
 
     #[cfg(feature = "ext_quota")]
     pub mod quota {
-        pub use crate::extensions::rfc9208::SetQuotaError;
+        pub use crate::extensions::quota::SetQuotaError;
     }
 
     #[cfg(feature = "ext_idle")]
     pub mod idle {
-        pub use crate::extensions::rfc2177::IdleDone;
+        pub use crate::extensions::idle::IdleDone;
     }
 }
 
 pub mod response {
     //! # Types used in responses
 
-    pub use crate::rfc3501::{
+    pub use crate::imap4rev1::{
         core::Text,
         response::{Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status},
     };
 
     pub mod data {
-        pub use crate::rfc3501::{
+        pub use crate::imap4rev1::{
             address::Address,
             body::{
                 BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
@@ -283,7 +285,7 @@ pub mod response {
 
     #[cfg(feature = "ext_quota")]
     pub mod quota {
-        pub use crate::extensions::rfc9208::{QuotaError, QuotaRootError};
+        pub use crate::extensions::quota::{QuotaError, QuotaRootError};
     }
 }
 

@@ -1,8 +1,8 @@
-#[cfg(feature = "ext_idle")]
-pub mod rfc2177;
 #[cfg(feature = "ext_compress")]
-pub mod rfc4987;
+pub mod compress;
 #[cfg(feature = "ext_enable")]
-pub mod rfc5161;
+pub mod enable;
+#[cfg(feature = "ext_idle")]
+pub mod idle;
 #[cfg(feature = "ext_quota")]
-pub mod rfc9208;
+pub mod quota;

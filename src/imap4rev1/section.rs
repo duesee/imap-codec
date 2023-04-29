@@ -14,7 +14,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::core::{astring, nz_number};
+use crate::imap4rev1::core::{astring, nz_number};
 
 /// `section = "[" [section-spec] "]"`
 pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {

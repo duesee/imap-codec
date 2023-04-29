@@ -17,7 +17,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::{
+use crate::imap4rev1::{
     core::{nil, nstring, number, string},
     envelope::envelope,
 };

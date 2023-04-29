@@ -19,7 +19,7 @@ use nom::{
     IResult,
 };
 
-use crate::{rfc3501::mailbox::is_list_wildcards, utils::unescape_quoted};
+use crate::{imap4rev1::mailbox::is_list_wildcards, utils::unescape_quoted};
 
 // ----- number -----
 

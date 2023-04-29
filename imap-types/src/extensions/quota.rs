@@ -45,7 +45,7 @@ use thiserror::Error;
 
 use crate::{
     codec::Encode,
-    rfc3501::core::{impl_try_from, Atom, AtomError},
+    imap4rev1::core::{impl_try_from, Atom, AtomError},
 };
 
 /// A resource type for use in IMAP's QUOTA extension.
@@ -290,7 +290,7 @@ mod tests {
     use std::convert::TryInto;
 
     use super::*;
-    use crate::{codec::Encode, response::Data, rfc3501::command::CommandBody};
+    use crate::{codec::Encode, imap4rev1::command::CommandBody, response::Data};
 
     fn compare_output(items: Vec<(impl Encode, &str)>) {
         for item in items {

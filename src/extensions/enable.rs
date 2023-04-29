@@ -20,9 +20,9 @@ use nom::{
 
 use crate::{
     command::CommandBody,
+    imap4rev1::core::atom,
     message::{CapabilityEnable, Utf8Kind},
     response::Data,
-    rfc3501::core::atom,
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`

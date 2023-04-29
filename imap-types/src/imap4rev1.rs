@@ -8,7 +8,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::rfc3501::core::{impl_try_from, Atom, AtomError};
+use crate::imap4rev1::core::{impl_try_from, Atom, AtomError};
 
 pub mod address;
 pub mod body;

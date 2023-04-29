@@ -19,8 +19,8 @@ use nom::{
 };
 
 #[cfg(feature = "ext_enable")]
-use crate::extensions::rfc5161::enable_data;
-use crate::rfc3501::{
+use crate::extensions::enable::enable_data;
+use crate::imap4rev1::{
     core::{atom, charset, nz_number, tag_imap, text},
     fetch_attributes::msg_att,
     flag::flag_perm,

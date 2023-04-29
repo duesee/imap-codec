@@ -4,7 +4,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::ResourceOther;
+use crate::extensions::quota::ResourceOther;
 use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},

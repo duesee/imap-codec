@@ -16,8 +16,8 @@ use nom::{
 };
 
 #[cfg(feature = "ext_quota")]
-use crate::extensions::rfc9208::{quota_response, quotaroot_response};
-use crate::rfc3501::{
+use crate::extensions::quota::{quota_response, quotaroot_response};
+use crate::imap4rev1::{
     core::{astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string},
     flag::{flag_list, mbx_list_flags},
     status_attributes::status_att_list,

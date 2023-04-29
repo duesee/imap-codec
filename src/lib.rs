@@ -98,7 +98,7 @@ pub mod codec;
     feature = "ext_quota"
 ))]
 mod extensions;
-mod rfc3501;
+mod imap4rev1;
 pub mod utils;
 
 pub use imap_types::{command, core, message, response, state};

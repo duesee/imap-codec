@@ -13,7 +13,7 @@ use nom::{
     IResult,
 };
 
-use crate::rfc3501::{
+use crate::imap4rev1::{
     body::body,
     core::{nstring, number, nz_number},
     datetime::date_time,
