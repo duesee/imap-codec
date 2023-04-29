@@ -1,3 +1,7 @@
 Cargo.lock
 target
 .idea
+
+# Coverage
+**/*.profraw
+coveralls.lcov

@@ -1,8 +1,8 @@
-name: Coverage
+name: Measure test coverage
 
 on:
   workflow_run:
-    workflows: [ "Build & Test" ]
+    workflows: ["Build & Test"]
     types:
       - completed
 
@@ -14,36 +14,30 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install grcov
+
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install toolchain
-        uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
-        with:
-          toolchain: nightly
-          profile: minimal
-          override: true
-
-      - name: Install toolchain | grcov
-        run: cargo install grcov
-
-      - name: Measure coverage
-        run: |
-          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --no-fail-fast
-          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --no-fail-fast --all-features
+      - name: Measure test coverage
         env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-
-      - name: Collect coverage
-        id: coverage
-        uses: actions-rs/grcov@d9881ad44979aa34f846a82abb764b2b8cfbd715
-        with:
-          config: ./assets/coverage/grcov.yml
+          RUSTFLAGS: "-Cinstrument-coverage"
+          LLVM_PROFILE_FILE: "coverage-%m-%p.profraw"
+        run: |
+          cargo test -p imap-codec -p imap-types --all-features
+          grcov . \
+            --source-dir . \
+            --binary-path target/debug \
+            --branch \
+            --keep-only '{src/**,imap-types/src/**}' \
+            --output-types "lcov" \
+            --llvm > coveralls.lcov
 
       - name: Upload to Coveralls
-        uses: coverallsapp/github-action@3284643be2c47fb6432518ecec17f1255e8a06a6
+        uses: coverallsapp/github-action@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ steps.coverage.outputs.report }}
+          format: lcov
+          file: coveralls.lcov
