@@ -1,8 +1,6 @@
 #![no_main]
 
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-#[cfg(any(feature = "ext_login_referrals", feature = "ext_mailbox_referrals"))]
-use imap_codec::response::Code;
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
