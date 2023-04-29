@@ -328,17 +328,29 @@ mod tests {
                     "INBOX",
                     vec![
                         QuotaSet {
-                            resource: Resource::Message,
-                            limit: 256,
+                            resource: Resource::Storage,
+                            limit: 0,
                         },
                         QuotaSet {
-                            resource: Resource::Storage,
+                            resource: Resource::Message,
                             limit: 512,
+                        },
+                        QuotaSet {
+                            resource: Resource::Mailbox,
+                            limit: 512,
+                        },
+                        QuotaSet {
+                            resource: Resource::AnnotationStorage,
+                            limit: 123,
+                        },
+                        QuotaSet {
+                            resource: Resource::Other(ResourceOther::try_from("Foo").unwrap()),
+                            limit: u64::MAX,
                         },
                     ],
                 )
                 .unwrap(),
-                "SETQUOTA INBOX (MESSAGE 256 STORAGE 512)",
+                "SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
             ),
         ];
 

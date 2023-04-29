@@ -186,3 +186,129 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use bytes::BytesMut;
+    use imap_types::{
+        core::{Literal, NString},
+        message::Section,
+        response::{data::FetchAttributeValue, Data, GreetingKind},
+    };
+    use tokio_util::codec::Decoder;
+
+    use super::*;
+
+    #[test]
+    fn decoder_line() {
+        let tests = [
+            (b"".as_ref(), Ok(None)),
+            (b"* ", Ok(None)),
+            (b"OK ...\r", Ok(None)),
+            (
+                b"\n",
+                Ok(Some(OutcomeClient::Greeting(
+                    Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
+                ))),
+            ),
+            (b"", Ok(None)),
+            (b"xxxx", Ok(None)),
+            (b"\r\n", Err(ImapClientCodecError::ResponseParsingFailed)),
+        ];
+
+        let mut src = BytesMut::new();
+        let mut codec = ImapClientCodec::new(1024);
+
+        for (test, expected) in tests {
+            src.extend_from_slice(test);
+            let got = codec.decode(&mut src);
+
+            assert_eq!(expected, got);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+        }
+    }
+
+    #[test]
+    fn decoder_literal() {
+        let tests = [
+            (
+                b"* OK ...\r\n".as_ref(),
+                Ok(Some(OutcomeClient::Greeting(
+                    Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
+                ))),
+            ),
+            (b"* 12 FETCH (BODY[HEADER] {3}", Ok(None)),
+            (b"\r", Ok(None)),
+            (b"\n", Ok(None)),
+            (b"a", Ok(None)),
+            (b"bc)", Ok(None)),
+            (b"\r", Ok(None)),
+            (
+                b"\n",
+                Ok(Some(OutcomeClient::Response(Response::Data(
+                    Data::fetch(
+                        12,
+                        vec![FetchAttributeValue::BodyExt {
+                            section: Some(Section::Header(None)),
+                            origin: None,
+                            data: NString(Some(Literal::try_from("abc").unwrap().into())),
+                        }],
+                    )
+                    .unwrap(),
+                )))),
+            ),
+        ];
+
+        let mut src = BytesMut::new();
+        let mut codec = ImapClientCodec::new(1024);
+
+        for (test, expected) in tests {
+            src.extend_from_slice(test);
+            let got = codec.decode(&mut src);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn decoder_error() {
+        let tests = [
+            // We still need to process the greeting first.
+            (
+                b"* OK ...\r\n".as_ref(),
+                Ok(Some(OutcomeClient::Greeting(
+                    Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
+                ))),
+            ),
+            (
+                b"xxx\r\n".as_ref(),
+                Err(ImapClientCodecError::ResponseParsingFailed),
+            ),
+            (
+                b"* search 1\n",
+                Err(ImapClientCodecError::Line(LineError::NotCrLf)),
+            ),
+            (
+                b"* 1 fetch (BODY[] {17}\r\naaaaaaaaaaaaaaaa)\r\n",
+                Err(ImapClientCodecError::Literal(LiteralError::TooLarge(17))),
+            ),
+        ];
+
+        let mut src = BytesMut::new();
+        let mut codec = ImapClientCodec::new(16);
+
+        for (test, expected) in tests {
+            src.extend_from_slice(test);
+            let got = codec.decode(&mut src);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+}

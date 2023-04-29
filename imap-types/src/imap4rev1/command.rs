@@ -1800,9 +1800,7 @@ pub enum SearchKey<'a> {
 mod tests {
     #[cfg(feature = "ext_sasl_ir")]
     use std::borrow::Cow;
-    #[cfg(feature = "ext_sasl_ir")]
-    use std::convert::TryFrom;
-    use std::convert::TryInto;
+    use std::convert::{TryFrom, TryInto};
 
     use chrono::DateTime as ChronoDateTime;
 
@@ -1819,10 +1817,10 @@ mod tests {
             search::SearchKey,
             status::StatusAttribute,
             store::{StoreResponse, StoreType},
-            CommandBody, ListMailbox,
+            CommandBody, ListMailbox, SeqOrUid, Sequence, SequenceSet,
         },
         core::{AString, IString},
-        message::{AuthMechanism, DateTime, Flag, Part, Section},
+        message::{AuthMechanism, Charset, DateTime, Flag, Part, Section},
     };
     #[cfg(feature = "ext_sasl_ir")]
     use crate::{command::Command, message::Tag, security::Secret};
@@ -1933,11 +1931,28 @@ mod tests {
                 ),
                 true,
             ),
-            //Command::search(None, SearchKey::And(vec![SearchKey::SequenceSet(vec![Sequence::Single(SeqNo::Value(42))])]), true),
+            CommandBody::search(
+                None,
+                SearchKey::And(
+                    vec![SearchKey::SequenceSet(SequenceSet(
+                        vec![Sequence::Single(SeqOrUid::Value(42.try_into().unwrap()))]
+                            .try_into()
+                            .unwrap(),
+                    ))]
+                    .try_into()
+                    .unwrap(),
+                ),
+                true,
+            ),
             CommandBody::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
             CommandBody::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
             CommandBody::search(
                 None,
+                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                true,
+            ),
+            CommandBody::search(
+                Some(Charset::try_from("UTF-8").unwrap()),
                 SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
                 true,
             ),
