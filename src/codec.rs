@@ -102,17 +102,66 @@ impl<'a> Decode<'a> for Response<'a> {
 mod tests {
     use std::{convert::TryFrom, num::NonZeroU32};
 
+    #[cfg(feature = "ext_idle")]
+    use imap_types::extensions::idle::IdleDone;
     use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
         message::Mailbox,
-        response::{data::FetchAttributeValue, Data, Response},
+        response::{data::FetchAttributeValue, Data, Greeting, GreetingKind, Response},
     };
 
     use super::{Decode, DecodeError};
 
     #[test]
-    fn decode_command() {
+    fn test_decode_greeting() {
+        let tests = [
+            // Ok
+            (
+                b"* OK ...\r\n".as_ref(),
+                Ok((
+                    b"".as_ref(),
+                    Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
+                )),
+            ),
+            (
+                b"* ByE .\r\n???".as_ref(),
+                Ok((
+                    b"???".as_ref(),
+                    Greeting::new(GreetingKind::Bye, None, ".").unwrap(),
+                )),
+            ),
+            (
+                b"* preaUth x\r\n?".as_ref(),
+                Ok((
+                    b"?".as_ref(),
+                    Greeting::new(GreetingKind::PreAuth, None, "x").unwrap(),
+                )),
+            ),
+            // Incomplete
+            (b"*".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* O".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK .".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK .\r".as_ref(), Err(DecodeError::Incomplete)),
+            // Failed
+            (b"**".as_ref(), Err(DecodeError::Failed)),
+            (b"* NO x\r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = Greeting::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_decode_command() {
         let tests = [
             // Ok
             (
@@ -170,6 +219,9 @@ mod tests {
                 b"a select {5}\r\nxxx".as_ref(),
                 Err(DecodeError::Incomplete),
             ),
+            // Failed
+            (b"* noop\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"A  noop\r\n".as_ref(), Err(DecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -181,8 +233,55 @@ mod tests {
         }
     }
 
+    // #[cfg(feature = "ext_idle")]
+    // #[test]
+    // fn test_decode_authenticate_data() {
+    //     let tests = [
+    //         // Ok
+    //         // Incomplete
+    //         // Failed
+    //     ];
+    //
+    //     for (test, expected) in tests {
+    //         let got = AuthenticateData::decode(test);
+    //
+    //         dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+    //
+    //         assert_eq!(expected, got);
+    //     }
+    // }
+
+    #[cfg(feature = "ext_idle")]
     #[test]
-    fn decode_response() {
+    fn test_decode_idle() {
+        let tests = [
+            // Ok
+            (b"done\r\n".as_ref(), Ok((b"".as_ref(), IdleDone))),
+            (b"done\r\n?".as_ref(), Ok((b"?".as_ref(), IdleDone))),
+            // Incomplete
+            (b"d".as_ref(), Err(DecodeError::Incomplete)),
+            (b"do".as_ref(), Err(DecodeError::Incomplete)),
+            (b"don".as_ref(), Err(DecodeError::Incomplete)),
+            (b"done".as_ref(), Err(DecodeError::Incomplete)),
+            (b"done\r".as_ref(), Err(DecodeError::Incomplete)),
+            // Failed
+            (b"donee\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" done\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"done \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" done \r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = IdleDone::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_decode_response() {
         let tests = [
             // Incomplete
             (b"".as_ref(), Err(DecodeError::Incomplete)),
@@ -232,6 +331,9 @@ mod tests {
                 b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
                 Err(DecodeError::Incomplete),
             ),
+            // Failed
+            (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"A search\r\n".as_ref(), Err(DecodeError::Failed)),
         ];
 
         for (test, expected) in tests {

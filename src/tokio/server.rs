@@ -39,7 +39,7 @@ impl PartialEq for ImapServerCodecError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Io(error1), Self::Io(error2)) => error1.kind() == error2.kind(),
-            (Self::Line(kind2), Self::Line(kind1)) => kind1 == kind2,
+            (Self::Line(kind1), Self::Line(kind2)) => kind1 == kind2,
             (Self::Literal(kind1), Self::Literal(kind2)) => kind1 == kind2,
             (Self::CommandParsingFailed, Self::CommandParsingFailed) => true,
             (Self::ActionRequired, Self::ActionRequired) => true,
@@ -197,7 +197,7 @@ mod tests {
     };
     use tokio_util::codec::Decoder;
 
-    use super::{Action, ImapServerCodec, ImapServerCodecError, OutcomeServer};
+    use super::*;
 
     #[test]
     fn decoder_line() {
@@ -288,15 +288,44 @@ mod tests {
                 Err(ImapServerCodecError::CommandParsingFailed),
             ),
             (
-                b"a noop\r\n",
+                b"a noop\n",
+                Err(ImapServerCodecError::Line(LineError::NotCrLf)),
+            ),
+            (
+                b"a login alice {16}\r\n",
+                Ok(Some(OutcomeServer::ActionRequired(Action::SendLiteralAck(
+                    16,
+                )))),
+            ),
+            (
+                b"aaaaaaaaaaaaaaaa\r\n",
                 Ok(Some(OutcomeServer::Command(
-                    Command::new("a", CommandBody::Noop).unwrap(),
+                    Command::new(
+                        "a",
+                        CommandBody::login("alice", Literal::try_from("aaaaaaaaaaaaaaaa").unwrap())
+                            .unwrap(),
+                    )
+                    .unwrap(),
                 ))),
+            ),
+            (
+                b"a login alice {17}\r\n",
+                Ok(Some(OutcomeServer::ActionRequired(
+                    Action::SendLiteralReject(17),
+                ))),
+            ),
+            (
+                b"a login alice {1-}\r\n",
+                Err(ImapServerCodecError::Literal(LiteralError::BadNumber)),
+            ),
+            (
+                b"a login alice }\r\n",
+                Err(ImapServerCodecError::Literal(LiteralError::NoOpeningBrace)),
             ),
         ];
 
         let mut src = BytesMut::new();
-        let mut codec = ImapServerCodec::new(1024);
+        let mut codec = ImapServerCodec::new(16);
 
         for (test, expected) in tests {
             src.extend_from_slice(test);
