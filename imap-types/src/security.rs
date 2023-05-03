@@ -138,8 +138,8 @@ mod tests {
                 tok.duration_since(tik).as_nanos()
             }
 
-            let a = Secret::new(str::repeat("A", 4096));
-            let b = Secret::new(str::repeat("B", 4096));
+            let a = Secret::new(str::repeat("A", 1024 * 1024));
+            let b = Secret::new(str::repeat("B", 1024 * 1024));
 
             let took1 = compare_eq(a.clone(), a.clone());
             println!("{}", took1);
@@ -170,8 +170,8 @@ mod tests {
                 tok.duration_since(tik).as_nanos()
             }
 
-            let a = str::repeat("A", 4096);
-            let b = str::repeat("B", 4096);
+            let a = str::repeat("A", 1024 * 1024);
+            let b = str::repeat("B", 1024 * 1024);
 
             let took1 = compare_eq(a.clone(), a.clone());
             println!("{}", took1);
@@ -211,8 +211,8 @@ mod tests {
                 tok.duration_since(tik).as_nanos()
             }
 
-            let a = Secret::new(str::repeat("A", 4096));
-            let b = Secret::new(str::repeat("B", 4096));
+            let a = Secret::new(str::repeat("A", 1024 * 1024));
+            let b = Secret::new(str::repeat("B", 1024 * 1024));
 
             let took1 = compare_eq(a.clone(), a.clone());
             println!("{}", took1);
@@ -243,8 +243,8 @@ mod tests {
                 tok.duration_since(tik).as_nanos()
             }
 
-            let a = str::repeat("A", 4096);
-            let b = str::repeat("B", 4096);
+            let a = str::repeat("A", 1024 * 1024);
+            let b = str::repeat("B", 1024 * 1024);
 
             let took1 = compare_eq(a.clone(), a.clone());
             println!("{}", took1);
