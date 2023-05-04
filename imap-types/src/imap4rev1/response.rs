@@ -23,7 +23,7 @@ use crate::extensions::literal::LiteralCapability;
 #[cfg(feature = "ext_quota")]
 use crate::{
     core::AString,
-    extensions::quota::{QuotaError, QuotaGet, QuotaRootError, Resource},
+    extensions::quota::{QuotaGet, Resource},
 };
 use crate::{
     core::{Atom, NonEmptyVec},
@@ -581,39 +581,6 @@ impl<'a> Data<'a> {
             attributes: attributes.try_into().map_err(FetchError::Attributes)?,
         })
     }
-
-    #[cfg(feature = "ext_quota")]
-    pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, QuotaError<R::Error, Q::Error>>
-    where
-        R: TryInto<AString<'a>>,
-        Q: TryInto<NonEmptyVec<QuotaGet<'a>>>,
-    {
-        Ok(Self::Quota {
-            root: root.try_into().map_err(QuotaError::Root)?,
-            quotas: quotas.try_into().map_err(QuotaError::Quotas)?,
-        })
-    }
-
-    #[cfg(feature = "ext_quota")]
-    pub fn quota_root<M, R>(
-        mailbox: M,
-        roots: R,
-    ) -> Result<Self, QuotaRootError<M::Error, R::Error>>
-    where
-        M: TryInto<Mailbox<'a>>,
-        R: TryInto<Vec<AString<'a>>>,
-    {
-        Ok(Self::QuotaRoot {
-            mailbox: mailbox.try_into().map_err(QuotaRootError::Mailbox)?,
-            roots: roots.try_into().map_err(QuotaRootError::Roots)?,
-        })
-    }
-
-    // TODO
-    // #[cfg(feature = "ext_enable")]
-    // pub fn enable() -> Self {
-    //     unimplemented!()
-    // }
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]

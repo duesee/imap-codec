@@ -3,6 +3,8 @@ use std::convert::TryFrom;
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
+#[cfg(feature = "ext_enable")]
+use crate::extensions::enable::CapabilityEnableOther;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::ResourceOther;
 use crate::{
@@ -57,6 +59,8 @@ implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { Capability<'a>, Atom<'a> }
 implement_tryfrom! { FlagExtension<'a>, Atom<'a> }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
+#[cfg(feature = "ext_enable")]
+implement_tryfrom! { CapabilityEnableOther<'a>, Atom<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }

@@ -36,3 +36,29 @@ impl Encode for IdleDone {
         writer.write_all(b"DONE\r\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::command::CommandBody;
+
+    #[test]
+    fn test_command_body() {
+        let tests = [(CommandBody::Idle, b"IDLE".as_ref())];
+
+        for (test, expected) in tests {
+            let got = test.encode_detached().unwrap();
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_idle_done() {
+        let tests = [(IdleDone, b"DONE\r\n".as_ref())];
+
+        for (test, expected) in tests {
+            let got = test.encode_detached().unwrap();
+            assert_eq!(expected, got);
+        }
+    }
+}

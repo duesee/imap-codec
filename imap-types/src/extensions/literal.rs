@@ -33,7 +33,21 @@ impl Encode for LiteralCapability {
 mod tests {
     use std::convert::TryFrom;
 
+    use super::*;
     use crate::{codec::Encode, core::Literal};
+
+    #[test]
+    fn test_encoding_of_literal_capability() {
+        let tests = [
+            (LiteralCapability::Plus, b"LITERAL+".as_ref()),
+            (LiteralCapability::Minus, b"LITERAL-"),
+        ];
+
+        for (test, expected) in tests {
+            let got = test.encode_detached().unwrap();
+            assert_eq!(expected, got);
+        }
+    }
 
     #[test]
     fn test_literal_plus() {

@@ -20,7 +20,13 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{codec::Encode, core::Atom};
+use crate::{codec::Encode, command::CommandBody, core::Atom};
+
+impl<'a> CommandBody<'a> {
+    pub fn compress(algorithm: CompressionAlgorithm) -> Self {
+        CommandBody::Compress { algorithm }
+    }
+}
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -28,6 +34,28 @@ use crate::{codec::Encode, core::Atom};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CompressionAlgorithm {
     Deflate,
+}
+
+impl<'a> TryFrom<&'a str> for CompressionAlgorithm {
+    type Error = CompressionAlgorithmError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().as_ref() {
+            "deflate" => Ok(Self::Deflate),
+            _ => Err(CompressionAlgorithmError::Invalid),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for CompressionAlgorithm {
+    type Error = CompressionAlgorithmError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().as_slice() {
+            b"deflate" => Ok(Self::Deflate),
+            _ => Err(CompressionAlgorithmError::Invalid),
+        }
+    }
 }
 
 impl<'a> TryFrom<Atom<'a>> for CompressionAlgorithm {
@@ -44,7 +72,7 @@ impl<'a> TryFrom<Atom<'a>> for CompressionAlgorithm {
 impl AsRef<str> for CompressionAlgorithm {
     fn as_ref(&self) -> &str {
         match self {
-            CompressionAlgorithm::Deflate => "deflate",
+            CompressionAlgorithm::Deflate => "DEFLATE",
         }
     }
 }
@@ -59,6 +87,71 @@ impl Encode for CompressionAlgorithm {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum CompressionAlgorithmError {
-    #[error("Invalid compression algorithm. Allowed value: `COMPRESS`.")]
+    #[error("Invalid compression algorithm. Allowed value: `DEFLATE`.")]
     Invalid,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_command_body() {
+        let tests = [(
+            CommandBody::compress(CompressionAlgorithm::Deflate),
+            b"COMPRESS DEFLATE".as_ref(),
+        )];
+
+        for (test, expected) in tests {
+            let got = test.encode_detached().unwrap();
+            assert_eq!(expected, got.as_slice());
+        }
+    }
+
+    #[test]
+    fn test_encoding() {
+        let tests = [(CompressionAlgorithm::Deflate, "DEFLATE")];
+
+        for (object, string) in tests {
+            // Create from `&[u8]`.
+            let got = CompressionAlgorithm::try_from(string.as_bytes()).unwrap();
+            assert_eq!(object, got);
+
+            // Create from `&str`.
+            let got = CompressionAlgorithm::try_from(string).unwrap();
+            assert_eq!(object, got);
+
+            // Create from `Atom`.
+            let got = CompressionAlgorithm::try_from(Atom::try_from(string).unwrap()).unwrap();
+            assert_eq!(object, got);
+
+            // Encode
+            let encoded = object.encode_detached().unwrap();
+            assert_eq!(encoded, string.as_bytes());
+
+            // AsRef
+            let encoded = object.as_ref();
+            assert_eq!(encoded, string);
+        }
+    }
+
+    #[test]
+    fn test_encoding_failed() {
+        let tests = [
+            "", "D", "DE", "DEF", "DEFL", "DEFLA", "DEFLAT", "DEFLATX", "DEFLATEX", "XDEFLATE",
+        ];
+
+        for string in tests {
+            // Create from `&[u8]`.
+            assert!(CompressionAlgorithm::try_from(string.as_bytes()).is_err());
+
+            // Create from `&str`.
+            assert!(CompressionAlgorithm::try_from(string).is_err());
+
+            if !string.is_empty() {
+                // Create from `Atom`.
+                assert!(CompressionAlgorithm::try_from(Atom::try_from(string).unwrap()).is_err());
+            }
+        }
+    }
 }

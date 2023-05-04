@@ -25,3 +25,39 @@ pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
         CommandBody::Compress { algorithm }
     })(input)
 }
+
+#[cfg(test)]
+mod tests {
+    use imap_types::{command::CommandBody, message::CompressionAlgorithm};
+
+    use super::*;
+
+    #[test]
+    fn test_compress() {
+        let tests = [
+            (
+                b"compress deflate ".as_ref(),
+                Ok((
+                    b" ".as_ref(),
+                    CommandBody::compress(CompressionAlgorithm::Deflate),
+                )),
+            ),
+            (b"compress deflat ".as_ref(), Err(())),
+            (b"compres deflate ".as_ref(), Err(())),
+            (b"compress  deflate ".as_ref(), Err(())),
+        ];
+
+        for (test, expected) in tests {
+            match expected {
+                Ok((expected_rem, expected_object)) => {
+                    let (got_rem, got_object) = compress(test).unwrap();
+                    assert_eq!(expected_object, got_object);
+                    assert_eq!(expected_rem, got_rem);
+                }
+                Err(_) => {
+                    assert!(compress(test).is_err())
+                }
+            }
+        }
+    }
+}

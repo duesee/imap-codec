@@ -19,7 +19,7 @@ use crate::extensions::compress::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnable;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::quota::{QuotaSet, SetQuotaError};
+use crate::extensions::quota::QuotaSet;
 use crate::{
     command::{
         fetch::MacroOrFetchAttributes,
@@ -1509,53 +1509,6 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    #[cfg(feature = "ext_enable")]
-    pub fn enable<C>(capabilities: C) -> Result<Self, C::Error>
-    where
-        C: TryInto<NonEmptyVec<CapabilityEnable<'a>>>,
-    {
-        Ok(CommandBody::Enable {
-            capabilities: capabilities.try_into()?,
-        })
-    }
-
-    #[cfg(feature = "ext_compress")]
-    pub fn compress(algorithm: CompressionAlgorithm) -> Self {
-        CommandBody::Compress { algorithm }
-    }
-
-    #[cfg(feature = "ext_quota")]
-    pub fn get_quota<A>(root: A) -> Result<Self, A::Error>
-    where
-        A: TryInto<AString<'a>>,
-    {
-        Ok(CommandBody::GetQuota {
-            root: root.try_into()?,
-        })
-    }
-
-    #[cfg(feature = "ext_quota")]
-    pub fn get_quota_root<M>(mailbox: M) -> Result<Self, M::Error>
-    where
-        M: TryInto<Mailbox<'a>>,
-    {
-        Ok(CommandBody::GetQuotaRoot {
-            mailbox: mailbox.try_into()?,
-        })
-    }
-
-    #[cfg(feature = "ext_quota")]
-    pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, SetQuotaError<R::Error, S::Error>>
-    where
-        R: TryInto<AString<'a>>,
-        S: TryInto<Vec<QuotaSet<'a>>>,
-    {
-        Ok(CommandBody::SetQuota {
-            root: root.try_into().map_err(SetQuotaError::Root)?,
-            quotas: quotas.try_into().map_err(SetQuotaError::QuotaSet)?,
-        })
-    }
-
     pub fn name(&self) -> &'static str {
         match self {
             Self::Capability => "CAPABILITY",
@@ -1804,12 +1757,6 @@ mod tests {
 
     use chrono::DateTime as ChronoDateTime;
 
-    #[cfg(feature = "ext_compress")]
-    use crate::extensions::compress::CompressionAlgorithm;
-    #[cfg(feature = "ext_enable")]
-    use crate::extensions::enable::{CapabilityEnable, Utf8Kind};
-    #[cfg(feature = "ext_quota")]
-    use crate::extensions::quota::{QuotaSet, Resource, ResourceOther};
     use crate::{
         codec::Encode,
         command::{
@@ -1989,27 +1936,6 @@ mod tests {
             .unwrap(),
             CommandBody::copy("1", "inbox", false).unwrap(),
             CommandBody::copy("1337", "archive", true).unwrap(),
-            #[cfg(feature = "ext_idle")]
-            CommandBody::Idle,
-            #[cfg(feature = "ext_enable")]
-            CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]).unwrap(),
-            #[cfg(feature = "ext_enable")]
-            CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
-            #[cfg(feature = "ext_compress")]
-            CommandBody::compress(CompressionAlgorithm::Deflate),
-            #[cfg(feature = "ext_quota")]
-            CommandBody::get_quota("").unwrap(),
-            #[cfg(feature = "ext_quota")]
-            CommandBody::get_quota_root("INBOX").unwrap(),
-            #[cfg(feature = "ext_quota")]
-            CommandBody::set_quota(
-                "",
-                vec![
-                    QuotaSet::new(Resource::Message, 1337),
-                    QuotaSet::new(Resource::Other(ResourceOther::try_from("spam").unwrap()), 0),
-                ],
-            )
-            .unwrap(),
         ];
 
         for (no, cmd_body) in cmds.into_iter().enumerate() {

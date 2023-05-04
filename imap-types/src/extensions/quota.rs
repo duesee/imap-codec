@@ -33,7 +33,11 @@
 //!     - [StatusAttributeValue::Deleted](crate::response::data::StatusAttributeValue::Deleted)
 //!     - [StatusAttributeValue::DeletedStorage](crate::response::data::StatusAttributeValue::DeletedStorage)
 
-use std::{borrow::Cow, convert::TryFrom, io::Write};
+use std::{
+    borrow::Cow,
+    convert::{TryFrom, TryInto},
+    io::Write,
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -45,8 +49,70 @@ use thiserror::Error;
 
 use crate::{
     codec::Encode,
+    command::CommandBody,
+    core::{AString, NonEmptyVec},
     imap4rev1::core::{impl_try_from, Atom, AtomError},
+    message::Mailbox,
+    response::Data,
 };
+
+impl<'a> CommandBody<'a> {
+    pub fn get_quota<A>(root: A) -> Result<Self, A::Error>
+    where
+        A: TryInto<AString<'a>>,
+    {
+        Ok(CommandBody::GetQuota {
+            root: root.try_into()?,
+        })
+    }
+
+    pub fn get_quota_root<M>(mailbox: M) -> Result<Self, M::Error>
+    where
+        M: TryInto<Mailbox<'a>>,
+    {
+        Ok(CommandBody::GetQuotaRoot {
+            mailbox: mailbox.try_into()?,
+        })
+    }
+
+    pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, SetQuotaError<R::Error, S::Error>>
+    where
+        R: TryInto<AString<'a>>,
+        S: TryInto<Vec<QuotaSet<'a>>>,
+    {
+        Ok(CommandBody::SetQuota {
+            root: root.try_into().map_err(SetQuotaError::Root)?,
+            quotas: quotas.try_into().map_err(SetQuotaError::QuotaSet)?,
+        })
+    }
+}
+
+impl<'a> Data<'a> {
+    pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, QuotaError<R::Error, Q::Error>>
+    where
+        R: TryInto<AString<'a>>,
+        Q: TryInto<NonEmptyVec<QuotaGet<'a>>>,
+    {
+        Ok(Self::Quota {
+            root: root.try_into().map_err(QuotaError::Root)?,
+            quotas: quotas.try_into().map_err(QuotaError::Quotas)?,
+        })
+    }
+
+    pub fn quota_root<M, R>(
+        mailbox: M,
+        roots: R,
+    ) -> Result<Self, QuotaRootError<M::Error, R::Error>>
+    where
+        M: TryInto<Mailbox<'a>>,
+        R: TryInto<Vec<AString<'a>>>,
+    {
+        Ok(Self::QuotaRoot {
+            mailbox: mailbox.try_into().map_err(QuotaRootError::Mailbox)?,
+            roots: roots.try_into().map_err(QuotaRootError::Roots)?,
+        })
+    }
+}
 
 /// A resource type for use in IMAP's QUOTA extension.
 ///
@@ -287,30 +353,20 @@ pub enum SetQuotaError<R, S> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
     use super::*;
-    use crate::{codec::Encode, imap4rev1::command::CommandBody, response::Data};
-
-    fn compare_output(items: Vec<(impl Encode, &str)>) {
-        for item in items {
-            let out = item.0.encode_detached().unwrap();
-            assert_eq!(std::str::from_utf8(&out).unwrap(), item.1);
-        }
-    }
 
     #[test]
     fn test_command_output() {
         let commands = vec![
-            (CommandBody::get_quota("INBOX").unwrap(), "GETQUOTA INBOX"),
-            (CommandBody::get_quota("").unwrap(), "GETQUOTA \"\""),
+            (CommandBody::get_quota("INBOX").unwrap(), b"GETQUOTA INBOX".as_ref()),
+            (CommandBody::get_quota("").unwrap(), b"GETQUOTA \"\""),
             (
                 CommandBody::get_quota_root("MAILBOX").unwrap(),
-                "GETQUOTAROOT MAILBOX",
+                b"GETQUOTAROOT MAILBOX",
             ),
             (
                 CommandBody::set_quota("INBOX", vec![]).unwrap(),
-                "SETQUOTA INBOX ()",
+                b"SETQUOTA INBOX ()",
             ),
             (
                 CommandBody::set_quota(
@@ -321,7 +377,7 @@ mod tests {
                     }],
                 )
                 .unwrap(),
-                "SETQUOTA INBOX (STORAGE 256)",
+                b"SETQUOTA INBOX (STORAGE 256)",
             ),
             (
                 CommandBody::set_quota(
@@ -350,7 +406,7 @@ mod tests {
                     ],
                 )
                 .unwrap(),
-                "SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
+                b"SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
             ),
         ];
 
@@ -370,11 +426,11 @@ mod tests {
                     }],
                 )
                 .unwrap(),
-                "* QUOTA INBOX (MESSAGE 1024 2048)\r\n",
+                b"* QUOTA INBOX (MESSAGE 1024 2048)\r\n".as_ref(),
             ),
             (
                 Data::quota_root("INBOX", vec![]).unwrap(),
-                "* QUOTAROOT INBOX\r\n",
+                b"* QUOTAROOT INBOX\r\n",
             ),
             (
                 Data::quota_root(
@@ -382,10 +438,17 @@ mod tests {
                     vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
                 )
                 .unwrap(),
-                "* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
+                b"* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
             ),
         ];
 
         compare_output(responses)
+    }
+
+    fn compare_output(items: Vec<(impl Encode, &[u8])>) {
+        for item in items {
+            let out = item.0.encode_detached().unwrap();
+            assert_eq!(out, item.1);
+        }
     }
 }
