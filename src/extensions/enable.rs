@@ -10,19 +10,15 @@ use std::convert::TryInto;
 
 use abnf_core::streaming::SP;
 use nom::{
-    branch::alt,
     bytes::streaming::tag_no_case,
-    combinator::{map, value},
+    combinator::map,
     multi::{many0, many1},
     sequence::{preceded, tuple},
     IResult,
 };
 
 use crate::{
-    command::CommandBody,
-    imap4rev1::core::atom,
-    message::{CapabilityEnable, Utf8Kind},
-    response::Data,
+    command::CommandBody, imap4rev1::core::atom, message::CapabilityEnable, response::Data,
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
@@ -53,17 +49,7 @@ pub fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
 }
 
 pub fn capability_enable(input: &[u8]) -> IResult<&[u8], CapabilityEnable> {
-    alt((
-        value(
-            CapabilityEnable::Utf8(Utf8Kind::Accept),
-            tag_no_case(b"UTF8=ACCEPT"),
-        ),
-        value(
-            CapabilityEnable::Utf8(Utf8Kind::Only),
-            tag_no_case(b"UTF8=ONLY"),
-        ),
-        map(atom, CapabilityEnable::Other),
-    ))(input)
+    map(atom, CapabilityEnable::from)(input)
 }
 
 /// `enable-data = "ENABLED" *(SP capability)`

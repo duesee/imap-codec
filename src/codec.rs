@@ -233,7 +233,6 @@ mod tests {
         }
     }
 
-    // #[cfg(feature = "ext_idle")]
     // #[test]
     // fn test_decode_authenticate_data() {
     //     let tests = [
