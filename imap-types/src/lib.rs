@@ -155,6 +155,30 @@ mod imap4rev1;
 pub mod security;
 mod utils;
 
+#[cfg(test)]
+pub mod testing {
+    use crate::codec::Encode;
+
+    pub fn known_answer_test_encode(
+        (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
+    ) {
+        let expected_bytes = expected_bytes.as_ref();
+        let got_bytes = test_object.encode_detached().unwrap();
+        let got_bytes = got_bytes.as_slice();
+
+        if expected_bytes != got_bytes {
+            println!("# Debug (`from_utf8_lossy`, encapsulated by `<<<` and `>>>`)");
+            println!(
+                "Left:  <<<{}>>>\nRight: <<<{}>>>",
+                String::from_utf8_lossy(expected_bytes),
+                String::from_utf8_lossy(got_bytes),
+            );
+            println!("# Debug");
+            panic!("Left:  {:02x?}\nRight: {:02x?}", expected_bytes, got_bytes);
+        }
+    }
+}
+
 // -- API -----------------------------------------------------------------------------------
 
 pub mod codec;
