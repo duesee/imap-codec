@@ -342,7 +342,7 @@ mod tests {
     }
 
     #[test]
-    fn creation_of_sequence_from_range() {
+    fn test_creation_of_sequence_from_range() {
         // 1:*
         let range = ..;
         let seq = Sequence::from(range);
@@ -422,7 +422,7 @@ mod tests {
     }
 
     #[test]
-    fn creation_of_sequence_set_from_str_positive() {
+    fn test_creation_of_sequence_set_from_str_positive() {
         let tests = &[
             (
                 "1",
@@ -501,7 +501,7 @@ mod tests {
     }
 
     #[test]
-    fn creation_of_sequence_set_from_str_negative() {
+    fn test_creation_of_sequence_set_from_str_negative() {
         let tests = &[
             "", "* ", " *", " * ", "1 ", " 1", " 1 ", "01", " 01", "01 ", " 01 ", "*1", ":", ":*",
             "*:", "*: ", "1:2:3",
@@ -515,7 +515,7 @@ mod tests {
     }
 
     #[test]
-    fn serialization_of_some_sequence_sets() {
+    fn test_serialization_of_some_sequence_sets() {
         let tests = [
             (
                 Sequence::Single(SeqOrUid::Value(1.try_into().unwrap())),
@@ -535,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn iteration_over_some_sequence_sets() {
+    fn test_iteration_over_some_sequence_sets() {
         let tests = vec![
             ("*", vec![3]),
             ("1:*", vec![1, 2, 3]),

@@ -94,22 +94,22 @@ pub enum CompressionAlgorithmError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::known_answer_test_encode;
 
     #[test]
-    fn test_command_body() {
+    fn test_encode_command_body_compress() {
         let tests = [(
             CommandBody::compress(CompressionAlgorithm::Deflate),
             b"COMPRESS DEFLATE".as_ref(),
         )];
 
-        for (test, expected) in tests {
-            let got = test.encode_detached().unwrap();
-            assert_eq!(expected, got.as_slice());
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_encoding() {
+    fn test_conversion() {
         let tests = [(CompressionAlgorithm::Deflate, "DEFLATE")];
 
         for (object, string) in tests {
@@ -125,10 +125,6 @@ mod tests {
             let got = CompressionAlgorithm::try_from(Atom::try_from(string).unwrap()).unwrap();
             assert_eq!(object, got);
 
-            // Encode
-            let encoded = object.encode_detached().unwrap();
-            assert_eq!(encoded, string.as_bytes());
-
             // AsRef
             let encoded = object.as_ref();
             assert_eq!(encoded, string);
@@ -136,7 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encoding_failed() {
+    fn test_conversion_failing() {
         let tests = [
             "", "D", "DE", "DEF", "DEFL", "DEFLA", "DEFLAT", "DEFLATX", "DEFLATEX", "XDEFLATE",
         ];

@@ -83,7 +83,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_address() {
+    fn test_parse_address() {
         let (rem, val) = address(b"(nil {3}\r\nxxx \"xxx\" nil)").unwrap();
         assert_eq!(
             val,

@@ -1069,7 +1069,7 @@ mod tests {
     use crate::codec::Encode;
 
     #[test]
-    fn test_atom() {
+    fn test_conversion_atom() {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(&[u8], (Result<Atom, AtomError>, Result<Atom, AtomError>))> = vec![
             (
@@ -1171,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn test_atom_ext() {
+    fn test_conversion_atom_ext() {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &[u8],
@@ -1283,7 +1283,7 @@ mod tests {
     }
 
     #[test]
-    fn test_astring() {
+    fn test_conversion_astring() {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &[u8],
@@ -1414,7 +1414,7 @@ mod tests {
     }
 
     #[test]
-    fn test_istring() {
+    fn test_conversion_istring() {
         assert_eq!(
             IString::try_from("AAA").unwrap(),
             IString::Quoted("AAA".try_into().unwrap())
@@ -1431,7 +1431,7 @@ mod tests {
     }
 
     #[test]
-    fn test_charset() {
+    fn test_encode_charset() {
         let tests = [
             ("bengali", "bengali"),
             ("\"simple\" english", r#""\"simple\" english""#),

@@ -773,15 +773,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fetch() {
-        //let (rem, val) = fetch(b"fetch 1:5 (flags)").unwrap();
-        //println!("{:?}, {:?}", rem, val);
-
+    fn test_parse_fetch() {
         println!("{:#?}", fetch(b"fetch 1:1 (flags)???"));
     }
 
     #[test]
-    fn test_fetch_att() {
+    fn test_parse_fetch_att() {
         let tests = [
             (FetchAttribute::Envelope, "ENVELOPE???"),
             (FetchAttribute::Flags, "FLAGS???"),
@@ -838,7 +835,7 @@ mod tests {
     }
 
     #[test]
-    fn test_search() {
+    fn test_parse_search() {
         use crate::command::{search::SearchKey::*, SeqOrUid::Value, Sequence::*};
 
         let (_rem, val) = search(b"search (uid 5)???").unwrap();
@@ -899,26 +896,10 @@ mod tests {
     }
 
     #[test]
-    fn test_search_key() {
+    fn test_parse_search_key() {
         assert!(search_key(1)(b"1:5|").is_ok());
         assert!(search_key(1)(b"(1:5)|").is_err());
         assert!(search_key(2)(b"(1:5)|").is_ok());
         assert!(search_key(2)(b"((1:5))|").is_err());
-    }
-
-    #[test]
-    #[cfg(feature = "ext_enable")]
-    fn test_enable() {
-        use imap_types::message::{CapabilityEnable, Utf8Kind};
-
-        let got = command(b"A123 enable UTF8=ACCEPT\r\n").unwrap().1;
-        assert_eq!(
-            Command::new(
-                "A123",
-                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap()
-            )
-            .unwrap(),
-            got
-        );
     }
 }

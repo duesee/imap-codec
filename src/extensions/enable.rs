@@ -63,3 +63,19 @@ pub fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
 
     Ok((remaining, { Data::Enabled { capabilities } }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_enable() {
+        use imap_types::message::{CapabilityEnable, Utf8Kind};
+
+        let got = enable(b"enable UTF8=ACCEPT\r\n").unwrap().1;
+        assert_eq!(
+            CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
+            got
+        );
+    }
+}

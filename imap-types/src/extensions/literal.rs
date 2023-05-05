@@ -34,41 +34,39 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::*;
-    use crate::{codec::Encode, core::Literal};
+    use crate::{core::Literal, testing::known_answer_test_encode};
 
     #[test]
-    fn test_encoding_of_literal_capability() {
+    fn test_encode_literal_capability() {
         let tests = [
             (LiteralCapability::Plus, b"LITERAL+".as_ref()),
             (LiteralCapability::Minus, b"LITERAL-"),
         ];
 
-        for (test, expected) in tests {
-            let got = test.encode_detached().unwrap();
-            assert_eq!(expected, got);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_literal_plus() {
-        let tests = vec![
+    fn test_encode_literal_plus() {
+        let tests = [
             (
-                b"{5}\r\nABCDE".to_vec(),
                 Literal::try_from("ABCDE").unwrap(),
-            ),
-            (
                 b"{5}\r\nABCDE".to_vec(),
-                Literal::try_from("ABCDE").unwrap().into_sync(),
             ),
             (
-                b"{5+}\r\nABCDE".to_vec(),
+                Literal::try_from("ABCDE").unwrap().into_sync(),
+                b"{5}\r\nABCDE".to_vec(),
+            ),
+            (
                 Literal::try_from("ABCDE").unwrap().into_non_sync(),
+                b"{5+}\r\nABCDE".to_vec(),
             ),
         ];
 
-        for (expected, test) in tests.into_iter() {
-            let got = test.encode_detached().unwrap();
-            assert_eq!(expected, got);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 }

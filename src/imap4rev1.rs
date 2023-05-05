@@ -37,7 +37,7 @@ mod tests {
     use super::auth_type;
 
     #[test]
-    fn test_auth_type() {
+    fn test_parse_auth_type() {
         let tests = [
             (b"plain ".as_ref(), AuthMechanism::Plain),
             (b"pLaiN ".as_ref(), AuthMechanism::Plain),

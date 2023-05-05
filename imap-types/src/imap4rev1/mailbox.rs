@@ -263,7 +263,7 @@ mod tests {
     };
 
     #[test]
-    fn mailbox_try_from_str_string_positive() {
+    fn test_conversion_mailbox() {
         let tests = [
             ("inbox", Mailbox::Inbox),
             ("inboX", Mailbox::Inbox),
@@ -290,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn mailbox_try_from_str_string_negative() {
+    fn test_conversion_mailbox_failing() {
         let tests = ["\x00", "A\x00", "\x00A"];
 
         for test in tests {

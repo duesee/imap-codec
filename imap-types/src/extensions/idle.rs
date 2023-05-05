@@ -40,25 +40,23 @@ impl Encode for IdleDone {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::command::CommandBody;
+    use crate::{command::CommandBody, testing::known_answer_test_encode};
 
     #[test]
-    fn test_command_body() {
+    fn test_encode_command_body_idle() {
         let tests = [(CommandBody::Idle, b"IDLE".as_ref())];
 
-        for (test, expected) in tests {
-            let got = test.encode_detached().unwrap();
-            assert_eq!(expected, got);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_idle_done() {
+    fn test_encode_idle_done() {
         let tests = [(IdleDone, b"DONE\r\n".as_ref())];
 
-        for (test, expected) in tests {
-            let got = test.encode_detached().unwrap();
-            assert_eq!(expected, got);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 }

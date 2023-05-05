@@ -200,7 +200,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn decoder_line() {
+    fn test_decoder_line() {
         let tests = [
             (b"".as_ref(), Ok(None)),
             (b"a noop", Ok(None)),
@@ -230,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn decoder_literal() {
+    fn test_decoder_literal() {
         let tests = [
             (b"".as_ref(), Ok(None)),
             (b"a login", Ok(None)),
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn decoder_error() {
+    fn test_decoder_error() {
         let tests = [
             (
                 b"xxx\r\n".as_ref(),
