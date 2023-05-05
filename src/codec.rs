@@ -252,7 +252,7 @@ mod tests {
 
     #[cfg(feature = "ext_idle")]
     #[test]
-    fn test_decode_idle() {
+    fn test_decode_idle_done() {
         let tests = [
             // Ok
             (b"done\r\n".as_ref(), Ok((b"".as_ref(), IdleDone))),

@@ -981,42 +981,40 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::*;
-    use crate::codec::Encode;
+    use crate::testing::known_answer_test_encode;
 
     #[test]
-    fn test_greeting() {
-        let tests: Vec<(_, &[u8])> = vec![(
+    fn test_encode_greeting() {
+        let tests = [(
             Greeting::new(GreetingKind::PreAuth, Some(Code::Alert), "hello").unwrap(),
             b"* PREAUTH [ALERT] hello\r\n",
         )];
 
-        for (parsed, serialized) in tests.into_iter() {
-            eprintln!("{:?}", parsed);
-            let out = parsed.encode_detached().unwrap();
-            assert_eq!(out, serialized.to_vec());
-            // FIXME(#30):
-            //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_status() {
-        let tests: Vec<(_, &[u8])> = vec![
+    fn test_encode_status() {
+        let tests = [
             // tagged; Ok, No, Bad
             (
                 Status::ok(
                     Some(Tag::try_from("A1").unwrap()),
                     Some(Code::Alert),
                     "hello",
-                ),
-                b"A1 OK [ALERT] hello\r\n",
+                )
+                .unwrap(),
+                b"A1 OK [ALERT] hello\r\n".as_ref(),
             ),
             (
                 Status::no(
                     Some(Tag::try_from("A1").unwrap()),
                     Some(Code::Alert),
                     "hello",
-                ),
+                )
+                .unwrap(),
                 b"A1 NO [ALERT] hello\r\n",
             ),
             (
@@ -1024,63 +1022,59 @@ mod tests {
                     Some(Tag::try_from("A1").unwrap()),
                     Some(Code::Alert),
                     "hello",
-                ),
+                )
+                .unwrap(),
                 b"A1 BAD [ALERT] hello\r\n",
             ),
             (
-                Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
                 b"A1 OK hello\r\n",
             ),
             (
-                Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
                 b"A1 NO hello\r\n",
             ),
             (
-                Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello"),
+                Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
                 b"A1 BAD hello\r\n",
             ),
             // untagged; Ok, No, Bad
             (
-                Status::ok(None, Some(Code::Alert), "hello"),
+                Status::ok(None, Some(Code::Alert), "hello").unwrap(),
                 b"* OK [ALERT] hello\r\n",
             ),
             (
-                Status::no(None, Some(Code::Alert), "hello"),
+                Status::no(None, Some(Code::Alert), "hello").unwrap(),
                 b"* NO [ALERT] hello\r\n",
             ),
             (
-                Status::bad(None, Some(Code::Alert), "hello"),
+                Status::bad(None, Some(Code::Alert), "hello").unwrap(),
                 b"* BAD [ALERT] hello\r\n",
             ),
-            (Status::ok(None, None, "hello"), b"* OK hello\r\n"),
-            (Status::no(None, None, "hello"), b"* NO hello\r\n"),
-            (Status::bad(None, None, "hello"), b"* BAD hello\r\n"),
+            (Status::ok(None, None, "hello").unwrap(), b"* OK hello\r\n"),
+            (Status::no(None, None, "hello").unwrap(), b"* NO hello\r\n"),
+            (
+                Status::bad(None, None, "hello").unwrap(),
+                b"* BAD hello\r\n",
+            ),
             // bye
             (
-                Status::bye(Some(Code::Alert), "hello"),
+                Status::bye(Some(Code::Alert), "hello").unwrap(),
                 b"* BYE [ALERT] hello\r\n",
             ),
         ];
 
-        for (constructed, serialized) in tests {
-            let constructed = constructed.unwrap();
-            let out = constructed.encode_detached().unwrap();
-
-            assert_eq!(out, serialized.to_vec());
-            // FIXME(#30)
-            //assert_eq!(
-            //    <Status as Codec>::deserialize(serialized).unwrap().1,
-            //    parsed
-            //);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_data() {
-        let tests: Vec<(_, &[u8])> = vec![
+    fn test_encode_data() {
+        let tests = [
             (
                 Data::Capability(NonEmptyVec::try_from(vec![Capability::Imap4Rev1]).unwrap()),
-                b"* CAPABILITY IMAP4REV1\r\n",
+                b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
             ),
             (
                 Data::List {
@@ -1104,55 +1098,50 @@ mod tests {
             (Data::Expunge(123.try_into().unwrap()), b"* 123 EXPUNGE\r\n"),
         ];
 
-        for (parsed, serialized) in tests.into_iter() {
-            eprintln!("{:?}", parsed);
-            let out = parsed.encode_detached().unwrap();
-            assert_eq!(out, serialized.to_vec());
-            // FIXME(#30):
-            //assert_eq!(parsed, Data::deserialize(serialized).unwrap().1);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_data_constructors() {
+    fn test_conversion_data() {
         let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
         let _ = Data::fetch(1, vec![FetchAttributeValue::Rfc822Size(123)]).unwrap();
     }
 
     #[test]
-    fn test_continue() {
-        let tests: Vec<(_, &[u8])> = vec![
-            (Continue::basic(None, "hello"), b"+ hello\r\n".as_ref()),
+    fn test_encode_continue() {
+        let tests = [
             (
-                Continue::basic(Some(Code::ReadWrite), "hello"),
+                Continue::basic(None, "hello").unwrap(),
+                b"+ hello\r\n".as_ref(),
+            ),
+            (
+                Continue::basic(Some(Code::ReadWrite), "hello").unwrap(),
                 b"+ [READ-WRITE] hello\r\n",
             ),
         ];
 
-        for (constructed, serialized) in tests.into_iter() {
-            let constructed = constructed.unwrap();
-            let out = constructed.encode_detached().unwrap();
-            assert_eq!(out, serialized.to_vec());
-            // FIXME(#30):
-            //assert_eq!(parsed, Continuation::deserialize(serialized).unwrap().1);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 
     #[test]
-    fn test_continue_fail() {
-        let tests: Vec<_> = vec![
+    fn test_conversion_continue_failing() {
+        let tests = [
             Continue::basic(None, ""),
             Continue::basic(Some(Code::ReadWrite), ""),
         ];
 
-        for test in tests.into_iter() {
+        for test in tests {
             println!("{:?}", test);
             assert!(test.is_err());
         }
     }
 
     #[test]
-    fn test_bodystructure() {
+    fn test_body_structure() {
         /*
         let tests: Vec<(_, &[u8])> = vec![
             (

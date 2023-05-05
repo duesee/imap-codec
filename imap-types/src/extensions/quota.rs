@@ -354,10 +354,11 @@ pub enum SetQuotaError<R, S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::known_answer_test_encode;
 
     #[test]
-    fn test_command_output() {
-        let commands = vec![
+    fn test_encode_command_body_quota() {
+        let tests = [
             (CommandBody::get_quota("INBOX").unwrap(), b"GETQUOTA INBOX".as_ref()),
             (CommandBody::get_quota("").unwrap(), b"GETQUOTA \"\""),
             (
@@ -410,12 +411,14 @@ mod tests {
             ),
         ];
 
-        compare_output(commands)
+        for test in tests {
+            known_answer_test_encode(test);
+        }
     }
 
     #[test]
-    fn test_response_output() {
-        let responses = vec![
+    fn test_encode_response_data_quota() {
+        let tests = [
             (
                 Data::quota(
                     "INBOX",
@@ -442,13 +445,8 @@ mod tests {
             ),
         ];
 
-        compare_output(responses)
-    }
-
-    fn compare_output(items: Vec<(impl Encode, &[u8])>) {
-        for item in items {
-            let out = item.0.encode_detached().unwrap();
-            assert_eq!(out, item.1);
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 }

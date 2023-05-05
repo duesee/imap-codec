@@ -566,24 +566,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_media_basic() {
+    fn test_parse_media_basic() {
         media_basic(b"\"application\" \"xxx\"").unwrap();
         media_basic(b"\"unknown\" \"test\"").unwrap();
         media_basic(b"\"x\" \"xxx\"").unwrap();
     }
 
     #[test]
-    fn test_media_message() {
+    fn test_parse_media_message() {
         media_message(b"\"message\" \"rfc822\"").unwrap();
     }
 
     #[test]
-    fn test_media_text() {
+    fn test_parse_media_text() {
         media_text(b"\"text\" \"html\"").unwrap();
     }
 
     #[test]
-    fn test_body_ext_1part() {
+    fn test_parse_body_ext_1part() {
         for test in [
             b"nil|xxx".as_ref(),
             b"\"md5\"|xxx".as_ref(),
@@ -610,7 +610,7 @@ mod tests {
     }
 
     #[test]
-    fn test_body_ext_mpart() {
+    fn test_parse_body_ext_mpart() {
         for test in [
             b"nil|xxx".as_ref(),
             b"(\"key\" \"value\")|xxx".as_ref(),

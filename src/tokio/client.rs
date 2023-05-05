@@ -202,7 +202,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn decoder_line() {
+    fn test_decoder_line() {
         let tests = [
             (b"".as_ref(), Ok(None)),
             (b"* ", Ok(None)),
@@ -232,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn decoder_literal() {
+    fn test_decoder_literal() {
         let tests = [
             (
                 b"* OK ...\r\n".as_ref(),
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn decoder_error() {
+    fn test_decoder_error() {
         let tests = [
             // We still need to process the greeting first.
             (

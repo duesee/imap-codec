@@ -212,7 +212,7 @@ mod tests {
     };
 
     #[test]
-    fn test_trace_command() {
+    fn test_decode_command_quota() {
         let tests = [
             (
                 "A001 SETQUOTA \"\" (STORAGE 512)\r\n",
@@ -299,7 +299,7 @@ mod tests {
     }
 
     #[test]
-    fn test_trace_response() {
+    fn test_decode_response_quota() {
         let tests = [
             (
                 "A003 NO [OVERQUOTA] APPEND Failed\r\n",
@@ -449,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn test_resource() {
+    fn test_parse_resource_name() {
         let tests = [
             (b"stOragE ".as_ref(), Resource::Storage),
             (b"mesSaGe ".as_ref(), Resource::Message),

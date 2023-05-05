@@ -141,7 +141,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_flag_fetch() {
+    fn test_parse_flag_fetch() {
         let tests = [(
             "iS)",
             FlagFetch::Flag(Flag::Keyword(Atom::try_from("iS").unwrap())),
@@ -155,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test_flag_perm() {
+    fn test_parse_flag_perm() {
         let tests = [
             ("\\Deleted)", FlagPerm::Flag(Flag::Deleted)),
             (
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mbx_list_flags() {
+    fn test_parse_mbx_list_flags() {
         let tests = [
             (
                 "\\Markedm)",

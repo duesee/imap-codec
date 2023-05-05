@@ -1773,7 +1773,7 @@ mod tests {
     use crate::{command::Command, message::Tag, security::Secret};
 
     #[test]
-    fn test_commandbody_new() {
+    fn test_conversion_command_body() {
         let cmds = vec![
             CommandBody::Capability,
             CommandBody::Noop,
@@ -1950,7 +1950,7 @@ mod tests {
 
     #[cfg(feature = "ext_sasl_ir")]
     #[test]
-    fn that_empty_ir_is_encoded_correctly() {
+    fn test_that_empty_ir_is_encoded_correctly() {
         let command = Command::new(
             Tag::try_from("A").unwrap(),
             CommandBody::Authenticate {

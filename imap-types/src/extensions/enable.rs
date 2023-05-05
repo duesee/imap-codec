@@ -118,7 +118,7 @@ mod tests {
     use crate::imap4rev1::core::NonEmptyVecError;
 
     #[test]
-    fn test_command_body_enable() {
+    fn test_encode_command_body_enable() {
         let tests = [
             (
                 CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]),
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn test_capability_enable_other() {
+    fn test_conversion_capability_enable_other() {
         assert_eq!(
             CapabilityEnable::from(Atom::try_from("utf8=only").unwrap()),
             CapabilityEnable::Utf8(Utf8Kind::Only)

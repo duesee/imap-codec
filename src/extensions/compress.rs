@@ -33,7 +33,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_compress() {
+    fn test_parse_compress() {
         let tests = [
             (
                 b"compress deflate ".as_ref(),
