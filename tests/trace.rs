@@ -1,21 +1,28 @@
 use std::convert::TryFrom;
 
-#[cfg(feature = "ext_literal")]
-use imap_codec::core::Literal;
 use imap_codec::{
     codec::{Decode, Encode},
     command::{
         fetch::{FetchAttribute, Macro},
         Command, CommandBody,
     },
-    core::{AString, IString, Quoted},
+    core::{AString, IString, Literal, Quoted},
     message::{AuthMechanism, Flag, FlagPerm, Section, Tag},
     response::{
         data::{Capability, FetchAttributeValue},
         Code, Data, Response, Status,
     },
 };
-use imap_types::{message::FlagFetch, response::Greeting, security::Secret};
+use imap_types::{
+    command::store::{StoreResponse, StoreType},
+    core::NString,
+    message::{DateTime, FlagFetch},
+    response::{
+        data::{Address, BasicFields, Body, BodyStructure, Envelope, SpecificFields},
+        Greeting,
+    },
+    security::Secret,
+};
 
 enum Who {
     Client,
@@ -25,10 +32,6 @@ enum Who {
 enum Message<'a> {
     Command(Command<'a>),
     Response(Response<'a>),
-    // TODO: Remove this.
-    CommandSkip,
-    // TODO: Remove this.
-    ResponseSkip,
 }
 
 struct TraceLines<'a> {
@@ -126,28 +129,6 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 let (rem, got) = Response::decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
-                println!("{:?}", got);
-                println!(
-                    "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
-                        .unwrap()
-                        .trim()
-                );
-            }
-            Message::CommandSkip => {
-                let (rem, got) = Command::decode(test).unwrap();
-                assert!(rem.is_empty());
-                println!("{:?}", got);
-                println!(
-                    "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
-                        .unwrap()
-                        .trim()
-                );
-            }
-            Message::ResponseSkip => {
-                let (rem, got) = Response::decode(test).unwrap();
-                assert!(rem.is_empty());
                 println!("{:?}", got);
                 println!(
                     "// {}",
@@ -907,8 +888,12 @@ fn test_transcript_from_rfc() {
             (
                 b"a001 OK LOGIN completed\r\n",
                 Message::Response(Response::Status(
-                    Status::ok(Some(Tag::try_from("a001").unwrap()), None, "LOGIN completed")
-                        .unwrap(),
+                    Status::ok(
+                        Some(Tag::try_from("a001").unwrap()),
+                        None,
+                        "LOGIN completed",
+                    )
+                    .unwrap(),
                 )),
             ),
             (
@@ -946,27 +931,178 @@ fn test_transcript_from_rfc() {
                     .unwrap(),
                 )),
             ),
-                        (b"* OK [UIDVALIDITY 3857529045] UIDs valid\r\n",
-                         Message::Response(Response::Status(
-                             Status::ok(
-                                 None,
-                                 Some(Code::uidvalidity(3857529045).unwrap()),
-                                 "UIDs valid",
-                             )
-                                 .unwrap(),
-                         )),
+            (
+                b"* OK [UIDVALIDITY 3857529045] UIDs valid\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        None,
+                        Some(Code::uidvalidity(3857529045).unwrap()),
+                        "UIDs valid",
+                    )
+                    .unwrap(),
+                )),
             ),
-                        (b"a002 OK [READ-WRITE] SELECT completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("a002").unwrap()), Some(Code::ReadWrite), "SELECT completed").unwrap()))),
-                        (b"a003 fetch 12 full\r\n", Message::Command(Command::new("a003", CommandBody::fetch("12", Macro::Full,false).unwrap()).unwrap())),
-                            // FIXME
-                        (b"* 12 FETCH (FLAGS (\\Seen) INTERNALDATE \"17-Jul-1996 02:44:25 -0700\" RFC822.SIZE 4286 ENVELOPE (\"Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\" \"IMAP4rev1 WG mtg summary and minutes\" ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((NIL NIL \"imap\" \"cac.washington.edu\")) ((NIL NIL \"minutes\" \"CNRI.Reston.VA.US\")(\"John Klensin\" NIL \"KLENSIN\" \"MIT.EDU\")) NIL NIL \"<B27397-0100000@cac.washington.edu>\") BODY (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 3028 92))\r\n", Message::ResponseSkip),
-                        (b"a003 OK FETCH completed\r\n", Message::Response(Response::Status(Status::ok(Some(Tag::try_from("a003").unwrap()), None, "FETCH completed").unwrap()))),
-                        (b"a004 fetch 12 body[header]\r\n", Message::Command(Command::new("a004", CommandBody::fetch("12", vec![FetchAttribute::BodyExt {
-                            section: Some(Section::Header(None)),
-                            peek: false,
-                            partial: None,
-                        }], false).unwrap()).unwrap())),
-                         (b"* 12 FETCH (BODY[HEADER] {342}\r
+            (
+                b"a002 OK [READ-WRITE] SELECT completed\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("a002").unwrap()),
+                        Some(Code::ReadWrite),
+                        "SELECT completed",
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a003 fetch 12 full\r\n",
+                Message::Command(
+                    Command::new(
+                        "a003",
+                        CommandBody::fetch("12", Macro::Full, false).unwrap(),
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                b"* 12 FETCH (FLAGS (\\Seen) INTERNALDATE \"17-Jul-1996 02:44:25 -0700\" RFC822.SIZE 4286 ENVELOPE (\"Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\" \"IMAP4rev1 WG mtg summary and minutes\" ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((\"Terry Gray\" NIL \"gray\" \"cac.washington.edu\")) ((NIL NIL \"imap\" \"cac.washington.edu\")) ((NIL NIL \"minutes\" \"CNRI.Reston.VA.US\")(\"John Klensin\" NIL \"KLENSIN\" \"MIT.EDU\")) NIL NIL \"<B27397-0100000@cac.washington.edu>\") BODY (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 3028 92))\r\n",
+                Message::Response(Response::Data(
+                    Data::fetch(
+                        12,
+                        vec![
+                            FetchAttributeValue::Flags(vec![FlagFetch::Flag(Flag::Seen)]),
+                            FetchAttributeValue::InternalDate(DateTime(
+                                chrono::DateTime::parse_from_rfc3339("1996-07-17T02:44:25-07:00")
+                                    .unwrap(),
+                            )),
+                            FetchAttributeValue::Rfc822Size(4286),
+                            FetchAttributeValue::Envelope(Envelope {
+                                date: NString::from(
+                                    Quoted::try_from("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)")
+                                        .unwrap(),
+                                ),
+                                subject: NString::from(
+                                    Quoted::try_from("IMAP4rev1 WG mtg summary and minutes")
+                                        .unwrap(),
+                                ),
+                                from: vec![Address {
+                                    name: NString::from(Quoted::try_from("Terry Gray").unwrap()),
+                                    adl: NString(None),
+                                    mailbox: NString::from(Quoted::try_from("gray").unwrap()),
+                                    host: NString::from(
+                                        Quoted::try_from("cac.washington.edu").unwrap(),
+                                    ),
+                                }],
+                                sender: vec![Address {
+                                    name: NString::from(Quoted::try_from("Terry Gray").unwrap()),
+                                    adl: NString(None),
+                                    mailbox: NString::from(Quoted::try_from("gray").unwrap()),
+                                    host: NString::from(
+                                        Quoted::try_from("cac.washington.edu").unwrap(),
+                                    ),
+                                }],
+                                reply_to: vec![Address {
+                                    name: NString::from(Quoted::try_from("Terry Gray").unwrap()),
+                                    adl: NString(None),
+                                    mailbox: NString::from(Quoted::try_from("gray").unwrap()),
+                                    host: NString::from(
+                                        Quoted::try_from("cac.washington.edu").unwrap(),
+                                    ),
+                                }],
+                                to: vec![Address {
+                                    name: NString(None),
+                                    adl: NString(None),
+                                    mailbox: NString::from(Quoted::try_from("imap").unwrap()),
+                                    host: NString::from(
+                                        Quoted::try_from("cac.washington.edu").unwrap(),
+                                    ),
+                                }],
+                                cc: vec![
+                                    Address {
+                                        name: NString(None),
+                                        adl: NString(None),
+                                        mailbox: NString::from(
+                                            Quoted::try_from("minutes").unwrap(),
+                                        ),
+                                        host: NString::from(
+                                            Quoted::try_from("CNRI.Reston.VA.US").unwrap(),
+                                        ),
+                                    },
+                                    Address {
+                                        name: NString::from(
+                                            Quoted::try_from("John Klensin").unwrap(),
+                                        ),
+                                        adl: NString(None),
+                                        mailbox: NString::from(
+                                            Quoted::try_from("KLENSIN").unwrap(),
+                                        ),
+                                        host: NString::from(Quoted::try_from("MIT.EDU").unwrap()),
+                                    },
+                                ],
+                                bcc: vec![],
+                                in_reply_to: NString(None),
+                                message_id: NString::from(
+                                    Quoted::try_from("<B27397-0100000@cac.washington.edu>")
+                                        .unwrap(),
+                                ),
+                            }),
+                            FetchAttributeValue::Body(BodyStructure::Single {
+                                body: Body {
+                                    basic: BasicFields {
+                                        parameter_list: vec![(
+                                            IString::from(Quoted::try_from("CHARSET").unwrap()),
+                                            IString::from(Quoted::try_from("US-ASCII").unwrap()),
+                                        )],
+                                        id: NString(None),
+                                        description: NString(None),
+                                        content_transfer_encoding: IString::from(
+                                            Quoted::try_from("7BIT").unwrap(),
+                                        ),
+                                        size: 3028,
+                                    },
+                                    specific: SpecificFields::Text {
+                                        subtype: IString::from(Quoted::try_from("PLAIN").unwrap()),
+                                        number_of_lines: 92,
+                                    },
+                                },
+                                extension: None,
+                            }),
+                        ],
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a003 OK FETCH completed\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("a003").unwrap()),
+                        None,
+                        "FETCH completed",
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a004 fetch 12 body[header]\r\n",
+                Message::Command(
+                    Command::new(
+                        "a004",
+                        CommandBody::fetch(
+                            "12",
+                            vec![FetchAttribute::BodyExt {
+                                section: Some(Section::Header(None)),
+                                peek: false,
+                                partial: None,
+                            }],
+                            false,
+                        )
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                b"* 12 FETCH (BODY[HEADER] {342}\r
 Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\r
 From: Terry Gray <gray@cac.washington.edu>\r
 Subject: IMAP4rev1 WG mtg summary and minutes\r
@@ -976,14 +1112,107 @@ Message-Id: <B27397-0100000@cac.washington.edu>\r
 MIME-Version: 1.0\r
 Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
 \r
-)\r\n", Message::ResponseSkip),
-                        (b"a004 OK FETCH completed\r\n", Message::ResponseSkip),
-                        (b"a005 store 12 +flags \\deleted\r\n", Message::CommandSkip),
-                        (b"* 12 FETCH (FLAGS (\\Seen \\Deleted))\r\n", Message::ResponseSkip),
-                        (b"a005 OK +FLAGS completed\r\n", Message::ResponseSkip),
-                        (b"a006 logout\r\n", Message::CommandSkip),
-                        (b"* BYE IMAP4rev1 server terminating connection\r\n", Message::ResponseSkip),
-                        (b"a006 OK LOGOUT completed\r\n", Message::ResponseSkip),
+)\r\n",
+                Message::Response(Response::Data(
+                    Data::fetch(
+                        12,
+                        vec![FetchAttributeValue::BodyExt {
+                            section: Some(Section::Header(None)),
+                            origin: None,
+                            data: NString::from(
+                                Literal::try_from(
+                                    b"Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\r
+From: Terry Gray <gray@cac.washington.edu>\r
+Subject: IMAP4rev1 WG mtg summary and minutes\r
+To: imap@cac.washington.edu\r
+cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>\r
+Message-Id: <B27397-0100000@cac.washington.edu>\r
+MIME-Version: 1.0\r
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
+\r
+"
+                                    .as_ref(),
+                                )
+                                .unwrap(),
+                            ),
+                        }],
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a004 OK FETCH completed\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("a004").unwrap()),
+                        None,
+                        "FETCH completed",
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a005 store 12 +flags \\deleted\r\n",
+                Message::Command(
+                    Command::new(
+                        "a005",
+                        CommandBody::store(
+                            "12",
+                            StoreType::Add,
+                            StoreResponse::Answer,
+                            vec![Flag::Deleted],
+                            false,
+                        )
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                b"* 12 FETCH (FLAGS (\\Seen \\Deleted))\r\n",
+                Message::Response(Response::Data(
+                    Data::fetch(
+                        12,
+                        vec![FetchAttributeValue::Flags(vec![
+                            FlagFetch::Flag(Flag::Seen),
+                            FlagFetch::Flag(Flag::Deleted),
+                        ])],
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a005 OK +FLAGS completed\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("a005").unwrap()),
+                        None,
+                        "+FLAGS completed",
+                    )
+                    .unwrap(),
+                )),
+            ),
+            (
+                b"a006 logout\r\n",
+                Message::Command(Command::new("a006", CommandBody::Logout).unwrap()),
+            ),
+            (
+                b"* BYE IMAP4rev1 server terminating connection\r\n",
+                Message::Response(Response::Status(
+                    Status::bye(None, "IMAP4rev1 server terminating connection").unwrap(),
+                )),
+            ),
+            (
+                b"a006 OK LOGOUT completed\r\n",
+                Message::Response(Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("a006").unwrap()),
+                        None,
+                        "LOGOUT completed",
+                    )
+                    .unwrap(),
+                )),
+            ),
         ]
     };
 
