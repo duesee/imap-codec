@@ -14,10 +14,11 @@ Please see the [documentation] for more information.
 
 * Rust's type system is used to enforce correctness and make the library misuse-resistant.
 It should not be possible to construct messages that violate the IMAP specification.
-* Fuzzing (via [cargo fuzz]) and property-based tests are used to uncover parsing and serialization bugs.
-For example, the library is fuzz-tested never to produce a message it can not parse itself.
 * Every parser works in streaming mode, i.e., all parsers will return `Incomplete` when there is insufficient data to make a final decision. 
 No command or response will ever be truncated.
+* Parsing is zero-copy by default but all types can easily be converted into owned variants when needed.
+* Fuzzing (via [cargo fuzz]) and property-based tests are used to uncover parsing and serialization bugs.
+For example, the library is fuzz-tested never to produce a message it can not parse itself.
 
 ## Usage
 
