@@ -582,6 +582,18 @@ pub struct NString<'a>(
     pub Option<IString<'a>>,
 );
 
+impl<'a> From<Literal<'a>> for NString<'a> {
+    fn from(value: Literal<'a>) -> Self {
+        Self(Some(IString::from(value)))
+    }
+}
+
+impl<'a> From<Quoted<'a>> for NString<'a> {
+    fn from(value: Quoted<'a>) -> Self {
+        Self(Some(IString::from(value)))
+    }
+}
+
 /// Either an (extended) atom or a string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
