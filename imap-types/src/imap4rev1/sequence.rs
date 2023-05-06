@@ -74,10 +74,24 @@ impl TryFrom<String> for SequenceSet {
     }
 }
 
+impl TryFrom<u32> for SequenceSet {
+    type Error = SequenceSetError;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        let value = NonZeroU32::try_from(value).map_err(|_| SequenceSetError::Zero)?;
+
+        Ok(Self(
+            NonEmptyVec::try_from(vec![Sequence::Single(SeqOrUid::Value(value))]).unwrap(),
+        ))
+    }
+}
+
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum SequenceSetError {
     #[error("Must not be empty.")]
     Empty,
+    #[error("Must not be zero.")]
+    Zero,
     #[error("Sequence: {0}")]
     Sequence(#[from] SequenceError),
 }
@@ -308,7 +322,24 @@ mod tests {
     };
 
     use super::{SeqOrUid, Sequence, Strategy};
-    use crate::{codec::Encode, command::SequenceSet};
+    use crate::{
+        codec::Encode, command::SequenceSet, core::NonEmptyVec,
+        imap4rev1::sequence::SequenceSetError,
+    };
+
+    #[test]
+    fn test_creation_of_sequence_from_u32() {
+        assert_eq!(
+            SequenceSet::try_from(1),
+            Ok(SequenceSet(
+                NonEmptyVec::try_from(vec![Sequence::Single(SeqOrUid::Value(
+                    NonZeroU32::new(1).unwrap()
+                ))])
+                .unwrap()
+            ))
+        );
+        assert_eq!(SequenceSet::try_from(0), Err(SequenceSetError::Zero));
+    }
 
     #[test]
     fn creation_of_sequence_from_range() {
