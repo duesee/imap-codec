@@ -256,7 +256,7 @@ pub mod command {
     pub mod search {
         //! # Types used in SEARCH command
 
-        pub use crate::imap4rev1::command::SearchKey;
+        pub use crate::imap4rev1::command::search::SearchKey;
     }
 
     pub mod fetch {
