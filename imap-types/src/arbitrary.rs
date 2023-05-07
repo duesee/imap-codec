@@ -155,7 +155,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                     if !keys.is_empty() {
                         NonEmptyVec::try_from(keys).unwrap()
                     } else {
-                        NonEmptyVec::try_from(vec![make_search_key(u)?]).unwrap()
+                        NonEmptyVec::from(make_search_key(u)?)
                     }
                 }),
                 1 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),

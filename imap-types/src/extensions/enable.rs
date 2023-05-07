@@ -124,10 +124,7 @@ mod tests {
                 CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]),
                 Ok((
                     CommandBody::Enable {
-                        capabilities: NonEmptyVec::try_from(vec![CapabilityEnable::Utf8(
-                            Utf8Kind::Only,
-                        )])
-                        .unwrap(),
+                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
                     },
                     b"ENABLE UTF8=ONLY".as_ref(),
                 )),
@@ -136,10 +133,7 @@ mod tests {
                 CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]),
                 Ok((
                     CommandBody::Enable {
-                        capabilities: NonEmptyVec::try_from(vec![CapabilityEnable::Utf8(
-                            Utf8Kind::Accept,
-                        )])
-                        .unwrap(),
+                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Accept)),
                     },
                     b"ENABLE UTF8=ACCEPT",
                 )),
@@ -150,11 +144,10 @@ mod tests {
                 )]),
                 Ok((
                     CommandBody::Enable {
-                        capabilities: NonEmptyVec::try_from(vec![CapabilityEnable::Other(
+                        capabilities: NonEmptyVec::from(CapabilityEnable::Other(
                             CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap())
                                 .unwrap(),
-                        )])
-                        .unwrap(),
+                        )),
                     },
                     b"ENABLE FOO",
                 )),
