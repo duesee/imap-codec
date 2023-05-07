@@ -159,3 +159,117 @@ pub enum SearchKey<'a> {
     /// Messages that do not have the \Seen flag set.
     Unseen,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use super::*;
+    use crate::{command::Sequence, testing::known_answer_test_encode};
+
+    #[test]
+    fn test_encode_search_key() {
+        let tests = [
+            (
+                SearchKey::And(
+                    NonEmptyVec::try_from(vec![SearchKey::Answered, SearchKey::Seen]).unwrap(),
+                ),
+                b"(ANSWERED SEEN)".as_ref(),
+            ),
+            (
+                SearchKey::SequenceSet(SequenceSet::try_from(1).unwrap()),
+                b"1",
+            ),
+            (SearchKey::All, b"ALL"),
+            (SearchKey::Answered, b"ANSWERED"),
+            (SearchKey::Bcc(AString::try_from("A").unwrap()), b"BCC A"),
+            (
+                SearchKey::Before(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"BEFORE \"12-Apr-2023\"",
+            ),
+            (SearchKey::Body(AString::try_from("A").unwrap()), b"BODY A"),
+            (SearchKey::Cc(AString::try_from("A").unwrap()), b"CC A"),
+            (SearchKey::Deleted, b"DELETED"),
+            (SearchKey::Draft, b"DRAFT"),
+            (SearchKey::Flagged, b"FLAGGED"),
+            (SearchKey::From(AString::try_from("A").unwrap()), b"FROM A"),
+            (
+                SearchKey::Header(
+                    AString::try_from("A").unwrap(),
+                    AString::try_from("B").unwrap(),
+                ),
+                b"HEADER A B",
+            ),
+            (
+                SearchKey::Keyword(Atom::try_from("A").unwrap()),
+                b"KEYWORD A",
+            ),
+            (SearchKey::Larger(42), b"LARGER 42"),
+            (SearchKey::New, b"NEW"),
+            (SearchKey::Not(Box::new(SearchKey::New)), b"NOT NEW"),
+            (SearchKey::Old, b"OLD"),
+            (
+                SearchKey::On(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"ON \"12-Apr-2023\"",
+            ),
+            (
+                SearchKey::Or(Box::new(SearchKey::New), Box::new(SearchKey::Recent)),
+                b"OR NEW RECENT",
+            ),
+            (SearchKey::Recent, b"RECENT"),
+            (SearchKey::Seen, b"SEEN"),
+            (
+                SearchKey::SentBefore(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"SENTBEFORE \"12-Apr-2023\"",
+            ),
+            (
+                SearchKey::SentOn(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"SENTON \"12-Apr-2023\"",
+            ),
+            (
+                SearchKey::SentSince(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"SENTSINCE \"12-Apr-2023\"",
+            ),
+            (
+                SearchKey::Since(MyNaiveDate(
+                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
+                )),
+                b"SINCE \"12-Apr-2023\"",
+            ),
+            (SearchKey::Smaller(1337), b"SMALLER 1337"),
+            (
+                SearchKey::Subject(AString::try_from("A").unwrap()),
+                b"SUBJECT A",
+            ),
+            (SearchKey::Text(AString::try_from("A").unwrap()), b"TEXT A"),
+            (SearchKey::To(AString::try_from("A").unwrap()), b"TO A"),
+            (
+                SearchKey::Uid(SequenceSet::try_from(Sequence::try_from(1..).unwrap()).unwrap()),
+                b"UID 1:*",
+            ),
+            (SearchKey::Unanswered, b"UNANSWERED"),
+            (SearchKey::Undeleted, b"UNDELETED"),
+            (SearchKey::Undraft, b"UNDRAFT"),
+            (SearchKey::Unflagged, b"UNFLAGGED"),
+            (
+                SearchKey::Unkeyword(Atom::try_from("A").unwrap()),
+                b"UNKEYWORD A",
+            ),
+            (SearchKey::Unseen, b"UNSEEN"),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+}
