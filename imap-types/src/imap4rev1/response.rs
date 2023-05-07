@@ -1073,7 +1073,7 @@ mod tests {
     fn test_encode_data() {
         let tests = [
             (
-                Data::Capability(NonEmptyVec::try_from(vec![Capability::Imap4Rev1]).unwrap()),
+                Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1)),
                 b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
             ),
             (

@@ -1039,6 +1039,12 @@ impl<T> NonEmptyVec<T> {
     }
 }
 
+impl<T> From<T> for NonEmptyVec<T> {
+    fn from(value: T) -> Self {
+        NonEmptyVec(vec![value])
+    }
+}
+
 impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     type Error = NonEmptyVecError;
 

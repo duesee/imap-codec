@@ -80,9 +80,9 @@ impl TryFrom<u32> for SequenceSet {
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         let value = NonZeroU32::try_from(value).map_err(|_| SequenceSetError::Zero)?;
 
-        Ok(Self(
-            NonEmptyVec::try_from(vec![Sequence::Single(SeqOrUid::Value(value))]).unwrap(),
-        ))
+        Ok(Self(NonEmptyVec::from(Sequence::Single(SeqOrUid::Value(
+            value,
+        )))))
     }
 }
 
@@ -196,7 +196,7 @@ impl TryFrom<RangeToInclusive<u32>> for Sequence {
 
 impl From<Sequence> for SequenceSet {
     fn from(seq: Sequence) -> Self {
-        SequenceSet(NonEmptyVec::try_from(vec![seq]).unwrap())
+        SequenceSet(NonEmptyVec::from(seq))
     }
 }
 
@@ -331,12 +331,9 @@ mod tests {
     fn test_creation_of_sequence_from_u32() {
         assert_eq!(
             SequenceSet::try_from(1),
-            Ok(SequenceSet(
-                NonEmptyVec::try_from(vec![Sequence::Single(SeqOrUid::Value(
-                    NonZeroU32::new(1).unwrap()
-                ))])
-                .unwrap()
-            ))
+            Ok(SequenceSet(NonEmptyVec::from(Sequence::Single(
+                SeqOrUid::Value(NonZeroU32::new(1).unwrap())
+            ))))
         );
         assert_eq!(SequenceSet::try_from(0), Err(SequenceSetError::Zero));
     }
