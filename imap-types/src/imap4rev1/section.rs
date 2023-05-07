@@ -110,3 +110,65 @@ pub enum PartSpecifier<'a> {
     Mime,
     Text,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use super::*;
+    use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_encode_section() {
+        let tests = [
+            (
+                Section::Part(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                b"1".as_ref(),
+            ),
+            (Section::Header(None), b"HEADER"),
+            (
+                Section::Header(Some(Part(NonEmptyVec::from(
+                    NonZeroU32::try_from(1).unwrap(),
+                )))),
+                b"1.HEADER",
+            ),
+            (
+                Section::HeaderFields(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                b"HEADER.FIELDS (\"\")",
+            ),
+            (
+                Section::HeaderFields(
+                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                ),
+                b"1.HEADER.FIELDS (\"\")",
+            ),
+            (
+                Section::HeaderFieldsNot(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                b"HEADER.FIELDS.NOT (\"\")",
+            ),
+            (
+                Section::HeaderFieldsNot(
+                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                ),
+                b"1.HEADER.FIELDS.NOT (\"\")",
+            ),
+            (Section::Text(None), b"TEXT"),
+            (
+                Section::Text(Some(Part(NonEmptyVec::from(
+                    NonZeroU32::try_from(1).unwrap(),
+                )))),
+                b"1.TEXT",
+            ),
+            (
+                Section::Mime(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                b"1.MIME",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test)
+        }
+    }
+}
