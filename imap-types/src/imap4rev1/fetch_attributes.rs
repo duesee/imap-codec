@@ -279,3 +279,144 @@ pub enum FetchAttributeValue<'a> {
     /// `UID`
     Uid(NonZeroU32),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use super::*;
+    use crate::{
+        core::IString,
+        imap4rev1::body::{BasicFields, SpecificFields},
+        response::data::Body,
+        testing::known_answer_test_encode,
+    };
+
+    #[test]
+    fn test_encode_fetch_attribute() {
+        let tests = [
+            (FetchAttribute::Body, b"BODY".as_ref()),
+            (
+                FetchAttribute::BodyExt {
+                    section: None,
+                    partial: None,
+                    peek: false,
+                },
+                b"BODY[]",
+            ),
+            (FetchAttribute::BodyStructure, b"BODYSTRUCTURE"),
+            (FetchAttribute::Envelope, b"ENVELOPE"),
+            (FetchAttribute::Flags, b"FLAGS"),
+            (FetchAttribute::InternalDate, b"INTERNALDATE"),
+            (FetchAttribute::Rfc822, b"RFC822"),
+            (FetchAttribute::Rfc822Header, b"RFC822.HEADER"),
+            (FetchAttribute::Rfc822Size, b"RFC822.SIZE"),
+            (FetchAttribute::Rfc822Text, b"RFC822.TEXT"),
+            (FetchAttribute::Uid, b"UID"),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_encode_fetch_attribute_value() {
+        let tests = [
+            (
+                FetchAttributeValue::Body(BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields {
+                            parameter_list: vec![],
+                            id: NString(None),
+                            description: NString(None),
+                            content_transfer_encoding: IString::try_from("base64").unwrap(),
+                            size: 42,
+                        },
+                        specific: SpecificFields::Text {
+                            subtype: IString::try_from("foo").unwrap(),
+                            number_of_lines: 1337,
+                        },
+                    },
+                    extension: None,
+                }),
+                b"BODY (\"TEXT\" \"foo\" NIL NIL NIL \"base64\" 42 1337)".as_ref(),
+            ),
+            (
+                FetchAttributeValue::BodyExt {
+                    section: None,
+                    origin: None,
+                    data: NString(None),
+                },
+                b"BODY[] NIL",
+            ),
+            (
+                FetchAttributeValue::BodyExt {
+                    section: None,
+                    origin: Some(123),
+                    data: NString(None),
+                },
+                b"BODY[]<123> NIL",
+            ),
+            (
+                FetchAttributeValue::BodyStructure(BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields {
+                            parameter_list: vec![],
+                            id: NString(None),
+                            description: NString(None),
+                            content_transfer_encoding: IString::try_from("base64").unwrap(),
+                            size: 213,
+                        },
+                        specific: SpecificFields::Text {
+                            subtype: IString::try_from("").unwrap(),
+                            number_of_lines: 224,
+                        },
+                    },
+                    extension: None,
+                }),
+                b"BODYSTRUCTURE (\"TEXT\" \"\" NIL NIL NIL \"base64\" 213 224)",
+            ),
+            (
+                FetchAttributeValue::Envelope(Envelope {
+                    date: NString(None),
+                    subject: NString(None),
+                    from: vec![],
+                    sender: vec![],
+                    reply_to: vec![],
+                    to: vec![],
+                    cc: vec![],
+                    bcc: vec![],
+                    in_reply_to: NString(None),
+                    message_id: NString(None),
+                }),
+                b"ENVELOPE (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)",
+            ),
+            (FetchAttributeValue::Flags(vec![]), b"FLAGS ()"),
+            (
+                FetchAttributeValue::InternalDate(DateTime(
+                    chrono::DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
+                )),
+                b"INTERNALDATE \"01-Jul-2003 10:52:37 +0200\"",
+            ),
+            (FetchAttributeValue::Rfc822(NString(None)), b"RFC822 NIL"),
+            (
+                FetchAttributeValue::Rfc822Header(NString(None)),
+                b"RFC822.HEADER NIL",
+            ),
+            (FetchAttributeValue::Rfc822Size(3456), b"RFC822.SIZE 3456"),
+            (
+                FetchAttributeValue::Rfc822Text(NString(None)),
+                b"RFC822.TEXT NIL",
+            ),
+            (
+                FetchAttributeValue::Uid(NonZeroU32::try_from(u32::MAX).unwrap()),
+                b"UID 4294967295",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+}
