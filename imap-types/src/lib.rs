@@ -325,3 +325,17 @@ pub mod extensions;
 
 #[cfg(feature = "bounded-static")]
 pub use bounded_static;
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        command::{Command, CommandBody},
+        testing::known_answer_test_encode,
+    };
+
+    #[test]
+    #[should_panic]
+    fn test_known_answer_test_encode() {
+        known_answer_test_encode((Command::new("A", CommandBody::Noop).unwrap(), b""));
+    }
+}
