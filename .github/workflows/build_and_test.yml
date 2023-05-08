@@ -50,30 +50,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check everything
-        run: |
-          cargo check --workspace --all-targets
-          cargo check --workspace --all-targets --all-features
-
-      - name: Build everything
+      - name: Test everything (w/o fuzzing)
         if: matrix.os != 'windows-latest'
         run: |
-          cargo build --workspace --all-targets
-          cargo build --workspace --all-targets --all-features
-
-      # TODO: error: linking with `link.exe` failed: exit code: 1561
-      - name: Build everything (w/o fuzzing)
-        if: matrix.os == 'windows-latest'
-        run: |
-          cargo build --workspace --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz
-          cargo build --workspace --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz --all-features
+          for build_mode in "" "--release";
+          do
+            for feature_mode in "" "--all-features";
+            do
+              cargo test --workspace ${build_mode} ${feature_mode} --doc
+              cargo test --workspace ${build_mode} ${feature_mode} --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz
+            done
+          done
 
       - name: Test everything (w/o fuzzing)
+        if: matrix.os == 'windows-latest'
         run: |
-          cargo test --workspace --doc
-          cargo test --workspace --doc --all-features
-          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --all-targets
-          cargo test --workspace --exclude imap-codec-fuzz --exclude imap-types-fuzz --all-targets --all-features
+          $build_modes = @('','--release')
+          $feature_modes = @('','--all-features')
+
+          foreach ($build_mode in $build_modes) {
+            foreach ($feature_mode in $feature_modes) {
+              cargo test --workspace ${build_mode} ${feature_mode} --doc
+              cargo test --workspace ${build_mode} ${feature_mode} --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz
+            }
+          }
 
       - name: Fuzzing (only on Ubuntu)
         if: matrix.os == 'ubuntu-latest'
