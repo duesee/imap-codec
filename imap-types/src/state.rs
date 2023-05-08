@@ -99,14 +99,14 @@ pub enum State<'a> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "ext_idle")]
     use std::convert::TryFrom;
 
     use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 
-    use crate::{
-        message::{Mailbox, Tag},
-        state::State,
-    };
+    #[cfg(feature = "ext_idle")]
+    use crate::message::Tag;
+    use crate::{message::Mailbox, state::State};
 
     #[test]
     fn test_conversion() {
