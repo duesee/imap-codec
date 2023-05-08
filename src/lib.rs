@@ -101,7 +101,7 @@ mod extensions;
 mod imap4rev1;
 pub mod utils;
 
-pub use imap_types::{command, core, message, response, state};
+pub use imap_types::{command, core, message, response, security, state};
 
 // ----------- Compatibility modules -----------
 

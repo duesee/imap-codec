@@ -4,22 +4,17 @@ use imap_codec::{
     codec::{Decode, Encode},
     command::{
         fetch::{FetchAttribute, Macro},
+        store::{StoreResponse, StoreType},
         Command, CommandBody,
     },
-    core::{AString, IString, Literal, Quoted},
-    message::{AuthMechanism, Flag, FlagPerm, Section, Tag},
+    core::{AString, IString, Literal, NString, Quoted},
+    message::{AuthMechanism, DateTime, Flag, FlagFetch, FlagPerm, Section, Tag},
     response::{
-        data::{Capability, FetchAttributeValue},
-        Code, Data, Response, Status,
-    },
-};
-use imap_types::{
-    command::store::{StoreResponse, StoreType},
-    core::NString,
-    message::{DateTime, FlagFetch},
-    response::{
-        data::{Address, BasicFields, Body, BodyStructure, Envelope, SpecificFields},
-        Greeting,
+        data::{
+            Address, BasicFields, Body, BodyStructure, Capability, Envelope, FetchAttributeValue,
+            SpecificFields,
+        },
+        Code, Data, Greeting, Response, Status,
     },
     security::Secret,
 };
