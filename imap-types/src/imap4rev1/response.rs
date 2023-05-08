@@ -225,6 +225,7 @@ pub enum Status<'a> {
 }
 
 impl<'a> Status<'a> {
+    // FIXME(API)
     pub fn ok<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
@@ -236,6 +237,7 @@ impl<'a> Status<'a> {
         })
     }
 
+    // FIXME(API)
     pub fn no<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
@@ -247,6 +249,7 @@ impl<'a> Status<'a> {
         })
     }
 
+    // FIXME(API)
     pub fn bad<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,

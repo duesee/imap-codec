@@ -402,7 +402,6 @@ fn test_from_login() {
             ),
             (
                 b"a001 OK LOGIN completed\r\n",
-                // FIXME(API)
                 Message::Response(Response::Status(
                     Status::ok(
                         Some(Tag::try_from("a001").unwrap()),
