@@ -38,14 +38,14 @@ cargo +nightly fuzz run <target>
 
 ... with `<target>` being ...
 
-| Name of the fuzz target `<target>` | Purpose                | Expectation                              |
-|------------------------------------|------------------------|------------------------------------------|
-| `greeting`                         | Test parsing           | Must not fail.                           |
-| `command`                          | Test parsing           | Must not fail.                           |
-| `response`                         | Test parsing           | Must not fail.                           |
-| `greeting_to_bytes_and_back`       | Test misuse-resistance | Must not fail but has remaining `TODO`s. |
-| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail but has remaining `TODO`s. |
-| `response_to_bytes_and_back`       | Test misuse-resistance | Fails (unfinished).                      |
+| Name of the fuzz target `<target>` | Purpose                | Expectation                                |
+|------------------------------------|------------------------|--------------------------------------------|
+| `greeting`                         | Test parsing           | Must not fail.                             |
+| `command`                          | Test parsing           | Must not fail.                             |
+| `response`                         | Test parsing           | Must not fail.                             |
+| `greeting_to_bytes_and_back`       | Test misuse-resistance | Must not fail.                             |
+| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail (but has remaining `TODO`s). |
+| `response_to_bytes_and_back`       | Test misuse-resistance | Must not fail (but has remaining `TODO`s). |
 
 Three first three fuzz targets are used to test the parsing routines.
 The fuzzers all do the same: try to parse the input from libFuzzer (and hope that the parsers don't crash), then,
