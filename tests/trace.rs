@@ -118,24 +118,22 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
                 println!("{:?}", got);
-                println!(
-                    "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
-                        .unwrap()
-                        .trim()
-                );
+                let encoded = got.encode_detached().unwrap();
+                println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
+                let (rem2, got2) = Command::decode(&encoded).unwrap();
+                assert!(rem2.is_empty());
+                assert_eq!(expected, got2);
             }
             Message::Response(expected) => {
                 let (rem, got) = Response::decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
                 println!("{:?}", got);
-                println!(
-                    "// {}",
-                    String::from_utf8(got.encode_detached().unwrap())
-                        .unwrap()
-                        .trim()
-                );
+                let encoded = got.encode_detached().unwrap();
+                println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
+                let (rem2, got2) = Response::decode(&encoded).unwrap();
+                assert!(rem2.is_empty());
+                assert_eq!(expected, got2);
             }
         };
 
