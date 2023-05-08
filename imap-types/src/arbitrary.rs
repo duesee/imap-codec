@@ -242,7 +242,7 @@ impl<'a> Arbitrary<'a> for NaiveDate {
 #[cfg(test)]
 mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
-    use rand::prelude::*;
+    use rand::{rngs::SmallRng, Rng, SeedableRng};
 
     use crate::{
         command::Command,
@@ -252,7 +252,7 @@ mod tests {
     /// Note: We could encode/decode/etc. here but only want to exercise the arbitrary logic itself.
     macro_rules! impl_test_arbitrary {
         ($object:ty) => {
-            let mut rng = rand::thread_rng();
+            let mut rng = SmallRng::seed_from_u64(1337);
             let mut data = [0u8; 256];
 
             // Randomize.
