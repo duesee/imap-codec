@@ -227,7 +227,7 @@ pub mod message {
     pub use crate::extensions::enable::{CapabilityEnable, Utf8Kind};
     pub use crate::imap4rev1::{
         core::{Charset, Tag},
-        datetime::{DateTime, MyNaiveDate},
+        datetime::{DateTime, NaiveDate},
         flag::{Flag, FlagError, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
         mailbox::{Mailbox, MailboxOther},
         section::{Part, PartSpecifier, Section},

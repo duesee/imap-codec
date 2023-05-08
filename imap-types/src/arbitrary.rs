@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use arbitrary::{Arbitrary, Unstructured};
-use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{FixedOffset, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnableOther;
@@ -10,9 +10,7 @@ use crate::extensions::quota::ResourceOther;
 use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
     core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
-    message::{
-        AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, MyNaiveDate, Tag,
-    },
+    message::{AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, NaiveDate, Tag},
     response::{
         data::{Capability, QuotedChar},
         CodeOther, Text,
@@ -97,7 +95,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                 1 => SearchKey::All,
                 2 => SearchKey::Answered,
                 3 => SearchKey::Bcc(AString::arbitrary(u)?),
-                4 => SearchKey::Before(MyNaiveDate::arbitrary(u)?),
+                4 => SearchKey::Before(NaiveDate::arbitrary(u)?),
                 5 => SearchKey::Body(AString::arbitrary(u)?),
                 6 => SearchKey::Cc(AString::arbitrary(u)?),
                 7 => SearchKey::Deleted,
@@ -109,13 +107,13 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                 13 => SearchKey::Larger(u32::arbitrary(u)?),
                 14 => SearchKey::New,
                 15 => SearchKey::Old,
-                16 => SearchKey::On(MyNaiveDate::arbitrary(u)?),
+                16 => SearchKey::On(NaiveDate::arbitrary(u)?),
                 17 => SearchKey::Recent,
                 18 => SearchKey::Seen,
-                19 => SearchKey::SentBefore(MyNaiveDate::arbitrary(u)?),
-                20 => SearchKey::SentOn(MyNaiveDate::arbitrary(u)?),
-                21 => SearchKey::SentSince(MyNaiveDate::arbitrary(u)?),
-                22 => SearchKey::Since(MyNaiveDate::arbitrary(u)?),
+                19 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
+                20 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
+                21 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
+                22 => SearchKey::Since(NaiveDate::arbitrary(u)?),
                 23 => SearchKey::Smaller(u32::arbitrary(u)?),
                 24 => SearchKey::Subject(AString::arbitrary(u)?),
                 25 => SearchKey::Text(AString::arbitrary(u)?),
@@ -162,7 +160,7 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                 2 => SearchKey::All,
                 3 => SearchKey::Answered,
                 4 => SearchKey::Bcc(AString::arbitrary(u)?),
-                5 => SearchKey::Before(MyNaiveDate::arbitrary(u)?),
+                5 => SearchKey::Before(NaiveDate::arbitrary(u)?),
                 6 => SearchKey::Body(AString::arbitrary(u)?),
                 7 => SearchKey::Cc(AString::arbitrary(u)?),
                 8 => SearchKey::Deleted,
@@ -175,17 +173,17 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                 15 => SearchKey::New,
                 16 => SearchKey::Not(Box::new(make_search_key_rec(u, depth - 1)?)),
                 17 => SearchKey::Old,
-                18 => SearchKey::On(MyNaiveDate::arbitrary(u)?),
+                18 => SearchKey::On(NaiveDate::arbitrary(u)?),
                 19 => SearchKey::Or(
                     Box::new(make_search_key_rec(u, depth - 1)?),
                     Box::new(make_search_key_rec(u, depth - 1)?),
                 ),
                 20 => SearchKey::Recent,
                 21 => SearchKey::Seen,
-                22 => SearchKey::SentBefore(MyNaiveDate::arbitrary(u)?),
-                23 => SearchKey::SentOn(MyNaiveDate::arbitrary(u)?),
-                24 => SearchKey::SentSince(MyNaiveDate::arbitrary(u)?),
-                25 => SearchKey::Since(MyNaiveDate::arbitrary(u)?),
+                22 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
+                23 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
+                24 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
+                25 => SearchKey::Since(NaiveDate::arbitrary(u)?),
                 26 => SearchKey::Smaller(u32::arbitrary(u)?),
                 27 => SearchKey::Subject(AString::arbitrary(u)?),
                 28 => SearchKey::Text(AString::arbitrary(u)?),
@@ -210,7 +208,7 @@ impl<'a> Arbitrary<'a> for DateTime {
         // FIXME(#30): make arbitrary :-)
 
         let local_datetime = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
+            ChronoNaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
             NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
@@ -223,7 +221,7 @@ impl<'a> Arbitrary<'a> for DateTime {
     }
 }
 
-impl<'a> Arbitrary<'a> for MyNaiveDate {
+impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         // This was copied from the `chrono`.
         const MIN_YEAR: i32 = i32::MIN >> 13;
@@ -233,8 +231,8 @@ impl<'a> Arbitrary<'a> for MyNaiveDate {
         let month: u32 = u.int_in_range(1..=12)?;
         let day: u32 = u.int_in_range(1..=31)?;
 
-        Ok(MyNaiveDate(
-            NaiveDate::from_ymd_opt(year, month, day).unwrap(),
+        Ok(NaiveDate(
+            ChronoNaiveDate::from_ymd_opt(year, month, day).unwrap(),
         ))
     }
 }

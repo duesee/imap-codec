@@ -1,6 +1,8 @@
 use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
-use chrono::{FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
-use imap_types::message::{DateTime, MyNaiveDate};
+use chrono::{
+    FixedOffset, LocalResult, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone,
+};
+use imap_types::message::{DateTime, NaiveDate};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
@@ -12,19 +14,19 @@ use nom::{
 };
 
 /// `date = date-text / DQUOTE date-text DQUOTE`
-pub fn date(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
+pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
 /// `date-text = date-day "-" date-month "-" date-year`
-pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<MyNaiveDate>> {
+pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
     Ok((
         remaining,
-        NaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(MyNaiveDate),
+        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate),
     ))
 }
 
@@ -97,7 +99,7 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
 
     let (remaining, (d, _, m, _, y, _, time, _, zone)) = parser(input)?;
 
-    let date = NaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
+    let date = ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
 
     match (date, time, zone) {
         (Some(date), Some(time), Some(zone)) => {
@@ -216,22 +218,34 @@ mod tests {
     fn test_date() {
         let (rem, val) = date(b"1-Feb-2020xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
+        assert_eq!(
+            val,
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+        );
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
+        assert_eq!(
+            val,
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+        );
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
+        assert_eq!(
+            val,
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+        );
     }
 
     #[test]
     fn test_date_text() {
         let (rem, val) = date_text(b"1-Feb-2020").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, NaiveDate::from_ymd_opt(2020, 2, 1).map(MyNaiveDate));
+        assert_eq!(
+            val,
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+        );
     }
 
     #[test]
@@ -319,7 +333,7 @@ mod tests {
         assert_eq!(rem, b"xxx");
 
         let local_datetime = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
+            ChronoNaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
             NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
