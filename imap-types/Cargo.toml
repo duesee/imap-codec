@@ -39,6 +39,7 @@ thiserror = "1.0.40"
 
 [dev-dependencies]
 criterion = "0.4"
+rand = "0.8"
 
 [[bench]]
 name = "serialize_command"

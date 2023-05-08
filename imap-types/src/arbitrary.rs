@@ -238,3 +238,67 @@ impl<'a> Arbitrary<'a> for MyNaiveDate {
         ))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use arbitrary::{Arbitrary, Error, Unstructured};
+    use rand::prelude::*;
+
+    use crate::{
+        command::Command,
+        response::{Greeting, Response},
+    };
+
+    /// Note: We could encode/decode/etc. here but only want to exercise the arbitrary logic itself.
+    macro_rules! impl_test_arbitrary {
+        ($object:ty) => {
+            let mut rng = rand::thread_rng();
+            let mut data = [0u8; 256];
+
+            // Randomize.
+            rng.try_fill(&mut data).unwrap();
+            let mut unstructured = Unstructured::new(&data);
+
+            let mut count = 0;
+            loop {
+                match <$object>::arbitrary(&mut unstructured) {
+                    Ok(_out) => {
+                        count += 1;
+
+                        // println!("{:?}", _out);
+
+                        if count >= 1_000 {
+                            break;
+                        }
+                    }
+                    Err(Error::IncorrectFormat) => {
+                        // Randomize.
+                        rng.try_fill(&mut data).unwrap();
+                        unstructured = Unstructured::new(&data);
+                    }
+                    Err(Error::NotEnoughData | Error::EmptyChoose) => {
+                        unreachable!();
+                    }
+                    Err(_) => {
+                        unimplemented!()
+                    }
+                }
+            }
+        };
+    }
+
+    #[test]
+    fn test_arbitrary_greeting() {
+        impl_test_arbitrary! {Greeting};
+    }
+
+    #[test]
+    fn test_arbitrary_command() {
+        impl_test_arbitrary! {Command};
+    }
+
+    #[test]
+    fn test_arbitrary_response() {
+        impl_test_arbitrary! {Response};
+    }
+}
