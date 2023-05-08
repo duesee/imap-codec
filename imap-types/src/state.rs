@@ -96,3 +96,41 @@ pub enum State<'a> {
     #[cfg(feature = "ext_idle")]
     IdleSelected(Tag<'a>, Mailbox<'a>),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
+
+    use crate::{
+        message::{Mailbox, Tag},
+        state::State,
+    };
+
+    #[test]
+    fn test_conversion() {
+        let tests = [
+            State::Greeting,
+            State::NotAuthenticated,
+            State::Authenticated,
+            State::Selected(Mailbox::Inbox),
+            State::Logout,
+            #[cfg(feature = "ext_idle")]
+            State::IdleAuthenticated(Tag::try_from("A").unwrap()),
+            #[cfg(feature = "ext_idle")]
+            State::IdleSelected(Tag::try_from("A").unwrap(), Mailbox::Inbox),
+        ];
+
+        for _test in tests {
+            #[cfg(feature = "bounded-static")]
+            {
+                let test_to_static = _test.to_static();
+                assert_eq!(_test, test_to_static);
+
+                let test_into_static = _test.into_static();
+                assert_eq!(test_to_static, test_into_static);
+            }
+        }
+    }
+}
