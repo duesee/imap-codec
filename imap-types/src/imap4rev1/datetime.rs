@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 #[cfg(feature = "bounded-static")]
 use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
-use chrono::{DateTime as ChronoDateTime, FixedOffset, NaiveDate};
+use chrono::{DateTime as ChronoDateTime, FixedOffset, NaiveDate as ChronoNaiveDate};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -36,16 +36,16 @@ impl ToBoundedStatic for DateTime {
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Hash)]
-pub struct MyNaiveDate(pub NaiveDate);
+pub struct NaiveDate(pub ChronoNaiveDate);
 
-impl Debug for MyNaiveDate {
+impl Debug for NaiveDate {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
 
 #[cfg(feature = "bounded-static")]
-impl IntoBoundedStatic for MyNaiveDate {
+impl IntoBoundedStatic for NaiveDate {
     type Static = Self;
 
     fn into_static(self) -> Self::Static {
@@ -54,7 +54,7 @@ impl IntoBoundedStatic for MyNaiveDate {
 }
 
 #[cfg(feature = "bounded-static")]
-impl ToBoundedStatic for MyNaiveDate {
+impl ToBoundedStatic for NaiveDate {
     type Static = Self;
 
     fn to_static(&self) -> Self::Static {

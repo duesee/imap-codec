@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     command::SequenceSet,
     core::{AString, Atom, NonEmptyVec},
-    message::MyNaiveDate,
+    message::NaiveDate,
 };
 
 /// The defined search keys.
@@ -42,7 +42,7 @@ pub enum SearchKey<'a> {
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is earlier than the specified date.
-    Before(MyNaiveDate),
+    Before(NaiveDate),
 
     /// Messages that contain the specified string in the body of the
     /// message.
@@ -94,7 +94,7 @@ pub enum SearchKey<'a> {
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is within the specified date.
-    On(MyNaiveDate),
+    On(NaiveDate),
 
     /// Messages that match either search key.
     Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>), /* TODO(misuse): is this a Vec or a single SearchKey? */
@@ -107,19 +107,19 @@ pub enum SearchKey<'a> {
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is earlier than the specified date.
-    SentBefore(MyNaiveDate),
+    SentBefore(NaiveDate),
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is within the specified date.
-    SentOn(MyNaiveDate),
+    SentOn(NaiveDate),
 
     /// Messages whose [RFC-2822] Date: header (disregarding time and
     /// timezone) is within or later than the specified date.
-    SentSince(MyNaiveDate),
+    SentSince(NaiveDate),
 
     /// Messages whose internal date (disregarding time and timezone)
     /// is within or later than the specified date.
-    Since(MyNaiveDate),
+    Since(NaiveDate),
 
     /// Messages with an [RFC-2822] size smaller than the specified
     /// number of octets.
@@ -184,7 +184,7 @@ mod tests {
             (SearchKey::Answered, b"ANSWERED"),
             (SearchKey::Bcc(AString::try_from("A").unwrap()), b"BCC A"),
             (
-                SearchKey::Before(MyNaiveDate(
+                SearchKey::Before(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"BEFORE \"12-Apr-2023\"",
@@ -211,7 +211,7 @@ mod tests {
             (SearchKey::Not(Box::new(SearchKey::New)), b"NOT NEW"),
             (SearchKey::Old, b"OLD"),
             (
-                SearchKey::On(MyNaiveDate(
+                SearchKey::On(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"ON \"12-Apr-2023\"",
@@ -223,25 +223,25 @@ mod tests {
             (SearchKey::Recent, b"RECENT"),
             (SearchKey::Seen, b"SEEN"),
             (
-                SearchKey::SentBefore(MyNaiveDate(
+                SearchKey::SentBefore(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"SENTBEFORE \"12-Apr-2023\"",
             ),
             (
-                SearchKey::SentOn(MyNaiveDate(
+                SearchKey::SentOn(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"SENTON \"12-Apr-2023\"",
             ),
             (
-                SearchKey::SentSince(MyNaiveDate(
+                SearchKey::SentSince(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"SENTSINCE \"12-Apr-2023\"",
             ),
             (
-                SearchKey::Since(MyNaiveDate(
+                SearchKey::Since(NaiveDate(
                     chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
                 )),
                 b"SINCE \"12-Apr-2023\"",

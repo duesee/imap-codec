@@ -37,7 +37,7 @@ use crate::{
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
     message::{
         AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagExtension, FlagFetch,
-        FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, MyNaiveDate, Part, Section, Tag,
+        FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, NaiveDate, Part, Section, Tag,
     },
     response::{
         data::{
@@ -660,7 +660,7 @@ impl Encode for SeqOrUid {
     }
 }
 
-impl Encode for MyNaiveDate {
+impl Encode for NaiveDate {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         write!(writer, "\"{}\"", self.0.format("%d-%b-%Y"))
     }
