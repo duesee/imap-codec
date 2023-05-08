@@ -122,3 +122,35 @@ pub enum AuthMechanismOtherError {
     #[error("Reserved. Please use one of the typed variants.")]
     Reserved,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_encode_auth_mechanism() {
+        let tests = [
+            (AuthMechanism::Plain, b"PLAIN".as_ref()),
+            (AuthMechanism::Login, b"LOGIN"),
+            (
+                AuthMechanism::Other(AuthMechanismOther::try_from("PLAINX").unwrap()),
+                b"PLAINX",
+            ),
+            (
+                AuthMechanism::Other(AuthMechanismOther::try_from("LOGINX").unwrap()),
+                b"LOGINX",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_conversion_failing() {
+        assert!(AuthMechanismOther::try_from("plain").is_err());
+        assert!(AuthMechanismOther::try_from("login").is_err());
+    }
+}
