@@ -1,6 +1,6 @@
 [![Build & Test](https://github.com/duesee/imap-codec/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/duesee/imap-codec/actions/workflows/build_and_test.yml)
 [![Audit](https://github.com/duesee/imap-codec/actions/workflows/audit.yml/badge.svg)](https://github.com/duesee/imap-codec/actions/workflows/audit.yml)
-[![Coverage](https://coveralls.io/repos/github/duesee/imap-codec/badge.svg?branch=main&kill_cache=1)](https://coveralls.io/github/duesee/imap-codec?branch=main)
+[![Coverage](https://coveralls.io/repos/github/duesee/imap-codec/badge.svg?branch=main)](https://coveralls.io/github/duesee/imap-codec?branch=main)
 [![Documentation](https://docs.rs/imap-codec/badge.svg)](https://docs.rs/imap-codec)
 
 # imap-codec
