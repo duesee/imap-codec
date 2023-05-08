@@ -223,17 +223,19 @@ impl<'a> Arbitrary<'a> for DateTime {
 
 impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // This was copied from the `chrono`.
-        const MIN_YEAR: i32 = i32::MIN >> 13;
-        const MAX_YEAR: i32 = i32::MAX >> 13;
+        loop {
+            // This was copied from the `chrono`.
+            const MIN_YEAR: i32 = i32::MIN >> 13;
+            const MAX_YEAR: i32 = i32::MAX >> 13;
 
-        let year: i32 = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
-        let month: u32 = u.int_in_range(1..=12)?;
-        let day: u32 = u.int_in_range(1..=31)?;
+            let year: i32 = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
+            let month: u32 = u.int_in_range(1..=12)?;
+            let day: u32 = u.int_in_range(1..=31)?;
 
-        Ok(NaiveDate(
-            ChronoNaiveDate::from_ymd_opt(year, month, day).unwrap(),
-        ))
+            if let Some(chrono_naive_date) = ChronoNaiveDate::from_ymd_opt(year, month, day) {
+                return Ok(NaiveDate(chrono_naive_date));
+            }
+        }
     }
 }
 
