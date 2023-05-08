@@ -242,6 +242,8 @@ impl<'a> Arbitrary<'a> for NaiveDate {
 #[cfg(test)]
 mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
+    #[cfg(feature = "bounded-static")]
+    use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
     use rand::{rngs::SmallRng, Rng, SeedableRng};
 
     use crate::{
@@ -265,7 +267,14 @@ mod tests {
                     Ok(_out) => {
                         count += 1;
 
-                        // println!("{:?}", _out);
+                        #[cfg(feature = "bounded-static")]
+                        {
+                            let out_to_static = _out.to_static();
+                            assert_eq!(_out, out_to_static);
+
+                            let out_into_static = _out.into_static();
+                            assert_eq!(out_to_static, out_into_static);
+                        }
 
                         if count >= 1_000 {
                             break;
