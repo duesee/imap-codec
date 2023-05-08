@@ -224,9 +224,17 @@ impl<'a> Arbitrary<'a> for DateTime {
 }
 
 impl<'a> Arbitrary<'a> for MyNaiveDate {
-    fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // FIXME(#30): make arbitrary!
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        // This was copied from the `chrono`.
+        const MIN_YEAR: i32 = i32::MIN >> 13;
+        const MAX_YEAR: i32 = i32::MAX >> 13;
 
-        Ok(MyNaiveDate(NaiveDate::from_ymd_opt(2020, 2, 1).unwrap()))
+        let year: i32 = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
+        let month: u32 = u.int_in_range(1..=12)?;
+        let day: u32 = u.int_in_range(1..=31)?;
+
+        Ok(MyNaiveDate(
+            NaiveDate::from_ymd_opt(year, month, day).unwrap(),
+        ))
     }
 }
