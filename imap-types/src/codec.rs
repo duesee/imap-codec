@@ -246,11 +246,7 @@ impl<'a> Encode for CommandBody<'a> {
                     charset.encode(writer)?;
                 }
                 writer.write_all(b" ")?;
-                if let SearchKey::And(search_keys) = criteria {
-                    join_serializable(search_keys.as_ref(), b" ", writer) // TODO: use List1?
-                } else {
-                    criteria.encode(writer)
-                }
+                criteria.encode(writer)
             }
             CommandBody::Fetch {
                 sequence_set,

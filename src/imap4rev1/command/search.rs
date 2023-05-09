@@ -216,11 +216,7 @@ fn search_key_limited<'a>(
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(SP, search_key), tag(b")")),
-                |mut val| match val.len() {
-                    0 => unreachable!(),
-                    1 => val.pop().unwrap(),
-                    _ => SearchKey::And(NonEmptyVec::new_unchecked(val)),
-                },
+                |val| SearchKey::And(NonEmptyVec::new_unchecked(val)),
             ),
         )),
     ))(input)
@@ -243,16 +239,16 @@ mod tests {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: Uid(SequenceSetData(
+                criteria: And(NonEmptyVec::from(Uid(SequenceSetData(
                     vec![Single(Value(5.try_into().unwrap()))]
                         .try_into()
                         .unwrap()
-                )),
+                )))),
                 uid: false,
             }
         );
 
-        let (_rem, val) = search(b"search (uid 5 or uid 5 (uid 1 uid 2) not (uid 5))???").unwrap();
+        let (_rem, val) = search(b"search (uid 5 or uid 5 (uid 1 uid 2) not uid 5)???").unwrap();
         let expected = CommandBody::Search {
             charset: None,
             criteria: And(vec![
