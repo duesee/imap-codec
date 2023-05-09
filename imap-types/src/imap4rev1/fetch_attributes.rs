@@ -394,9 +394,13 @@ mod tests {
             ),
             (FetchAttributeValue::Flags(vec![]), b"FLAGS ()"),
             (
-                FetchAttributeValue::InternalDate(DateTime(
-                    chrono::DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
-                )),
+                FetchAttributeValue::InternalDate(
+                    DateTime::try_from(
+                        chrono::DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                ),
                 b"INTERNALDATE \"01-Jul-2003 10:52:37 +0200\"",
             ),
             (FetchAttributeValue::Rfc822(NString(None)), b"RFC822 NIL"),

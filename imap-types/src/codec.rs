@@ -510,7 +510,7 @@ impl<'a> Encode for FlagExtension<'a> {
 
 impl Encode for DateTime {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+        self.as_ref().encode(writer)
     }
 }
 
@@ -662,7 +662,7 @@ impl Encode for SeqOrUid {
 
 impl Encode for NaiveDate {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        write!(writer, "\"{}\"", self.0.format("%d-%b-%Y"))
+        write!(writer, "\"{}\"", self.as_ref().format("%d-%b-%Y"))
     }
 }
 
