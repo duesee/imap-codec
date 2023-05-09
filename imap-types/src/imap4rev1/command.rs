@@ -1694,18 +1694,26 @@ mod tests {
             CommandBody::append(
                 "inbox",
                 vec![],
-                Some(DateTime(
-                    ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
-                )),
+                Some(
+                    DateTime::try_from(
+                        ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                ),
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),
             CommandBody::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
-                Some(DateTime(
-                    ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200").unwrap(),
-                )),
+                Some(
+                    DateTime::try_from(
+                        ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                ),
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),

@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use arbitrary::{Arbitrary, Unstructured};
-use chrono::{FixedOffset, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnableOther;
@@ -204,38 +204,37 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
 }
 
 impl<'a> Arbitrary<'a> for DateTime {
-    fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // FIXME(#30): make arbitrary :-)
-
-        let local_datetime = NaiveDateTime::new(
-            ChronoNaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
-            NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        // Note: `chrono`s `NaiveDate::arbitrary` may `panic!`.
+        //       Thus, we implement this manually here.
+        let local_datetime = chrono::NaiveDateTime::new(
+            chrono::NaiveDate::from_ymd_opt(
+                u.int_in_range(0..=9999)?,
+                u.int_in_range(1..=12)?,
+                u.int_in_range(1..=31)?,
+            )
+            .ok_or(arbitrary::Error::IncorrectFormat)?,
+            chrono::NaiveTime::arbitrary(u)?,
         );
 
-        Ok(DateTime(
-            FixedOffset::east_opt(3600)
+        let hours = u.int_in_range(0..=23 * 3600)?;
+        let minutes = u.int_in_range(0..=59)? * 60;
+        // Seconds must be zero due to IMAPs encoding.
+
+        DateTime::try_from(
+            FixedOffset::east_opt(hours + minutes)
                 .unwrap()
                 .from_local_datetime(&local_datetime)
                 .unwrap(),
-        ))
+        )
+        .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 
 impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        loop {
-            // This was copied from the `chrono`.
-            const MIN_YEAR: i32 = i32::MIN >> 13;
-            const MAX_YEAR: i32 = i32::MAX >> 13;
-
-            let year: i32 = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
-            let month: u32 = u.int_in_range(1..=12)?;
-            let day: u32 = u.int_in_range(1..=31)?;
-
-            if let Some(chrono_naive_date) = ChronoNaiveDate::from_ymd_opt(year, month, day) {
-                return Ok(NaiveDate(chrono_naive_date));
-            }
-        }
+        NaiveDate::try_from(chrono::NaiveDate::arbitrary(u)?)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 

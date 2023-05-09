@@ -962,10 +962,10 @@ fn test_transcript_from_rfc() {
                         12,
                         vec![
                             FetchAttributeValue::Flags(vec![FlagFetch::Flag(Flag::Seen)]),
-                            FetchAttributeValue::InternalDate(DateTime(
+                            FetchAttributeValue::InternalDate(DateTime::try_from(
                                 chrono::DateTime::parse_from_rfc3339("1996-07-17T02:44:25-07:00")
                                     .unwrap(),
-                            )),
+                            ).unwrap()),
                             FetchAttributeValue::Rfc822Size(4286),
                             FetchAttributeValue::Envelope(Envelope {
                                 date: NString::from(

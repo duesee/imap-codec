@@ -13,12 +13,16 @@ use nom::{
     IResult,
 };
 
-/// `date = date-text / DQUOTE date-text DQUOTE`
+/// ```abnf
+/// date = date-text / DQUOTE date-text DQUOTE
+/// ```
 pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
-/// `date-text = date-day "-" date-month "-" date-year`
+/// ```abnf
+/// date-text = date-day "-" date-month "-" date-year
+/// ```
 pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
@@ -26,20 +30,24 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 
     Ok((
         remaining,
-        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate),
+        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate::unchecked),
     ))
 }
 
-/// `date-day = 1*2DIGIT`
+/// Day of month.
 ///
-/// Day of month
+/// ```abnf
+/// date-day = 1*2DIGIT
+/// ```
 pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
     digit_1_2(input)
 }
 
-/// `date-month = "Jan" / "Feb" / "Mar" / "Apr" /
+/// ```abnf
+/// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
 ///              "May" / "Jun" / "Jul" / "Aug" /
-///              "Sep" / "Oct" / "Nov" / "Dec"`
+///              "Sep" / "Oct" / "Nov" / "Dec"
+/// ```
 pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
         value(1, tag_no_case(b"Jan")),
@@ -57,14 +65,18 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
     ))(input)
 }
 
-/// `date-year = 4DIGIT`
+/// ```abnf
+/// date-year = 4DIGIT
+/// ```
 pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
     digit_4(input)
 }
 
-/// `time = 2DIGIT ":" 2DIGIT ":" 2DIGIT`
+/// Hours minutes seconds.
 ///
-/// Hours minutes seconds
+/// ```abnf
+/// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
+/// ```
 pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
@@ -76,10 +88,13 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
     ))
 }
 
-/// `date-time = DQUOTE
+/// ```abnf
+/// date-time = DQUOTE
 ///              date-day-fixed "-" date-month "-" date-year SP
-///              time SP zone
-///              DQUOTE`
+///              time SP
+///              zone
+///             DQUOTE
+/// ```
 pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
     let mut parser = delimited(
         DQUOTE,
@@ -107,7 +122,7 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
 
             // TODO: Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, DateTime(datetime)))
+                Ok((remaining, DateTime::unchecked(datetime)))
             } else {
                 Err(nom::Err::Failure(nom::error::Error::new(
                     remaining,
@@ -122,9 +137,11 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
     }
 }
 
-/// `date-day-fixed = (SP DIGIT) / 2DIGIT`
+/// Fixed-format version of date-day.
 ///
-/// Fixed-format version of date-day
+/// ```abnf
+/// date-day-fixed = (SP DIGIT) / 2DIGIT
+/// ```
 pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
         map(preceded(SP, take_while_m_n(1, 1, is_DIGIT)), |bytes| {
@@ -134,14 +151,15 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
     ))(input)
 }
 
-/// `zone = ("+" / "-") 4DIGIT`
+/// Signed four-digit value of hhmm representing hours and minutes east of Greenwich (that is, the
+/// amount that the given time differs from Universal Time).
 ///
-/// Signed four-digit value of hhmm representing
-/// hours and minutes east of Greenwich (that is,
-/// the amount that the given time differs from
-/// Universal Time).  Subtracting the timezone
-/// from the given time will give the UT form.
-/// The Universal Time zone is "+0000".
+/// Subtracting the timezone from the given time will give the UT form. The Universal Time zone is
+/// "+0000".
+///
+/// ```abnf
+/// zone = ("+" / "-") 4DIGIT
+/// ```
 pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
@@ -157,20 +175,6 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
 
     Ok((remaining, zone))
 }
-
-//fn digit_min_max(min: usize, max: usize) -> impl Fn(&[u8]) -> IResult<&[u8], ...> { // u8, u16, ...
-//    move |input| {
-//        map_res(
-//            map(take_while_m_n(min, max, is_DIGIT), |bytes|
-//                // # Safety
-//                //
-//                // `bytes` is always UTF-8.
-//                std::str::from_utf8(bytes).unwrap()
-//            ),
-//            str::parse::<u8>,
-//        )(input)
-//    }
-//}
 
 fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
     map_res(
@@ -210,7 +214,7 @@ fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::from_utf8;
+    use std::{convert::TryFrom, str::from_utf8};
 
     use super::*;
 
@@ -220,21 +224,21 @@ mod tests {
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
         );
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
         );
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
         );
     }
 
@@ -244,7 +248,7 @@ mod tests {
         assert_eq!(rem, b"");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
         );
     }
 
@@ -337,12 +341,13 @@ mod tests {
             NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
         );
 
-        let datetime = DateTime(
+        let datetime = DateTime::try_from(
             FixedOffset::east_opt(3600)
                 .unwrap()
                 .from_local_datetime(&local_datetime)
                 .unwrap(),
-        );
+        )
+        .unwrap();
 
         println!("{:?} == \n{:?}", val, datetime);
 

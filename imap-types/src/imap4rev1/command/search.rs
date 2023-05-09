@@ -184,9 +184,10 @@ mod tests {
             (SearchKey::Answered, b"ANSWERED"),
             (SearchKey::Bcc(AString::try_from("A").unwrap()), b"BCC A"),
             (
-                SearchKey::Before(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::Before(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"BEFORE \"12-Apr-2023\"",
             ),
             (SearchKey::Body(AString::try_from("A").unwrap()), b"BODY A"),
@@ -211,9 +212,10 @@ mod tests {
             (SearchKey::Not(Box::new(SearchKey::New)), b"NOT NEW"),
             (SearchKey::Old, b"OLD"),
             (
-                SearchKey::On(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::On(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"ON \"12-Apr-2023\"",
             ),
             (
@@ -223,27 +225,31 @@ mod tests {
             (SearchKey::Recent, b"RECENT"),
             (SearchKey::Seen, b"SEEN"),
             (
-                SearchKey::SentBefore(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::SentBefore(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"SENTBEFORE \"12-Apr-2023\"",
             ),
             (
-                SearchKey::SentOn(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::SentOn(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"SENTON \"12-Apr-2023\"",
             ),
             (
-                SearchKey::SentSince(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::SentSince(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"SENTSINCE \"12-Apr-2023\"",
             ),
             (
-                SearchKey::Since(NaiveDate(
-                    chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap(),
-                )),
+                SearchKey::Since(
+                    NaiveDate::try_from(chrono::NaiveDate::from_ymd_opt(2023, 04, 12).unwrap())
+                        .unwrap(),
+                ),
                 b"SINCE \"12-Apr-2023\"",
             ),
             (SearchKey::Smaller(1337), b"SMALLER 1337"),
