@@ -85,7 +85,7 @@ pub enum SearchKey<'a> {
     New,
 
     /// Messages that do not match the specified search key.
-    Not(Box<SearchKey<'a>>), // TODO(misuse): is this a Vec or a single SearchKey?
+    Not(Box<SearchKey<'a>>),
 
     /// Messages that do not have the \Recent flag set.  This is
     /// functionally equivalent to "NOT RECENT" (as opposed to "NOT
@@ -97,7 +97,7 @@ pub enum SearchKey<'a> {
     On(NaiveDate),
 
     /// Messages that match either search key.
-    Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>), /* TODO(misuse): is this a Vec or a single SearchKey? */
+    Or(Box<SearchKey<'a>>, Box<SearchKey<'a>>),
 
     /// Messages that have the \Recent flag set.
     Recent,
