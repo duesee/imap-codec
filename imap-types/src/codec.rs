@@ -1429,17 +1429,17 @@ impl Encode for ChronoDateTime<FixedOffset> {
 impl<'a> Encode for Continue<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Continue::Basic { code, text } => match code {
+            Continue::Basic(continue_basic) => match continue_basic.code() {
                 Some(ref code) => {
                     writer.write_all(b"+ [")?;
                     code.encode(writer)?;
                     writer.write_all(b"] ")?;
-                    text.encode(writer)?;
+                    continue_basic.text().encode(writer)?;
                     writer.write_all(b"\r\n")
                 }
                 None => {
                     writer.write_all(b"+ ")?;
-                    text.encode(writer)?;
+                    continue_basic.text().encode(writer)?;
                     writer.write_all(b"\r\n")
                 }
             },

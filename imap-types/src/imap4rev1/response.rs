@@ -8,6 +8,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
+use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
@@ -617,22 +618,16 @@ pub enum FetchError<I, A> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Continue<'a> {
-    Basic {
-        code: Option<Code<'a>>,
-        text: Text<'a>,
-    },
+    Basic(ContinueBasic<'a>),
     Base64(Cow<'a, [u8]>),
 }
 
 impl<'a> Continue<'a> {
-    pub fn basic<T>(code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
+    pub fn basic<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ContinueError<T::Error>>
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Continue::Basic {
-            code,
-            text: text.try_into()?,
-        })
+        Ok(Continue::Basic(ContinueBasic::new(code, text)?))
     }
 
     pub fn base64<'data: 'a, D>(data: D) -> Self
@@ -641,6 +636,48 @@ impl<'a> Continue<'a> {
     {
         Continue::Base64(data.into())
     }
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ContinueBasic<'a> {
+    code: Option<Code<'a>>,
+    text: Text<'a>,
+}
+
+impl<'a> ContinueBasic<'a> {
+    pub fn new<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ContinueError<T::Error>>
+    where
+        T: TryInto<Text<'a>>,
+    {
+        let text = text.try_into().map_err(ContinueError::Text)?;
+
+        // We need to work around an ambiguity in IMAP:
+        // When there is no `Code`, the `Text` must *not* be valid according to base64.
+        // Otherwise, we could send a `Continue::Basic` that is interpreted as `Continue::Base64`.
+        if code.is_none() && _base64.decode(text.inner()).is_ok() {
+            return Err(ContinueError::Ambiguity);
+        }
+
+        Ok(Self { code, text })
+    }
+
+    pub fn code(&self) -> Option<&Code<'a>> {
+        self.code.as_ref()
+    }
+
+    pub fn text(&self) -> &Text<'a> {
+        &self.text
+    }
+}
+
+#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ContinueError<T> {
+    #[error("invalid text")]
+    Text(T),
+    #[error("using no code and valid base64 may result in ambiguities")]
+    Ambiguity,
 }
 
 /// A response code consists of data inside square brackets in the form of an atom,
