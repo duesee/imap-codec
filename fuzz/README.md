@@ -44,7 +44,7 @@ cargo +nightly fuzz run <target>
 | `command`                          | Test parsing           | Must not fail.                             |
 | `response`                         | Test parsing           | Must not fail.                             |
 | `greeting_to_bytes_and_back`       | Test misuse-resistance | Must not fail.                             |
-| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail (but has remaining `TODO`s). |
+| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail.                             |
 | `response_to_bytes_and_back`       | Test misuse-resistance | Must not fail (but has remaining `TODO`s). |
 
 Three first three fuzz targets are used to test the parsing routines.

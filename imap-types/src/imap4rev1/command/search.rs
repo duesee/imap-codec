@@ -171,6 +171,10 @@ mod tests {
     fn test_encode_search_key() {
         let tests = [
             (
+                SearchKey::And(NonEmptyVec::try_from(vec![SearchKey::Answered]).unwrap()),
+                b"(ANSWERED)".as_ref(),
+            ),
+            (
                 SearchKey::And(
                     NonEmptyVec::try_from(vec![SearchKey::Answered, SearchKey::Seen]).unwrap(),
                 ),
