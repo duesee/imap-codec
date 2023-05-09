@@ -13,7 +13,7 @@ use crate::{
     message::{AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, NaiveDate, Tag},
     response::{
         data::{Capability, QuotedChar},
-        CodeOther, Text,
+        Code, CodeOther, ContinueBasic, Text,
     },
 };
 
@@ -64,6 +64,13 @@ implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom! { SequenceSet, &str }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
+
+impl<'a> Arbitrary<'a> for ContinueBasic<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        ContinueBasic::new(Option::<Code>::arbitrary(u)?, Text::arbitrary(u)?)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
 
 impl<'a> Arbitrary<'a> for Literal<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {

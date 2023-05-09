@@ -1,11 +1,10 @@
 #![no_main]
 
-use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 #[cfg(feature = "debug")]
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{data::FetchAttributeValue, Continue, Data, Response},
+    response::{data::FetchAttributeValue, Data, Response},
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -22,16 +21,6 @@ fuzz_target!(|test: Response| {
                     }
                     _ => {}
                 }
-            }
-        }
-        Response::Continue(Continue::Basic {
-            code: None,
-            ref text,
-        }) => {
-            // Oh, IMAP :-/
-            if _base64.decode(text.inner()).is_ok() {
-                // FIXME(#30)
-                return;
             }
         }
         _ => {}

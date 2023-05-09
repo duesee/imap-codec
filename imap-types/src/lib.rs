@@ -287,7 +287,10 @@ pub mod response {
 
     pub use crate::imap4rev1::{
         core::Text,
-        response::{Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status},
+        response::{
+            Code, CodeOther, Continue, ContinueBasic, Data, Greeting, GreetingKind, Response,
+            Status,
+        },
     };
 
     pub mod data {
