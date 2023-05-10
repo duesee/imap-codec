@@ -1,17 +1,17 @@
-use std::{borrow::Cow, convert::TryFrom};
+use std::convert::TryFrom;
 
 use abnf_core::streaming::SP;
 use imap_types::{
     core::{IString, NString, NonEmptyVec},
     response::data::{
-        BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
-        SpecificFields,
+        BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
+        SinglePartExtensionData, SpecificFields,
     },
 };
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
-    combinator::{map, opt, recognize},
+    combinator::{map, opt},
     multi::{many0, many1, separated_list1},
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -75,21 +75,20 @@ fn body_type_1part_limited<'a>(
         )));
     }
 
-    let body_type_msg =
-        move |input: &'a [u8]| body_type_msg_limited(input, remaining_recursions.saturating_sub(1));
+    let body_type_msg = move |input: &'a [u8]| body_type_msg_limited(input, 8);
 
     let mut parser = tuple((
         alt((body_type_msg, body_type_text, body_type_basic)),
         opt(preceded(SP, body_ext_1part)),
     ));
 
-    let (remaining, ((basic, specific), maybe_extension)) = parser(input)?;
+    let (remaining, ((basic, specific), extension_data)) = parser(input)?;
 
     Ok((
         remaining,
         BodyStructure::Single {
             body: Body { basic, specific },
-            extension: maybe_extension,
+            extension_data,
         },
     ))
 }
@@ -273,12 +272,14 @@ pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
     number(input)
 }
 
-/// `body-ext-1part = body-fld-md5
+/// ```abnf
+/// body-ext-1part = body-fld-md5
 ///                   [SP body-fld-dsp
 ///                     [SP body-fld-lang
 ///                       [SP body-fld-loc *(SP body-extension)]
 ///                     ]
-///                   ]`
+///                   ]
+/// ```
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
@@ -287,7 +288,7 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
     let mut disposition = None;
     let mut language = None;
     let mut location = None;
-    let mut extension = Cow::Borrowed(&b""[..]);
+    let mut extensions = vec![];
 
     let (mut rem, md5) = body_fld_md5(input)?;
 
@@ -306,9 +307,9 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
                 rem = rem_;
                 location = Some(loc_);
 
-                let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
+                let (rem_, exts) = many0(preceded(SP, body_extension(8)))(rem)?;
                 rem = rem_;
-                extension = Cow::Borrowed(ext_);
+                extensions = exts;
             }
         }
     }
@@ -320,7 +321,7 @@ pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
             disposition,
             language,
             location,
-            extension,
+            extensions,
         },
     ))
 }
@@ -364,28 +365,30 @@ pub fn body_fld_loc(input: &[u8]) -> IResult<&[u8], NString> {
     nstring(input)
 }
 
-/// `body-extension = nstring /
-///                   number /
-///                   "(" body-extension *(SP body-extension) ")"`
-///
 /// Future expansion.
 ///
 /// Client implementations MUST accept body-extension fields.
 /// Server implementations MUST NOT generate body-extension fields except as defined by
 /// future standard or standards-track revisions of this specification.
 ///
+/// ```abnf
+/// body-extension = nstring /
+///                  number /
+///                  "(" body-extension *(SP body-extension) ")"
+/// ```
+///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-///
-/// FIXME: This recognizes extension data and returns &[u8].
-pub fn body_extension(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
+pub fn body_extension(
+    remaining_recursions: usize,
+) -> impl Fn(&[u8]) -> IResult<&[u8], BodyExtension> {
     move |input: &[u8]| body_extension_limited(input, remaining_recursions)
 }
 
 fn body_extension_limited<'a>(
     input: &'a [u8],
     remaining_recursion: usize,
-) -> IResult<&'a [u8], &[u8]> {
+) -> IResult<&'a [u8], BodyExtension> {
     if remaining_recursion == 0 {
         return Err(nom::Err::Failure(nom::error::make_error(
             input,
@@ -397,13 +400,12 @@ fn body_extension_limited<'a>(
         move |input: &'a [u8]| body_extension_limited(input, remaining_recursion.saturating_sub(1));
 
     alt((
-        recognize(nstring),
-        recognize(number),
-        recognize(delimited(
-            tag(b"("),
-            separated_list1(SP, body_extension),
-            tag(b")"),
-        )),
+        map(nstring, BodyExtension::NString),
+        map(number, BodyExtension::Number),
+        map(
+            delimited(tag(b"("), separated_list1(SP, body_extension), tag(b")")),
+            |body_extensions| BodyExtension::List(NonEmptyVec::new_unchecked(body_extensions)),
+        ),
     ))(input)
 }
 
@@ -444,12 +446,14 @@ fn body_type_mpart_limited(
     ))
 }
 
-/// `body-ext-mpart = body-fld-param
+/// ```abnf
+/// body-ext-mpart = body-fld-param
 ///                   [SP body-fld-dsp
 ///                     [SP body-fld-lang
 ///                       [SP body-fld-loc *(SP body-extension)]
 ///                     ]
-///                   ]`
+///                   ]
+/// ```
 ///
 /// MUST NOT be returned on non-extensible "BODY" fetch
 ///
@@ -458,7 +462,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
     let mut disposition = None;
     let mut language = None;
     let mut location = None;
-    let mut extension = Cow::Borrowed(&b""[..]);
+    let mut extensions = vec![];
 
     let (mut rem, parameter_list) = body_fld_param(input)?;
 
@@ -477,9 +481,9 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
                 rem = rem_;
                 location = Some(loc_);
 
-                let (rem_, ext_) = recognize(many0(preceded(SP, body_extension(8))))(rem)?;
+                let (rem_, exts) = many0(preceded(SP, body_extension(8)))(rem)?;
                 rem = rem_;
-                extension = Cow::Borrowed(ext_);
+                extensions = exts;
             }
         }
     }
@@ -491,7 +495,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
             disposition,
             language,
             location,
-            extension,
+            extensions,
         },
     ))
 }
@@ -563,7 +567,17 @@ pub fn media_text(input: &[u8]) -> IResult<&[u8], IString> {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU32;
+
     use super::*;
+    use crate::{
+        core::Literal,
+        response::{
+            data::{FetchAttributeValue, SpecificFields::Basic},
+            Data, Response,
+        },
+        testing::known_answer_test_encode,
+    };
 
     #[test]
     fn test_parse_media_basic() {
@@ -595,6 +609,10 @@ mod tests {
             b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") nil|xxx".as_ref(),
             b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\"|xxx".as_ref(),
             b"\"md5\" (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" (1 \"2\" (nil 4))|xxx".as_ref(),
+            b"\"AABB\" NIL NIL NIL 1337|xxx",
+            b"\"AABB\" NIL NIL NIL (1337)|xxx",
+            b"\"AABB\" NIL NIL NIL (1337 1337)|xxx",
+            b"\"AABB\" NIL NIL NIL (1337 (1337 (1337 \"FOO\" {0}\r\n)))|xxx",
         ]
         .iter()
         {
@@ -622,12 +640,91 @@ mod tests {
             b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") nil|xxx".as_ref(),
             b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\"|xxx".as_ref(),
             b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" (1 \"2\" (nil 4))|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" (1 \"2\" (nil 4) {0}\r\n)|xxx".as_ref(),
+            b"(\"key\" \"value\") (\"dsp\" (\"key\" \"value\")) (\"german\" \"russian\") \"loc\" {0}\r\n {0}\r\n|xxx".as_ref(),
         ]
             .iter()
         {
             let (rem, out) = body_ext_mpart(test).unwrap();
             println!("{:?}", out);
             assert_eq!(rem, b"|xxx");
+        }
+    }
+
+    #[test]
+    fn test_parse_body() {
+        dbg!(body(9)(b"((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\")|xxx").unwrap());
+    }
+
+    #[test]
+    fn test_encode_decode() {
+        let tests = [(
+            Response::Data(Data::Fetch {
+                seq_or_uid: NonZeroU32::try_from(3372220415).unwrap(),
+                attributes: NonEmptyVec::from(FetchAttributeValue::BodyStructure(
+                    BodyStructure::Multi {
+                        bodies: NonEmptyVec::from(BodyStructure::Multi {
+                            bodies: NonEmptyVec::from(BodyStructure::Multi {
+                                bodies: NonEmptyVec::from(BodyStructure::Multi {
+                                    bodies: NonEmptyVec::from(BodyStructure::Multi {
+                                        bodies: NonEmptyVec::from(BodyStructure::Multi {
+                                            bodies: NonEmptyVec::from(BodyStructure::Single {
+                                                body: Body {
+                                                    basic: BasicFields {
+                                                        parameter_list: vec![],
+                                                        id: NString(None),
+                                                        description: NString(None),
+                                                        content_transfer_encoding: IString::from(
+                                                            Literal::try_from(b"".as_ref())
+                                                                .unwrap(),
+                                                        ),
+                                                        size: 0,
+                                                    },
+                                                    specific: Basic {
+                                                        type_: IString::from(
+                                                            Literal::try_from(b"".as_ref())
+                                                                .unwrap(),
+                                                        ),
+                                                        subtype: IString::from(
+                                                            Literal::try_from(b"".as_ref())
+                                                                .unwrap(),
+                                                        ),
+                                                    },
+                                                },
+                                                extension_data: Some(SinglePartExtensionData {
+                                                    md5: NString::try_from("FOO").unwrap(),
+                                                    disposition: Some(None),
+                                                    language: Some(vec![]),
+                                                    location: Some(NString::try_from("LOCATION").unwrap()),
+                                                    extensions: vec![BodyExtension::Number(1337)],
+                                                }),
+                                            }),
+                                            subtype: IString::try_from("mixed").unwrap(),
+                                            extension_data: None,
+                                        }),
+                                        subtype: IString::try_from("mixed").unwrap(),
+                                        extension_data: None,
+                                    }),
+                                    subtype: IString::try_from("mixed").unwrap(),
+                                    extension_data: None,
+                                }),
+                                subtype: IString::try_from("mixed").unwrap(),
+                                extension_data: None,
+                            }),
+                            subtype: IString::try_from("mixed").unwrap(),
+                            extension_data: None,
+                        }),
+                        subtype: IString::try_from("mixed").unwrap(),
+                        extension_data: None,
+                    },
+                )),
+            }),
+            b"* 3372220415 FETCH (BODYSTRUCTURE ((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n"
+            .as_ref(),
+        )];
+
+        for test in tests {
+            known_answer_test_encode(test);
         }
     }
 }

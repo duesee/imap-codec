@@ -4,30 +4,13 @@
 use imap_codec::utils::escape_byte_string;
 use imap_codec::{
     codec::{Decode, Encode},
-    response::{data::FetchAttributeValue, Data, Response},
+    response::Response,
 };
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|test: Response| {
-    // TODO(#30): Skip certain generations for now as we know they need to be fixed.
-    //            The goal is to not skip anything eventually.
-    match test {
-        Response::Data(Data::Fetch { ref attributes, .. }) => {
-            for attribute in attributes.as_ref().iter() {
-                match attribute {
-                    FetchAttributeValue::Body(_) | FetchAttributeValue::BodyStructure(_) => {
-                        // FIXME(#30): Body(Structure)
-                        return;
-                    }
-                    _ => {}
-                }
-            }
-        }
-        _ => {}
-    }
-
     #[cfg(feature = "debug")]
-    println!("[!] Input: {test:?}");
+    println!("[!] Input: {test:#?}");
 
     let buffer = test.encode_detached().unwrap();
 

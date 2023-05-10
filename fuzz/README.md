@@ -38,14 +38,14 @@ cargo +nightly fuzz run <target>
 
 ... with `<target>` being ...
 
-| Name of the fuzz target `<target>` | Purpose                | Expectation                                |
-|------------------------------------|------------------------|--------------------------------------------|
-| `greeting`                         | Test parsing           | Must not fail.                             |
-| `command`                          | Test parsing           | Must not fail.                             |
-| `response`                         | Test parsing           | Must not fail.                             |
-| `greeting_to_bytes_and_back`       | Test misuse-resistance | Must not fail.                             |
-| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail.                             |
-| `response_to_bytes_and_back`       | Test misuse-resistance | Must not fail (but has remaining `TODO`s). |
+| Name of the fuzz target `<target>` | Purpose                | Expectation    |
+|------------------------------------|------------------------|----------------|
+| `greeting`                         | Test parsing           | Must not fail. |
+| `command`                          | Test parsing           | Must not fail. |
+| `response`                         | Test parsing           | Must not fail. |
+| `greeting_to_bytes_and_back`       | Test misuse-resistance | Must not fail. |
+| `command_to_bytes_and_back`        | Test misuse-resistance | Must not fail. |
+| `response_to_bytes_and_back`       | Test misuse-resistance | Must not fail. |
 
 Three first three fuzz targets are used to test the parsing routines.
 The fuzzers all do the same: try to parse the input from libFuzzer (and hope that the parsers don't crash), then,
@@ -74,7 +74,7 @@ cargo +nightly fuzz run <target> -j 32 -- -dict=terminals.dict -max_len=64 -only
 
 ## Structured fuzzing with `Arbitrary`
 
-This beautiful `Command`¹ ... 
+This beautiful `Command`¹ ...
 
 ```rust
 Command {

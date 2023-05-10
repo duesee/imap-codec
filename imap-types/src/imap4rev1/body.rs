@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -167,7 +165,6 @@ pub enum SpecificFields<'a> {
     },
 }
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -189,7 +186,7 @@ pub enum BodyStructure<'a> {
         /// Any following extension data are not yet defined in this
         /// version of the protocol, and would be as described above under
         /// multipart extension data.
-        extension: Option<SinglePartExtensionData<'a>>,
+        extension_data: Option<SinglePartExtensionData<'a>>,
     },
 
     /// Multiple parts are indicated by parenthesis nesting.  Instead
@@ -247,11 +244,9 @@ pub enum BodyStructure<'a> {
 }
 
 /// The extension data of a non-multipart body part are in the following order:
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// TODO(misuse)
 pub struct SinglePartExtensionData<'a> {
     /// A string giving the body MD5 value as defined in [MD5].
     pub md5: NString<'a>,
@@ -268,7 +263,7 @@ pub struct SinglePartExtensionData<'a> {
     /// A string list giving the body content URI as defined in [LOCATION].
     pub location: Option<NString<'a>>,
 
-    pub extension: Cow<'a, [u8]>,
+    pub extensions: Vec<BodyExtension<'a>>,
 }
 
 /// The extension data of a multipart body part are in the following order:
@@ -285,7 +280,6 @@ pub struct SinglePartExtensionData<'a> {
 ///           | extension multipart data
 /// )
 /// ```
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -317,5 +311,40 @@ pub struct MultiPartExtensionData<'a> {
     /// [LOCATION].
     pub location: Option<NString<'a>>,
 
-    pub extension: Cow<'a, [u8]>,
+    pub extensions: Vec<BodyExtension<'a>>,
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum BodyExtension<'a> {
+    NString(NString<'a>),
+    Number(u32),
+    List(NonEmptyVec<BodyExtension<'a>>),
+}
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+
+    use super::*;
+    use crate::{core::Quoted, testing::known_answer_test_encode};
+
+    #[test]
+    fn test_encode_single_part_extension_data() {
+        let tests = [(
+            SinglePartExtensionData {
+                md5: NString(None),
+                disposition: Some(None),
+                language: Some(vec![]),
+                location: Some(NString::from(Quoted::try_from("").unwrap())),
+                extensions: vec![],
+            },
+            b"NIL NIL NIL \"\"".as_ref(),
+        )];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
 }
