@@ -153,11 +153,10 @@
 mod arbitrary;
 mod imap4rev1;
 pub mod security;
-mod utils;
+pub mod utils;
 
-#[cfg(test)]
 pub mod testing {
-    use crate::codec::Encode;
+    use crate::{codec::Encode, utils::escape_byte_string};
 
     pub fn known_answer_test_encode(
         (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
@@ -167,11 +166,11 @@ pub mod testing {
         let got_bytes = got_bytes.as_slice();
 
         if expected_bytes != got_bytes {
-            println!("# Debug (`from_utf8_lossy`, encapsulated by `<<<` and `>>>`)");
+            println!("# Debug (`escape_byte_string`, encapsulated by `<<<` and `>>>`)");
             println!(
                 "Left:  <<<{}>>>\nRight: <<<{}>>>",
-                String::from_utf8_lossy(expected_bytes),
-                String::from_utf8_lossy(got_bytes),
+                escape_byte_string(expected_bytes),
+                escape_byte_string(got_bytes),
             );
             println!("# Debug");
             panic!("Left:  {:02x?}\nRight: {:02x?}", expected_bytes, got_bytes);
