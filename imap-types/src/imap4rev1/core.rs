@@ -582,6 +582,14 @@ pub struct NString<'a>(
     pub Option<IString<'a>>,
 );
 
+impl<'a> TryFrom<&'a str> for NString<'a> {
+    type Error = LiteralError;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Ok(Self(Some(IString::try_from(value)?)))
+    }
+}
+
 impl<'a> From<Literal<'a>> for NString<'a> {
     fn from(value: Literal<'a>) -> Self {
         Self(Some(IString::from(value)))
