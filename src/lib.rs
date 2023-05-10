@@ -99,9 +99,8 @@ pub mod codec;
 ))]
 mod extensions;
 mod imap4rev1;
-pub mod utils;
 
-pub use imap_types::{command, core, message, response, security, state};
+pub use imap_types::{command, core, message, response, security, state, testing, utils};
 
 // ----------- Compatibility modules -----------
 
