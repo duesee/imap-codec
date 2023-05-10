@@ -123,12 +123,12 @@
 //!                         subtype: IString::try_from("html").unwrap(),
 //!                     },
 //!                 },
-//!                 extension: Some(SinglePartExtensionData {
+//!                 extension_data: Some(SinglePartExtensionData {
 //!                     md5: NString(None),
 //!                     disposition: None,
 //!                     language: None,
 //!                     location: None,
-//!                     extension: Cow::Borrowed(b""),
+//!                     extensions: vec![],
 //!                 }),
 //!             }),
 //!         ])
@@ -297,8 +297,8 @@ pub mod response {
         pub use crate::imap4rev1::{
             address::Address,
             body::{
-                BasicFields, Body, BodyStructure, MultiPartExtensionData, SinglePartExtensionData,
-                SpecificFields,
+                BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
+                SinglePartExtensionData, SpecificFields,
             },
             core::QuotedChar,
             envelope::Envelope,

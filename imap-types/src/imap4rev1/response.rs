@@ -1021,7 +1021,14 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::*;
-    use crate::testing::known_answer_test_encode;
+    use crate::{
+        core::{IString, NString},
+        imap4rev1::body::BodyExtension,
+        response::data::{
+            BasicFields, Body, BodyStructure, SinglePartExtensionData, SpecificFields,
+        },
+        testing::known_answer_test_encode,
+    };
 
     #[test]
     fn test_encode_greeting() {
@@ -1182,85 +1189,74 @@ mod tests {
 
     #[test]
     fn test_body_structure() {
-        /*
-        let tests: Vec<(_, &[u8])> = vec![
+        let tests = [
             (
-                BodyStructure::Single(Body {
-                    parameter_list: vec![],
-                    id: NString::String(IString::try_from("ares").unwrap()),
-                    description: NString::Nil,
-                    content_transfer_encoding: IString::try_from("xxx").unwrap(),
-                    size: 123,
-                    specific: SpecificFields::Basic {
-                        type_: IString::try_from("application").unwrap(),
-                        subtype: IString::try_from("voodoo").unwrap(),
-                    },
-                    extension: None,
-                }),
-                b"(\"application\" \"voodoo\" nil \"ares\" nil \"xxx\" 123)",
-            ),
-            (
-                BodyStructure::Single(Body {
-                    parameter_list: vec![],
-                    id: NString::Nil,
-                    description: NString::Nil,
-                    content_transfer_encoding: IString::try_from("xxx").unwrap(),
-                    size: 123,
-                    specific: SpecificFields::Text {
-                        subtype: IString::try_from("plain").unwrap(),
-                        number_of_lines: 14,
-                    },
-                    extension: None,
-                }),
-                b"(\"text\" \"plain\" nil nil nil \"xxx\" 123 14)",
-            ),
-            (
-                BodyStructure::Single(Body {
-                    parameter_list: vec![],
-                    id: NString::Nil,
-                    description: NString::Nil,
-                    content_transfer_encoding: IString::try_from("xxx").unwrap(),
-                    size: 123,
-                    specific: SpecificFields::MessageRfc822 {
-                        envelope: Envelope {
-                            date: IString::try_from("date").unwrap(),
-                            subject: IString::try_from("subject").unwrap(),
-                            from: vec![],
-                            sender: vec![],
-                            reply_to: vec![],
-                            to: vec![],
-                            cc: vec![],
-                            bcc: vec![],
-                            in_reply_to: IString::try_from("in-reply-to".to_string()).unwrap(),
-                            message_id: IString::try_from("message-id".to_string()).unwrap(),
-                        },
-                        body_structure: Box::new(BodyStructure::Single(Body {
+                BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields {
                             parameter_list: vec![],
-                            id: NString::Nil,
-                            description: NString::Nil,
-                            content_transfer_encoding: IString::try_from("xxx").unwrap(),
+                            id: NString(None),
+                            description: NString::try_from("description").unwrap(),
+                            content_transfer_encoding: IString::try_from("cte").unwrap(),
                             size: 123,
-                            specific: SpecificFields::Basic {
-                                type_: IString::try_from("application").unwrap(),
-                                subtype: IString::try_from("voodoo").unwrap(),
-                            },
-                            extension: None,
-                        })),
-                        number_of_lines: 14,
+                        },
+                        specific: SpecificFields::Basic {
+                            type_: IString::try_from("application").unwrap(),
+                            subtype: IString::try_from("voodoo").unwrap(),
+                        },
                     },
-                    extension: None,
-                }),
-                b"(\"message\" \"rfc822\" nil nil nil \"xxx\" 123 ????????? (\"application\" \"voodoo\" nil nil nil \"xxx\" 123) 14)",
+                    extension_data: None,
+                },
+                b"(\"application\" \"voodoo\" NIL NIL \"description\" \"cte\" 123)".as_ref(),
+            ),
+            (
+                BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields {
+                            parameter_list: vec![],
+                            id: NString(None),
+                            description: NString::try_from("description").unwrap(),
+                            content_transfer_encoding: IString::try_from("cte").unwrap(),
+                            size: 123,
+                        },
+                        specific: SpecificFields::Text {
+                            subtype: IString::try_from("plain").unwrap(),
+                            number_of_lines: 14,
+                        },
+                    },
+                    extension_data: None,
+                },
+                b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14)",
+            ),
+            (
+                BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields {
+                            parameter_list: vec![],
+                            id: NString(None),
+                            description: NString::try_from("description").unwrap(),
+                            content_transfer_encoding: IString::try_from("cte").unwrap(),
+                            size: 123,
+                        },
+                        specific: SpecificFields::Text {
+                            subtype: IString::try_from("plain").unwrap(),
+                            number_of_lines: 14,
+                        },
+                    },
+                    extension_data: Some(SinglePartExtensionData {
+                        md5: NString::try_from("AABB".as_ref()).unwrap(),
+                        disposition: Some(None),
+                        language: Some(vec![]),
+                        location: Some(NString(None)),
+                        extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
+                    }),
+                },
+                b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14 \"AABB\" NIL NIL NIL (1337))",
             ),
         ];
 
-        for (parsed, serialized) in tests.into_iter() {
-            assert_eq!(
-                String::from_utf8(parsed.serialize()).unwrap(),
-                String::from_utf8(serialized.to_vec()).unwrap()
-            );
-            //assert_eq!(parsed, BodyStructure::deserialize(serialized).unwrap().1);
+        for test in tests {
+            known_answer_test_encode(test);
         }
-        */
     }
 }

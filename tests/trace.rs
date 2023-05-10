@@ -1056,7 +1056,7 @@ fn test_transcript_from_rfc() {
                                         number_of_lines: 92,
                                     },
                                 },
-                                extension: None,
+                                extension_data: None,
                             }),
                         ],
                     )

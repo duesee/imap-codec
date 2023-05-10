@@ -9,10 +9,14 @@ use crate::extensions::enable::CapabilityEnableOther;
 use crate::extensions::quota::ResourceOther;
 use crate::{
     command::{search::SearchKey, ListCharString, SequenceSet},
-    core::{AString, Atom, AtomExt, Literal, NonEmptyVec, Quoted},
+    core::{AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted},
+    imap4rev1::body::{BasicFields, SinglePartExtensionData},
     message::{AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, NaiveDate, Tag},
     response::{
-        data::{Capability, QuotedChar},
+        data::{
+            Body, BodyExtension, BodyStructure, Capability, Envelope, MultiPartExtensionData,
+            QuotedChar, SpecificFields,
+        },
         Code, CodeOther, ContinueBasic, Text,
     },
 };
@@ -207,6 +211,196 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
         }
 
         make_search_key_rec(u, 7)
+    }
+}
+
+impl<'a> Arbitrary<'a> for BodyStructure<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        fn make_body_structure_terminator<'a>(
+            u: &mut Unstructured<'a>,
+        ) -> arbitrary::Result<BodyStructure<'a>> {
+            Ok(BodyStructure::Single {
+                body: Body {
+                    basic: BasicFields::arbitrary(u)?,
+                    specific: match u.int_in_range(1..=2)? {
+                        1 => SpecificFields::Basic {
+                            type_: IString::arbitrary(u)?,
+                            subtype: IString::arbitrary(u)?,
+                        },
+                        // No SpecificFields::Message because it would recurse.
+                        2 => SpecificFields::Text {
+                            subtype: IString::arbitrary(u)?,
+                            number_of_lines: u32::arbitrary(u)?,
+                        },
+                        _ => unreachable!(),
+                    },
+                },
+                extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
+            })
+        }
+
+        fn make_body_structure_rec<'a>(
+            u: &mut Unstructured<'a>,
+            depth: u8,
+        ) -> arbitrary::Result<BodyStructure<'a>> {
+            if depth == 0 {
+                return make_body_structure_terminator(u);
+            }
+
+            Ok(match u.int_in_range(1..=2)? {
+                1 => BodyStructure::Single {
+                    body: Body {
+                        basic: BasicFields::arbitrary(u)?,
+                        specific: match u.int_in_range(1..=3)? {
+                            1 => SpecificFields::Basic {
+                                type_: IString::arbitrary(u)?,
+                                subtype: IString::arbitrary(u)?,
+                            },
+                            2 => SpecificFields::Message {
+                                envelope: Box::<Envelope>::arbitrary(u)?,
+                                body_structure: Box::new(make_body_structure_rec(u, depth - 1)?),
+                                number_of_lines: u32::arbitrary(u)?,
+                            },
+                            3 => SpecificFields::Text {
+                                subtype: IString::arbitrary(u)?,
+                                number_of_lines: u32::arbitrary(u)?,
+                            },
+                            _ => unreachable!(),
+                        },
+                    },
+                    extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
+                },
+                2 => BodyStructure::Multi {
+                    bodies: {
+                        let bodies = {
+                            let len = u.arbitrary_len::<BodyStructure>()?;
+                            let mut tmp = Vec::with_capacity(len);
+
+                            for _ in 0..len {
+                                tmp.push(make_body_structure_rec(u, depth - 1)?);
+                            }
+
+                            tmp
+                        };
+
+                        if !bodies.is_empty() {
+                            NonEmptyVec::try_from(bodies).unwrap()
+                        } else {
+                            NonEmptyVec::from(make_body_structure_terminator(u)?)
+                        }
+                    },
+                    subtype: IString::arbitrary(u)?,
+                    extension_data: Option::<MultiPartExtensionData>::arbitrary(u)?,
+                },
+                _ => unreachable!(),
+            })
+        }
+
+        make_body_structure_rec(u, 3)
+    }
+}
+
+impl<'a> Arbitrary<'a> for SinglePartExtensionData<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let disposition = Option::<Option<(IString, Vec<(IString, IString)>)>>::arbitrary(u)?;
+        let mut language = None;
+        let mut location = None;
+        let mut extensions = vec![];
+
+        if disposition.is_some() {
+            language = Option::<Vec<IString>>::arbitrary(u)?;
+            if language.is_some() {
+                location = Option::<NString>::arbitrary(u)?;
+                if location.is_some() {
+                    extensions = Vec::<BodyExtension>::arbitrary(u)?;
+                }
+            }
+        }
+
+        Ok(SinglePartExtensionData {
+            md5: NString::arbitrary(u)?,
+            disposition,
+            language,
+            location,
+            extensions,
+        })
+    }
+}
+
+impl<'a> Arbitrary<'a> for MultiPartExtensionData<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let disposition = Option::<Option<(IString, Vec<(IString, IString)>)>>::arbitrary(u)?;
+        let mut language = None;
+        let mut location = None;
+        let mut extensions = vec![];
+
+        if disposition.is_some() {
+            language = Option::<Vec<IString>>::arbitrary(u)?;
+            if language.is_some() {
+                location = Option::<NString>::arbitrary(u)?;
+                if location.is_some() {
+                    extensions = Vec::<BodyExtension>::arbitrary(u)?;
+                }
+            }
+        }
+
+        Ok(MultiPartExtensionData {
+            parameter_list: Vec::<(IString, IString)>::arbitrary(u)?,
+            disposition,
+            language,
+            location,
+            extensions,
+        })
+    }
+}
+
+impl<'a> Arbitrary<'a> for BodyExtension<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        fn make_body_extension_terminator<'a>(
+            u: &mut Unstructured<'a>,
+        ) -> arbitrary::Result<BodyExtension<'a>> {
+            Ok(match u.int_in_range(1..=2)? {
+                1 => BodyExtension::NString(NString::arbitrary(u)?),
+                2 => BodyExtension::Number(u32::arbitrary(u)?),
+                // No `BodyExtension::List` because it could recurse.
+                _ => unreachable!(),
+            })
+        }
+
+        fn make_body_extension_rec<'a>(
+            u: &mut Unstructured<'a>,
+            depth: u8,
+        ) -> arbitrary::Result<BodyExtension<'a>> {
+            if depth == 0 {
+                return make_body_extension_terminator(u);
+            }
+
+            Ok(match u.int_in_range(1..=2)? {
+                1 => BodyExtension::NString(NString::arbitrary(u)?),
+                2 => BodyExtension::Number(u32::arbitrary(u)?),
+                3 => BodyExtension::List({
+                    let body_extensions = {
+                        let len = u.arbitrary_len::<BodyExtension>()?;
+                        let mut tmp = Vec::with_capacity(len);
+
+                        for _ in 0..len {
+                            tmp.push(make_body_extension_rec(u, depth - 1)?);
+                        }
+
+                        tmp
+                    };
+
+                    if !body_extensions.is_empty() {
+                        NonEmptyVec::try_from(body_extensions).unwrap()
+                    } else {
+                        NonEmptyVec::from(make_body_extension_terminator(u)?)
+                    }
+                }),
+                _ => unreachable!(),
+            })
+        }
+
+        make_body_extension_rec(u, 3)
     }
 }
 

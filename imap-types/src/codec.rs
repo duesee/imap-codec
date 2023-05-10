@@ -41,9 +41,9 @@ use crate::{
     },
     response::{
         data::{
-            Address, BasicFields, Body, BodyStructure, Capability, Envelope, FetchAttributeValue,
-            MultiPartExtensionData, QuotedChar, SinglePartExtensionData, SpecificFields,
-            StatusAttributeValue,
+            Address, BasicFields, Body, BodyExtension, BodyStructure, Capability, Envelope,
+            FetchAttributeValue, MultiPartExtensionData, QuotedChar, SinglePartExtensionData,
+            SpecificFields, StatusAttributeValue,
         },
         Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
@@ -1217,7 +1217,10 @@ impl<'a> Encode for BodyStructure<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"(")?;
         match self {
-            BodyStructure::Single { body, extension } => {
+            BodyStructure::Single {
+                body,
+                extension_data: extension,
+            } => {
                 body.encode(writer)?;
                 if let Some(extension) = extension {
                     writer.write_all(b" ")?;
@@ -1368,10 +1371,9 @@ impl<'a> Encode for SinglePartExtensionData<'a> {
                     writer.write_all(b" ")?;
                     loc.encode(writer)?;
 
-                    if !self.extension.is_empty() {
-                        // FIXME: Extension includes the SP for now, as it is unparsed.
-                        //writer.write_all(b" ")?;
-                        writer.write_all(&self.extension)?;
+                    for body_extension in &self.extensions {
+                        writer.write_all(b" ")?;
+                        body_extension.encode(writer)?;
                     }
                 }
             }
@@ -1407,16 +1409,29 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
                     writer.write_all(b" ")?;
                     loc.encode(writer)?;
 
-                    if !self.extension.is_empty() {
-                        // FIXME: Extension includes the SP for now, as it is unparsed.
-                        //writer.write_all(b" ");
-                        writer.write_all(&self.extension)?;
+                    for body_extension in &self.extensions {
+                        writer.write_all(b" ")?;
+                        body_extension.encode(writer)?;
                     }
                 }
             }
         }
 
         Ok(())
+    }
+}
+
+impl<'a> Encode for BodyExtension<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            BodyExtension::NString(nstring) => nstring.encode(writer),
+            BodyExtension::Number(number) => number.encode(writer),
+            BodyExtension::List(list) => {
+                writer.write_all(b"(")?;
+                join_serializable(list.as_ref(), b" ", writer)?;
+                writer.write_all(b")")
+            }
+        }
     }
 }
 
