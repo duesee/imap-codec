@@ -4,6 +4,7 @@ on:
   schedule:
     # 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
     - cron: '43 21 * * 3,0'
+  workflow_dispatch:
 
 jobs:
   audit:

@@ -13,44 +13,42 @@ on:
       - '**.rs'
       - '**.toml'
       - '.github/workflows/**'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  Test:
+  test:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Setup | Install toolchain
-        uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Setup | Install toolchain
-        uses: actions-rs/toolchain@88dc2356392166efad76775c878094f4e83ff746
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: false
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup toolchain install nightly --profile minimal
 
       - name: Setup | Install cargo-fuzz
         run: |
           cargo install cargo-fuzz
 
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Setup | Cache dependencies
+        uses: Swatinem/rust-cache@v2.2.1
+        id: cache
+        with:
+          cache-all-crates: true
 
-      - name: Test everything (w/o fuzzing)
+      - name: Debug
+        run: echo ${{ steps.cache.outputs.cache-hit }}
+
+      - name: Test | Everything w/o fuzzing (macOS, Ubuntu)
         if: matrix.os != 'windows-latest'
         run: |
           for build_mode in "" "--release";
@@ -62,7 +60,7 @@ jobs:
             done
           done
 
-      - name: Test everything (w/o fuzzing)
+      - name: Test | Everything w/o fuzzing (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           $build_modes = @('','--release')
@@ -75,16 +73,16 @@ jobs:
             }
           }
 
-      - name: Fuzzing (only on Ubuntu)
+      - name: Test | Limited fuzzing (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           for fuzz_target in greeting command response greeting_to_bytes_and_back command_to_bytes_and_back response_to_bytes_and_back;
           do
-          echo "# ${fuzz_target}";
+          echo "# Fuzzing ${fuzz_target}";
           cargo +nightly fuzz run --features=ext ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs=25000
           done
 
-  Audit:
+  audit:
     runs-on: ubuntu-latest
 
     steps:
@@ -94,7 +92,7 @@ jobs:
       - name: Audit dependencies
         uses: EmbarkStudios/cargo-deny-action@7257a18a9c2fe3f92b85d41ae473520dff953c97
 
-  Clippy:
+  clippy:
     runs-on: ubuntu-latest
 
     steps:
@@ -115,7 +113,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
 
-  Formatting:
+  formatting:
     runs-on: ubuntu-latest
 
     steps:
