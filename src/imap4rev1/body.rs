@@ -4,8 +4,8 @@ use abnf_core::streaming::SP;
 use imap_types::{
     core::{IString, NString, NonEmptyVec},
     response::data::{
-        BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
-        SinglePartExtensionData, SpecificFields,
+        BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
+        MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
 };
 use nom::{
@@ -281,49 +281,36 @@ pub fn body_fld_lines(input: &[u8]) -> IResult<&[u8], u32> {
 ///                   ]
 /// ```
 ///
-/// MUST NOT be returned on non-extensible "BODY" fetch
-///
-/// TODO(cleanup): this is insane... define macro?
+/// Note: MUST NOT be returned on non-extensible "BODY" fetch.
 pub fn body_ext_1part(input: &[u8]) -> IResult<&[u8], SinglePartExtensionData> {
-    let mut disposition = None;
-    let mut language = None;
-    let mut location = None;
-    let mut extensions = vec![];
-
-    let (mut rem, md5) = body_fld_md5(input)?;
-
-    let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
-    if let Some(dsp_) = dsp_ {
-        rem = rem_;
-        disposition = Some(dsp_);
-
-        let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
-        if let Some(lang_) = lang_ {
-            rem = rem_;
-            language = Some(lang_);
-
-            let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
-            if let Some(loc_) = loc_ {
-                rem = rem_;
-                location = Some(loc_);
-
-                let (rem_, exts) = many0(preceded(SP, body_extension(8)))(rem)?;
-                rem = rem_;
-                extensions = exts;
-            }
-        }
-    }
-
-    Ok((
-        rem,
-        SinglePartExtensionData {
-            md5,
-            disposition,
-            language,
-            location,
-            extensions,
-        },
-    ))
+    map(
+        tuple((
+            body_fld_md5,
+            opt(map(
+                tuple((
+                    preceded(SP, body_fld_dsp),
+                    opt(map(
+                        tuple((
+                            preceded(SP, body_fld_lang),
+                            opt(map(
+                                tuple((
+                                    preceded(SP, body_fld_loc),
+                                    many0(preceded(SP, body_extension(8))),
+                                )),
+                                |(location, extensions)| Location {
+                                    location,
+                                    extensions,
+                                },
+                            )),
+                        )),
+                        |(language, tail)| Language { language, tail },
+                    )),
+                )),
+                |(disposition, tail)| Disposition { disposition, tail },
+            )),
+        )),
+        |(md5, tail)| SinglePartExtensionData { md5, tail },
+    )(input)
 }
 
 #[inline]
@@ -455,49 +442,39 @@ fn body_type_mpart_limited(
 ///                   ]
 /// ```
 ///
-/// MUST NOT be returned on non-extensible "BODY" fetch
-///
-/// TODO(cleanup): this is insane, too... define macro?
+/// Note: MUST NOT be returned on non-extensible "BODY" fetch.
 pub fn body_ext_mpart(input: &[u8]) -> IResult<&[u8], MultiPartExtensionData> {
-    let mut disposition = None;
-    let mut language = None;
-    let mut location = None;
-    let mut extensions = vec![];
-
-    let (mut rem, parameter_list) = body_fld_param(input)?;
-
-    let (rem_, dsp_) = opt(preceded(SP, body_fld_dsp))(rem)?;
-    if let Some(dsp_) = dsp_ {
-        rem = rem_;
-        disposition = Some(dsp_);
-
-        let (rem_, lang_) = opt(preceded(SP, body_fld_lang))(rem)?;
-        if let Some(lang_) = lang_ {
-            rem = rem_;
-            language = Some(lang_);
-
-            let (rem_, loc_) = opt(preceded(SP, body_fld_loc))(rem)?;
-            if let Some(loc_) = loc_ {
-                rem = rem_;
-                location = Some(loc_);
-
-                let (rem_, exts) = many0(preceded(SP, body_extension(8)))(rem)?;
-                rem = rem_;
-                extensions = exts;
-            }
-        }
-    }
-
-    Ok((
-        rem,
-        MultiPartExtensionData {
+    map(
+        tuple((
+            body_fld_param,
+            opt(map(
+                tuple((
+                    preceded(SP, body_fld_dsp),
+                    opt(map(
+                        tuple((
+                            preceded(SP, body_fld_lang),
+                            opt(map(
+                                tuple((
+                                    preceded(SP, body_fld_loc),
+                                    many0(preceded(SP, body_extension(8))),
+                                )),
+                                |(location, extensions)| Location {
+                                    location,
+                                    extensions,
+                                },
+                            )),
+                        )),
+                        |(language, tail)| Language { language, tail },
+                    )),
+                )),
+                |(disposition, tail)| Disposition { disposition, tail },
+            )),
+        )),
+        |(parameter_list, tail)| MultiPartExtensionData {
             parameter_list,
-            disposition,
-            language,
-            location,
-            extensions,
+            tail,
         },
-    ))
+    )(input)
 }
 
 // ---
@@ -693,10 +670,16 @@ mod tests {
                                                 },
                                                 extension_data: Some(SinglePartExtensionData {
                                                     md5: NString::try_from("FOO").unwrap(),
-                                                    disposition: Some(None),
-                                                    language: Some(vec![]),
-                                                    location: Some(NString::try_from("LOCATION").unwrap()),
-                                                    extensions: vec![BodyExtension::Number(1337)],
+                                                    tail: Some(Disposition{
+                                                        disposition: None,
+                                                        tail: Some(Language {
+                                                            language: vec![],
+                                                            tail: Some(Location{
+                                                                location: NString::try_from("LOCATION").unwrap(),
+                                                                extensions: vec![BodyExtension::Number(1337)],
+                                                            })
+                                                        })
+                                                    })
                                                 }),
                                             }),
                                             subtype: IString::try_from("mixed").unwrap(),

@@ -300,60 +300,6 @@ impl<'a> Arbitrary<'a> for BodyStructure<'a> {
     }
 }
 
-impl<'a> Arbitrary<'a> for SinglePartExtensionData<'a> {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let disposition = Option::<Option<(IString, Vec<(IString, IString)>)>>::arbitrary(u)?;
-        let mut language = None;
-        let mut location = None;
-        let mut extensions = vec![];
-
-        if disposition.is_some() {
-            language = Option::<Vec<IString>>::arbitrary(u)?;
-            if language.is_some() {
-                location = Option::<NString>::arbitrary(u)?;
-                if location.is_some() {
-                    extensions = Vec::<BodyExtension>::arbitrary(u)?;
-                }
-            }
-        }
-
-        Ok(SinglePartExtensionData {
-            md5: NString::arbitrary(u)?,
-            disposition,
-            language,
-            location,
-            extensions,
-        })
-    }
-}
-
-impl<'a> Arbitrary<'a> for MultiPartExtensionData<'a> {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let disposition = Option::<Option<(IString, Vec<(IString, IString)>)>>::arbitrary(u)?;
-        let mut language = None;
-        let mut location = None;
-        let mut extensions = vec![];
-
-        if disposition.is_some() {
-            language = Option::<Vec<IString>>::arbitrary(u)?;
-            if language.is_some() {
-                location = Option::<NString>::arbitrary(u)?;
-                if location.is_some() {
-                    extensions = Vec::<BodyExtension>::arbitrary(u)?;
-                }
-            }
-        }
-
-        Ok(MultiPartExtensionData {
-            parameter_list: Vec::<(IString, IString)>::arbitrary(u)?,
-            disposition,
-            language,
-            location,
-            extensions,
-        })
-    }
-}
-
 impl<'a> Arbitrary<'a> for BodyExtension<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         fn make_body_extension_terminator<'a>(

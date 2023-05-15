@@ -35,6 +35,7 @@ use crate::{
         SequenceSet,
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
+    imap4rev1::body::{Disposition, Language, Location},
     message::{
         AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagExtension, FlagFetch,
         FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, NaiveDate, Part, Section, Tag,
@@ -1349,34 +1350,10 @@ impl<'a> Encode for Address<'a> {
 impl<'a> Encode for SinglePartExtensionData<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         self.md5.encode(writer)?;
-        if let Some(ref dsp) = self.disposition {
+
+        if let Some(disposition) = &self.tail {
             writer.write_all(b" ")?;
-
-            match dsp {
-                Some((s, param)) => {
-                    writer.write_all(b"(")?;
-                    s.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(param).encode(writer)?;
-                    writer.write_all(b")")?;
-                }
-                None => writer.write_all(b"NIL")?,
-            }
-
-            if let Some(ref lang) = self.language {
-                writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
-
-                if let Some(ref loc) = self.location {
-                    writer.write_all(b" ")?;
-                    loc.encode(writer)?;
-
-                    for body_extension in &self.extensions {
-                        writer.write_all(b" ")?;
-                        body_extension.encode(writer)?;
-                    }
-                }
-            }
+            disposition.encode(writer)?;
         }
 
         Ok(())
@@ -1387,34 +1364,57 @@ impl<'a> Encode for MultiPartExtensionData<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         List1AttributeValueOrNil(&self.parameter_list).encode(writer)?;
 
-        if let Some(ref dsp) = self.disposition {
+        if let Some(disposition) = &self.tail {
             writer.write_all(b" ")?;
+            disposition.encode(writer)?;
+        }
 
-            match dsp {
-                Some((s, param)) => {
-                    writer.write_all(b"(")?;
-                    s.encode(writer)?;
-                    writer.write_all(b" ")?;
-                    List1AttributeValueOrNil(param).encode(writer)?;
-                    writer.write_all(b")")?;
-                }
-                None => writer.write_all(b"NIL")?,
-            }
+        Ok(())
+    }
+}
 
-            if let Some(ref lang) = self.language {
+impl<'a> Encode for Disposition<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match &self.disposition {
+            Some((s, param)) => {
+                writer.write_all(b"(")?;
+                s.encode(writer)?;
                 writer.write_all(b" ")?;
-                List1OrNil(lang, b" ").encode(writer)?;
-
-                if let Some(ref loc) = self.location {
-                    writer.write_all(b" ")?;
-                    loc.encode(writer)?;
-
-                    for body_extension in &self.extensions {
-                        writer.write_all(b" ")?;
-                        body_extension.encode(writer)?;
-                    }
-                }
+                List1AttributeValueOrNil(param).encode(writer)?;
+                writer.write_all(b")")?;
             }
+            None => writer.write_all(b"NIL")?,
+        }
+
+        if let Some(language) = &self.tail {
+            writer.write_all(b" ")?;
+            language.encode(writer)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a> Encode for Language<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        List1OrNil(&self.language, b" ").encode(writer)?;
+
+        if let Some(location) = &self.tail {
+            writer.write_all(b" ")?;
+            location.encode(writer)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a> Encode for Location<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.location.encode(writer)?;
+
+        for body_extension in &self.extensions {
+            writer.write_all(b" ")?;
+            body_extension.encode(writer)?;
         }
 
         Ok(())
