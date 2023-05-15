@@ -243,7 +243,8 @@ pub enum BodyStructure<'a> {
     },
 }
 
-/// The extension data of a non-multipart body part are in the following order:
+/// The extension data of a non-multipart body part.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -251,22 +252,11 @@ pub struct SinglePartExtensionData<'a> {
     /// A string giving the body MD5 value as defined in [MD5].
     pub md5: NString<'a>,
 
-    /// A parenthesized list with the same content and function as
-    /// the body disposition for a multipart body part.
-    #[allow(clippy::type_complexity)]
-    pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
-
-    /// A string or parenthesized list giving the body language
-    /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IString<'a>>>,
-
-    /// A string list giving the body content URI as defined in [LOCATION].
-    pub location: Option<NString<'a>>,
-
-    pub extensions: Vec<BodyExtension<'a>>,
+    /// (Optional) additional data.
+    pub tail: Option<Disposition<'a>>,
 }
 
-/// The extension data of a multipart body part are in the following order:
+/// The extension data of a multipart body part.
 ///
 /// # Trace (not in RFC)
 ///
@@ -280,37 +270,56 @@ pub struct SinglePartExtensionData<'a> {
 ///           | extension multipart data
 /// )
 /// ```
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiPartExtensionData<'a> {
-    /// `body parameter parenthesized list`
-    ///
     /// A parenthesized list of attribute/value pairs [e.g., ("foo"
     /// "bar" "baz" "rag") where "bar" is the value of "foo", and
     /// "rag" is the value of "baz"] as defined in [MIME-IMB].
     pub parameter_list: Vec<(IString<'a>, IString<'a>)>,
 
-    /// `body disposition`
-    ///
+    /// (Optional) additional data.
+    pub tail: Option<Disposition<'a>>,
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Disposition<'a> {
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
     /// attribute/value pairs as defined in [DISPOSITION].
-    #[allow(clippy::type_complexity)]
-    pub disposition: Option<Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>>,
+    pub disposition: Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>,
 
-    /// `body language`
-    ///
+    /// (Optional) additional data.
+    pub tail: Option<Language<'a>>,
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Language<'a> {
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
-    pub language: Option<Vec<IString<'a>>>,
+    pub language: Vec<IString<'a>>,
 
-    /// `body location`
-    ///
-    /// A string list giving the body content URI as defined in
-    /// [LOCATION].
-    pub location: Option<NString<'a>>,
+    /// (Optional) additional data.
+    pub tail: Option<Location<'a>>,
+}
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Location<'a> {
+    /// A string list giving the body content URI as defined in [LOCATION].
+    pub location: NString<'a>,
+
+    /// Extension data.
     pub extensions: Vec<BodyExtension<'a>>,
 }
 
@@ -335,10 +344,16 @@ mod tests {
         let tests = [(
             SinglePartExtensionData {
                 md5: NString(None),
-                disposition: Some(None),
-                language: Some(vec![]),
-                location: Some(NString::from(Quoted::try_from("").unwrap())),
-                extensions: vec![],
+                tail: Some(Disposition {
+                    disposition: None,
+                    tail: Some(Language {
+                        language: vec![],
+                        tail: Some(Location {
+                            location: NString::from(Quoted::try_from("").unwrap()),
+                            extensions: vec![],
+                        }),
+                    }),
+                }),
             },
             b"NIL NIL NIL \"\"".as_ref(),
         )];

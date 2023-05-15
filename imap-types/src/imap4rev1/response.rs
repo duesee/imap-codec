@@ -1023,9 +1023,10 @@ mod tests {
     use super::*;
     use crate::{
         core::{IString, NString},
-        imap4rev1::body::BodyExtension,
+        imap4rev1::body::{BodyExtension, Disposition},
         response::data::{
-            BasicFields, Body, BodyStructure, SinglePartExtensionData, SpecificFields,
+            BasicFields, Body, BodyStructure, Language, Location, SinglePartExtensionData,
+            SpecificFields,
         },
         testing::known_answer_test_encode,
     };
@@ -1245,10 +1246,16 @@ mod tests {
                     },
                     extension_data: Some(SinglePartExtensionData {
                         md5: NString::try_from("AABB".as_ref()).unwrap(),
-                        disposition: Some(None),
-                        language: Some(vec![]),
-                        location: Some(NString(None)),
-                        extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
+                        tail: Some(Disposition {
+                            disposition: None,
+                            tail: Some(Language {
+                                language: vec![],
+                                tail: Some(Location{
+                                    location: NString(None),
+                                    extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
+                                })
+                            })
+                        })
                     }),
                 },
                 b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14 \"AABB\" NIL NIL NIL (1337))",
