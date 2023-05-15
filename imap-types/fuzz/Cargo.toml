@@ -35,7 +35,7 @@ ext = [
 ]
 
 [dependencies]
-bounded-static = "0.4"
+bounded-static = "0.5"
 libfuzzer-sys = "0.4"
 imap-types = { path = "..", features = ["arbitrary", "bounded-static"] }
 
