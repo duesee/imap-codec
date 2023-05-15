@@ -1245,7 +1245,7 @@ mod tests {
                         },
                     },
                     extension_data: Some(SinglePartExtensionData {
-                        md5: NString::try_from("AABB".as_ref()).unwrap(),
+                        md5: NString::try_from("AABB").unwrap(),
                         tail: Some(Disposition {
                             disposition: None,
                             tail: Some(Language {
