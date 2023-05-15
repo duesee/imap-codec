@@ -5,6 +5,7 @@ RUN apt-get update && \
 	autoconf \
 	automake \
 	bison \
+	curl \
 	flex \
 	gettext \
 	git \
@@ -28,5 +29,5 @@ WORKDIR imaptest
 RUN ./autogen.sh
 RUN ./configure --with-dovecot=../dovecot
 RUN make 
-RUN src/imaptest --help
+RUN curl --location -O http://www.dovecot.org/tmp/dovecot-crlf
 WORKDIR ..
