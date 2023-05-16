@@ -1,20 +1,20 @@
 FROM ubuntu
 
-RUN apt-get update && \
-	apt-get -y install \
-	autoconf \
-	automake \
-	bison \
-	curl \
-	flex \
-	gettext \
-	git \
-	libssl-dev \
-	libtool \
-	make \
-	pkg-config \
-	wget \
-	zlib1g \
+RUN apt-get update &&\
+	apt-get -y install\
+	autoconf\
+	automake\
+	bison\
+	curl\
+	flex\
+	gettext\
+	git\
+	libssl-dev\
+	libtool\
+	make\
+	pkg-config\
+	wget\
+	zlib1g\
 	zlib1g-dev
 
 RUN git clone https://github.com/dovecot/core dovecot
