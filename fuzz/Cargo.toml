@@ -36,7 +36,6 @@ ext = [
 
 [dependencies]
 libfuzzer-sys = "0.4"
-base64 = "*"
 imap-codec = { path = "..", features = ["arbitrary"] }
 
 [[bin]]
