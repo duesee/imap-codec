@@ -38,11 +38,12 @@ chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { path = "imap-types", default-features = false, features = ["unchecked"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
-tokio-util = { version = "0.7", default-features = false, features = ["codec"], optional = true }
+tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
 
 [dev-dependencies]
 ansi_term = "0.12"
 criterion = "0.4"
+regex = "1.5.3"
 
 [[bench]]
 name = "parse_command"
