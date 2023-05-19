@@ -422,6 +422,8 @@ pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
         store,
         uid,
         search,
+        #[cfg(feature = "ext_unselect")]
+        value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
     ))(input)
 }
 

@@ -27,6 +27,7 @@ ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_quota = ["imap-types/ext_quota"]
 ext_sasl_ir = ["imap-types/ext_sasl_ir"]
+ext_unselect = ["imap-types/ext_unselect"]
 
 [dependencies]
 abnf-core = "0.5"
