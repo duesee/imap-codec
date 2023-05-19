@@ -27,6 +27,7 @@ ext_login_referrals = []
 ext_mailbox_referrals = []
 ext_quota = []
 ext_sasl_ir = []
+ext_unselect = []
 
 [dependencies]
 arbitrary = { version = "1.0.1", optional = true, features = ["derive"] }

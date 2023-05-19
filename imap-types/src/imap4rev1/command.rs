@@ -377,6 +377,9 @@ pub enum CommandBody<'a> {
     /// permanent state that can be modified with read-only mailboxes.
     Select { mailbox: Mailbox<'a> },
 
+    #[cfg(feature = "ext_unselect")]
+    Unselect,
+
     /// 6.3.2.  EXAMINE Command
     ///
     /// Arguments:  mailbox name
@@ -1522,6 +1525,8 @@ impl<'a> CommandBody<'a> {
             Self::Authenticate { .. } => "AUTHENTICATE",
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
+            #[cfg(feature = "ext_unselect")]
+            Self::Unselect { .. } => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",
             Self::Delete { .. } => "DELETE",

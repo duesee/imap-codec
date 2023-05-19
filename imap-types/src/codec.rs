@@ -137,6 +137,8 @@ impl<'a> Encode for CommandBody<'a> {
                 writer.write_all(b" ")?;
                 mailbox.encode(writer)
             }
+            #[cfg(feature = "ext_unselect")]
+            CommandBody::Unselect => writer.write_all(b"UNSELECT"),
             CommandBody::Examine { mailbox } => {
                 writer.write_all(b"EXAMINE")?;
                 writer.write_all(b" ")?;
