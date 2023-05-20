@@ -6,6 +6,8 @@ pub mod enable;
 pub mod idle;
 #[cfg(feature = "ext_literal")]
 pub mod literal;
+#[cfg(feature = "ext_move")]
+pub mod r#move;
 #[cfg(feature = "ext_quota")]
 pub mod quota;
 #[cfg(feature = "ext_unselect")]
