@@ -343,6 +343,21 @@ impl<'a> Encode for CommandBody<'a> {
                 join_serializable(quotas.as_ref(), b" ", writer)?;
                 writer.write_all(b")")
             }
+            #[cfg(feature = "ext_move")]
+            CommandBody::Move {
+                sequence_set,
+                mailbox,
+                uid,
+            } => {
+                if *uid {
+                    writer.write_all(b"UID MOVE ")?;
+                } else {
+                    writer.write_all(b"MOVE ")?;
+                }
+                sequence_set.encode(writer)?;
+                writer.write_all(b" ")?;
+                mailbox.encode(writer)
+            }
         }
     }
 }
@@ -830,6 +845,8 @@ impl<'a> Encode for Capability<'a> {
             Self::QuotaSet => writer.write_all(b"QUOTASET"),
             #[cfg(feature = "ext_literal")]
             Self::Literal(literal_capability) => literal_capability.encode(writer),
+            #[cfg(feature = "ext_move")]
+            Self::Move => writer.write_all(b"MOVE"),
             Self::Other(other) => other.inner.encode(writer),
         }
     }

@@ -1296,6 +1296,13 @@ pub enum CommandBody<'a> {
         /// List of resource limits.
         quotas: Vec<QuotaSet<'a>>,
     },
+
+    #[cfg(feature = "ext_move")]
+    Move {
+        sequence_set: SequenceSet,
+        mailbox: Mailbox<'a>,
+        uid: bool,
+    },
 }
 
 impl<'a> CommandBody<'a> {
@@ -1556,6 +1563,8 @@ impl<'a> CommandBody<'a> {
             Self::GetQuotaRoot { .. } => "GETQUOTAROOT",
             #[cfg(feature = "ext_quota")]
             Self::SetQuota { .. } => "SETQUOTA",
+            #[cfg(feature = "ext_move")]
+            Self::Move { .. } => "MOVE",
         }
     }
 }
@@ -2010,6 +2019,15 @@ mod tests {
                     quotas: vec![],
                 },
                 "SETQUOTA",
+            ),
+            #[cfg(feature = "ext_move")]
+            (
+                CommandBody::Move {
+                    sequence_set: SequenceSet::try_from(1).unwrap(),
+                    mailbox: Mailbox::Inbox,
+                    uid: true,
+                },
+                "MOVE",
             ),
         ];
 

@@ -19,6 +19,7 @@ ext_idle = ["imap-codec/ext_idle"]
 ext_literal = ["imap-codec/ext_literal"]
 ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
+ext_move = ["imap-codec/ext_move"]
 ext_quota = ["imap-codec/ext_quota"]
 ext_sasl_ir = ["imap-codec/ext_sasl_ir"]
 ext_unselect = ["imap-codec/ext_unselect"]
@@ -31,6 +32,7 @@ ext = [
     "ext_literal",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
+    "ext_move",
     "ext_quota",
     "ext_sasl_ir",
     "ext_unselect",

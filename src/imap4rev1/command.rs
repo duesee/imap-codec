@@ -29,6 +29,8 @@ use crate::extensions::enable::enable;
 use crate::extensions::idle::idle;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::{getquota, getquotaroot, setquota};
+#[cfg(feature = "ext_move")]
+use crate::extensions::r#move::r#move;
 use crate::imap4rev1::{
     auth_type,
     command::search::search,
@@ -424,6 +426,8 @@ pub fn command_select(input: &[u8]) -> IResult<&[u8], CommandBody> {
         search,
         #[cfg(feature = "ext_unselect")]
         value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
+        #[cfg(feature = "ext_move")]
+        r#move,
     ))(input)
 }
 
@@ -539,7 +543,18 @@ pub fn store_att_flags(input: &[u8]) -> IResult<&[u8], (StoreType, StoreResponse
 ///
 /// Note: Unique identifiers used instead of message sequence numbers
 pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"UID"), SP, alt((copy, fetch, search, store))));
+    let mut parser = tuple((
+        tag_no_case(b"UID"),
+        SP,
+        alt((
+            copy,
+            fetch,
+            search,
+            store,
+            #[cfg(feature = "ext_move")]
+            r#move,
+        )),
+    ));
 
     let (remaining, (_, _, mut cmd)) = parser(input)?;
 
@@ -548,6 +563,8 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
         | CommandBody::Fetch { ref mut uid, .. }
         | CommandBody::Search { ref mut uid, .. }
         | CommandBody::Store { ref mut uid, .. } => *uid = true,
+        #[cfg(feature = "ext_move")]
+        CommandBody::Move { ref mut uid, .. } => *uid = true,
         _ => unreachable!(),
     }
 

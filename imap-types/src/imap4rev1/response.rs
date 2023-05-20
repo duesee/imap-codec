@@ -900,6 +900,9 @@ pub enum Capability<'a> {
     /// See RFC 7888.
     #[cfg(feature = "ext_literal")]
     Literal(LiteralCapability),
+    /// See RFC 6851.
+    #[cfg(feature = "ext_move")]
+    Move,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -960,6 +963,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "literal+" => Self::Literal(LiteralCapability::Plus),
             #[cfg(feature = "ext_literal")]
             "literal-" => Self::Literal(LiteralCapability::Minus),
+            #[cfg(feature = "ext_move")]
+            "move" => Self::Move,
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {
