@@ -1614,20 +1614,28 @@ mod tests {
 
     use chrono::DateTime as ChronoDateTime;
 
+    #[cfg(feature = "ext_compress")]
+    use crate::message::CompressionAlgorithm;
     use crate::{
         codec::Encode,
         command::{
-            fetch::{FetchAttribute, Macro},
+            fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
             search::SearchKey,
             status::StatusAttribute,
             store::{StoreResponse, StoreType},
             CommandBody, ListMailbox, SeqOrUid, Sequence, SequenceSet,
         },
-        core::{AString, IString},
-        message::{AuthMechanism, Charset, DateTime, Flag, Part, Section},
+        core::{AString, IString, Literal},
+        message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Part, Section},
+        security::Secret,
     };
     #[cfg(feature = "ext_sasl_ir")]
-    use crate::{command::Command, message::Tag, security::Secret};
+    use crate::{command::Command, message::Tag};
+    #[cfg(feature = "ext_enable")]
+    use crate::{
+        core::NonEmptyVec,
+        message::{CapabilityEnable, Utf8Kind},
+    };
 
     #[test]
     fn test_conversion_command_body() {
@@ -1828,5 +1836,185 @@ mod tests {
         let buffer = command.encode_detached().unwrap();
 
         assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
+    }
+
+    #[test]
+    fn test_command_body_name() {
+        let tests = [
+            (CommandBody::Capability, "CAPABILITY"),
+            (CommandBody::Noop, "NOOP"),
+            (CommandBody::Logout, "LOGOUT"),
+            #[cfg(feature = "starttls")]
+            (CommandBody::StartTLS, "STARTTLS"),
+            (
+                CommandBody::Authenticate {
+                    mechanism: AuthMechanism::Plain,
+                    #[cfg(feature = "ext_sasl_ir")]
+                    initial_response: None,
+                },
+                "AUTHENTICATE",
+            ),
+            (
+                CommandBody::Login {
+                    username: AString::try_from("user").unwrap(),
+                    password: Secret::new(AString::try_from("pass").unwrap()),
+                },
+                "LOGIN",
+            ),
+            (
+                CommandBody::Select {
+                    mailbox: Mailbox::Inbox,
+                },
+                "SELECT",
+            ),
+            #[cfg(feature = "ext_unselect")]
+            (CommandBody::Unselect, "UNSELECT"),
+            (
+                CommandBody::Examine {
+                    mailbox: Mailbox::Inbox,
+                },
+                "EXAMINE",
+            ),
+            (
+                CommandBody::Create {
+                    mailbox: Mailbox::Inbox,
+                },
+                "CREATE",
+            ),
+            (
+                CommandBody::Delete {
+                    mailbox: Mailbox::Inbox,
+                },
+                "DELETE",
+            ),
+            (
+                CommandBody::Rename {
+                    from: Mailbox::Inbox,
+                    to: Mailbox::Inbox,
+                },
+                "RENAME",
+            ),
+            (
+                CommandBody::Subscribe {
+                    mailbox: Mailbox::Inbox,
+                },
+                "SUBSCRIBE",
+            ),
+            (
+                CommandBody::Unsubscribe {
+                    mailbox: Mailbox::Inbox,
+                },
+                "UNSUBSCRIBE",
+            ),
+            (
+                CommandBody::List {
+                    reference: Mailbox::Inbox,
+                    mailbox_wildcard: ListMailbox::try_from("").unwrap(),
+                },
+                "LIST",
+            ),
+            (
+                CommandBody::Lsub {
+                    reference: Mailbox::Inbox,
+                    mailbox_wildcard: ListMailbox::try_from("").unwrap(),
+                },
+                "LSUB",
+            ),
+            (
+                CommandBody::Status {
+                    mailbox: Mailbox::Inbox,
+                    attributes: vec![],
+                },
+                "STATUS",
+            ),
+            (
+                CommandBody::Append {
+                    mailbox: Mailbox::Inbox,
+                    date: None,
+                    message: Literal::try_from("").unwrap(),
+                    flags: vec![],
+                },
+                "APPEND",
+            ),
+            (CommandBody::Check, "CHECK"),
+            (CommandBody::Close, "CLOSE"),
+            (CommandBody::Expunge, "EXPUNGE"),
+            (
+                CommandBody::Search {
+                    charset: None,
+                    criteria: SearchKey::Recent,
+                    uid: true,
+                },
+                "SEARCH",
+            ),
+            (
+                CommandBody::Fetch {
+                    sequence_set: SequenceSet::try_from(1u32).unwrap(),
+                    attributes: MacroOrFetchAttributes::Macro(Macro::Full),
+                    uid: true,
+                },
+                "FETCH",
+            ),
+            (
+                CommandBody::Store {
+                    sequence_set: SequenceSet::try_from(1).unwrap(),
+                    flags: vec![],
+                    response: StoreResponse::Silent,
+                    kind: StoreType::Add,
+                    uid: true,
+                },
+                "STORE",
+            ),
+            (
+                CommandBody::Copy {
+                    sequence_set: SequenceSet::try_from(1).unwrap(),
+                    mailbox: Mailbox::Inbox,
+                    uid: true,
+                },
+                "COPY",
+            ),
+            #[cfg(feature = "ext_idle")]
+            (CommandBody::Idle, "IDLE"),
+            #[cfg(feature = "ext_enable")]
+            (
+                CommandBody::Enable {
+                    capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
+                },
+                "ENABLE",
+            ),
+            #[cfg(feature = "ext_compress")]
+            (
+                CommandBody::Compress {
+                    algorithm: CompressionAlgorithm::Deflate,
+                },
+                "COMPRESS",
+            ),
+            #[cfg(feature = "ext_quota")]
+            (
+                CommandBody::GetQuota {
+                    root: AString::try_from("root").unwrap(),
+                },
+                "GETQUOTA",
+            ),
+            #[cfg(feature = "ext_quota")]
+            (
+                CommandBody::GetQuotaRoot {
+                    mailbox: Mailbox::Inbox,
+                },
+                "GETQUOTAROOT",
+            ),
+            #[cfg(feature = "ext_quota")]
+            (
+                CommandBody::SetQuota {
+                    root: AString::try_from("root").unwrap(),
+                    quotas: vec![],
+                },
+                "SETQUOTA",
+            ),
+        ];
+
+        for (test, expected) in tests {
+            assert_eq!(test.name(), expected);
+        }
     }
 }
