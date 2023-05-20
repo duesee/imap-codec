@@ -27,6 +27,12 @@ impl<T> Secret<T> {
     }
 }
 
+impl<T> From<T> for Secret<T> {
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
 impl<S> Secret<S>
 where
     S: AsRef<[u8]>,
