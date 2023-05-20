@@ -1526,7 +1526,7 @@ impl<'a> CommandBody<'a> {
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
             #[cfg(feature = "ext_unselect")]
-            Self::Unselect { .. } => "UNSELECT",
+            Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",
             Self::Delete { .. } => "DELETE",
