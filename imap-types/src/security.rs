@@ -110,17 +110,23 @@ mod tests {
 
         println!("-----");
 
-        let test = AuthenticateData(Secret::new(b"xyz123".to_vec()));
-        println!(
-            "Serialized: {:?}",
-            String::from_utf8(test.encode_detached().unwrap()),
-        );
+        let tests = [
+            AuthenticateData(Secret::new(b"xyz123".to_vec())),
+            AuthenticateData(Secret::from(b"xyz123".to_vec())),
+        ];
 
-        let got = format!("{:?}", test);
-        println!("Debug: {}", got);
-        assert!(got.contains("/* REDACTED */"));
-        assert!(!got.contains("xyz123"));
-        assert!(!got.contains("eHl6MTIz"));
+        for test in tests {
+            println!(
+                "Serialized: {:?}",
+                String::from_utf8(test.encode_detached().unwrap()),
+            );
+
+            let got = format!("{:?}", test);
+            println!("Debug: {}", got);
+            assert!(got.contains("/* REDACTED */"));
+            assert!(!got.contains("xyz123"));
+            assert!(!got.contains("eHl6MTIz"));
+        }
     }
 
     /// A best effort test to ensure that constant-time comparison works.
