@@ -49,6 +49,14 @@ criterion = "0.4"
 regex = "1.5.3"
 
 [[bench]]
+name = "serialize_command"
+harness = false
+
+[[bench]]
+name = "serialize_response"
+harness = false
+
+[[bench]]
 name = "parse_command"
 harness = false
 

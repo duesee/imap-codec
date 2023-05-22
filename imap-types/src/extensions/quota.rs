@@ -33,7 +33,7 @@
 //!     - [StatusAttributeValue::Deleted](crate::response::data::StatusAttributeValue::Deleted)
 //!     - [StatusAttributeValue::DeletedStorage](crate::response::data::StatusAttributeValue::DeletedStorage)
 
-use std::{borrow::Cow, io::Write};
+use std::borrow::Cow;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -44,7 +44,6 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    codec::Encode,
     command::CommandBody,
     core::{AString, NonEmptyVec},
     imap4rev1::core::{impl_try_from, Atom, AtomError},
@@ -189,23 +188,17 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
     }
 }
 
-impl<'a> Encode for Resource<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Resource::Storage => writer.write_all(b"STORAGE"),
-            Resource::Message => writer.write_all(b"MESSAGE"),
-            Resource::Mailbox => writer.write_all(b"MAILBOX"),
-            Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
-            Resource::Other(atom) => atom.encode(writer),
-        }
-    }
-}
-
 /// A resource type (name) for use in IMAP's QUOTA extension that is not supported by imap-types.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ResourceOther<'a>(Atom<'a>);
+
+impl<'a> ResourceOther<'a> {
+    pub fn inner(&self) -> &Atom<'a> {
+        &self.0
+    }
+}
 
 impl<'a> ResourceOther<'a> {
     pub fn verify(value: impl AsRef<[u8]>) -> Result<(), ResourceOtherError> {
@@ -264,12 +257,6 @@ pub enum ResourceOtherError {
     Reserved,
 }
 
-impl<'a> Encode for ResourceOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
-    }
-}
-
 /// A type that holds a resource name, usage, and limit.
 /// Used in the response of the GETQUOTA command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -292,13 +279,6 @@ impl<'a> QuotaGet<'a> {
     }
 }
 
-impl<'a> Encode for QuotaGet<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
-        write!(writer, " {} {}", self.usage, self.limit)
-    }
-}
-
 /// A type that holds a resource name and limit.
 /// Used in the SETQUOTA command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -313,13 +293,6 @@ pub struct QuotaSet<'a> {
 impl<'a> QuotaSet<'a> {
     pub fn new(resource: Resource<'a>, limit: u64) -> Self {
         Self { resource, limit }
-    }
-}
-
-impl<'a> Encode for QuotaSet<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
-        write!(writer, " {}", self.limit)
     }
 }
 
@@ -345,104 +318,4 @@ pub enum SetQuotaError<R, S> {
     Root(R),
     #[error("Invalid quota set: {0:?}")]
     QuotaSet(S),
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::testing::known_answer_test_encode;
-
-    #[test]
-    fn test_encode_command_body_quota() {
-        let tests = [
-            (CommandBody::get_quota("INBOX").unwrap(), b"GETQUOTA INBOX".as_ref()),
-            (CommandBody::get_quota("").unwrap(), b"GETQUOTA \"\""),
-            (
-                CommandBody::get_quota_root("MAILBOX").unwrap(),
-                b"GETQUOTAROOT MAILBOX",
-            ),
-            (
-                CommandBody::set_quota("INBOX", vec![]).unwrap(),
-                b"SETQUOTA INBOX ()",
-            ),
-            (
-                CommandBody::set_quota(
-                    "INBOX",
-                    vec![QuotaSet {
-                        resource: Resource::Storage,
-                        limit: 256,
-                    }],
-                )
-                .unwrap(),
-                b"SETQUOTA INBOX (STORAGE 256)",
-            ),
-            (
-                CommandBody::set_quota(
-                    "INBOX",
-                    vec![
-                        QuotaSet {
-                            resource: Resource::Storage,
-                            limit: 0,
-                        },
-                        QuotaSet {
-                            resource: Resource::Message,
-                            limit: 512,
-                        },
-                        QuotaSet {
-                            resource: Resource::Mailbox,
-                            limit: 512,
-                        },
-                        QuotaSet {
-                            resource: Resource::AnnotationStorage,
-                            limit: 123,
-                        },
-                        QuotaSet {
-                            resource: Resource::Other(ResourceOther::try_from("Foo").unwrap()),
-                            limit: u64::MAX,
-                        },
-                    ],
-                )
-                .unwrap(),
-                b"SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_encode_response_data_quota() {
-        let tests = [
-            (
-                Data::quota(
-                    "INBOX",
-                    vec![QuotaGet {
-                        resource: Resource::Message,
-                        usage: 1024,
-                        limit: 2048,
-                    }],
-                )
-                .unwrap(),
-                b"* QUOTA INBOX (MESSAGE 1024 2048)\r\n".as_ref(),
-            ),
-            (
-                Data::quota_root("INBOX", vec![]).unwrap(),
-                b"* QUOTAROOT INBOX\r\n",
-            ),
-            (
-                Data::quota_root(
-                    "INBOX",
-                    vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
-                )
-                .unwrap(),
-                b"* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
 }

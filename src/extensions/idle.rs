@@ -7,8 +7,12 @@
 //
 // command_auth =/ idle
 
+use std::io::Write;
+
 use imap_types::command::{idle::IdleDone, CommandBody};
 use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
+
+use crate::codec::Encode;
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -41,4 +45,34 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 /// when the server is in the IDLE state.
 pub fn idle_done(input: &[u8]) -> IResult<&[u8], IdleDone> {
     value(IdleDone, tag_no_case("DONE\r\n"))(input)
+}
+
+impl Encode for IdleDone {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        writer.write_all(b"DONE\r\n")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{command::CommandBody, testing::known_answer_test_encode};
+
+    #[test]
+    fn test_encode_command_body_idle() {
+        let tests = [(CommandBody::Idle, b"IDLE".as_ref())];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_encode_idle_done() {
+        let tests = [(IdleDone, b"DONE\r\n".as_ref())];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
 }

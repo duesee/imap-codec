@@ -83,3 +83,58 @@ fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusAttributeValue> {
         ),
     ))(input)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::num::NonZeroU32;
+
+    use super::*;
+    use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_encode_status_attribute() {
+        let tests = [
+            (StatusAttribute::Messages, b"MESSAGES".as_ref()),
+            (StatusAttribute::Recent, b"RECENT"),
+            (StatusAttribute::UidNext, b"UIDNEXT"),
+            (StatusAttribute::UidValidity, b"UIDVALIDITY"),
+            (StatusAttribute::Unseen, b"UNSEEN"),
+            #[cfg(feature = "ext_quota")]
+            (StatusAttribute::Deleted, b"DELETED"),
+            #[cfg(feature = "ext_quota")]
+            (StatusAttribute::DeletedStorage, b"DELETED-STORAGE"),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_encode_status_attribute_value() {
+        let tests = [
+            (StatusAttributeValue::Messages(0), b"MESSAGES 0".as_ref()),
+            (StatusAttributeValue::Recent(u32::MAX), b"RECENT 4294967295"),
+            (
+                StatusAttributeValue::UidNext(NonZeroU32::new(1).unwrap()),
+                b"UIDNEXT 1",
+            ),
+            (
+                StatusAttributeValue::UidValidity(NonZeroU32::new(u32::MAX).unwrap()),
+                b"UIDVALIDITY 4294967295",
+            ),
+            (StatusAttributeValue::Unseen(0), b"UNSEEN 0"),
+            #[cfg(feature = "ext_quota")]
+            (StatusAttributeValue::Deleted(1), b"DELETED 1"),
+            #[cfg(feature = "ext_quota")]
+            (
+                StatusAttributeValue::DeletedStorage(u64::MAX),
+                b"DELETED-STORAGE 18446744073709551615",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+}

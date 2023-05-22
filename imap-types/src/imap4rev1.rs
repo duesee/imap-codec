@@ -126,27 +126,6 @@ pub enum AuthMechanismOtherError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::known_answer_test_encode;
-
-    #[test]
-    fn test_encode_auth_mechanism() {
-        let tests = [
-            (AuthMechanism::Plain, b"PLAIN".as_ref()),
-            (AuthMechanism::Login, b"LOGIN"),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("PLAINX").unwrap()),
-                b"PLAINX",
-            ),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("LOGINX").unwrap()),
-                b"LOGINX",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
 
     #[test]
     fn test_conversion_failing() {

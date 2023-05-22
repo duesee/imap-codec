@@ -1080,7 +1080,6 @@ mod tests {
     use std::str::from_utf8;
 
     use super::*;
-    use crate::codec::Encode;
 
     #[test]
     fn test_conversion_atom() {
@@ -1442,30 +1441,5 @@ mod tests {
             IString::try_from("\"AAA").unwrap(),
             IString::Quoted("\\\"AAA".try_into().unwrap())
         );
-    }
-
-    #[test]
-    fn test_encode_charset() {
-        let tests = [
-            ("bengali", "bengali"),
-            ("\"simple\" english", r#""\"simple\" english""#),
-            ("", "\"\""),
-            ("\"", "\"\\\"\""),
-            ("\\", "\"\\\\\""),
-        ];
-
-        for (from, expected) in tests.iter() {
-            let cs = Charset::try_from(*from).unwrap();
-            println!("{:?}", cs);
-
-            let out = cs.encode_detached().unwrap();
-            assert_eq!(from_utf8(&out).unwrap(), *expected);
-        }
-
-        assert!(Charset::try_from("\r").is_err());
-        assert!(Charset::try_from("\n").is_err());
-        assert!(Charset::try_from("¹").is_err());
-        assert!(Charset::try_from("²").is_err());
-        assert!(Charset::try_from("\x00").is_err());
     }
 }

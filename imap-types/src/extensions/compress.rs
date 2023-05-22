@@ -10,8 +10,6 @@
 //! * the [Command](crate::command::Command) enum with a new variant [Command::Compress](crate::command::Command#variant.Compress), and
 //! * the [Code](crate::response::Code) enum with a new variant [Code::CompressionActive](crate::response::Code#variant.CompressionActive).
 
-use std::io::Write;
-
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -20,7 +18,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{codec::Encode, command::CommandBody, core::Atom};
+use crate::{command::CommandBody, core::Atom};
 
 impl<'a> CommandBody<'a> {
     pub fn compress(algorithm: CompressionAlgorithm) -> Self {
@@ -77,14 +75,6 @@ impl AsRef<str> for CompressionAlgorithm {
     }
 }
 
-impl Encode for CompressionAlgorithm {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum CompressionAlgorithmError {
     #[error("Invalid compression algorithm. Allowed value: `DEFLATE`.")]
@@ -94,19 +84,6 @@ pub enum CompressionAlgorithmError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::known_answer_test_encode;
-
-    #[test]
-    fn test_encode_command_body_compress() {
-        let tests = [(
-            CommandBody::compress(CompressionAlgorithm::Deflate),
-            b"COMPRESS DEFLATE".as_ref(),
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
 
     #[test]
     fn test_conversion() {

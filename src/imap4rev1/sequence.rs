@@ -85,9 +85,30 @@ pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqOrUid> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::codec::Encode;
 
     #[test]
-    fn test_sequence_set() {
+    fn test_encode_of_some_sequence_sets() {
+        let tests = [
+            (
+                Sequence::Single(SeqOrUid::Value(1.try_into().unwrap())),
+                b"1".as_ref(),
+            ),
+            (Sequence::Single(SeqOrUid::Asterisk), b"*".as_ref()),
+            (
+                Sequence::Range(SeqOrUid::Value(1.try_into().unwrap()), SeqOrUid::Asterisk),
+                b"1:*".as_ref(),
+            ),
+        ];
+
+        for (test, expected) in tests {
+            let out = test.encode_detached().unwrap();
+            assert_eq!(*expected, out);
+        }
+    }
+
+    #[test]
+    fn test_parse_sequence_set() {
         let (rem, val) = sequence_set(b"1:*?").unwrap();
         println!("{:?}, {:?}", rem, val);
 
@@ -96,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_seq_number() {
+    fn test_parse_seq_number() {
         // Must not be 0.
         assert!(seq_number(b"0?").is_err());
 
@@ -108,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn test_seq_range() {
+    fn test_parse_seq_range() {
         // Must not be 0.
         assert!(seq_range(b"0:1?").is_err());
 

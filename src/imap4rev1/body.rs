@@ -546,7 +546,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        core::Literal,
+        core::{Literal, Quoted},
         response::{
             data::{FetchAttributeValue, SpecificFields::Basic},
             Data, Response,
@@ -702,6 +702,30 @@ mod tests {
             }),
             b"* 3372220415 FETCH (BODYSTRUCTURE ((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n"
             .as_ref(),
+        )];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_encode_single_part_extension_data() {
+        let tests = [(
+            SinglePartExtensionData {
+                md5: NString(None),
+                tail: Some(Disposition {
+                    disposition: None,
+                    tail: Some(Language {
+                        language: vec![],
+                        tail: Some(Location {
+                            location: NString::from(Quoted::try_from("").unwrap()),
+                            extensions: vec![],
+                        }),
+                    }),
+                }),
+            },
+            b"NIL NIL NIL \"\"".as_ref(),
         )];
 
         for test in tests {

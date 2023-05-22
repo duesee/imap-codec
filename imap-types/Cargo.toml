@@ -42,11 +42,3 @@ thiserror = "1.0.29"
 [dev-dependencies]
 criterion = "0.4"
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
-
-[[bench]]
-name = "serialize_command"
-harness = false
-
-[[bench]]
-name = "serialize_response"
-harness = false

@@ -6,8 +6,6 @@
 //! * the [CommandBody](crate::command::CommandBody) enum with a new variant [CommandBody::Enable](crate::command::CommandBody#variant.Enable), and
 //! * the [Data](crate::response::Data) enum with a new variant [Data::Enabled](crate::response::Data#variant.Enabled).
 
-use std::io::Write;
-
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -17,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    codec::Encode,
     command::CommandBody,
     core::{Atom, NonEmptyVec},
     response::Data,
@@ -65,6 +62,12 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityEnableOther<'a>(Atom<'a>);
 
+impl<'a> CapabilityEnableOther<'a> {
+    pub fn inner(&self) -> &Atom<'a> {
+        &self.0
+    }
+}
+
 impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
     type Error = CapabilityEnableOtherError;
 
@@ -91,77 +94,9 @@ pub enum Utf8Kind {
     Only,
 }
 
-impl<'a> Encode for CapabilityEnable<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
-            Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
-            Self::Other(other) => other.encode(writer),
-        }
-    }
-}
-
-impl<'a> Encode for CapabilityEnableOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::imap4rev1::core::NonEmptyVecError;
-
-    #[test]
-    fn test_encode_command_body_enable() {
-        let tests = [
-            (
-                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
-                    },
-                    b"ENABLE UTF8=ONLY".as_ref(),
-                )),
-            ),
-            (
-                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Accept)),
-                    },
-                    b"ENABLE UTF8=ACCEPT",
-                )),
-            ),
-            (
-                CommandBody::enable(vec![CapabilityEnable::Other(
-                    CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap()).unwrap(),
-                )]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Other(
-                            CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap())
-                                .unwrap(),
-                        )),
-                    },
-                    b"ENABLE FOO",
-                )),
-            ),
-            (CommandBody::enable(vec![]), Err(NonEmptyVecError::Empty)),
-        ];
-
-        for (test, expected) in tests {
-            match test {
-                Ok(got) => {
-                    let bytes = got.encode_detached().unwrap();
-                    assert_eq!(expected, Ok((got, bytes.as_ref())));
-                }
-                Err(got) => {
-                    assert_eq!(Err(got), expected);
-                }
-            }
-        }
-    }
 
     #[test]
     fn test_conversion_capability_enable_other() {
