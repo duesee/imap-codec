@@ -318,10 +318,7 @@ mod tests {
     use std::num::NonZeroU32;
 
     use super::{SeqOrUid, Sequence, Strategy};
-    use crate::{
-        codec::Encode, command::SequenceSet, core::NonEmptyVec,
-        imap4rev1::sequence::SequenceSetError,
-    };
+    use crate::{command::SequenceSet, core::NonEmptyVec, imap4rev1::sequence::SequenceSetError};
 
     #[test]
     fn test_creation_of_sequence_from_u32() {
@@ -504,26 +501,6 @@ mod tests {
             let got = SequenceSet::try_from(*test);
             print!("\"{}\" | {:?} | ", test, got.clone().unwrap_err());
             println!("{}", got.unwrap_err());
-        }
-    }
-
-    #[test]
-    fn test_serialization_of_some_sequence_sets() {
-        let tests = [
-            (
-                Sequence::Single(SeqOrUid::Value(1.try_into().unwrap())),
-                b"1".as_ref(),
-            ),
-            (Sequence::Single(SeqOrUid::Asterisk), b"*".as_ref()),
-            (
-                Sequence::Range(SeqOrUid::Value(1.try_into().unwrap()), SeqOrUid::Asterisk),
-                b"1:*".as_ref(),
-            ),
-        ];
-
-        for (test, expected) in tests {
-            let out = test.encode_detached().unwrap();
-            assert_eq!(*expected, out);
         }
     }
 

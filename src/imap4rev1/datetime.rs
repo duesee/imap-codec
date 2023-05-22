@@ -217,6 +217,33 @@ mod tests {
     use std::str::from_utf8;
 
     use super::*;
+    use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_encode_date_time() {
+        let tests = [
+            (
+                DateTime::try_from(
+                    chrono::DateTime::parse_from_rfc2822("Mon, 7 Feb 1994 21:52:25 -0800 (PST)")
+                        .unwrap(),
+                )
+                .unwrap(),
+                b"\"07-Feb-1994 21:52:25 -0800\"".as_ref(),
+            ),
+            (
+                DateTime::try_from(
+                    chrono::DateTime::parse_from_rfc2822("Mon, 7 Feb 0000 21:52:25 -0800 (PST)")
+                        .unwrap(),
+                )
+                .unwrap(),
+                b"\"07-Feb-0000 21:52:25 -0800\"".as_ref(),
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
 
     #[test]
     fn test_date() {

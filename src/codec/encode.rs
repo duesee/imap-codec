@@ -1,31 +1,12 @@
-//! # Serialization of messages
-//!
-//! Every type in imap-codec can be serialized into bytes (`&[u8]`) by using the [Encode](crate::codec::Encode) trait.
-//!
-//! ## Example
-//!
-//! ```rust
-//! use imap_types::{
-//!     codec::Encode,
-//!     response::{Greeting, Response},
-//! };
-//!
-//! let rsp = Greeting::ok(None, "Hello, World!").unwrap();
-//!
-//! let bytes = rsp.encode_detached().unwrap();
-//!
-//! println!("{}", String::from_utf8(bytes).unwrap());
-//! ```
-
 use std::{io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
+use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
 #[cfg(feature = "ext_compress")]
-use crate::extensions::compress::CompressionAlgorithm;
+use crate::message::CompressionAlgorithm;
 use crate::{
-    codec::utils::{join_serializable, List1AttributeValueOrNil, List1OrNil},
     command::{
         fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
         search::SearchKey,
@@ -35,16 +16,15 @@ use crate::{
         SequenceSet,
     },
     core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
-    imap4rev1::body::{Disposition, Language, Location},
     message::{
         AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagExtension, FlagFetch,
         FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, NaiveDate, Part, Section, Tag,
     },
     response::{
         data::{
-            Address, BasicFields, Body, BodyExtension, BodyStructure, Capability, Envelope,
-            FetchAttributeValue, MultiPartExtensionData, QuotedChar, SinglePartExtensionData,
-            SpecificFields, StatusAttributeValue,
+            Address, BasicFields, Body, BodyExtension, BodyStructure, Capability, Disposition,
+            Envelope, FetchAttributeValue, Language, Location, MultiPartExtensionData, QuotedChar,
+            SinglePartExtensionData, SpecificFields, StatusAttributeValue,
         },
         Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
     },
@@ -448,7 +428,7 @@ impl<'a> Encode for Mailbox<'a> {
 
 impl<'a> Encode for MailboxOther<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.0.encode(writer)
+        self.inner().encode(writer)
     }
 }
 
@@ -518,7 +498,7 @@ impl<'a> Encode for FlagPerm<'a> {
 impl<'a> Encode for FlagExtension<'a> {
     fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"\\")?;
-        self.0.encode(writer)
+        writer.write_all(self.as_ref().as_bytes())
     }
 }
 
@@ -847,7 +827,7 @@ impl<'a> Encode for Capability<'a> {
             Self::Literal(literal_capability) => literal_capability.encode(writer),
             #[cfg(feature = "ext_move")]
             Self::Move => writer.write_all(b"MOVE"),
-            Self::Other(other) => other.inner.encode(writer),
+            Self::Other(other) => other.inner().encode(writer),
         }
     }
 }
@@ -1252,7 +1232,7 @@ impl<'a> Encode for BodyStructure<'a> {
                 subtype,
                 extension_data,
             } => {
-                for body in &bodies.0 {
+                for body in bodies.as_ref() {
                     body.encode(writer)?;
                 }
                 writer.write_all(b" ")?;
@@ -1487,16 +1467,16 @@ impl<'a> Encode for Continue<'a> {
     }
 }
 
-pub(crate) mod utils {
+mod utils {
     use std::io::Write;
 
     use super::Encode;
 
-    pub(crate) struct List1OrNil<'a, T>(pub(crate) &'a Vec<T>, pub(crate) &'a [u8]);
+    pub struct List1OrNil<'a, T>(pub &'a Vec<T>, pub &'a [u8]);
 
-    pub(crate) struct List1AttributeValueOrNil<'a, T>(pub(crate) &'a Vec<(T, T)>);
+    pub struct List1AttributeValueOrNil<'a, T>(pub &'a Vec<(T, T)>);
 
-    pub(crate) fn join_serializable<I: Encode>(
+    pub fn join_serializable<I: Encode>(
         elements: &[I],
         sep: &[u8],
         writer: &mut impl Write,

@@ -67,7 +67,6 @@ mod tests {
     #[cfg(feature = "ext_literal")]
     use crate::message::AuthMechanism;
     use crate::{
-        codec::Encode,
         command::{AuthenticateData, CommandBody},
         security::Secret,
     };
@@ -94,11 +93,6 @@ mod tests {
         ];
 
         for test in tests.into_iter() {
-            println!(
-                "Serialized: {:?}",
-                String::from_utf8(test.encode_detached().unwrap()),
-            );
-
             let got = format!("{:?}", test);
             println!("Debug: {}", got);
             assert!(got.contains("/* REDACTED */"));
@@ -116,11 +110,6 @@ mod tests {
         ];
 
         for test in tests {
-            println!(
-                "Serialized: {:?}",
-                String::from_utf8(test.encode_detached().unwrap()),
-            );
-
             let got = format!("{:?}", test);
             println!("Debug: {}", got);
             assert!(got.contains("/* REDACTED */"));

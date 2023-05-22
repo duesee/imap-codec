@@ -331,33 +331,3 @@ pub enum BodyExtension<'a> {
     Number(u32),
     List(NonEmptyVec<BodyExtension<'a>>),
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{core::Quoted, testing::known_answer_test_encode};
-
-    #[test]
-    fn test_encode_single_part_extension_data() {
-        let tests = [(
-            SinglePartExtensionData {
-                md5: NString(None),
-                tail: Some(Disposition {
-                    disposition: None,
-                    tail: Some(Language {
-                        language: vec![],
-                        tail: Some(Location {
-                            location: NString::from(Quoted::try_from("").unwrap()),
-                            extensions: vec![],
-                        }),
-                    }),
-                }),
-            },
-            b"NIL NIL NIL \"\"".as_ref(),
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-}

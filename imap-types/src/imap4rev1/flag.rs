@@ -135,6 +135,12 @@ impl<'a> TryFrom<Atom<'a>> for FlagExtension<'a> {
     }
 }
 
+impl<'a> AsRef<str> for FlagExtension<'a> {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum FlagError<'a, A> {
     #[error(transparent)]

@@ -1616,15 +1616,11 @@ pub struct AuthenticateData(pub Secret<Vec<u8>>);
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "ext_sasl_ir")]
-    use std::borrow::Cow;
-
     use chrono::DateTime as ChronoDateTime;
 
     #[cfg(feature = "ext_compress")]
     use crate::message::CompressionAlgorithm;
     use crate::{
-        codec::Encode,
         command::{
             fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
             search::SearchKey,
@@ -1636,8 +1632,6 @@ mod tests {
         message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Part, Section},
         security::Secret,
     };
-    #[cfg(feature = "ext_sasl_ir")]
-    use crate::{command::Command, message::Tag};
     #[cfg(feature = "ext_enable")]
     use crate::{
         core::NonEmptyVec,
@@ -1821,28 +1815,8 @@ mod tests {
         for (no, cmd_body) in cmds.into_iter().enumerate() {
             println!("Test: {}, {:?}", no, cmd_body);
 
-            let cmd = cmd_body.tag(format!("A{}", no)).unwrap();
-            let serialized = cmd.encode_detached().unwrap();
-            let printable = String::from_utf8_lossy(&serialized);
-            print!("Serialized: {}", printable);
+            let _ = cmd_body.tag(format!("A{}", no)).unwrap();
         }
-    }
-
-    #[cfg(feature = "ext_sasl_ir")]
-    #[test]
-    fn test_that_empty_ir_is_encoded_correctly() {
-        let command = Command::new(
-            Tag::try_from("A").unwrap(),
-            CommandBody::Authenticate {
-                mechanism: AuthMechanism::Plain,
-                initial_response: Some(Secret::new(Cow::Borrowed(&b""[..]))),
-            },
-        )
-        .unwrap();
-
-        let buffer = command.encode_detached().unwrap();
-
-        assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }
 
     #[test]

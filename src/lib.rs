@@ -112,10 +112,3 @@ pub use imap_types::{command, core, message, response, security, state, utils};
 
 #[cfg(any(feature = "tokio"))]
 pub mod tokio;
-
-// ----------- Re-exports -----------
-
-pub use imap_types;
-pub use nom;
-#[cfg(any(feature = "tokio"))]
-pub use tokio_util;

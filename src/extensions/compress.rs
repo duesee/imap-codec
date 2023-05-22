@@ -6,6 +6,8 @@
 // capability     =/ "COMPRESS=" algorithm
 // resp-text-code =/ "COMPRESSIONACTIVE"
 
+use std::io::Write;
+
 use imap_types::{command::CommandBody, message::CompressionAlgorithm};
 use nom::{
     bytes::streaming::tag_no_case,
@@ -13,6 +15,8 @@ use nom::{
     sequence::preceded,
     IResult,
 };
+
+use crate::codec::Encode;
 
 /// `algorithm = "DEFLATE"`
 pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
@@ -26,11 +30,32 @@ pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
     })(input)
 }
 
+impl Encode for CompressionAlgorithm {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use imap_types::{command::CommandBody, message::CompressionAlgorithm};
 
     use super::*;
+    use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_encode_command_body_compress() {
+        let tests = [(
+            CommandBody::compress(CompressionAlgorithm::Deflate),
+            b"COMPRESS DEFLATE".as_ref(),
+        )];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
 
     #[test]
     fn test_parse_compress() {

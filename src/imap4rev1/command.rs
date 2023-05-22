@@ -575,9 +575,13 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
 mod tests {
     use std::num::NonZeroU32;
 
+    #[cfg(feature = "ext_sasl_ir")]
+    use imap_types::message::Tag;
     use imap_types::{command::fetch::FetchAttribute, message::Section};
 
     use super::*;
+    #[cfg(feature = "ext_sasl_ir")]
+    use crate::codec::Encode;
 
     #[test]
     fn test_parse_fetch() {
@@ -639,5 +643,22 @@ mod tests {
             assert_eq!(expected, got);
             assert_eq!(expected_remainder, got_remainder);
         }
+    }
+
+    #[cfg(feature = "ext_sasl_ir")]
+    #[test]
+    fn test_that_empty_ir_is_encoded_correctly() {
+        let command = Command::new(
+            Tag::try_from("A").unwrap(),
+            CommandBody::Authenticate {
+                mechanism: AuthMechanism::Plain,
+                initial_response: Some(Secret::new(Cow::Borrowed(&b""[..]))),
+            },
+        )
+        .unwrap();
+
+        let buffer = command.encode_detached().unwrap();
+
+        assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }
 }

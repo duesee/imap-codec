@@ -202,6 +202,10 @@ impl<'a> MailboxOther<'a> {
 
         Ok(())
     }
+
+    pub fn inner(&self) -> &AString {
+        &self.0
+    }
 }
 
 macro_rules! impl_try_from {

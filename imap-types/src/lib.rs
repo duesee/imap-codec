@@ -51,34 +51,6 @@
 //! };
 //! ```
 //!
-//! ## Serialization of messages.
-//!
-//! All messages implement the `Encode` trait.
-//! You can `use imap_types::Encode` and call the `.encode(...)` (or `.encode_detached(...)`) method to serialize a message (into a writer).
-//! Note that IMAP traces are not guaranteed to be UTF-8. Thus, be careful when using things like `std::str::from_utf8(...).unwrap()`.
-//! It should generally be better not to think about IMAP as being UTF-8.
-//! This is also why `Display` is not implemented.
-//! All types implement `Debug`, though.
-//!
-//! ### Example
-//!
-//! ```
-//! use imap_types::{
-//!     codec::Encode,
-//!     command::{Command, CommandBody},
-//! };
-//!
-//! // Create some command.
-//! let cmd = Command::new("A123", CommandBody::login("alice", "password").unwrap()).unwrap();
-//!
-//! // Encode the `cmd` into `out`.
-//! let out = cmd.encode_detached().unwrap();
-//!
-//! // Print the command.
-//! // (Note that IMAP traces are not guaranteed to be valid UTF-8.)
-//! println!("{}", std::str::from_utf8(&out).unwrap());
-//! ```
-//!
 //! ## More complex messages.
 //!
 //! ### Example
@@ -89,7 +61,6 @@
 //! use std::{borrow::Cow, num::NonZeroU32};
 //!
 //! use imap_types::{
-//!     codec::Encode,
 //!     core::{IString, NString, NonEmptyVec},
 //!     response::{
 //!         data::{
@@ -129,9 +100,6 @@
 //!
 //!     Response::Data(data)
 //! };
-//!
-//! let mut out = std::io::stdout();
-//! fetch.encode(&mut out).unwrap();
 //! ```
 //!
 //! # A Note on Types
@@ -147,32 +115,8 @@ mod imap4rev1;
 pub mod security;
 pub mod utils;
 
-pub mod testing {
-    use crate::{codec::Encode, utils::escape_byte_string};
-
-    pub fn known_answer_test_encode(
-        (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
-    ) {
-        let expected_bytes = expected_bytes.as_ref();
-        let got_bytes = test_object.encode_detached().unwrap();
-        let got_bytes = got_bytes.as_slice();
-
-        if expected_bytes != got_bytes {
-            println!("# Debug (`escape_byte_string`, encapsulated by `<<<` and `>>>`)");
-            println!(
-                "Left:  <<<{}>>>\nRight: <<<{}>>>",
-                escape_byte_string(expected_bytes),
-                escape_byte_string(got_bytes),
-            );
-            println!("# Debug");
-            panic!("Left:  {:02x?}\nRight: {:02x?}", expected_bytes, got_bytes);
-        }
-    }
-}
-
 // -- API -----------------------------------------------------------------------------------
 
-pub mod codec;
 pub mod state;
 
 pub mod core {
@@ -205,7 +149,7 @@ pub mod core {
     //! ```
 
     pub use crate::imap4rev1::core::{
-        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted,
+        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, NonEmptyVecError, Quoted,
     };
 }
 
@@ -319,17 +263,3 @@ pub mod extensions;
 
 #[cfg(feature = "bounded-static")]
 pub use bounded_static;
-
-#[cfg(test)]
-mod tests {
-    use crate::{
-        command::{Command, CommandBody},
-        testing::known_answer_test_encode,
-    };
-
-    #[test]
-    #[should_panic]
-    fn test_known_answer_test_encode() {
-        known_answer_test_encode((Command::new("A", CommandBody::Noop).unwrap(), b""));
-    }
-}

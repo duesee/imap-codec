@@ -1015,166 +1015,19 @@ impl<'a> CapabilityOther<'a> {
         Self { inner }
     }
 
-    pub fn inner(&self) -> &str {
-        self.inner.as_ref()
+    pub fn inner(&self) -> &Atom<'a> {
+        &self.inner
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        core::{IString, NString},
-        imap4rev1::body::{BodyExtension, Disposition},
-        response::data::{
-            BasicFields, Body, BodyStructure, Language, Location, SinglePartExtensionData,
-            SpecificFields,
-        },
-        testing::known_answer_test_encode,
-    };
-
-    #[test]
-    fn test_encode_greeting() {
-        let tests = [(
-            Greeting::new(GreetingKind::PreAuth, Some(Code::Alert), "hello").unwrap(),
-            b"* PREAUTH [ALERT] hello\r\n",
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_encode_status() {
-        let tests = [
-            // tagged; Ok, No, Bad
-            (
-                Status::ok(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 OK [ALERT] hello\r\n".as_ref(),
-            ),
-            (
-                Status::no(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 NO [ALERT] hello\r\n",
-            ),
-            (
-                Status::bad(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 BAD [ALERT] hello\r\n",
-            ),
-            (
-                Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 OK hello\r\n",
-            ),
-            (
-                Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 NO hello\r\n",
-            ),
-            (
-                Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 BAD hello\r\n",
-            ),
-            // untagged; Ok, No, Bad
-            (
-                Status::ok(None, Some(Code::Alert), "hello").unwrap(),
-                b"* OK [ALERT] hello\r\n",
-            ),
-            (
-                Status::no(None, Some(Code::Alert), "hello").unwrap(),
-                b"* NO [ALERT] hello\r\n",
-            ),
-            (
-                Status::bad(None, Some(Code::Alert), "hello").unwrap(),
-                b"* BAD [ALERT] hello\r\n",
-            ),
-            (Status::ok(None, None, "hello").unwrap(), b"* OK hello\r\n"),
-            (Status::no(None, None, "hello").unwrap(), b"* NO hello\r\n"),
-            (
-                Status::bad(None, None, "hello").unwrap(),
-                b"* BAD hello\r\n",
-            ),
-            // bye
-            (
-                Status::bye(Some(Code::Alert), "hello").unwrap(),
-                b"* BYE [ALERT] hello\r\n",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_encode_data() {
-        let tests = [
-            (
-                Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1)),
-                b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
-            ),
-            (
-                Data::List {
-                    items: vec![FlagNameAttribute::Noselect],
-                    delimiter: Some(QuotedChar::try_from('/').unwrap()),
-                    mailbox: "bbb".try_into().unwrap(),
-                },
-                b"* LIST (\\Noselect) \"/\" bbb\r\n",
-            ),
-            (
-                Data::Search(vec![
-                    1.try_into().unwrap(),
-                    2.try_into().unwrap(),
-                    3.try_into().unwrap(),
-                    42.try_into().unwrap(),
-                ]),
-                b"* SEARCH 1 2 3 42\r\n",
-            ),
-            (Data::Exists(42), b"* 42 EXISTS\r\n"),
-            (Data::Recent(12345), b"* 12345 RECENT\r\n"),
-            (Data::Expunge(123.try_into().unwrap()), b"* 123 EXPUNGE\r\n"),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
 
     #[test]
     fn test_conversion_data() {
         let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
         let _ = Data::fetch(1, vec![FetchAttributeValue::Rfc822Size(123)]).unwrap();
-    }
-
-    #[test]
-    fn test_encode_continue() {
-        let tests = [
-            (
-                Continue::basic(None, "hello").unwrap(),
-                b"+ hello\r\n".as_ref(),
-            ),
-            (
-                Continue::basic(Some(Code::ReadWrite), "hello").unwrap(),
-                b"+ [READ-WRITE] hello\r\n",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
     }
 
     #[test]
@@ -1187,85 +1040,6 @@ mod tests {
         for test in tests {
             println!("{:?}", test);
             assert!(test.is_err());
-        }
-    }
-
-    #[test]
-    fn test_body_structure() {
-        let tests = [
-            (
-                BodyStructure::Single {
-                    body: Body {
-                        basic: BasicFields {
-                            parameter_list: vec![],
-                            id: NString(None),
-                            description: NString::try_from("description").unwrap(),
-                            content_transfer_encoding: IString::try_from("cte").unwrap(),
-                            size: 123,
-                        },
-                        specific: SpecificFields::Basic {
-                            type_: IString::try_from("application").unwrap(),
-                            subtype: IString::try_from("voodoo").unwrap(),
-                        },
-                    },
-                    extension_data: None,
-                },
-                b"(\"application\" \"voodoo\" NIL NIL \"description\" \"cte\" 123)".as_ref(),
-            ),
-            (
-                BodyStructure::Single {
-                    body: Body {
-                        basic: BasicFields {
-                            parameter_list: vec![],
-                            id: NString(None),
-                            description: NString::try_from("description").unwrap(),
-                            content_transfer_encoding: IString::try_from("cte").unwrap(),
-                            size: 123,
-                        },
-                        specific: SpecificFields::Text {
-                            subtype: IString::try_from("plain").unwrap(),
-                            number_of_lines: 14,
-                        },
-                    },
-                    extension_data: None,
-                },
-                b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14)",
-            ),
-            (
-                BodyStructure::Single {
-                    body: Body {
-                        basic: BasicFields {
-                            parameter_list: vec![],
-                            id: NString(None),
-                            description: NString::try_from("description").unwrap(),
-                            content_transfer_encoding: IString::try_from("cte").unwrap(),
-                            size: 123,
-                        },
-                        specific: SpecificFields::Text {
-                            subtype: IString::try_from("plain").unwrap(),
-                            number_of_lines: 14,
-                        },
-                    },
-                    extension_data: Some(SinglePartExtensionData {
-                        md5: NString::try_from("AABB").unwrap(),
-                        tail: Some(Disposition {
-                            disposition: None,
-                            tail: Some(Language {
-                                language: vec![],
-                                tail: Some(Location{
-                                    location: NString(None),
-                                    extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
-                                })
-                            })
-                        })
-                    }),
-                },
-                b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14 \"AABB\" NIL NIL NIL (1337))",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
         }
     }
 }

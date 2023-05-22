@@ -30,9 +30,41 @@ pub fn r#move(input: &[u8]) -> IResult<&[u8], CommandBody> {
 mod tests {
     use super::*;
     use crate::{
+        codec::Encode,
         command::{CommandBody, SequenceSet},
         message::Mailbox,
     };
+
+    #[test]
+    fn test_encode_command_body_move() {
+        let tests = [
+            (
+                CommandBody::r#move("1", "inBox", false).unwrap(),
+                CommandBody::Move {
+                    sequence_set: SequenceSet::try_from(1).unwrap(),
+                    mailbox: Mailbox::Inbox,
+                    uid: false,
+                },
+                b"MOVE 1 INBOX".as_ref(),
+            ),
+            (
+                CommandBody::r#move("1", "inBox", true).unwrap(),
+                CommandBody::Move {
+                    sequence_set: SequenceSet::try_from(1).unwrap(),
+                    mailbox: Mailbox::Inbox,
+                    uid: true,
+                },
+                b"UID MOVE 1 INBOX".as_ref(),
+            ),
+        ];
+
+        for (test_1, test_2, expected) in tests {
+            assert_eq!(test_1, test_2);
+
+            let got = test_1.encode_detached().unwrap();
+            assert_eq!(expected, got);
+        }
+    }
 
     #[test]
     fn test_parse_command_body_move() {

@@ -1,10 +1,12 @@
 //! IMAP QUOTA Extension
 
+use std::io::Write;
+
 use abnf_core::streaming::SP;
 use imap_types::{
     command::CommandBody,
     core::{AString, NonEmptyVec},
-    extensions::quota::{QuotaGet, QuotaSet, Resource},
+    extensions::quota::{QuotaGet, QuotaSet, Resource, ResourceOther},
     response::Data,
 };
 use nom::{
@@ -15,9 +17,12 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::{
-    core::{astring, atom, number64},
-    mailbox::mailbox,
+use crate::{
+    codec::Encode,
+    imap4rev1::{
+        core::{astring, atom, number64},
+        mailbox::mailbox,
+    },
 };
 
 /// ```abnf
@@ -188,6 +193,38 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 //     Ok((remaining, Capability::QuotaRes(resource)))
 // }
 
+impl<'a> Encode for Resource<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        match self {
+            Resource::Storage => writer.write_all(b"STORAGE"),
+            Resource::Message => writer.write_all(b"MESSAGE"),
+            Resource::Mailbox => writer.write_all(b"MAILBOX"),
+            Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
+            Resource::Other(atom) => atom.encode(writer),
+        }
+    }
+}
+
+impl<'a> Encode for ResourceOther<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.inner().encode(writer)
+    }
+}
+
+impl<'a> Encode for QuotaGet<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.resource.encode(writer)?;
+        write!(writer, " {} {}", self.usage, self.limit)
+    }
+}
+
+impl<'a> Encode for QuotaSet<'a> {
+    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+        self.resource.encode(writer)?;
+        write!(writer, " {}", self.limit)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use imap_types::{
@@ -203,9 +240,104 @@ mod tests {
     use crate::{
         codec::Decode,
         command::{status::StatusAttribute, Command, CommandBody},
-        imap_types::extensions::quota::ResourceOther,
+        extensions::quota::ResourceOther,
         message::Mailbox,
+        testing::known_answer_test_encode,
     };
+
+    #[test]
+    fn test_encode_command_body_quota() {
+        let tests = [
+            (CommandBody::get_quota("INBOX").unwrap(), b"GETQUOTA INBOX".as_ref()),
+            (CommandBody::get_quota("").unwrap(), b"GETQUOTA \"\""),
+            (
+                CommandBody::get_quota_root("MAILBOX").unwrap(),
+                b"GETQUOTAROOT MAILBOX",
+            ),
+            (
+                CommandBody::set_quota("INBOX", vec![]).unwrap(),
+                b"SETQUOTA INBOX ()",
+            ),
+            (
+                CommandBody::set_quota(
+                    "INBOX",
+                    vec![QuotaSet {
+                        resource: Resource::Storage,
+                        limit: 256,
+                    }],
+                )
+                    .unwrap(),
+                b"SETQUOTA INBOX (STORAGE 256)",
+            ),
+            (
+                CommandBody::set_quota(
+                    "INBOX",
+                    vec![
+                        QuotaSet {
+                            resource: Resource::Storage,
+                            limit: 0,
+                        },
+                        QuotaSet {
+                            resource: Resource::Message,
+                            limit: 512,
+                        },
+                        QuotaSet {
+                            resource: Resource::Mailbox,
+                            limit: 512,
+                        },
+                        QuotaSet {
+                            resource: Resource::AnnotationStorage,
+                            limit: 123,
+                        },
+                        QuotaSet {
+                            resource: Resource::Other(ResourceOther::try_from("Foo").unwrap()),
+                            limit: u64::MAX,
+                        },
+                    ],
+                )
+                    .unwrap(),
+                b"SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_encode_response_data_quota() {
+        let tests = [
+            (
+                Data::quota(
+                    "INBOX",
+                    vec![QuotaGet {
+                        resource: Resource::Message,
+                        usage: 1024,
+                        limit: 2048,
+                    }],
+                )
+                .unwrap(),
+                b"* QUOTA INBOX (MESSAGE 1024 2048)\r\n".as_ref(),
+            ),
+            (
+                Data::quota_root("INBOX", vec![]).unwrap(),
+                b"* QUOTAROOT INBOX\r\n",
+            ),
+            (
+                Data::quota_root(
+                    "INBOX",
+                    vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
+                )
+                .unwrap(),
+                b"* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
 
     #[test]
     fn test_decode_command_quota() {
