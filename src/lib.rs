@@ -51,8 +51,10 @@
 //! |ext_literal          |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])   |No (but may change)|
 //! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                          |No (but may change)|
 //! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                        |No (but may change)|
+//! |ext_move             |IMAP MOVE Extension ([RFC 6851])                            |No (but may change)|
 //! |ext_quota            |IMAP QUOTA Extension ([RFC 9208])                           |No (but may change)|
 //! |ext_sasl_ir          |IMAP Extension for SASL Initial Client Response ([RFC 4959])|No (but may change)|
+//! |ext_unselect         |IMAP UNSELECT command ([RFC 3691])                          |No (but may change)|
 //! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                       |No                 |
 //!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
@@ -81,9 +83,11 @@
 //! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
 //! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
 //! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
+//! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
 //! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
 //! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
+//! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
 //! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
 //! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
