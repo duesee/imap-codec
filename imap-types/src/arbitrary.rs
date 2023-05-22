@@ -426,12 +426,12 @@ mod tests {
                             break;
                         }
                     }
-                    Err(Error::IncorrectFormat) => {
+                    Err(Error::NotEnoughData | Error::IncorrectFormat) => {
                         // Randomize.
                         rng.try_fill(&mut data).unwrap();
                         unstructured = Unstructured::new(&data);
                     }
-                    Err(Error::NotEnoughData | Error::EmptyChoose) => {
+                    Err(Error::EmptyChoose) => {
                         unreachable!();
                     }
                     Err(_) => {
