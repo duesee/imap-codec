@@ -374,6 +374,7 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::known_answer_test_parse;
 
     #[test]
     fn test_parse_response_negative() {
@@ -404,24 +405,21 @@ mod tests {
             ),
         ];
 
-        for (input, expected_remainder, expected_code) in tests.iter() {
-            let (got_remainder, got_code) = resp_text_code(input).unwrap();
-
-            assert_eq!(*expected_remainder, got_remainder);
-            assert_eq!(*expected_code, got_code);
+        for test in tests {
+            known_answer_test_parse(test, resp_text_code);
         }
     }
 
     #[test]
     fn test_continue_req() {
-        let tests = vec![(
-            "+ \x01\r\n".as_bytes(),
-            Ok((b"".as_slice(), Continue::basic(None, "\x01").unwrap())),
+        let tests = [(
+            b"+ \x01\r\n".as_ref(),
+            b"".as_ref(),
+            Continue::basic(None, "\x01").unwrap(),
         )];
 
-        for (test, expected) in tests.into_iter() {
-            let got = continue_req(test);
-            assert_eq!(expected, got);
+        for test in tests {
+            known_answer_test_parse(test, continue_req);
         }
     }
 }
