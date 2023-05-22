@@ -205,21 +205,34 @@ pub fn response(input: &[u8]) -> IResult<&[u8], Response> {
 
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
 pub fn continue_req(input: &[u8]) -> IResult<&[u8], Continue> {
+    // We can't map the output of `resp_text` directly to `Continue::basic()` because we might end
+    // up with a subset of `Text` that is valid base64 and will panic on `unwrap()`. Thus, we first
+    // let the parsing finish and only later map to `Continue`.
+
+    // A helper struct to postpone the unification to `Continue` in the `alt` combinator below.
+    enum Either<A, B> {
+        Base64(A),
+        Basic(B),
+    }
+
     let mut parser = tuple((
         tag(b"+ "),
         alt((
             map(
                 map_res(take_until("\r\n"), |input| _base64.decode(input)),
-                Continue::base64,
+                Either::Base64,
             ),
-            map(resp_text, |(code, text)| {
-                Continue::basic(code, text).unwrap()
-            }),
+            map(resp_text, Either::Basic),
         )),
         CRLF,
     ));
 
-    let (remaining, (_, continue_request, _)) = parser(input)?;
+    let (remaining, (_, either, _)) = parser(input)?;
+
+    let continue_request = match either {
+        Either::Base64(data) => Continue::base64(data),
+        Either::Basic((code, text)) => Continue::basic(code, text).unwrap(),
+    };
 
     Ok((remaining, continue_request))
 }
@@ -361,6 +374,15 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_response_negative() {
+        let tests = [b"+ Nose[CAY a\r\n".as_ref()];
+
+        for test in tests {
+            assert!(response(test).is_err());
+        }
+    }
 
     #[test]
     fn test_resp_text_code() {
