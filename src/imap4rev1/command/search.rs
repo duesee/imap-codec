@@ -224,8 +224,6 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
     use imap_types::command::SequenceSet as SequenceSetData;
 
     use super::*;

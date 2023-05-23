@@ -1,8 +1,4 @@
-use std::{
-    borrow::Cow,
-    convert::{TryFrom, TryInto},
-    str::from_utf8,
-};
+use std::{borrow::Cow, str::from_utf8};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -255,7 +251,7 @@ pub enum MailboxOtherError {
 
 #[cfg(test)]
 mod tests {
-    use std::{borrow::Cow, convert::TryFrom};
+    use std::borrow::Cow;
 
     use crate::{
         core::{AString, IString, Literal},

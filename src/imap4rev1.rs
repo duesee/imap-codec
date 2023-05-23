@@ -30,8 +30,6 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use imap_types::message::{AuthMechanism, AuthMechanismOther};
 
     use super::auth_type;

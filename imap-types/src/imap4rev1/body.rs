@@ -334,8 +334,6 @@ pub enum BodyExtension<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{core::Quoted, testing::known_answer_test_encode};
 

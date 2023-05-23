@@ -10,7 +10,7 @@
 //! * the [Command](crate::command::Command) enum with a new variant [Command::Compress](crate::command::Command#variant.Compress), and
 //! * the [Code](crate::response::Code) enum with a new variant [Code::CompressionActive](crate::response::Code#variant.CompressionActive).
 
-use std::{convert::TryFrom, io::Write};
+use std::io::Write;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;

@@ -28,8 +28,6 @@ pub fn r#move(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{
         command::{CommandBody, SequenceSet},

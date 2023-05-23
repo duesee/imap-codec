@@ -6,8 +6,6 @@
 // command-any   =/ "ENABLE" 1*(SP capability)
 // response-data =/ "*" SP enable-data CRLF
 
-use std::convert::TryInto;
-
 use abnf_core::streaming::SP;
 use nom::{
     bytes::streaming::tag_no_case,

@@ -28,8 +28,6 @@
 //! ### Example
 //!
 //! ```
-//! use std::convert::TryFrom;
-//!
 //! use imap_types::{
 //!     command::{Command, CommandBody},
 //!     message::Tag,
@@ -88,7 +86,7 @@
 //! The following example is a server fetch response containing the size and MIME structure of message 42.
 //!
 //! ```
-//! use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32};
+//! use std::{borrow::Cow, num::NonZeroU32};
 //!
 //! use imap_types::{
 //!     codec::Encode,

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom, str::from_utf8};
+use std::{borrow::Cow, str::from_utf8};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1077,7 +1077,7 @@ impl<T> AsRef<[T]> for NonEmptyVec<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryInto, str::from_utf8};
+    use std::str::from_utf8;
 
     use super::*;
     use crate::codec::Encode;

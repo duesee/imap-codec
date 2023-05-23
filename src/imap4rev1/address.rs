@@ -76,8 +76,6 @@ pub fn addr_host(input: &[u8]) -> IResult<&[u8], NString> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
     use imap_types::core::{IString, NString};
 
     use super::*;

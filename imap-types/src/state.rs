@@ -99,9 +99,6 @@ pub enum State<'a> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "ext_idle")]
-    use std::convert::TryFrom;
-
     #[cfg(feature = "bounded-static")]
     use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 

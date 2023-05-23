@@ -1,5 +1,4 @@
 use std::{
-    convert::{TryFrom, TryInto},
     num::{NonZeroU32, ParseIntError, TryFromIntError},
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     str::FromStr,
@@ -316,10 +315,7 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        convert::{TryFrom, TryInto},
-        num::NonZeroU32,
-    };
+    use std::num::NonZeroU32;
 
     use super::{SeqOrUid, Sequence, Strategy};
     use crate::{

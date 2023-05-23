@@ -1,7 +1,5 @@
 //! IMAP - MOVE Extension
 
-use std::convert::TryInto;
-
 use thiserror::Error;
 
 use crate::{
@@ -37,8 +35,6 @@ pub enum MoveError<S, M> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::codec::Encode;
 

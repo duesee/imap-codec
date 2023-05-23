@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use abnf_core::streaming::SP;
 use imap_types::{
     core::{IString, NString, NonEmptyVec},

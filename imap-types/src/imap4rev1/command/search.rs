@@ -162,8 +162,6 @@ pub enum SearchKey<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{command::Sequence, testing::known_answer_test_encode};
 

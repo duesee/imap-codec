@@ -1,7 +1,4 @@
-use std::{
-    convert::TryFrom,
-    fmt::{Debug, Formatter},
-};
+use std::fmt::{Debug, Formatter};
 
 #[cfg(feature = "bounded-static")]
 use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
@@ -146,8 +143,6 @@ impl ToBoundedStatic for NaiveDate {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use chrono::{TimeZone, Timelike};
 
     use crate::{

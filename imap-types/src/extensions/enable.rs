@@ -6,10 +6,7 @@
 //! * the [CommandBody](crate::command::CommandBody) enum with a new variant [CommandBody::Enable](crate::command::CommandBody#variant.Enable), and
 //! * the [Data](crate::response::Data) enum with a new variant [Data::Enabled](crate::response::Data#variant.Enabled).
 
-use std::{
-    convert::{TryFrom, TryInto},
-    io::Write,
-};
+use std::io::Write;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -112,8 +109,6 @@ impl<'a> Encode for CapabilityEnableOther<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::imap4rev1::core::NonEmptyVecError;
 
