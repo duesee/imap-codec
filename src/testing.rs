@@ -11,6 +11,6 @@ pub fn known_answer_test_parse<'a, O, P>(
     P: Fn(&'a [u8]) -> IResult<&'a [u8], O>,
 {
     let (got_remainder, got_object) = parser(test).unwrap();
-    assert_eq!(expected_remainder.as_ref(), got_remainder);
+    assert_eq!(expected_remainder, got_remainder);
     assert_eq!(expected_object, got_object);
 }
