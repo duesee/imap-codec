@@ -575,13 +575,12 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
 mod tests {
     use std::num::NonZeroU32;
 
-    #[cfg(feature = "ext_sasl_ir")]
-    use imap_types::message::Tag;
-    use imap_types::{command::fetch::FetchAttribute, message::Section};
-
     use super::*;
     #[cfg(feature = "ext_sasl_ir")]
     use crate::codec::Encode;
+    #[cfg(feature = "ext_sasl_ir")]
+    use crate::message::Tag;
+    use crate::{command::fetch::FetchAttribute, message::Section};
 
     #[test]
     fn test_parse_fetch() {

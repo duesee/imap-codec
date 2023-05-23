@@ -9,7 +9,7 @@
 use std::io::Write;
 
 use abnf_core::streaming::SP;
-use imap_types::{extensions::enable::CapabilityEnableOther, message::Utf8Kind};
+pub use imap_types::extensions::enable::*;
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::map,
@@ -18,10 +18,7 @@ use nom::{
     IResult,
 };
 
-use crate::{
-    codec::Encode, command::CommandBody, imap4rev1::core::atom, message::CapabilityEnable,
-    response::Data,
-};
+use crate::{codec::Encode, command::CommandBody, imap4rev1::core::atom, response::Data};
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
 ///
@@ -84,69 +81,51 @@ impl<'a> Encode for CapabilityEnableOther<'a> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::core::{Atom, NonEmptyVec, NonEmptyVecError};
-
     use super::*;
-
-    #[test]
-    fn test_encode_command_body_enable() {
-        let tests = [
-            (
-                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
-                    },
-                    b"ENABLE UTF8=ONLY".as_ref(),
-                )),
-            ),
-            (
-                CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Accept)),
-                    },
-                    b"ENABLE UTF8=ACCEPT",
-                )),
-            ),
-            (
-                CommandBody::enable(vec![CapabilityEnable::Other(
-                    CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap()).unwrap(),
-                )]),
-                Ok((
-                    CommandBody::Enable {
-                        capabilities: NonEmptyVec::from(CapabilityEnable::Other(
-                            CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap())
-                                .unwrap(),
-                        )),
-                    },
-                    b"ENABLE FOO",
-                )),
-            ),
-            (CommandBody::enable(vec![]), Err(NonEmptyVecError::Empty)),
-        ];
-
-        for (test, expected) in tests {
-            match test {
-                Ok(got) => {
-                    let bytes = got.encode_detached().unwrap();
-                    assert_eq!(expected, Ok((got, bytes.as_ref())));
-                }
-                Err(got) => {
-                    assert_eq!(Err(got), expected);
-                }
-            }
-        }
-    }
+    use crate::{command::Command, core::Atom, testing::kat_inverse_command};
 
     #[test]
     fn test_parse_enable() {
-        use imap_types::message::{CapabilityEnable, Utf8Kind};
-
         let got = enable(b"enable UTF8=ACCEPT\r\n").unwrap().1;
         assert_eq!(
             CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
             got
         );
+    }
+
+    #[test]
+    fn test_kat_inverse_command_enable() {
+        kat_inverse_command(&[
+            (
+                b"A ENABLE UTF8=ONLY\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Only)]).unwrap(),
+                )
+                .unwrap(),
+            ),
+            (
+                b"A ENABLE UTF8=ACCEPT\r\n?",
+                b"?".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::enable(vec![CapabilityEnable::Utf8(Utf8Kind::Accept)]).unwrap(),
+                )
+                .unwrap(),
+            ),
+            (
+                b"A ENABLE FOO\r\n??",
+                b"??",
+                Command::new(
+                    "A",
+                    CommandBody::enable(vec![CapabilityEnable::Other(
+                        CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap()).unwrap(),
+                    )])
+                    .unwrap(),
+                )
+                .unwrap(),
+            ),
+        ]);
     }
 }

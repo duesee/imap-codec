@@ -1,15 +1,14 @@
-#[cfg(feature = "ext_idle")]
-use imap_types::command::idle::IdleDone;
-use imap_types::{
-    command::{AuthenticateData, Command},
-    response::{Greeting, Response},
-};
+use imap_types::response::Continue;
 
 #[cfg(feature = "ext_idle")]
-use crate::extensions::idle::idle_done;
-use crate::imap4rev1::{
-    command::{authenticate_data, command},
-    response::{greeting, response},
+use crate::extensions::idle::{idle_done, IdleDone};
+use crate::{
+    command::{AuthenticateData, Command},
+    imap4rev1::{
+        command::{authenticate_data, command},
+        response::{continue_req, greeting, response},
+    },
+    response::{Greeting, Response},
 };
 
 pub trait Decode<'a>: Sized + 'a {
@@ -97,20 +96,33 @@ impl<'a> Decode<'a> for Response<'a> {
     }
 }
 
+impl<'a> Decode<'a> for Continue<'a> {
+    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
+        match continue_req(input) {
+            Ok((rem, continue_req)) => Ok((rem, continue_req)),
+            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+            Err(nom::Err::Failure(error)) => match error.code {
+                nom::error::ErrorKind::Fix => Err(DecodeError::Incomplete),
+                _ => Err(DecodeError::Failed),
+            },
+            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU32;
 
+    use super::{Decode, DecodeError};
     #[cfg(feature = "ext_idle")]
-    use imap_types::extensions::idle::IdleDone;
-    use imap_types::{
+    use crate::extensions::idle::IdleDone;
+    use crate::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
         message::Mailbox,
         response::{data::FetchAttributeValue, Data, Greeting, GreetingKind, Response},
     };
-
-    use super::{Decode, DecodeError};
 
     #[test]
     fn test_decode_greeting() {

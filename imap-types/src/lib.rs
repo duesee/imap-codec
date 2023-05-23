@@ -156,10 +156,6 @@ pub mod core {
 pub mod message {
     //! # Types used in commands and responses
 
-    #[cfg(feature = "ext_compress")]
-    pub use crate::extensions::compress::CompressionAlgorithm;
-    #[cfg(feature = "ext_enable")]
-    pub use crate::extensions::enable::{CapabilityEnable, Utf8Kind};
     pub use crate::imap4rev1::{
         core::{Charset, Tag},
         datetime::{DateTime, NaiveDate},
@@ -206,16 +202,6 @@ pub mod command {
         //! # Types used in STORE command
         pub use crate::imap4rev1::flag::{StoreResponse, StoreType};
     }
-
-    #[cfg(feature = "ext_quota")]
-    pub mod quota {
-        pub use crate::extensions::quota::SetQuotaError;
-    }
-
-    #[cfg(feature = "ext_idle")]
-    pub mod idle {
-        pub use crate::extensions::idle::IdleDone;
-    }
 }
 
 pub mod response {
@@ -244,18 +230,16 @@ pub mod response {
             status_attributes::StatusAttributeValue,
         };
     }
-
-    #[cfg(feature = "ext_quota")]
-    pub mod quota {
-        pub use crate::extensions::quota::{QuotaError, QuotaRootError};
-    }
 }
 
 #[cfg(any(
-    feature = "ext_idle",
-    feature = "ext_enable",
     feature = "ext_compress",
-    feature = "ext_quota"
+    feature = "ext_enable",
+    feature = "ext_idle",
+    feature = "ext_literal",
+    feature = "ext_move",
+    feature = "ext_quota",
+    feature = "ext_unselect",
 ))]
 pub mod extensions;
 

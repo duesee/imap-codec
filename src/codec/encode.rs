@@ -5,7 +5,7 @@ use chrono::{DateTime as ChronoDateTime, FixedOffset};
 use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
 #[cfg(feature = "ext_compress")]
-use crate::message::CompressionAlgorithm;
+use crate::extensions::compress::CompressionAlgorithm;
 use crate::{
     command::{
         fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},

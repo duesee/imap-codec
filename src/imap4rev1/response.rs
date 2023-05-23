@@ -373,6 +373,8 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU32;
+
     use imap_types::{
         message::{FlagNameAttribute, Tag},
         response::data::QuotedChar,
@@ -385,145 +387,207 @@ mod tests {
             BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
             SinglePartExtensionData, SpecificFields,
         },
-        testing::{known_answer_test_encode, known_answer_test_parse},
+        testing::{
+            kat_inverse_continue, kat_inverse_greeting, kat_inverse_response,
+            known_answer_test_encode,
+        },
     };
 
     #[test]
-    fn test_encode_greeting() {
-        let tests = [(
-            Greeting::new(GreetingKind::PreAuth, Some(Code::Alert), "hello").unwrap(),
-            b"* PREAUTH [ALERT] hello\r\n",
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+    fn test_kat_inverse_greeting() {
+        kat_inverse_greeting(&[
+            (
+                b"* OK [badcharset] ...\r\n".as_slice(),
+                b"".as_slice(),
+                Greeting::ok(Some(Code::BadCharset { allowed: vec![] }), "...").unwrap(),
+            ),
+            (
+                b"* OK [UnSEEN 12345] ...\r\naaa".as_slice(),
+                b"aaa".as_slice(),
+                Greeting::ok(
+                    Some(Code::Unseen(NonZeroU32::try_from(12345).unwrap())),
+                    "...",
+                )
+                .unwrap(),
+            ),
+            (
+                b"* OK [unseen 12345]  \r\n ".as_slice(),
+                b" ".as_slice(),
+                Greeting::ok(
+                    Some(Code::Unseen(NonZeroU32::try_from(12345).unwrap())),
+                    " ",
+                )
+                .unwrap(),
+            ),
+            (
+                b"* PREAUTH [ALERT] hello\r\n".as_ref(),
+                b"".as_ref(),
+                Greeting::new(GreetingKind::PreAuth, Some(Code::Alert), "hello").unwrap(),
+            ),
+        ]);
     }
 
     #[test]
-    fn test_encode_status() {
-        let tests = [
-            // tagged; Ok, No, Bad
+    fn test_kat_inverse_response_data() {
+        kat_inverse_response(&[
             (
-                Status::ok(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 OK [ALERT] hello\r\n".as_ref(),
-            ),
-            (
-                Status::no(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 NO [ALERT] hello\r\n",
-            ),
-            (
-                Status::bad(
-                    Some(Tag::try_from("A1").unwrap()),
-                    Some(Code::Alert),
-                    "hello",
-                )
-                .unwrap(),
-                b"A1 BAD [ALERT] hello\r\n",
-            ),
-            (
-                Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 OK hello\r\n",
-            ),
-            (
-                Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 NO hello\r\n",
-            ),
-            (
-                Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
-                b"A1 BAD hello\r\n",
-            ),
-            // untagged; Ok, No, Bad
-            (
-                Status::ok(None, Some(Code::Alert), "hello").unwrap(),
-                b"* OK [ALERT] hello\r\n",
-            ),
-            (
-                Status::no(None, Some(Code::Alert), "hello").unwrap(),
-                b"* NO [ALERT] hello\r\n",
-            ),
-            (
-                Status::bad(None, Some(Code::Alert), "hello").unwrap(),
-                b"* BAD [ALERT] hello\r\n",
-            ),
-            (Status::ok(None, None, "hello").unwrap(), b"* OK hello\r\n"),
-            (Status::no(None, None, "hello").unwrap(), b"* NO hello\r\n"),
-            (
-                Status::bad(None, None, "hello").unwrap(),
-                b"* BAD hello\r\n",
-            ),
-            // bye
-            (
-                Status::bye(Some(Code::Alert), "hello").unwrap(),
-                b"* BYE [ALERT] hello\r\n",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_encode_data() {
-        let tests = [
-            (
-                Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1)),
                 b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1))),
             ),
             (
-                Data::List {
+                b"* LIST (\\Noselect) \"/\" bbb\r\n",
+                b"",
+                Response::Data(Data::List {
                     items: vec![FlagNameAttribute::Noselect],
                     delimiter: Some(QuotedChar::try_from('/').unwrap()),
                     mailbox: "bbb".try_into().unwrap(),
-                },
-                b"* LIST (\\Noselect) \"/\" bbb\r\n",
+                }),
             ),
             (
-                Data::Search(vec![
+                b"* SEARCH 1 2 3 42\r\n",
+                b"",
+                Response::Data(Data::Search(vec![
                     1.try_into().unwrap(),
                     2.try_into().unwrap(),
                     3.try_into().unwrap(),
                     42.try_into().unwrap(),
-                ]),
-                b"* SEARCH 1 2 3 42\r\n",
+                ])),
             ),
-            (Data::Exists(42), b"* 42 EXISTS\r\n"),
-            (Data::Recent(12345), b"* 12345 RECENT\r\n"),
-            (Data::Expunge(123.try_into().unwrap()), b"* 123 EXPUNGE\r\n"),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+            (b"* 42 EXISTS\r\n", b"", Response::Data(Data::Exists(42))),
+            (
+                b"* 12345 RECENT\r\n",
+                b"",
+                Response::Data(Data::Recent(12345)),
+            ),
+            (
+                b"* 123 EXPUNGE\r\n",
+                b"",
+                Response::Data(Data::Expunge(123.try_into().unwrap())),
+            ),
+        ]);
     }
 
     #[test]
-    fn test_encode_continue() {
-        let tests = [
+    fn test_kat_inverse_response_status() {
+        kat_inverse_response(&[
+            // tagged; Ok, No, Bad
             (
-                Continue::basic(None, "hello").unwrap(),
-                b"+ hello\r\n".as_ref(),
+                b"A1 OK [ALERT] hello\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Status(
+                    Status::ok(
+                        Some(Tag::try_from("A1").unwrap()),
+                        Some(Code::Alert),
+                        "hello",
+                    )
+                    .unwrap(),
+                ),
             ),
             (
-                Continue::basic(Some(Code::ReadWrite), "hello").unwrap(),
-                b"+ [READ-WRITE] hello\r\n",
+                b"A1 NO [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::no(
+                        Some(Tag::try_from("A1").unwrap()),
+                        Some(Code::Alert),
+                        "hello",
+                    )
+                    .unwrap(),
+                ),
             ),
-        ];
+            (
+                b"A1 BAD [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::bad(
+                        Some(Tag::try_from("A1").unwrap()),
+                        Some(Code::Alert),
+                        "hello",
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                b"A1 OK hello\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::ok(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
+                ),
+            ),
+            (
+                b"A1 NO hello\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::no(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
+                ),
+            ),
+            (
+                b"A1 BAD hello\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::bad(Some(Tag::try_from("A1").unwrap()), None, "hello").unwrap(),
+                ),
+            ),
+            // untagged; Ok, No, Bad
+            (
+                b"* OK [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::ok(None, Some(Code::Alert), "hello").unwrap()),
+            ),
+            (
+                b"* NO [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::no(None, Some(Code::Alert), "hello").unwrap()),
+            ),
+            (
+                b"* BAD [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::bad(None, Some(Code::Alert), "hello").unwrap()),
+            ),
+            (
+                b"* OK hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::ok(None, None, "hello").unwrap()),
+            ),
+            (
+                b"* NO hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::no(None, None, "hello").unwrap()),
+            ),
+            (
+                b"* BAD hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::bad(None, None, "hello").unwrap()),
+            ),
+            // bye
+            (
+                b"* BYE [ALERT] hello\r\n",
+                b"".as_ref(),
+                Response::Status(Status::bye(Some(Code::Alert), "hello").unwrap()),
+            ),
+        ]);
+    }
 
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+    #[test]
+    fn test_kat_inverse_continue() {
+        kat_inverse_continue(&[
+            (
+                b"+ \x01\r\n".as_ref(),
+                b"".as_ref(),
+                Continue::basic(None, "\x01").unwrap(),
+            ),
+            (
+                b"+ hello\r\n".as_ref(),
+                b"".as_ref(),
+                Continue::basic(None, "hello").unwrap(),
+            ),
+            (
+                b"+ [READ-WRITE] hello\r\n",
+                b"",
+                Continue::basic(Some(Code::ReadWrite), "hello").unwrap(),
+            ),
+        ]);
     }
 
     #[test]
@@ -604,50 +668,13 @@ mod tests {
             known_answer_test_encode(test);
         }
     }
+
     #[test]
     fn test_parse_response_negative() {
         let tests = [b"+ Nose[CAY a\r\n".as_ref()];
 
         for test in tests {
             assert!(response(test).is_err());
-        }
-    }
-
-    #[test]
-    fn test_parse_resp_text_code() {
-        let tests = [
-            (
-                b"badcharsetaaa".as_slice(),
-                b"aaa".as_slice(),
-                Code::BadCharset { allowed: vec![] },
-            ),
-            (
-                b"UnSEEN 12345aaa".as_slice(),
-                b"aaa".as_slice(),
-                Code::unseen(12345).unwrap(),
-            ),
-            (
-                b"unseen 12345 ".as_slice(),
-                b" ".as_slice(),
-                Code::unseen(12345).unwrap(),
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_parse(test, resp_text_code);
-        }
-    }
-
-    #[test]
-    fn test_parse_continue_req() {
-        let tests = [(
-            b"+ \x01\r\n".as_ref(),
-            b"".as_ref(),
-            Continue::basic(None, "\x01").unwrap(),
-        )];
-
-        for test in tests {
-            known_answer_test_parse(test, continue_req);
         }
     }
 }

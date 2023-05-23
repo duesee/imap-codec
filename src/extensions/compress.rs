@@ -8,7 +8,7 @@
 
 use std::io::Write;
 
-use imap_types::{command::CommandBody, message::CompressionAlgorithm};
+pub use imap_types::extensions::compress::*;
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},
@@ -16,7 +16,7 @@ use nom::{
     IResult,
 };
 
-use crate::codec::Encode;
+use crate::{codec::Encode, command::CommandBody};
 
 /// `algorithm = "DEFLATE"`
 pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
@@ -40,22 +40,11 @@ impl Encode for CompressionAlgorithm {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{command::CommandBody, message::CompressionAlgorithm};
-
     use super::*;
-    use crate::testing::known_answer_test_encode;
-
-    #[test]
-    fn test_encode_command_body_compress() {
-        let tests = [(
-            CommandBody::compress(CompressionAlgorithm::Deflate),
-            b"COMPRESS DEFLATE".as_ref(),
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
+    use crate::{
+        command::{Command, CommandBody},
+        testing::kat_inverse_command,
+    };
 
     #[test]
     fn test_parse_compress() {
@@ -84,5 +73,21 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_kat_inverse_body_compress() {
+        kat_inverse_command(&[
+            (
+                b"A COMPRESS DEFLATE\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("A", CommandBody::compress(CompressionAlgorithm::Deflate)).unwrap(),
+            ),
+            (
+                b"A COMPRESS DEFLATE\r\n?".as_ref(),
+                b"?".as_ref(),
+                Command::new("A", CommandBody::compress(CompressionAlgorithm::Deflate)).unwrap(),
+            ),
+        ]);
     }
 }
