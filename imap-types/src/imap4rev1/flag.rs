@@ -1,7 +1,5 @@
 // ### 2.3.2. Flags Message Attribute
 
-use std::convert::{TryFrom, TryInto};
-
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]

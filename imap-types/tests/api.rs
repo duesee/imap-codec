@@ -1,7 +1,4 @@
-use std::{
-    convert::TryFrom,
-    fmt::{Debug, Display},
-};
+use std::fmt::{Debug, Display};
 
 use imap_types::{
     command::{Command, CommandBody, LoginError},

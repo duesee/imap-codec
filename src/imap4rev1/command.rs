@@ -573,7 +573,7 @@ pub fn uid(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, num::NonZeroU32};
+    use std::num::NonZeroU32;
 
     use imap_types::{command::fetch::FetchAttribute, message::Section};
 

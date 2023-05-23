@@ -282,8 +282,6 @@ pub enum FetchAttributeValue<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{
         core::IString,

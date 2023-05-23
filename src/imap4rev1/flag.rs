@@ -134,8 +134,6 @@ pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use imap_types::{core::Atom, message::FlagExtension};
 
     use super::*;

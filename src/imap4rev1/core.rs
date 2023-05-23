@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::TryFrom, num::NonZeroU32, str::from_utf8};
+use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
@@ -355,8 +355,6 @@ pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
     use imap_types::core::Quoted;
 
     use super::*;

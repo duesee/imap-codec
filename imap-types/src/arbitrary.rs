@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 

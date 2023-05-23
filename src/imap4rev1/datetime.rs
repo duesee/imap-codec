@@ -214,7 +214,7 @@ fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, str::from_utf8};
+    use std::str::from_utf8;
 
     use super::*;
 

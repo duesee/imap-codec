@@ -4,7 +4,6 @@
 
 #[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
-use std::convert::TryInto;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1619,7 +1618,6 @@ pub struct AuthenticateData(pub Secret<Vec<u8>>);
 mod tests {
     #[cfg(feature = "ext_sasl_ir")]
     use std::borrow::Cow;
-    use std::convert::{TryFrom, TryInto};
 
     use chrono::DateTime as ChronoDateTime;
 

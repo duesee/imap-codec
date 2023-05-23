@@ -1,7 +1,5 @@
 //! IMAP QUOTA Extension
 
-use std::convert::TryFrom;
-
 use abnf_core::streaming::SP;
 use imap_types::{
     command::CommandBody,
@@ -192,8 +190,6 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
     use imap_types::{
         core::IString,
         message::Tag,

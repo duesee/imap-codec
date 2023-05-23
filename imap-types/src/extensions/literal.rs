@@ -31,8 +31,6 @@ impl Encode for LiteralCapability {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{core::Literal, testing::known_answer_test_encode};
 

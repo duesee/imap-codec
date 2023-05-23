@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use imap_codec::{
     codec::{Decode, Encode},
     command::{

@@ -2,7 +2,6 @@
 
 use std::{
     borrow::Cow,
-    convert::{TryFrom, TryInto},
     num::{NonZeroU32, TryFromIntError},
 };
 
@@ -1023,8 +1022,6 @@ impl<'a> CapabilityOther<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::{
         core::{IString, NString},

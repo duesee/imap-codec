@@ -113,8 +113,6 @@ pub enum PartSpecifier<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use super::*;
     use crate::testing::known_answer_test_encode;
 

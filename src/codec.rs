@@ -100,7 +100,7 @@ impl<'a> Decode<'a> for Response<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, num::NonZeroU32};
+    use std::num::NonZeroU32;
 
     #[cfg(feature = "ext_idle")]
     use imap_types::extensions::idle::IdleDone;
