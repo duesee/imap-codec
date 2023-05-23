@@ -9,10 +9,10 @@
 
 use std::io::Write;
 
-use imap_types::command::{idle::IdleDone, CommandBody};
+pub use imap_types::extensions::idle::*;
 use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
-use crate::codec::Encode;
+use crate::{codec::Encode, command::CommandBody};
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -55,24 +55,54 @@ impl Encode for IdleDone {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{command::CommandBody, testing::known_answer_test_encode};
+    use crate::{
+        codec::{Decode, DecodeError},
+        command::{Command, CommandBody},
+        extensions::idle::IdleDone,
+        testing::kat_inverse_command,
+    };
 
     #[test]
-    fn test_encode_command_body_idle() {
-        let tests = [(CommandBody::Idle, b"IDLE".as_ref())];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+    fn test_kat_inverse_command_idle() {
+        kat_inverse_command(&[
+            (
+                b"A IDLE\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("A", CommandBody::Idle).unwrap(),
+            ),
+            (
+                b"A IDLE\r\n?",
+                b"?",
+                Command::new("A", CommandBody::Idle).unwrap(),
+            ),
+        ]);
     }
 
     #[test]
-    fn test_encode_idle_done() {
-        let tests = [(IdleDone, b"DONE\r\n".as_ref())];
+    fn test_decode_idle_done() {
+        let tests = [
+            // Ok
+            (b"done\r\n".as_ref(), Ok((b"".as_ref(), IdleDone))),
+            (b"done\r\n?".as_ref(), Ok((b"?".as_ref(), IdleDone))),
+            // Incomplete
+            (b"d".as_ref(), Err(DecodeError::Incomplete)),
+            (b"do".as_ref(), Err(DecodeError::Incomplete)),
+            (b"don".as_ref(), Err(DecodeError::Incomplete)),
+            (b"done".as_ref(), Err(DecodeError::Incomplete)),
+            (b"done\r".as_ref(), Err(DecodeError::Incomplete)),
+            // Failed
+            (b"donee\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" done\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"done \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" done \r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
 
-        for test in tests {
-            known_answer_test_encode(test);
+        for (test, expected) in tests {
+            let got = IdleDone::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
         }
     }
 }

@@ -28,71 +28,29 @@ pub fn r#move(input: &[u8]) -> IResult<&[u8], CommandBody> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{
-        codec::Encode,
-        command::{CommandBody, SequenceSet},
-        message::Mailbox,
+        command::{Command, CommandBody},
+        testing::kat_inverse_command,
     };
 
     #[test]
-    fn test_encode_command_body_move() {
-        let tests = [
+    fn test_kat_inverse_command_move() {
+        kat_inverse_command(&[
             (
-                CommandBody::r#move("1", "inBox", false).unwrap(),
-                CommandBody::Move {
-                    sequence_set: SequenceSet::try_from(1).unwrap(),
-                    mailbox: Mailbox::Inbox,
-                    uid: false,
-                },
-                b"MOVE 1 INBOX".as_ref(),
+                b"A MOVE 1 INBOX\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("A", CommandBody::r#move("1", "inBox", false).unwrap()).unwrap(),
             ),
             (
-                CommandBody::r#move("1", "inBox", true).unwrap(),
-                CommandBody::Move {
-                    sequence_set: SequenceSet::try_from(1).unwrap(),
-                    mailbox: Mailbox::Inbox,
-                    uid: true,
-                },
-                b"UID MOVE 1 INBOX".as_ref(),
-            ),
-        ];
-
-        for (test_1, test_2, expected) in tests {
-            assert_eq!(test_1, test_2);
-
-            let got = test_1.encode_detached().unwrap();
-            assert_eq!(expected, got);
-        }
-    }
-
-    #[test]
-    fn test_parse_command_body_move() {
-        let tests = [
-            (
-                b"MoVe 1 test\r".as_ref(),
-                CommandBody::Move {
-                    sequence_set: SequenceSet::try_from(1).unwrap(),
-                    mailbox: Mailbox::try_from("test").unwrap(),
-                    uid: false,
-                },
-                b"\r".as_ref(),
+                b"A UID MOVE 1 INBOX\r\n?",
+                b"?",
+                Command::new("A", CommandBody::r#move("1", "inBox", true).unwrap()).unwrap(),
             ),
             (
-                b"MoVe 1 INBOX\r\n",
-                CommandBody::Move {
-                    sequence_set: SequenceSet::try_from(1).unwrap(),
-                    mailbox: Mailbox::Inbox,
-                    uid: false,
-                },
-                b"\r\n",
+                b"A MOVE 1:* test\r\n??",
+                b"??",
+                Command::new("A", CommandBody::r#move("1:*", "test", false).unwrap()).unwrap(),
             ),
-        ];
-
-        for (test, expected_command, expected_remainder) in tests {
-            let (got_remainder, got_command) = r#move(test).unwrap();
-            assert_eq!(expected_command, got_command);
-            assert_eq!(expected_remainder, got_remainder);
-        }
+        ]);
     }
 }

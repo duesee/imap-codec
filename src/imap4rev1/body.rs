@@ -551,7 +551,7 @@ mod tests {
             data::{FetchAttributeValue, SpecificFields::Basic},
             Data, Response,
         },
-        testing::known_answer_test_encode,
+        testing::{kat_inverse_response, known_answer_test_encode},
     };
 
     #[test]
@@ -632,8 +632,10 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_decode() {
-        let tests = [(
+    fn test_kat_inverse_response_data() {
+        kat_inverse_response(&[(
+            b"* 3372220415 FETCH (BODYSTRUCTURE ((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n".as_ref(),
+            b"".as_ref(),
             Response::Data(Data::Fetch {
                 seq_or_uid: NonZeroU32::try_from(3372220415).unwrap(),
                 attributes: NonEmptyVec::from(FetchAttributeValue::BodyStructure(
@@ -700,13 +702,7 @@ mod tests {
                     },
                 )),
             }),
-            b"* 3372220415 FETCH (BODYSTRUCTURE ((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n"
-            .as_ref(),
-        )];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+        )]);
     }
 
     #[test]

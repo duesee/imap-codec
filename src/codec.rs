@@ -26,8 +26,219 @@
 //! println!("{}", std::str::from_utf8(&out).unwrap());
 //! ```
 
+pub use decode::{Decode, DecodeError};
+pub use encode::Encode;
+
 mod decode;
 mod encode;
 
-pub use decode::{Decode, DecodeError};
-pub use encode::Encode;
+#[cfg(test)]
+mod tests {
+    use std::{convert::TryFrom, num::NonZeroU32};
+
+    use super::{Decode, DecodeError};
+    use crate::{
+        command::{Command, CommandBody},
+        core::{IString, Literal, NString, NonEmptyVec},
+        message::Mailbox,
+        response::{data::FetchAttributeValue, Data, Greeting, GreetingKind, Response},
+        testing::{kat_inverse_command, kat_inverse_greeting, kat_inverse_response},
+    };
+
+    #[test]
+    fn test_kat_inverse_greeting() {
+        kat_inverse_greeting(&[
+            (
+                b"* OK ...\r\n".as_ref(),
+                b"".as_ref(),
+                Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
+            ),
+            (
+                b"* ByE .\r\n???",
+                b"???",
+                Greeting::new(GreetingKind::Bye, None, ".").unwrap(),
+            ),
+            (
+                b"* preaUth x\r\n?",
+                b"?",
+                Greeting::new(GreetingKind::PreAuth, None, "x").unwrap(),
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_kat_inverse_command() {
+        kat_inverse_command(&[
+            (
+                b"a nOOP\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("a", CommandBody::Noop).unwrap(),
+            ),
+            (
+                b"a NooP\r\n???",
+                b"???",
+                Command::new("a", CommandBody::Noop).unwrap(),
+            ),
+            (
+                b"a SeLECT {5}\r\ninbox\r\n",
+                b"",
+                Command::new(
+                    "a",
+                    CommandBody::Select {
+                        mailbox: Mailbox::Inbox,
+                    },
+                )
+                .unwrap(),
+            ),
+            (
+                b"a SElECT {5}\r\ninbox\r\nxxx",
+                b"xxx",
+                Command::new(
+                    "a",
+                    CommandBody::Select {
+                        mailbox: Mailbox::Inbox,
+                    },
+                )
+                .unwrap(),
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_kat_inverse_response() {
+        kat_inverse_response(&[
+            (
+                b"* SEARCH 1\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+            ),
+            (
+                b"* SEARCH 1\r\n???",
+                b"???",
+                Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+            ),
+            (
+                b"* 1 FETCH (RFC822 {5}\r\nhello)\r\n",
+                b"",
+                Response::Data(Data::Fetch {
+                    seq_or_uid: NonZeroU32::new(1).unwrap(),
+                    attributes: NonEmptyVec::from(FetchAttributeValue::Rfc822(NString(Some(
+                        IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
+                    )))),
+                }),
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_greeting_incomplete_failed() {
+        let tests = [
+            // Incomplete
+            (b"*".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* O".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK .".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* OK .\r".as_ref(), Err(DecodeError::Incomplete)),
+            // Failed
+            (b"**".as_ref(), Err(DecodeError::Failed)),
+            (b"* NO x\r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = Greeting::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_command_incomplete_failed() {
+        let tests = [
+            // Incomplete
+            (b"a".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a n".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a no".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a noo".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
+            // LiteralAckRequired
+            (
+                b"a select {5}\r\n".as_ref(),
+                Err(DecodeError::LiteralAckRequired),
+            ),
+            // Incomplete (after literal)
+            (
+                b"a select {5}\r\nxxx".as_ref(),
+                Err(DecodeError::Incomplete),
+            ),
+            // Failed
+            (b"* noop\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"A  noop\r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = Command::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_response_incomplete_failed() {
+        let tests = [
+            // Incomplete
+            (b"".as_ref(), Err(DecodeError::Incomplete)),
+            (b"*".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* S".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SE".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEA".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEAR".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEARC".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEARCH".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEARCH ".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEARCH 1".as_ref(), Err(DecodeError::Incomplete)),
+            (b"* SEARCH 1\r".as_ref(), Err(DecodeError::Incomplete)),
+            // LiteralAck treated as Incomplete
+            (
+                b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
+                Err(DecodeError::Incomplete),
+            ),
+            // Failed
+            (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"A search\r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = Response::decode(test);
+
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    // #[test]
+    // fn test_decode_authenticate_data() {
+    //     let tests = [
+    //         // Ok
+    //         // Incomplete
+    //         // Failed
+    //     ];
+    //
+    //     for (test, expected) in tests {
+    //         let got = AuthenticateData::decode(test);
+    //
+    //         dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+    //
+    //         assert_eq!(expected, got);
+    //     }
+    // }
+}

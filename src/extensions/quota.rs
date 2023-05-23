@@ -3,12 +3,7 @@
 use std::io::Write;
 
 use abnf_core::streaming::SP;
-use imap_types::{
-    command::CommandBody,
-    core::{AString, NonEmptyVec},
-    extensions::quota::{QuotaGet, QuotaSet, Resource, ResourceOther},
-    response::Data,
-};
+use imap_types::extensions::quota::*;
 use nom::{
     bytes::{complete::tag, streaming::tag_no_case},
     combinator::map,
@@ -19,10 +14,13 @@ use nom::{
 
 use crate::{
     codec::Encode,
+    command::CommandBody,
+    core::{AString, NonEmptyVec},
     imap4rev1::{
         core::{astring, atom, number64},
         mailbox::mailbox,
     },
+    response::Data,
 };
 
 /// ```abnf
@@ -238,39 +236,126 @@ mod tests {
 
     use super::*;
     use crate::{
-        codec::Decode,
         command::{status::StatusAttribute, Command, CommandBody},
         extensions::quota::ResourceOther,
         message::Mailbox,
-        testing::known_answer_test_encode,
+        testing::{kat_inverse_command, kat_inverse_response},
     };
 
     #[test]
-    fn test_encode_command_body_quota() {
+    fn test_parse_resource_name() {
         let tests = [
-            (CommandBody::get_quota("INBOX").unwrap(), b"GETQUOTA INBOX".as_ref()),
-            (CommandBody::get_quota("").unwrap(), b"GETQUOTA \"\""),
+            (b"stOragE ".as_ref(), Resource::Storage),
+            (b"mesSaGe ".as_ref(), Resource::Message),
+            (b"maIlbOx ".as_ref(), Resource::Mailbox),
+            (b"anNotatIon-stoRage ".as_ref(), Resource::AnnotationStorage),
             (
-                CommandBody::get_quota_root("MAILBOX").unwrap(),
-                b"GETQUOTAROOT MAILBOX",
+                b"anNotatIon-stoRageX ".as_ref(),
+                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRageX".as_ref()).unwrap()),
             ),
             (
-                CommandBody::set_quota("INBOX", vec![]).unwrap(),
-                b"SETQUOTA INBOX ()",
+                b"anNotatIon-stoRagee ".as_ref(),
+                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRagee".as_ref()).unwrap()),
+            ),
+        ];
+
+        for (test, expected) in tests.iter() {
+            let (rem, got) = resource_name(test).unwrap();
+            assert_eq!(*expected, got);
+            assert_eq!(rem, b" ");
+        }
+    }
+
+    #[test]
+    fn test_kat_inverse_command_get_quota() {
+        kat_inverse_command(&[
+            (
+                b"A GETQUOTA INBOX\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("A", CommandBody::get_quota("INBOX").unwrap()).unwrap(),
             ),
             (
-                CommandBody::set_quota(
+                b"A GETQUOTA \"\"\r\n?",
+                b"?",
+                Command::new("A", CommandBody::get_quota("").unwrap()).unwrap(),
+            ),
+            (
+                b"A003 GETQUOTA \"\"\r\n",
+                b"",
+                CommandBody::get_quota("").unwrap().tag("A003").unwrap(),
+            ),
+            (
+                b"G0001 GETQUOTA \"!partition/sda4\"\r\n",
+                b"",
+                CommandBody::get_quota(AString::String(
+                    IString::try_from("!partition/sda4").unwrap(),
+                ))
+                .unwrap()
+                .tag("G0001")
+                .unwrap(),
+            ),
+            (
+                b"S0000 GETQUOTA \"#user/alice\"\r\n",
+                b"",
+                CommandBody::get_quota(AString::String(IString::try_from("#user/alice").unwrap()))
+                    .unwrap()
+                    .tag("S0000")
+                    .unwrap(),
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_kat_inverse_command_get_quota_root() {
+        kat_inverse_command(&[
+            (
+                b"A003 GETQUOTAROOT INBOX\r\n".as_ref(),
+                b"".as_ref(),
+                CommandBody::get_quota_root(Mailbox::Inbox)
+                    .unwrap()
+                    .tag("A003")
+                    .unwrap(),
+            ),
+            (
+                b"A GETQUOTAROOT MAILBOX\r\n??",
+                b"??",
+                Command::new("A", CommandBody::get_quota_root("MAILBOX").unwrap()).unwrap(),
+            ),
+            (
+                b"G0002 GETQUOTAROOT INBOX\r\n",
+                b"",
+                CommandBody::get_quota_root("inbox")
+                    .unwrap()
+                    .tag("G0002")
+                    .unwrap(),
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_kat_inverse_command_set_quota() {
+        kat_inverse_command(&[
+            (
+                b"A SETQUOTA INBOX ()\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new("A", CommandBody::set_quota("INBOX", vec![]).unwrap()).unwrap(),
+            ),
+            (
+                b"A SETQUOTA INBOX (STORAGE 256)\r\n",
+                b"",
+                Command::new("A", CommandBody::set_quota(
                     "INBOX",
                     vec![QuotaSet {
                         resource: Resource::Storage,
                         limit: 256,
                     }],
                 )
-                    .unwrap(),
-                b"SETQUOTA INBOX (STORAGE 256)",
+                    .unwrap()).unwrap(),
             ),
             (
-                CommandBody::set_quota(
+                b"A SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)\r\n",
+                b"",
+                Command::new("A", CommandBody::set_quota(
                     "INBOX",
                     vec![
                         QuotaSet {
@@ -295,153 +380,97 @@ mod tests {
                         },
                     ],
                 )
+                    .unwrap()).unwrap(),
+            ),
+            (
+                b"S0001 SETQUOTA \"#user/alice\" (STORAGE 510)\r\n",
+                b"",
+                CommandBody::set_quota(
+                    AString::String(IString::try_from("#user/alice").unwrap()),
+                    vec![QuotaSet::new(Resource::Storage, 510)],
+                )
+                    .unwrap()
+                    .tag("S0001")
                     .unwrap(),
-                b"SETQUOTA INBOX (STORAGE 0 MESSAGE 512 MAILBOX 512 ANNOTATION-STORAGE 123 Foo 18446744073709551615)",
             ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_encode_response_data_quota() {
-        let tests = [
             (
-                Data::quota(
-                    "INBOX",
-                    vec![QuotaGet {
-                        resource: Resource::Message,
-                        usage: 1024,
-                        limit: 2048,
-                    }],
+                b"S0002 SETQUOTA \"!partition/sda4\" (STORAGE 99999999)\r\n",
+                b"",
+                CommandBody::set_quota(
+                    AString::String(IString::try_from("!partition/sda4").unwrap()),
+                    vec![QuotaSet::new(Resource::Storage, 99999999)],
                 )
-                .unwrap(),
-                b"* QUOTA INBOX (MESSAGE 1024 2048)\r\n".as_ref(),
+                    .unwrap()
+                    .tag("S0002")
+                    .unwrap(),
             ),
             (
-                Data::quota_root("INBOX", vec![]).unwrap(),
-                b"* QUOTAROOT INBOX\r\n",
-            ),
-            (
-                Data::quota_root(
-                    "INBOX",
-                    vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
-                )
-                .unwrap(),
-                b"* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
-    }
-
-    #[test]
-    fn test_decode_command_quota() {
-        let tests = [
-            (
-                "A001 SETQUOTA \"\" (STORAGE 512)\r\n",
+                b"A001 SETQUOTA \"\" (STORAGE 512)\r\n",
+                b"",
                 CommandBody::set_quota("", vec![QuotaSet::new(Resource::Storage, 512)])
                     .unwrap()
                     .tag("A001")
                     .unwrap(),
             ),
-            (
-                "A003 GETQUOTA \"\"\r\n",
-                CommandBody::get_quota("").unwrap().tag("A003").unwrap(),
-            ),
-            (
-                "A003 GETQUOTAROOT INBOX\r\n",
-                CommandBody::get_quota_root(Mailbox::Inbox)
-                    .unwrap()
-                    .tag("A003")
-                    .unwrap(),
-            ),
-            (
-                "G0001 GETQUOTA \"!partition/sda4\"\r\n",
-                CommandBody::get_quota(AString::String(
-                    IString::try_from("!partition/sda4").unwrap(),
-                ))
-                .unwrap()
-                .tag("G0001")
-                .unwrap(),
-            ),
-            (
-                "G0002 GETQUOTAROOT INBOX\r\n",
-                CommandBody::get_quota_root("inbox")
-                    .unwrap()
-                    .tag("G0002")
-                    .unwrap(),
-            ),
-            (
-                "S0000 GETQUOTA \"#user/alice\"\r\n",
-                CommandBody::get_quota(AString::String(IString::try_from("#user/alice").unwrap()))
-                    .unwrap()
-                    .tag("S0000")
-                    .unwrap(),
-            ),
-            (
-                "S0001 SETQUOTA \"#user/alice\" (STORAGE 510)\r\n",
-                CommandBody::set_quota(
-                    AString::String(IString::try_from("#user/alice").unwrap()),
-                    vec![QuotaSet::new(Resource::Storage, 510)],
-                )
-                .unwrap()
-                .tag("S0001")
-                .unwrap(),
-            ),
-            (
-                "S0002 SETQUOTA \"!partition/sda4\" (STORAGE 99999999)\r\n",
-                CommandBody::set_quota(
-                    AString::String(IString::try_from("!partition/sda4").unwrap()),
-                    vec![QuotaSet::new(Resource::Storage, 99999999)],
-                )
-                .unwrap()
-                .tag("S0002")
-                .unwrap(),
-            ),
-            (
-                "S0003 STATUS INBOX (MESSAGES DELETED DELETED-STORAGE)\r\n",
-                CommandBody::status(
-                    "inbox",
-                    vec![
-                        StatusAttribute::Messages,
-                        StatusAttribute::Deleted,
-                        StatusAttribute::DeletedStorage,
-                    ],
-                )
-                .unwrap()
-                .tag("S0003")
-                .unwrap(),
-            ),
-        ];
-
-        for (test, expected) in tests {
-            let (got_rem, got_cmd) = Command::decode(test.as_bytes()).unwrap();
-            assert!(got_rem.is_empty());
-            assert_eq!(expected, got_cmd);
-        }
+        ]);
     }
 
     #[test]
-    fn test_decode_response_quota() {
-        let tests = [
+    fn test_kat_inverse_command_status_quota() {
+        kat_inverse_command(&[(
+            b"S0003 STATUS INBOX (MESSAGES DELETED DELETED-STORAGE)\r\n",
+            b"",
+            CommandBody::status(
+                "inbox",
+                vec![
+                    StatusAttribute::Messages,
+                    StatusAttribute::Deleted,
+                    StatusAttribute::DeletedStorage,
+                ],
+            )
+            .unwrap()
+            .tag("S0003")
+            .unwrap(),
+        )]);
+    }
+
+    #[test]
+    fn test_kat_inverse_response_data_quota() {
+        kat_inverse_response(&[
             (
-                "A003 NO [OVERQUOTA] APPEND Failed\r\n",
-                Response::Status(
-                    Status::no(
-                        Some(Tag::try_from("A003").unwrap()),
-                        Some(Code::OverQuota),
-                        "APPEND Failed",
+                b"* QUOTA INBOX (MESSAGE 1024 2048)\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(
+                    Data::quota(
+                        "INBOX",
+                        vec![QuotaGet {
+                            resource: Resource::Message,
+                            usage: 1024,
+                            limit: 2048,
+                        }],
                     )
                     .unwrap(),
                 ),
             ),
             (
-                "* CAPABILITY QUOTA QUOTA=RES-STORAGE\r\n",
+                b"* QUOTAROOT INBOX\r\n",
+                b"",
+                Response::Data(Data::quota_root("INBOX", vec![]).unwrap()),
+            ),
+            (
+                b"* QUOTAROOT INBOX ROOT1 ROOT2\r\n",
+                b"",
+                Response::Data(
+                    Data::quota_root(
+                        "INBOX",
+                        vec!["ROOT1".try_into().unwrap(), "ROOT2".try_into().unwrap()],
+                    )
+                    .unwrap(),
+                ),
+            ),
+            (
+                b"* CAPABILITY QUOTA QUOTA=RES-STORAGE\r\n",
+                b"",
                 Response::Data(
                     Data::capability(vec![
                         Capability::Quota,
@@ -451,7 +480,8 @@ mod tests {
                 ),
             ),
             (
-                "* CAPABILITY QUOTA QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                b"* CAPABILITY QUOTA QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                b"",
                 Response::Data(
                     Data::capability(vec![
                         Capability::Quota,
@@ -462,7 +492,8 @@ mod tests {
                 ),
             ),
             (
-                "* CAPABILITY QUOTA QUOTASET QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                b"* CAPABILITY QUOTA QUOTASET QUOTA=RES-STORAGE QUOTA=RES-MESSAGE\r\n",
+                b"",
                 Response::Data(
                     Data::capability(vec![
                         Capability::Quota,
@@ -474,14 +505,8 @@ mod tests {
                 ),
             ),
             (
-                "* NO [OVERQUOTA] Soft quota has been exceeded\r\n",
-                Response::Status(
-                    Status::no(None, Some(Code::OverQuota), "Soft quota has been exceeded")
-                        .unwrap(),
-                ),
-            ),
-            (
-                "* QUOTA \"!partition/sda4\" (STORAGE 104 10923847)\r\n",
+                b"* QUOTA \"!partition/sda4\" (STORAGE 104 10923847)\r\n",
+                b"",
                 Response::Data(
                     Data::quota(
                         AString::String(IString::try_from("!partition/sda4").unwrap()),
@@ -491,31 +516,8 @@ mod tests {
                 ),
             ),
             (
-                "* QUOTAROOT comp.mail.mime\r\n",
-                Response::Data(Data::QuotaRoot {
-                    mailbox: Mailbox::try_from("comp.mail.mime").unwrap(),
-                    roots: vec![],
-                }),
-            ),
-            (
-                "* QUOTAROOT INBOX \"\"\r\n",
-                Response::Data(Data::QuotaRoot {
-                    mailbox: Mailbox::Inbox,
-                    roots: vec!["".try_into().unwrap()],
-                }),
-            ),
-            (
-                "* QUOTAROOT INBOX \"#user/alice\" \"!partition/sda4\"\r\n",
-                Response::Data(Data::QuotaRoot {
-                    mailbox: Mailbox::try_from("inbox").unwrap(),
-                    roots: vec![
-                        AString::String(IString::try_from("#user/alice").unwrap()),
-                        AString::String(IString::try_from("!partition/sda4").unwrap()),
-                    ],
-                }),
-            ),
-            (
-                "* QUOTA \"\" (STORAGE 10 512)\r\n",
+                b"* QUOTA \"\" (STORAGE 10 512)\r\n",
+                b"",
                 Response::Data(Data::Quota {
                     root: "".try_into().unwrap(),
                     quotas: vec![QuotaGet::new(Resource::Storage, 10, 512)]
@@ -524,7 +526,8 @@ mod tests {
                 }),
             ),
             (
-                "* QUOTA \"#user/alice\" (MESSAGE 42 1000)\r\n",
+                b"* QUOTA \"#user/alice\" (MESSAGE 42 1000)\r\n",
+                b"",
                 Response::Data(Data::Quota {
                     root: AString::String(IString::try_from("#user/alice").unwrap()),
                     quotas: vec![QuotaGet::new(Resource::Message, 42, 1000)]
@@ -533,7 +536,8 @@ mod tests {
                 }),
             ),
             (
-                "* QUOTA \"#user/alice\" (STORAGE 54 111 MESSAGE 42 1000)\r\n",
+                b"* QUOTA \"#user/alice\" (STORAGE 54 111 MESSAGE 42 1000)\r\n",
+                b"",
                 Response::Data(
                     Data::quota(
                         AString::String(IString::try_from("#user/alice").unwrap()),
@@ -546,7 +550,8 @@ mod tests {
                 ),
             ),
             (
-                "* QUOTA \"#user/alice\" (STORAGE 58 512)\r\n",
+                b"* QUOTA \"#user/alice\" (STORAGE 58 512)\r\n",
+                b"",
                 Response::Data(
                     Data::quota(
                         AString::String(IString::try_from("#user/alice").unwrap()),
@@ -556,7 +561,35 @@ mod tests {
                 ),
             ),
             (
-                "* STATUS INBOX (MESSAGES 12 DELETED 4 DELETED-STORAGE 8)\r\n",
+                b"* QUOTAROOT INBOX \"\"\r\n",
+                b"",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::Inbox,
+                    roots: vec!["".try_into().unwrap()],
+                }),
+            ),
+            (
+                b"* QUOTAROOT comp.mail.mime\r\n",
+                b"",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::try_from("comp.mail.mime").unwrap(),
+                    roots: vec![],
+                }),
+            ),
+            (
+                b"* QUOTAROOT INBOX \"#user/alice\" \"!partition/sda4\"\r\n",
+                b"",
+                Response::Data(Data::QuotaRoot {
+                    mailbox: Mailbox::try_from("inbox").unwrap(),
+                    roots: vec![
+                        AString::String(IString::try_from("#user/alice").unwrap()),
+                        AString::String(IString::try_from("!partition/sda4").unwrap()),
+                    ],
+                }),
+            ),
+            (
+                b"* STATUS INBOX (MESSAGES 12 DELETED 4 DELETED-STORAGE 8)\r\n",
+                b"",
                 Response::Data(Data::Status {
                     mailbox: Mailbox::Inbox,
                     attributes: vec![
@@ -566,37 +599,26 @@ mod tests {
                     ],
                 }),
             ),
-        ];
-
-        for (test, expected) in tests {
-            let (got_rem, got_rsp) = Response::decode(test.as_bytes()).unwrap();
-            println!("{expected:?} == {got_rsp:?}");
-            assert!(got_rem.is_empty());
-            assert_eq!(expected, got_rsp);
-        }
-    }
-
-    #[test]
-    fn test_parse_resource_name() {
-        let tests = [
-            (b"stOragE ".as_ref(), Resource::Storage),
-            (b"mesSaGe ".as_ref(), Resource::Message),
-            (b"maIlbOx ".as_ref(), Resource::Mailbox),
-            (b"anNotatIon-stoRage ".as_ref(), Resource::AnnotationStorage),
             (
-                b"anNotatIon-stoRageX ".as_ref(),
-                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRageX".as_ref()).unwrap()),
+                b"* NO [OVERQUOTA] Soft quota has been exceeded\r\n",
+                b"",
+                Response::Status(
+                    Status::no(None, Some(Code::OverQuota), "Soft quota has been exceeded")
+                        .unwrap(),
+                ),
             ),
             (
-                b"anNotatIon-stoRagee ".as_ref(),
-                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRagee".as_ref()).unwrap()),
+                b"A003 NO [OVERQUOTA] APPEND Failed\r\n",
+                b"".as_ref(),
+                Response::Status(
+                    Status::no(
+                        Some(Tag::try_from("A003").unwrap()),
+                        Some(Code::OverQuota),
+                        "APPEND Failed",
+                    )
+                    .unwrap(),
+                ),
             ),
-        ];
-
-        for (test, expected) in tests.iter() {
-            let (rem, got) = resource_name(test).unwrap();
-            assert_eq!(*expected, got);
-            assert_eq!(rem, b" ");
-        }
+        ]);
     }
 }

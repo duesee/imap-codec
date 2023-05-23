@@ -1619,7 +1619,7 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     #[cfg(feature = "ext_compress")]
-    use crate::message::CompressionAlgorithm;
+    use crate::extensions::compress::CompressionAlgorithm;
     use crate::{
         command::{
             fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
@@ -1635,7 +1635,7 @@ mod tests {
     #[cfg(feature = "ext_enable")]
     use crate::{
         core::NonEmptyVec,
-        message::{CapabilityEnable, Utf8Kind},
+        extensions::enable::{CapabilityEnable, Utf8Kind},
     };
 
     #[test]

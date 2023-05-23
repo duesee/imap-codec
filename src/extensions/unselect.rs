@@ -1,20 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use crate::{codec::Encode, command::CommandBody};
+    use crate::{
+        command::{Command, CommandBody},
+        testing::kat_inverse_command,
+    };
 
     #[test]
-    fn test_encode_command_body_unselect() {
-        let tests = [(
-            CommandBody::unselect(),
-            CommandBody::Unselect,
-            b"UNSELECT".as_ref(),
-        )];
-
-        for (test_1, test_2, expected) in tests {
-            assert_eq!(test_1, test_2);
-
-            let got = test_1.encode_detached().unwrap();
-            assert_eq!(expected, got);
-        }
+    fn test_kat_inverse_command_unselect() {
+        kat_inverse_command(&[(
+            b"A UNSELECT\r\n".as_ref(),
+            b"".as_ref(),
+            Command::new("A", CommandBody::unselect()).unwrap(),
+        )]);
     }
 }

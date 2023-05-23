@@ -96,10 +96,13 @@
 
 pub mod codec;
 #[cfg(any(
-    feature = "ext_idle",
-    feature = "ext_enable",
     feature = "ext_compress",
-    feature = "ext_quota"
+    feature = "ext_enable",
+    feature = "ext_idle",
+    feature = "ext_literal",
+    feature = "ext_move",
+    feature = "ext_quota",
+    feature = "ext_unselect",
 ))]
 mod extensions;
 mod imap4rev1;

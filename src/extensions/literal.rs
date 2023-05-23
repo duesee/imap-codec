@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use imap_types::extensions::literal::LiteralCapability;
+pub use imap_types::extensions::literal::*;
 
 use crate::codec::Encode;
 
@@ -16,39 +16,96 @@ impl Encode for LiteralCapability {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{core::Literal, testing::known_answer_test_encode};
+    use crate::{
+        command::{Command, CommandBody},
+        core::{Literal, NonEmptyVec},
+        response::{data::Capability, Code, Greeting},
+        testing::{kat_inverse_command, kat_inverse_greeting},
+    };
 
     #[test]
-    fn test_encode_literal_capability() {
-        let tests = [
-            (LiteralCapability::Plus, b"LITERAL+".as_ref()),
-            (LiteralCapability::Minus, b"LITERAL-"),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+    fn test_kat_inverse_command_login_literal_plus() {
+        kat_inverse_command(&[
+            (
+                b"A LOGIN {0}\r\n {1}\r\nA\r\n".as_ref(),
+                b"".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::login(
+                        Literal::try_from("").unwrap(),
+                        Literal::try_from("A").unwrap(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            ),
+            (
+                b"A LOGIN {1}\r\nA {2}\r\nAB\r\n?".as_ref(),
+                b"?".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::login(
+                        Literal::try_from("A").unwrap(),
+                        Literal::try_from("AB").unwrap(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            ),
+            (
+                b"A LOGIN {0+}\r\n {1+}\r\nA\r\n??".as_ref(),
+                b"??".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::login(
+                        Literal::try_from("").unwrap().into_non_sync(),
+                        Literal::try_from("A").unwrap().into_non_sync(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            ),
+            (
+                b"A LOGIN {1+}\r\nA {2+}\r\nAB\r\n???".as_ref(),
+                b"???".as_ref(),
+                Command::new(
+                    "A",
+                    CommandBody::login(
+                        Literal::try_from("A").unwrap().into_non_sync(),
+                        Literal::try_from("AB").unwrap().into_non_sync(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            ),
+        ]);
     }
 
     #[test]
-    fn test_encode_literal_plus() {
-        let tests = [
+    fn test_kat_inverse_greeting_capability_literal_plus() {
+        kat_inverse_greeting(&[
             (
-                Literal::try_from("ABCDE").unwrap(),
-                b"{5}\r\nABCDE".to_vec(),
+                b"* OK [CAPABILITY LITERAL+] ...\r\n".as_ref(),
+                b"".as_ref(),
+                Greeting::ok(
+                    Some(Code::Capability(NonEmptyVec::from(Capability::Literal(
+                        LiteralCapability::Plus,
+                    )))),
+                    "...",
+                )
+                .unwrap(),
             ),
             (
-                Literal::try_from("ABCDE").unwrap().into_sync(),
-                b"{5}\r\nABCDE".to_vec(),
+                b"* OK [CAPABILITY LITERAL-] ...\r\n?",
+                b"?",
+                Greeting::ok(
+                    Some(Code::Capability(NonEmptyVec::from(Capability::Literal(
+                        LiteralCapability::Minus,
+                    )))),
+                    "...",
+                )
+                .unwrap(),
             ),
-            (
-                Literal::try_from("ABCDE").unwrap().into_non_sync(),
-                b"{5+}\r\nABCDE".to_vec(),
-            ),
-        ];
-
-        for test in tests {
-            known_answer_test_encode(test);
-        }
+        ]);
     }
 }
