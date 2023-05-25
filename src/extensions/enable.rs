@@ -68,6 +68,8 @@ impl<'a> Encode for CapabilityEnable<'a> {
         match self {
             Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
             Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::CondStore => writer.write_all(b"CONDSTORE"),
             Self::Other(other) => other.encode(writer),
         }
     }
