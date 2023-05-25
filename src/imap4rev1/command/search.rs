@@ -31,7 +31,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
             tuple((SP, tag_no_case(b"CHARSET"), SP, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(SP, search_key(8))),
+        many1(preceded(SP, search_key(9))),
     ));
 
     let (remaining, (_, charset, mut criteria)) = parser(input)?;
