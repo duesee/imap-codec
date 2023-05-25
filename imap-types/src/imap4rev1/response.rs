@@ -996,7 +996,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                     }
                 }
 
-                Self::Other(CapabilityOther { inner: Atom(cow) })
+                Self::Other(CapabilityOther(Atom(cow)))
             }
         }
     }
@@ -1005,9 +1005,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CapabilityOther<'a> {
-    pub(crate) inner: Atom<'a>,
-}
+pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
 
 impl<'a> CapabilityOther<'a> {
     #[cfg(feature = "unchecked")]
@@ -1015,13 +1013,11 @@ impl<'a> CapabilityOther<'a> {
     where
         C: Into<Cow<'a, str>>,
     {
-        Self {
-            inner: Atom::unchecked(inner),
-        }
+        Self(Atom::unchecked(inner))
     }
 
     pub fn inner(&self) -> &Atom<'a> {
-        &self.inner
+        &self.0
     }
 }
 
