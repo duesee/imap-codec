@@ -104,7 +104,7 @@ pub mod codec;
     feature = "ext_quota",
     feature = "ext_unselect",
 ))]
-mod extensions;
+pub mod extensions;
 mod imap4rev1;
 #[cfg(test)]
 mod testing;
