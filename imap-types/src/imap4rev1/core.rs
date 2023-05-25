@@ -689,6 +689,18 @@ impl<'a> TryFrom<String> for AString<'a> {
     }
 }
 
+impl<'a> From<Atom<'a>> for AString<'a> {
+    fn from(atom: Atom<'a>) -> Self {
+        AString::Atom(AtomExt::from(atom))
+    }
+}
+
+impl<'a> From<AtomExt<'a>> for AString<'a> {
+    fn from(atom: AtomExt<'a>) -> Self {
+        AString::Atom(atom)
+    }
+}
+
 impl<'a> From<Quoted<'a>> for AString<'a> {
     fn from(value: Quoted<'a>) -> Self {
         AString::String(IString::Quoted(value))
