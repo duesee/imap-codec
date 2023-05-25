@@ -38,7 +38,12 @@ impl<'a> ListCharString<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 

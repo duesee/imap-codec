@@ -22,7 +22,7 @@ fn test_construction_of_atom() {
     // let mut atm = Atom::try_from(" x ").unwrap();
 
     // #[cfg(feature = "unchecked")]
-    // let atm = Atom::new_unchecked(" x ");
+    // let atm = Atom::unchecked(" x ");
 }
 
 #[test]

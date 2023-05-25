@@ -92,7 +92,7 @@ impl<'a> Arbitrary<'a> for Literal<'a> {
 impl<'a> Arbitrary<'a> for CodeOther<'a> {
     fn arbitrary(_: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         // `CodeOther` is a fallback and should usually not be created.
-        Ok(CodeOther::new_unchecked(b"IMAP-CODEC-CODE-OTHER>".as_ref()))
+        Ok(CodeOther::unchecked(b"IMAP-CODEC-CODE-OTHER>".as_ref()))
     }
 }
 

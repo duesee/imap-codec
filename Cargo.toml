@@ -35,7 +35,7 @@ abnf-core = "0.5"
 base64 = "0.21"
 bytes = { version = "1", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-# The `unchecked` feature unlocks several `_unchecked` methods that allow to bypass syntax checks when
+# The `unchecked` feature unlocks several `unchecked` methods that allow to bypass syntax checks when
 # creating types. This may allow to skip duplicate checks when all preconditions are known to be true.
 imap-types = { path = "imap-types", default-features = false, features = ["unchecked"] }
 nom = "7"

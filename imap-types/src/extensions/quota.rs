@@ -213,8 +213,11 @@ impl<'a> ResourceOther<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(atom: Atom<'a>) -> Self {
-        Self(atom)
+    pub fn unchecked<C>(value: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        Self(Atom::unchecked(value))
     }
 }
 
