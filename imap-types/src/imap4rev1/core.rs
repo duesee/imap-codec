@@ -232,6 +232,12 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
     }
 }
 
+impl<'a> From<Atom<'a>> for AtomExt<'a> {
+    fn from(value: Atom<'a>) -> Self {
+        Self(value.0)
+    }
+}
+
 impl<'a> AsRef<str> for AtomExt<'a> {
     fn as_ref(&self) -> &str {
         &self.0
