@@ -42,7 +42,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
                 map(seq_number, Sequence::Single),
             )),
         ),
-        |set| SequenceSet(NonEmptyVec::new_unchecked(set)),
+        |set| SequenceSet(NonEmptyVec::unchecked(set)),
     )(input)
 }
 

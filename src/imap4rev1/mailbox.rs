@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use abnf_core::streaming::{DQUOTE, SP};
 use imap_types::{
     command::{ListCharString, ListMailbox},
@@ -31,10 +29,10 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
             //
             // `unwrap` is safe here, because `is_list_char` enforces that the bytes ...
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
-            //   * are valid according to `ListCharString::verify()`, i.e., `new_unchecked` is safe.
-            ListMailbox::Token(ListCharString::new_unchecked(Cow::Borrowed(
+            //   * are valid according to `ListCharString::verify()`, i.e., `unchecked` is safe.
+            ListMailbox::Token(ListCharString::unchecked(
                 std::str::from_utf8(bytes).unwrap(),
-            )))
+            ))
         }),
         map(string, ListMailbox::String),
     ))(input)

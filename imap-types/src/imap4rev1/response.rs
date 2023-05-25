@@ -846,7 +846,7 @@ pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 impl<'a> CodeOther<'a> {
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked<D: 'a>(data: D) -> Self
+    pub fn unchecked<D: 'a>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
     {
@@ -1011,8 +1011,13 @@ pub struct CapabilityOther<'a> {
 
 impl<'a> CapabilityOther<'a> {
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Atom<'a>) -> Self {
-        Self { inner }
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        Self {
+            inner: Atom::unchecked(inner),
+        }
     }
 
     pub fn inner(&self) -> &Atom<'a> {

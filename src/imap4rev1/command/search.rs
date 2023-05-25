@@ -39,7 +39,7 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
     let criteria = match criteria.len() {
         0 => unreachable!(),
         1 => criteria.pop().unwrap(),
-        _ => SearchKey::And(NonEmptyVec::new_unchecked(criteria)),
+        _ => SearchKey::And(NonEmptyVec::unchecked(criteria)),
     };
 
     Ok((
@@ -216,7 +216,7 @@ fn search_key_limited<'a>(
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(SP, search_key), tag(b")")),
-                |val| SearchKey::And(NonEmptyVec::new_unchecked(val)),
+                |val| SearchKey::And(NonEmptyVec::unchecked(val)),
             ),
         )),
     ))(input)

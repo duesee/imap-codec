@@ -63,7 +63,12 @@ impl<'a> Atom<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 
@@ -172,7 +177,12 @@ impl<'a> AtomExt<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 
@@ -387,7 +397,12 @@ impl<'a> Literal<'a> {
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(data: Cow<'a, [u8]>, #[cfg(feature = "ext_literal")] sync: bool) -> Self {
+    pub fn unchecked<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        let data = data.into();
+
         #[cfg(debug_assertions)]
         Self::verify(&data).unwrap();
 
@@ -507,7 +522,12 @@ impl<'a> Quoted<'a> {
     /// Call this function only when you are sure that the str
     /// is a valid quoted.
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 
@@ -754,7 +774,12 @@ impl<'a> Tag<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 
@@ -850,7 +875,12 @@ impl<'a> Text<'a> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Cow<'a, str>) -> Self {
+    pub fn unchecked<C>(inner: C) -> Self
+    where
+        C: Into<Cow<'a, str>>,
+    {
+        let inner = inner.into();
+
         #[cfg(debug_assertions)]
         Self::verify(inner.as_bytes()).unwrap();
 
@@ -931,7 +961,7 @@ impl QuotedChar {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: char) -> Self {
+    pub fn unchecked(inner: char) -> Self {
         #[cfg(debug_assertions)]
         Self::verify(inner).unwrap();
 
@@ -1039,7 +1069,7 @@ impl<T> NonEmptyVec<T> {
     }
 
     #[cfg(feature = "unchecked")]
-    pub fn new_unchecked(inner: Vec<T>) -> Self {
+    pub fn unchecked(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
         Self::verify(&inner).unwrap();
 

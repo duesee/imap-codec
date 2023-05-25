@@ -79,9 +79,10 @@ pub fn section_msgtext(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 ///
 /// Body part nesting
 pub fn section_part(input: &[u8]) -> IResult<&[u8], NonEmptyVec<NonZeroU32>> {
-    map(separated_list1(tag(b"."), nz_number), |vec| {
-        NonEmptyVec::new_unchecked(vec)
-    })(input)
+    map(
+        separated_list1(tag(b"."), nz_number),
+        NonEmptyVec::unchecked,
+    )(input)
 }
 
 /// `section-text = section-msgtext / "MIME"`
@@ -98,7 +99,7 @@ pub fn section_text(input: &[u8]) -> IResult<&[u8], PartSpecifier> {
 pub fn header_list(input: &[u8]) -> IResult<&[u8], NonEmptyVec<AString>> {
     map(
         delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
-        NonEmptyVec::new_unchecked,
+        NonEmptyVec::unchecked,
     )(input)
 }
 

@@ -106,7 +106,7 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    Ok((remaining, Quoted::new_unchecked(unescape_quoted(quoted))))
+    Ok((remaining, Quoted::unchecked(unescape_quoted(quoted))))
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
@@ -128,7 +128,7 @@ pub fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        QuotedChar::new_unchecked,
+        QuotedChar::unchecked,
     )(input)
 }
 
@@ -218,8 +218,8 @@ pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
             //
             // `unwrap` is safe, because `is_astring_char` enforces that the bytes ...
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
-            //   * are valid according to `AtomExt::verify(), i.e., `new_unchecked` is safe.
-            AString::Atom(AtomExt::new_unchecked(Cow::Borrowed(
+            //   * are valid according to `AtomExt::verify(), i.e., `unchecked` is safe.
+            AString::Atom(AtomExt::unchecked(Cow::Borrowed(
                 std::str::from_utf8(bytes).unwrap(),
             )))
         }),
@@ -266,10 +266,7 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
     // `unwrap` is safe, because `is_atom_char` enforces ...
     // * that the string is always UTF8, and ...
     // * contains only the allowed characters.
-    Ok((
-        remaining,
-        Atom::new_unchecked(Cow::Borrowed(std::str::from_utf8(parsed_atom).unwrap())),
-    ))
+    Ok((remaining, Atom::unchecked(from_utf8(parsed_atom).unwrap())))
 }
 
 // ----- nstring ----- nil or string
@@ -297,7 +294,7 @@ pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
         // 
         // `is_text_char` makes sure that the sequence of bytes
         // is always valid ASCII. Thus, it is also valid UTF-8.
-        Text::new_unchecked(Cow::Borrowed(std::str::from_utf8(bytes).unwrap())))(input)
+        Text::unchecked(from_utf8(bytes).unwrap()))(input)
 }
 
 /// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`
@@ -349,7 +346,7 @@ pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
             // `is_astring_char` ensures that `val` is UTF-8.
             from_utf8(val).unwrap()
         }),
-        |val| Tag::new_unchecked(Cow::Borrowed(val)),
+        Tag::unchecked,
     )(input)
 }
 
