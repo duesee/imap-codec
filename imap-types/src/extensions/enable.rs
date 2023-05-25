@@ -44,6 +44,8 @@ impl<'a> Data<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CapabilityEnable<'a> {
     Utf8(Utf8Kind),
+    #[cfg(feature = "ext_condstore_qresync")]
+    CondStore,
     Other(CapabilityEnableOther<'a>),
 }
 
@@ -52,6 +54,8 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
         match atom.as_ref().to_ascii_lowercase().as_ref() {
             "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
             "utf8=only" => Self::Utf8(Utf8Kind::Only),
+            #[cfg(feature = "ext_condstore_qresync")]
+            "condstore" => Self::CondStore,
             _ => Self::Other(CapabilityEnableOther(atom)),
         }
     }

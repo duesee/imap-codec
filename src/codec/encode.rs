@@ -459,6 +459,8 @@ impl Encode for StatusAttribute {
             StatusAttribute::Deleted => writer.write_all(b"DELETED"),
             #[cfg(feature = "ext_quota")]
             StatusAttribute::DeletedStorage => writer.write_all(b"DELETED-STORAGE"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            StatusAttribute::HighestModSeq => writer.write_all(b"HIGHESTMODSEQ"),
         }
     }
 }

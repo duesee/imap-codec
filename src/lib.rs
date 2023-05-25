@@ -57,6 +57,12 @@
 //! |ext_unselect         |IMAP UNSELECT command ([RFC 3691])                          |No (but may change)|
 //! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                       |No                 |
 //!
+//! Experimental (or unfinished) features:
+//!
+//! |Feature              |Description                                                                          |Enabled by default |
+//! |---------------------|-------------------------------------------------------------------------------------|-------------------|
+//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|No (but may change)|
+//!
 //! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
 //! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
@@ -88,6 +94,7 @@
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
 //! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
 //! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
+//! [RFC 7162]: https://datatracker.ietf.org/doc/html/rfc7162
 //! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
 //! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
@@ -97,6 +104,7 @@
 pub mod codec;
 #[cfg(any(
     feature = "ext_compress",
+    feature = "ext_condstore_qresync",
     feature = "ext_enable",
     feature = "ext_idle",
     feature = "ext_literal",

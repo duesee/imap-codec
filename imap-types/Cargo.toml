@@ -20,6 +20,7 @@ starttls = []
 
 # IMAP Extensions
 ext_compress = []
+ext_condstore_qresync = []
 ext_enable = []
 ext_idle = []
 ext_literal = []

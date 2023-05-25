@@ -32,6 +32,11 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
         ),
         #[cfg(feature = "ext_quota")]
         value(StatusAttribute::Deleted, tag_no_case(b"DELETED")),
+        #[cfg(feature = "ext_condstore_qresync")]
+        value(
+            StatusAttribute::HighestModSeq,
+            tag_no_case(b"HIGHESTMODSEQ"),
+        ),
     ))(input)
 }
 

@@ -35,6 +35,9 @@ pub enum StatusAttribute {
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     #[cfg(feature = "ext_quota")]
     DeletedStorage,
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    HighestModSeq,
 }
 
 /// The currently defined status data items.

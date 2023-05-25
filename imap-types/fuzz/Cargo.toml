@@ -14,6 +14,7 @@ cargo-fuzz = true
 debug = []
 starttls = ["imap-types/starttls"]
 ext_compress = ["imap-types/ext_compress"]
+ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
 ext_enable = ["imap-types/ext_enable"]
 ext_idle = ["imap-types/ext_idle"]
 ext_literal = ["imap-types/ext_literal"]
@@ -27,6 +28,7 @@ ext_unselect = ["imap-types/ext_unselect"]
 ext = [
     "starttls",
     "ext_compress",
+    "ext_condstore_qresync",
     "ext_enable",
     "ext_idle",
     "ext_literal",
