@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::{Error, Write};
 
 use bytes::{Buf, BufMut, BytesMut};
 use imap_types::{bounded_static::IntoBoundedStatic, response::Greeting};
@@ -169,7 +169,9 @@ impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
     fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        // TODO(225): Don't use `dump` here.
+        let data = item.encode().dump();
+        writer.write_all(&data)?;
         Ok(())
     }
 }
@@ -180,7 +182,9 @@ impl<'a> Encoder<&Response<'a>> for ImapServerCodec {
     fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        // TODO(225): Don't use `dump` here.
+        let data = item.encode().dump();
+        writer.write_all(&data)?;
         Ok(())
     }
 }

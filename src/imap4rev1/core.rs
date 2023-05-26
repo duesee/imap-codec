@@ -467,7 +467,7 @@ mod tests {
             let cs = Charset::try_from(*from).unwrap();
             println!("{:?}", cs);
 
-            let out = cs.encode_detached().unwrap();
+            let out = cs.encode().dump();
             assert_eq!(from_utf8(&out).unwrap(), *expected);
         }
 

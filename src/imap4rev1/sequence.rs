@@ -102,7 +102,7 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let out = test.encode_detached().unwrap();
+            let out = test.encode().dump();
             assert_eq!(*expected, out);
         }
     }

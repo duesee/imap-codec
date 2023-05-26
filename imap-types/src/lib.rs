@@ -149,7 +149,8 @@ pub mod core {
     //! ```
 
     pub use crate::imap4rev1::core::{
-        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, NonEmptyVecError, Quoted,
+        AString, Atom, AtomError, AtomExt, AtomExtError, IString, Literal, LiteralError, NString,
+        NonEmptyVec, NonEmptyVecError, Quoted, QuotedCharError, QuotedError, TagError, TextError,
     };
 }
 

@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::{Error, Write};
 
 use bytes::{Buf, BufMut, BytesMut};
 use imap_types::bounded_static::IntoBoundedStatic;
@@ -182,7 +182,9 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
     fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
-        item.encode(&mut writer).unwrap();
+        // TODO(225): Don't use `dump` here.
+        let data = item.encode().dump();
+        writer.write_all(&data)?;
         Ok(())
     }
 }

@@ -13,7 +13,7 @@ use nom::{
 };
 
 use crate::{
-    codec::Encode,
+    codec::{CoreEncode, EncodeContext},
     command::CommandBody,
     core::{AString, NonEmptyVec},
     imap4rev1::{
@@ -191,34 +191,34 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 //     Ok((remaining, Capability::QuotaRes(resource)))
 // }
 
-impl<'a> Encode for Resource<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl<'a> CoreEncode for Resource<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Resource::Storage => writer.write_all(b"STORAGE"),
             Resource::Message => writer.write_all(b"MESSAGE"),
             Resource::Mailbox => writer.write_all(b"MAILBOX"),
             Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
-            Resource::Other(atom) => atom.encode(writer),
+            Resource::Other(atom) => atom.core_encode(writer),
         }
     }
 }
 
-impl<'a> Encode for ResourceOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.inner().encode(writer)
+impl<'a> CoreEncode for ResourceOther<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.inner().core_encode(writer)
     }
 }
 
-impl<'a> Encode for QuotaGet<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
+impl<'a> CoreEncode for QuotaGet<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.core_encode(writer)?;
         write!(writer, " {} {}", self.usage, self.limit)
     }
 }
 
-impl<'a> Encode for QuotaSet<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.resource.encode(writer)?;
+impl<'a> CoreEncode for QuotaSet<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.core_encode(writer)?;
         write!(writer, " {}", self.limit)
     }
 }

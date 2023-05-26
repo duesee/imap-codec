@@ -6,10 +6,6 @@ use imap_codec::{
     response::{Code, Response, Status},
 };
 
-fn serialize_response(rsp: &Response, out: &mut Vec<u8>) {
-    rsp.encode(out).unwrap();
-}
-
 fn criterion_benchmark(c: &mut Criterion) {
     // # Setup
     //
@@ -29,7 +25,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("serialize_response", |b| {
         b.iter(|| {
-            serialize_response(black_box(&rsp), black_box(&mut out));
+            let tmp = rsp.encode().dump();
+            out.extend_from_slice(black_box(&tmp));
 
             // TODO: This should be a single instruction... should...
             out.clear();

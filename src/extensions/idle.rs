@@ -12,7 +12,10 @@ use std::io::Write;
 pub use imap_types::extensions::idle::*;
 use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
-use crate::{codec::Encode, command::CommandBody};
+use crate::{
+    codec::{CoreEncode, EncodeContext},
+    command::CommandBody,
+};
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -47,8 +50,8 @@ pub fn idle_done(input: &[u8]) -> IResult<&[u8], IdleDone> {
     value(IdleDone, tag_no_case("DONE\r\n"))(input)
 }
 
-impl Encode for IdleDone {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl CoreEncode for IdleDone {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         writer.write_all(b"DONE\r\n")
     }
 }
