@@ -27,7 +27,7 @@ use crate::{
     },
     core::{AString, Literal},
     message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Tag},
-    security::Secret,
+    secret::Secret,
 };
 #[cfg(feature = "ext_enable")]
 use crate::{core::NonEmptyVec, extensions::enable::CapabilityEnable};
@@ -1630,7 +1630,7 @@ mod tests {
         },
         core::{AString, IString, Literal},
         message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Part, Section},
-        security::Secret,
+        secret::Secret,
     };
     #[cfg(feature = "ext_enable")]
     use crate::{

@@ -14,7 +14,7 @@ use imap_codec::{
         },
         Code, Data, Greeting, Response, Status,
     },
-    security::Secret,
+    secret::Secret,
 };
 
 enum Who {

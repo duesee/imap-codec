@@ -112,7 +112,7 @@
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
 mod imap4rev1;
-pub mod security;
+pub mod secret;
 pub mod utils;
 
 // -- API -----------------------------------------------------------------------------------

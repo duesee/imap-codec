@@ -52,7 +52,7 @@ async fn main() {
                     }
                     (tag, CommandBody::Login { username, password }) => {
                         let rsp = if username.as_ref() == b"alice"
-                            && password.compare_ct("password")
+                            && password.compare_with("password")
                         {
                             Response::Status(
                                 Status::ok(Some(tag), None, "LOGIN succeeded").unwrap(),
