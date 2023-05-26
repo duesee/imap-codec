@@ -12,7 +12,7 @@ fuzz_target!(|test: Command| {
     #[cfg(feature = "debug")]
     println!("[!] Input: {test:?}");
 
-    let buffer = test.encode_detached().unwrap();
+    let buffer = test.encode().dump();
 
     #[cfg(feature = "debug")]
     println!("[!] Serialized: {}", escape_byte_string(&buffer));

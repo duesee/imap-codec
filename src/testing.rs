@@ -11,7 +11,7 @@ use crate::{
 
 pub fn known_answer_test_encode((test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>)) {
     let expected_bytes = expected_bytes.as_ref();
-    let got_bytes = test_object.encode_detached().unwrap();
+    let got_bytes = test_object.encode().dump();
     let got_bytes = got_bytes.as_slice();
 
     if expected_bytes != got_bytes {
@@ -51,7 +51,7 @@ macro_rules! impl_kat_inverse {
                 assert_eq!(*expected_object, got_object);
                 assert_eq!(*expected_remainder, got_remainder);
 
-                let got_output = got_object.encode_detached().unwrap();
+                let got_output = got_object.encode().dump();
 
                 // This second `decode` makes using generic bonuds more complicated due to the
                 // different lifetime.

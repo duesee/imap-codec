@@ -10,7 +10,7 @@ fn test_from_readme() {
     let (_remainder, parsed) = Command::decode(input).unwrap();
     println!("# Parsed\n\n{:#?}\n\n", parsed);
 
-    let buffer = parsed.encode_detached().unwrap();
+    let buffer = parsed.encode().dump();
 
     // Note: IMAP4rev1 may produce messages that are not valid UTF-8.
     println!("# Serialized\n\n{:?}", std::str::from_utf8(&buffer));

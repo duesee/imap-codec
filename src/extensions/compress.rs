@@ -16,7 +16,10 @@ use nom::{
     IResult,
 };
 
-use crate::{codec::Encode, command::CommandBody};
+use crate::{
+    codec::{CoreEncode, EncodeContext},
+    command::CommandBody,
+};
 
 /// `algorithm = "DEFLATE"`
 pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
@@ -30,8 +33,8 @@ pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
     })(input)
 }
 
-impl Encode for CompressionAlgorithm {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl CoreEncode for CompressionAlgorithm {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
         }

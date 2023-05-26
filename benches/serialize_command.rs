@@ -10,10 +10,6 @@ use imap_codec::{
     message::Section,
 };
 
-fn serialize_command(cmd: &Command, out: &mut Vec<u8>) {
-    cmd.encode(out).unwrap();
-}
-
 fn criterion_benchmark(c: &mut Criterion) {
     // # Setup
     //
@@ -45,7 +41,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("serialize_command", |b| {
         b.iter(|| {
-            serialize_command(black_box(&cmd), black_box(&mut out));
+            let tmp = cmd.encode().dump();
+            out.extend_from_slice(black_box(&tmp));
 
             // TODO: This should be a single instruction... should...
             out.clear();

@@ -656,7 +656,7 @@ mod tests {
         )
         .unwrap();
 
-        let buffer = command.encode_detached().unwrap();
+        let buffer = command.encode().dump();
 
         assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }

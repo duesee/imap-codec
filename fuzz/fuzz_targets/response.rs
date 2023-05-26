@@ -20,7 +20,7 @@ fuzz_target!(|data: &[u8]| {
             println!("[!] Parsed1: {parsed1:?}");
         }
 
-        let output = parsed1.encode_detached().unwrap();
+        let output = parsed1.encode().dump();
         #[cfg(feature = "debug")]
         println!("[!] Serialized: {}", escape_byte_string(&output));
 

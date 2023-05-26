@@ -18,7 +18,12 @@ use nom::{
     IResult,
 };
 
-use crate::{codec::Encode, command::CommandBody, imap4rev1::core::atom, response::Data};
+use crate::{
+    codec::{CoreEncode, EncodeContext},
+    command::CommandBody,
+    imap4rev1::core::atom,
+    response::Data,
+};
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
 ///
@@ -63,21 +68,21 @@ pub fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
     Ok((remaining, { Data::Enabled { capabilities } }))
 }
 
-impl<'a> Encode for CapabilityEnable<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
+impl<'a> CoreEncode for CapabilityEnable<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
             Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => writer.write_all(b"CONDSTORE"),
-            Self::Other(other) => other.encode(writer),
+            Self::Other(other) => other.core_encode(writer),
         }
     }
 }
 
-impl<'a> Encode for CapabilityEnableOther<'a> {
-    fn encode(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        self.inner().encode(writer)
+impl<'a> CoreEncode for CapabilityEnableOther<'a> {
+    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.inner().core_encode(writer)
     }
 }
 

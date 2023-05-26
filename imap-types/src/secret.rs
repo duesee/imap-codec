@@ -157,7 +157,9 @@ mod tests {
     #[cfg(not(debug_assertions))]
     #[allow(clippy::redundant_clone)]
     fn test_that_secret_is_redacted() {
-        use crate::{command::AuthenticateData, message::AuthMechanism};
+        use crate::command::AuthenticateData;
+        #[cfg(feature = "ext_sasl_ir")]
+        use crate::message::AuthMechanism;
 
         let secret = Secret("xyz123");
         let got = format!("{:?}", secret);

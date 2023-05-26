@@ -1,7 +1,7 @@
 //! # Serialization of messages
 //!
 //! All messages implement the `Encode` trait.
-//! You can `use imap_codec::Encode` and call the `.encode(...)` (or `.encode_detached(...)`) method to serialize a message (into a writer).
+//! You can `use imap_codec::Encode` and call the `.encode()` (or `.encode().dump()`) method to serialize a message.
 //! Note that IMAP traces are not guaranteed to be UTF-8. Thus, be careful when using things like `std::str::from_utf8(...).unwrap()`.
 //! It should generally be better not to think about IMAP as being UTF-8.
 //! This is also why `Display` is not implemented.
@@ -19,7 +19,7 @@
 //! let cmd = Command::new("A123", CommandBody::login("alice", "password").unwrap()).unwrap();
 //!
 //! // Encode the `cmd` into `out`.
-//! let out = cmd.encode_detached().unwrap();
+//! let out = cmd.encode().dump();
 //!
 //! // Print the command.
 //! // (Note that IMAP traces are not guaranteed to be valid UTF-8.)
@@ -27,7 +27,15 @@
 //! ```
 
 pub use decode::{Decode, DecodeError};
-pub use encode::Encode;
+#[cfg(any(
+    feature = "ext_compress",
+    feature = "ext_enable",
+    feature = "ext_idle",
+    feature = "ext_literal",
+    feature = "ext_quota",
+))]
+pub(crate) use encode::CoreEncode;
+pub use encode::{Action, Encode, EncodeContext};
 
 mod decode;
 mod encode;
