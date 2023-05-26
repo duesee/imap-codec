@@ -1,6 +1,11 @@
 use std::borrow::Cow;
 
-pub fn escape_byte_string(bytes: &[u8]) -> String {
+pub fn escape_byte_string<B>(bytes: B) -> String
+where
+    B: AsRef<[u8]>,
+{
+    let bytes = bytes.as_ref();
+
     bytes
         .iter()
         .map(|byte| match byte {
