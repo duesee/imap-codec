@@ -191,7 +191,7 @@ mod tests {
     use imap_types::{
         command::{Command, CommandBody},
         core::{AString, AtomExt, IString, Literal},
-        security::Secret,
+        secret::Secret,
     };
     use tokio_util::codec::Decoder;
 

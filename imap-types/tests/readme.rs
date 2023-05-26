@@ -6,7 +6,7 @@ use imap_types::{
 use imap_types::{
     core::{AString, Atom},
     message::Tag,
-    security::Secret,
+    secret::Secret,
 };
 
 #[test]

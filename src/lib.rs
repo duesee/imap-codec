@@ -117,7 +117,7 @@ mod imap4rev1;
 #[cfg(test)]
 mod testing;
 
-pub use imap_types::{command, core, message, response, security, state, utils};
+pub use imap_types::{command, core, message, response, secret, state, utils};
 
 // ----------- Compatibility modules -----------
 

@@ -10,7 +10,7 @@ use imap_types::{
     },
     core::AString,
     message::{AuthMechanism, Flag},
-    security::Secret,
+    secret::Secret,
 };
 use nom::{
     branch::alt,
