@@ -55,6 +55,7 @@ jobs:
           do
             for feature_mode in "" "--all-features";
             do
+              echo "# Testing" ${build_mode} ${feature_mode}
               cargo test --workspace ${build_mode} ${feature_mode} --doc
               cargo test --workspace ${build_mode} ${feature_mode} --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz
             done
@@ -68,6 +69,7 @@ jobs:
 
           foreach ($build_mode in $build_modes) {
             foreach ($feature_mode in $feature_modes) {
+              echo "# Testing" ${build_mode} ${feature_mode}
               cargo test --workspace ${build_mode} ${feature_mode} --doc
               cargo test --workspace ${build_mode} ${feature_mode} --all-targets --exclude imap-codec-fuzz --exclude imap-types-fuzz
             }
