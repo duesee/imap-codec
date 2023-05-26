@@ -1,7 +1,8 @@
 [package]
 name = "imap-codec"
-description = "Low-level IMAP Parser and Serializer"
-keywords = ["email", "imap", "parser", "codec"]
+description = "Rock-solid and complete codec for IMAP"
+keywords = ["email", "imap", "codec", "parser"]
+categories = ["email", "parser-implementations", "encoding", "network-programming"]
 version = "0.9.0-dev"
 authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
