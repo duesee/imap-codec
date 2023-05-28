@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::from_utf8};
+use std::{borrow::Cow, str::from_utf8, vec::IntoIter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1012,6 +1012,18 @@ pub enum Charset<'a> {
     Quoted(Quoted<'a>),
 }
 
+impl<'a> From<Atom<'a>> for Charset<'a> {
+    fn from(value: Atom<'a>) -> Self {
+        Self::Atom(value)
+    }
+}
+
+impl<'a> From<Quoted<'a>> for Charset<'a> {
+    fn from(value: Quoted<'a>) -> Self {
+        Self::Quoted(value)
+    }
+}
+
 impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
     type Error = QuotedError;
 
@@ -1093,6 +1105,10 @@ impl<T> NonEmptyVec<T> {
 
         Self(inner)
     }
+
+    pub fn into_inner(self) -> Vec<T> {
+        self.0
+    }
 }
 
 impl<T> From<T> for NonEmptyVec<T> {
@@ -1108,6 +1124,15 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
         Self::verify(&inner)?;
 
         Ok(Self(inner))
+    }
+}
+
+impl<T> IntoIterator for NonEmptyVec<T> {
+    type Item = T;
+    type IntoIter = IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
