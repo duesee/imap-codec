@@ -271,6 +271,18 @@ pub enum IString<'a> {
     Quoted(Quoted<'a>),
 }
 
+impl<'a> IString<'a> {
+    pub fn into_inner(self) -> Cow<'a, [u8]> {
+        match self {
+            Self::Literal(literal) => literal.into_inner(),
+            Self::Quoted(quoted) => match quoted.into_inner() {
+                Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
+                Cow::Owned(s) => Cow::Owned(s.into_bytes()),
+            },
+        }
+    }
+}
+
 impl<'a> TryFrom<&'a [u8]> for IString<'a> {
     type Error = LiteralError;
 
@@ -393,6 +405,10 @@ impl<'a> Literal<'a> {
     pub fn into_non_sync(mut self) -> Self {
         self.sync = false;
         self
+    }
+
+    pub fn into_inner(self) -> Cow<'a, [u8]> {
+        self.data
     }
 
     /// Create a literal from a byte sequence without checking
@@ -607,6 +623,12 @@ pub struct NString<'a>(
     // The inner value can be public.
     pub Option<IString<'a>>,
 );
+
+impl<'a> NString<'a> {
+    pub fn into_option(self) -> Option<Cow<'a, [u8]>> {
+        self.0.map(|inner| inner.into_inner())
+    }
+}
 
 impl<'a> TryFrom<&'a str> for NString<'a> {
     type Error = LiteralError;
