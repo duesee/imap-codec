@@ -159,3 +159,12 @@ pub enum SearchKey<'a> {
     /// Messages that do not have the \Seen flag set.
     Unseen,
 }
+
+impl<'a> SearchKey<'a> {
+    pub fn uid<S>(sequence_set: S) -> Self
+    where
+        S: Into<SequenceSet>,
+    {
+        Self::Uid(sequence_set.into())
+    }
+}
