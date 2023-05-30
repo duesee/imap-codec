@@ -226,14 +226,12 @@ mod tests {
                 tok.duration_since(tik).as_nanos()
             }
 
-            let a = Secret::new(AString::from(Atom::unchecked(str::repeat(
-                "A",
-                1024 * 1024,
-            ))));
-            let b = Secret::new(AString::from(Atom::unchecked(str::repeat(
-                "B",
-                1024 * 1024,
-            ))));
+            let a = Secret::new(AString::from(
+                Atom::try_from(str::repeat("A", 1024 * 1024)).unwrap(),
+            ));
+            let b = Secret::new(AString::from(
+                Atom::try_from(str::repeat("B", 1024 * 1024)).unwrap(),
+            ));
 
             let took1 = compare_eq(a.clone(), a.clone());
             println!("{}", took1);
@@ -292,16 +290,16 @@ mod tests {
             Command::new(
                 "A",
                 CommandBody::login(
-                    AString::from(Atom::unchecked("user")),
-                    AString::from(Atom::unchecked("pass")),
+                    AString::from(Atom::try_from("user").unwrap()),
+                    AString::from(Atom::try_from("pass").unwrap()),
                 )
                 .unwrap(),
             ),
             Command::new(
                 "A",
                 CommandBody::login(
-                    AString::from(Atom::unchecked("user")),
-                    AString::from(Quoted::unchecked("pass")),
+                    AString::from(Atom::try_from("user").unwrap()),
+                    AString::from(Quoted::try_from("pass").unwrap()),
                 )
                 .unwrap(),
             )
