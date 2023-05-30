@@ -176,7 +176,7 @@ pub mod command {
             RenameError,
         },
         mailbox::{ListCharString, ListMailbox},
-        sequence::{SeqOrUid, Sequence, SequenceSet, Strategy},
+        sequence::{SeqOrUid, Sequence, SequenceSet, SequenceSetError, Strategy},
     };
 
     pub mod status {

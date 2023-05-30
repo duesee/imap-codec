@@ -1,6 +1,7 @@
 //! IMAP - MOVE Extension
 
 use abnf_core::streaming::SP;
+pub use imap_types::extensions::r#move::*;
 use nom::{bytes::streaming::tag_no_case, sequence::tuple, IResult};
 
 use crate::{
