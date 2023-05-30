@@ -108,6 +108,39 @@ impl TryFrom<u32> for SequenceSet {
     }
 }
 
+macro_rules! impl_try_from_num_slice_for_sequence_set {
+    ($num:ty) => {
+        impl TryFrom<&[$num]> for SequenceSet {
+            type Error = SequenceSetError;
+
+            fn try_from(value: &[$num]) -> Result<Self, Self::Error> {
+                let mut vec = Vec::with_capacity(value.len());
+
+                for value in value {
+                    vec.push(Sequence::Single(SeqOrUid::try_from(*value).map_err(
+                        |_| SequenceSetError::Sequence(SequenceError::Invalid),
+                    )?));
+                }
+
+                Ok(Self(
+                    NonEmptyVec::try_from(vec).map_err(|_| SequenceSetError::Empty)?,
+                ))
+            }
+        }
+    };
+}
+
+impl_try_from_num_slice_for_sequence_set!(i8);
+impl_try_from_num_slice_for_sequence_set!(i16);
+impl_try_from_num_slice_for_sequence_set!(i32);
+impl_try_from_num_slice_for_sequence_set!(i64);
+impl_try_from_num_slice_for_sequence_set!(isize);
+impl_try_from_num_slice_for_sequence_set!(u8);
+impl_try_from_num_slice_for_sequence_set!(u16);
+impl_try_from_num_slice_for_sequence_set!(u32);
+impl_try_from_num_slice_for_sequence_set!(u64);
+impl_try_from_num_slice_for_sequence_set!(usize);
+
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum SequenceSetError {
     #[error("Must not be empty.")]
