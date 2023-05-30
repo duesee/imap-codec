@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - YYYY-MM-DD
 
+## [Version 0.9.0] - 2023-05-30
+
+### Added
+
+- Implemented `MOVE` (RFC 6851).
+- Implemented `UNSELECT` (RFC 3691).
+- Implemented (some of) `CONDSTORE` / `QRESYNC` (RFC 7162).
+- Reworked (and enabled) coverage job in CI.
+- Added (spot-)fuzzing to CI.
+- Added `minimal-versions` job to CI.
+  - Test MSRV.
+  - Test lowest versions of dependencies.
+
+### Changed
+
+- Migrated to Rust 2021.
+- Redesigned `Encode` trait.
+- Moved `Encode` trait from imap-types to imap-codec.
+
+### Fixed
+
+- Made known-answer tests stronger.
+  - Made it so that `Decode` is always tested during `Encode` and vice versa.
+- Made it so that random tests are reproducable through a seed.
+- Resolved remaining `TODO`s in `command_to_bytes_and_back` fuzz-target.
+- Resolved remaining `TODO`s in `{Single,Multi}PartExtensionData`
+  - Fixed misuse of `{Single,Multi}PartExtensionData.`
+  - Introduced `BodyExtension`.
+- Introduced `ContinueBasic` to prevent ambiguities.
+- Fixed `Eq` side effect of `Secret`.
+- Fixed `mbx_list_flags`.
+- Fixed `NaiveDate`.
+  - Made `MyNaiveDate::arbitrary` really arbitrary.
+  - Narrowed allowed values for `DateTime` and `NaiveDate`.
+- Fixed poor constant-time sanity check.
+- Fixed possible `panic!` in `response`.
+- Reactivated ignored tests.
+
 ## [Version 0.8.0] - 2023-04-16
 
 ### Added
@@ -152,7 +190,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix benchmarks (thanks, @franziskuskiefer).
 - Fix misuses, e.g., `AtomExt` (1*ASTRING-CHAR).
 
-[Unreleased]:    https://github.com/duesee/imap-codec/compare/f5138ac09b6e160256c8e6dc80db1597aee92394...HEAD
-[Version 0.8.0]: https://github.com/duesee/imap-codec/compare/16e34bce239840bc3a39c811f1ce3d36c6ea20b0...f5138ac09b6e160256c8e6dc80db1597aee92394
-[Version 0.7.0]: https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...16e34bce239840bc3a39c811f1ce3d36c6ea20b0
 [Version 0.6.0]: https://github.com/duesee/imap-codec/compare/fcb400e508f74a8d88bbcbfd777bdca7cb75bdeb...63b6a2e4a94f2734d67a18039b3f6dae68994902
+[Version 0.7.0]: https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...16e34bce239840bc3a39c811f1ce3d36c6ea20b0
+[Version 0.8.0]: https://github.com/duesee/imap-codec/compare/16e34bce239840bc3a39c811f1ce3d36c6ea20b0...f5138ac09b6e160256c8e6dc80db1597aee92394
+[Version 0.9.0]: https://github.com/duesee/imap-codec/compare/f5138ac09b6e160256c8e6dc80db1597aee92394...3bb1b380a6f163a16732f9dd9c8382f2af73868c
+[Unreleased]:    https://github.com/duesee/imap-codec/compare/3bb1b380a6f163a16732f9dd9c8382f2af73868c...HEAD
