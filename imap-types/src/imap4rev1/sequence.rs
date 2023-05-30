@@ -193,6 +193,21 @@ impl TryFrom<RangeFrom<u32>> for Sequence {
     }
 }
 
+impl From<RangeFrom<NonZeroU32>> for SequenceSet {
+    fn from(range: RangeFrom<NonZeroU32>) -> Self {
+        SequenceSet(NonEmptyVec::from(Sequence::Range(
+            SeqOrUid::Value(range.start),
+            SeqOrUid::Asterisk,
+        )))
+    }
+}
+
+impl From<RangeFrom<NonZeroU32>> for Sequence {
+    fn from(range: RangeFrom<NonZeroU32>) -> Self {
+        Sequence::Range(SeqOrUid::Value(range.start), SeqOrUid::Asterisk)
+    }
+}
+
 impl TryFrom<Range<u32>> for Sequence {
     type Error = TryFromIntError;
 
