@@ -37,6 +37,29 @@ pub enum SeqOrUid {
     Asterisk,
 }
 
+macro_rules! impl_try_from_for_seq_or_uid {
+    ($num:ty) => {
+        impl TryFrom<$num> for SeqOrUid {
+            type Error = TryFromIntError;
+
+            fn try_from(value: $num) -> Result<Self, Self::Error> {
+                Ok(Self::Value(NonZeroU32::try_from(u32::try_from(value)?)?))
+            }
+        }
+    };
+}
+
+impl_try_from_for_seq_or_uid!(i8);
+impl_try_from_for_seq_or_uid!(i16);
+impl_try_from_for_seq_or_uid!(i32);
+impl_try_from_for_seq_or_uid!(i64);
+impl_try_from_for_seq_or_uid!(isize);
+impl_try_from_for_seq_or_uid!(u8);
+impl_try_from_for_seq_or_uid!(u16);
+impl_try_from_for_seq_or_uid!(u32);
+impl_try_from_for_seq_or_uid!(u64);
+impl_try_from_for_seq_or_uid!(usize);
+
 impl<'a> SequenceSet {
     pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
         match strategy {
