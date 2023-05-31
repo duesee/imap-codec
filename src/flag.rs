@@ -1,5 +1,6 @@
 use abnf_core::streaming::SP;
-use imap_types::message::{Flag, FlagFetch, FlagNameAttribute, FlagPerm};
+/// Re-export everything from imap-types.
+pub use imap_types::flag::*;
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -10,7 +11,7 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::core::atom;
+use crate::core::atom;
 
 /// ```abnf
 /// flag = "\Answered" /
@@ -134,9 +135,8 @@ pub fn mbx_list_flags(input: &[u8]) -> IResult<&[u8], Vec<FlagNameAttribute>> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{core::Atom, message::FlagExtension};
-
     use super::*;
+    use crate::core::Atom;
 
     #[test]
     fn test_parse_flag_fetch() {

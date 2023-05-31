@@ -145,21 +145,21 @@ impl<'a> CompareCT<Literal<'a>> for Literal<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[cfg(feature = "ext_literal")]
     use crate::core::Literal;
     use crate::{
         command::{Command, CommandBody},
         core::{AString, Atom, Quoted},
-        secret::Secret,
     };
 
     #[test]
     #[cfg(not(debug_assertions))]
     #[allow(clippy::redundant_clone)]
     fn test_that_secret_is_redacted() {
-        use crate::command::AuthenticateData;
         #[cfg(feature = "ext_sasl_ir")]
-        use crate::message::AuthMechanism;
+        use crate::auth::AuthMechanism;
+        use crate::auth::AuthenticateData;
 
         let secret = Secret("xyz123");
         let got = format!("{:?}", secret);

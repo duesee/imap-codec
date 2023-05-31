@@ -45,9 +45,8 @@ use thiserror::Error;
 
 use crate::{
     command::CommandBody,
-    core::{AString, NonEmptyVec},
-    imap4rev1::core::{impl_try_from, Atom, AtomError},
-    message::Mailbox,
+    core::{impl_try_from, AString, Atom, AtomError, NonEmptyVec},
+    mailbox::Mailbox,
     response::Data,
 };
 

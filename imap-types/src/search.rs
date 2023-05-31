@@ -4,9 +4,9 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::SequenceSet,
     core::{AString, Atom, NonEmptyVec},
-    message::NaiveDate,
+    datetime::NaiveDate,
+    sequence::SequenceSet,
 };
 
 /// The defined search keys.

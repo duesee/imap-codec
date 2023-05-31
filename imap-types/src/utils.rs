@@ -28,7 +28,6 @@ where
         .join("")
 }
 
-// FIXME(extract_types): copied from abnf-core and imap-codec
 pub mod indicators {
     /// Any 7-bit US-ASCII character, excluding NUL
     ///
@@ -190,7 +189,7 @@ mod tests {
     #[test]
     fn test_escape_byte_string() {
         for byte in 0u8..=255 {
-            let got = escape_byte_string(&[byte]);
+            let got = escape_byte_string([byte]);
 
             if byte.is_ascii_alphanumeric() {
                 assert_eq!((byte as char).to_string(), got.to_string());

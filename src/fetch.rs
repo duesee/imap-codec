@@ -1,9 +1,8 @@
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::SP;
-use imap_types::{
-    command::fetch::FetchAttribute, core::NonEmptyVec, response::data::FetchAttributeValue,
-};
+/// Re-export everything from imap-types.
+pub use imap_types::fetch::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -13,9 +12,9 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::{
+use crate::{
     body::body,
-    core::{nstring, number, nz_number},
+    core::{nstring, number, nz_number, NonEmptyVec},
     datetime::date_time,
     envelope::envelope,
     flag::flag_fetch,
@@ -182,16 +181,12 @@ pub fn uniqueid(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{
-        core::NString,
-        message::DateTime,
-        response::data::{BodyStructure, Envelope},
-    };
-
     use super::*;
     use crate::{
-        core::IString,
-        response::data::{BasicFields, Body, SpecificFields},
+        body::{BasicFields, Body, BodyStructure, SpecificFields},
+        core::{IString, NString},
+        datetime::DateTime,
+        envelope::Envelope,
         testing::known_answer_test_encode,
     };
 

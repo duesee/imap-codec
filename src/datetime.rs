@@ -2,7 +2,8 @@ use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
 use chrono::{
     FixedOffset, LocalResult, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone,
 };
-use imap_types::message::{DateTime, NaiveDate};
+/// Re-export everything from imap-types.
+pub use imap_types::datetime::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while_m_n},

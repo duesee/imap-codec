@@ -8,6 +8,7 @@
 
 use std::io::Write;
 
+/// Re-export everything from imap-types.
 pub use imap_types::extensions::compress::*;
 use nom::{
     bytes::streaming::tag_no_case,

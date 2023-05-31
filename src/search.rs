@@ -1,4 +1,6 @@
 use abnf_core::streaming::SP;
+/// Re-export everything from imap-types.
+pub use imap_types::search::*;
 use nom::{
     branch::alt,
     bytes::{complete::tag, streaming::tag_no_case},
@@ -9,14 +11,11 @@ use nom::{
 };
 
 use crate::{
-    command::{search::SearchKey, CommandBody},
-    core::NonEmptyVec,
-    imap4rev1::{
-        core::{astring, atom, charset, number},
-        datetime::date,
-        section::header_fld_name,
-        sequence::sequence_set,
-    },
+    command::CommandBody,
+    core::{astring, atom, charset, number, NonEmptyVec},
+    datetime::date,
+    section::header_fld_name,
+    sequence::sequence_set,
 };
 
 /// `search = "SEARCH" [SP "CHARSET" SP charset] 1*(SP search-key)`
@@ -224,18 +223,20 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{
-        command::{SequenceSet as SequenceSetData, SequenceSet},
-        core::{AString, Atom},
-        message::NaiveDate,
-    };
-
     use super::*;
-    use crate::{command::Sequence, testing::known_answer_test_encode};
+    use crate::{
+        core::{AString, Atom},
+        datetime::NaiveDate,
+        sequence::{Sequence, SequenceSet},
+        testing::known_answer_test_encode,
+    };
 
     #[test]
     fn test_parse_search() {
-        use crate::command::{search::SearchKey::*, SeqOrUid::Value, Sequence::*};
+        use crate::{
+            search::SearchKey::*,
+            sequence::{SeqOrUid::Value, Sequence::*, SequenceSet as SequenceSetData},
+        };
 
         let (_rem, val) = search(b"search (uid 5)???").unwrap();
         assert_eq!(

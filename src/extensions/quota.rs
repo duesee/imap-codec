@@ -3,6 +3,7 @@
 use std::io::Write;
 
 use abnf_core::streaming::SP;
+/// Re-export everything from imap-types.
 use imap_types::extensions::quota::*;
 use nom::{
     bytes::{complete::tag, streaming::tag_no_case},
@@ -15,11 +16,8 @@ use nom::{
 use crate::{
     codec::{CoreEncode, EncodeContext},
     command::CommandBody,
-    core::{AString, NonEmptyVec},
-    imap4rev1::{
-        core::{astring, atom, number64},
-        mailbox::mailbox,
-    },
+    core::{astring, atom, number64, AString, NonEmptyVec},
+    mailbox::mailbox,
     response::Data,
 };
 
@@ -225,20 +223,13 @@ impl<'a> CoreEncode for QuotaSet<'a> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{
-        core::IString,
-        message::Tag,
-        response::{
-            data::{Capability, StatusAttributeValue},
-            Code, Response, Status,
-        },
-    };
-
     use super::*;
     use crate::{
-        command::{status::StatusAttribute, Command, CommandBody},
-        extensions::quota::ResourceOther,
-        message::Mailbox,
+        command::{Command, CommandBody},
+        core::{IString, Tag},
+        mailbox::Mailbox,
+        response::{Capability, Code, Response, Status},
+        status::{StatusAttribute, StatusAttributeValue},
         testing::{kat_inverse_command, kat_inverse_response},
     };
 

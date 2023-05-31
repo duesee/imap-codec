@@ -2,25 +2,19 @@
 use std::borrow::Cow;
 
 use abnf_core::streaming::{CRLF, SP};
-use imap_types::{
-    command::{
-        fetch::{Macro, MacroOrFetchAttributes},
-        store::{StoreResponse, StoreType},
-        AuthenticateData, Command, CommandBody,
-    },
-    core::AString,
-    message::{AuthMechanism, Flag},
-    secret::Secret,
-};
+/// Re-export everything from imap-types.
+pub use imap_types::command::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, value},
     multi::{separated_list0, separated_list1},
-    sequence::{delimited, preceded, terminated, tuple},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
 
+#[cfg(feature = "ext_sasl_ir")]
+use crate::core::base64;
 #[cfg(feature = "ext_compress")]
 use crate::extensions::compress::compress;
 #[cfg(feature = "ext_enable")]
@@ -31,19 +25,18 @@ use crate::extensions::idle::idle;
 use crate::extensions::quota::{getquota, getquotaroot, setquota};
 #[cfg(feature = "ext_move")]
 use crate::extensions::r#move::r#move;
-use crate::imap4rev1::{
-    auth_type,
-    command::search::search,
-    core::{astring, base64, literal, tag_imap},
+use crate::{
+    auth::{auth_type, AuthMechanism},
+    core::{astring, literal, tag_imap, AString},
     datetime::date_time,
-    fetch_attributes::fetch_att,
-    flag::{flag, flag_list},
+    fetch::{fetch_att, Macro, MacroOrFetchAttributes},
+    flag::{flag, flag_list, Flag, StoreResponse, StoreType},
     mailbox::{list_mailbox, mailbox},
+    search::search,
+    secret::Secret,
     sequence::sequence_set,
-    status_attributes::status_att,
+    status::status_att,
 };
-
-pub mod search;
 
 /// `command = tag SP (
 ///                     command-any /
@@ -386,22 +379,6 @@ pub fn authenticate_sasl_ir(
     Ok((remaining, (auth_type, raw_data)))
 }
 
-/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
-///
-/// ```text
-/// authenticate = base64 CRLF
-///                vvvvvvvvvvvv
-///                |
-///                This is parsed here.
-///                CRLF is additionally parsed in this parser.
-///                FIXME: Multiline base64 currently does not work.
-/// ```
-pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], AuthenticateData> {
-    map(terminated(base64, CRLF), |data| {
-        AuthenticateData(Secret::new(data))
-    })(input) // FIXME: many0 deleted
-}
-
 // # Command Select
 
 /// `command-select = "CHECK" /
@@ -579,8 +556,8 @@ mod tests {
     #[cfg(feature = "ext_sasl_ir")]
     use crate::codec::Encode;
     #[cfg(feature = "ext_sasl_ir")]
-    use crate::message::Tag;
-    use crate::{command::fetch::FetchAttribute, message::Section};
+    use crate::core::Tag;
+    use crate::{fetch::FetchAttribute, section::Section};
 
     #[test]
     fn test_parse_fetch() {

@@ -55,9 +55,9 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::message::Mailbox;
 #[cfg(feature = "ext_idle")]
-use crate::message::Tag;
+use crate::core::Tag;
+use crate::mailbox::Mailbox;
 
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -102,9 +102,10 @@ mod tests {
     #[cfg(feature = "bounded-static")]
     use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 
+    use super::*;
     #[cfg(feature = "ext_idle")]
-    use crate::message::Tag;
-    use crate::{message::Mailbox, state::State};
+    use crate::core::Tag;
+    use crate::mailbox::Mailbox;
 
     #[test]
     fn test_conversion() {

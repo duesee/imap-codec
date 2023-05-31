@@ -9,8 +9,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    core::{AString, IString},
-    imap4rev1::core::{impl_try_from, LiteralError},
+    core::{impl_try_from, AString, IString, LiteralError},
     utils::indicators::is_list_char,
 };
 
@@ -262,10 +261,8 @@ pub enum MailboxOtherError {
 mod tests {
     use std::borrow::Cow;
 
-    use crate::{
-        core::{AString, IString, Literal},
-        message::{Mailbox, MailboxOther},
-    };
+    use super::*;
+    use crate::core::{AString, IString, Literal};
 
     #[test]
     fn test_conversion_mailbox() {

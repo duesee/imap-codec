@@ -8,21 +8,10 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::imap4rev1::core::{impl_try_from, Atom, AtomError};
-
-pub mod address;
-pub mod body;
-pub mod command;
-pub mod core;
-pub mod datetime;
-pub mod envelope;
-pub mod fetch_attributes;
-pub mod flag;
-pub mod mailbox;
-pub mod response;
-pub mod section;
-pub mod sequence;
-pub mod status_attributes;
+use crate::{
+    core::{impl_try_from, Atom, AtomError},
+    secret::Secret,
+};
 
 /// Note: Defined by [SASL]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -122,6 +111,12 @@ pub enum AuthMechanismOtherError {
     #[error("Reserved. Please use one of the typed variants.")]
     Reserved,
 }
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AuthenticateData(pub Secret<Vec<u8>>);
 
 #[cfg(test)]
 mod tests {

@@ -1,10 +1,8 @@
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::SP;
-use imap_types::{
-    core::{AString, NonEmptyVec},
-    message::{Part, PartSpecifier, Section},
-};
+/// Re-export everything from imap-types.
+pub use imap_types::section::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -14,7 +12,7 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::core::{astring, nz_number};
+use crate::core::{astring, nz_number, AString, NonEmptyVec};
 
 /// `section = "[" [section-spec] "]"`
 pub fn section(input: &[u8]) -> IResult<&[u8], Option<Section>> {

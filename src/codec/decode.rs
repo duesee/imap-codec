@@ -1,14 +1,9 @@
-use imap_types::response::Continue;
-
 #[cfg(feature = "ext_idle")]
 use crate::extensions::idle::{idle_done, IdleDone};
 use crate::{
-    command::{AuthenticateData, Command},
-    imap4rev1::{
-        command::{authenticate_data, command},
-        response::{continue_req, greeting, response},
-    },
-    response::{Greeting, Response},
+    auth::{authenticate_data, AuthenticateData},
+    command::{command, Command},
+    response::{continue_req, greeting, response, Continue, Greeting, Response},
 };
 
 pub trait Decode<'a>: Sized + 'a {
@@ -114,14 +109,15 @@ impl<'a> Decode<'a> for Continue<'a> {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::{Decode, DecodeError};
+    use super::*;
     #[cfg(feature = "ext_idle")]
     use crate::extensions::idle::IdleDone;
     use crate::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
-        message::Mailbox,
-        response::{data::FetchAttributeValue, Data, Greeting, GreetingKind, Response},
+        fetch::FetchAttributeValue,
+        mailbox::Mailbox,
+        response::{Data, Greeting, GreetingKind, Response},
     };
 
     #[test]

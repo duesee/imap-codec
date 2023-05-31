@@ -1,21 +1,10 @@
-use imap_types::message::AuthMechanism;
-use nom::IResult;
+use abnf_core::streaming::CRLF;
+/// Re-export everything from imap-types.
+pub use imap_types::auth::*;
+use crate::secret::Secret;
+use nom::{combinator::map, sequence::terminated, IResult};
 
-use crate::imap4rev1::core::atom;
-
-pub mod address;
-pub mod body;
-pub mod command;
-pub mod core;
-pub mod datetime;
-pub mod envelope;
-pub mod fetch_attributes;
-pub mod flag;
-pub mod mailbox;
-pub mod response;
-pub mod section;
-pub mod sequence;
-pub mod status_attributes;
+use crate::core::{atom, base64};
 
 // ----- Unsorted IMAP parsers -----
 
@@ -28,11 +17,25 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     Ok((rem, AuthMechanism::from(atom)))
 }
 
+/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
+///
+/// ```text
+/// authenticate = base64 CRLF
+///                vvvvvvvvvvvv
+///                |
+///                This is parsed here.
+///                CRLF is additionally parsed in this parser.
+///                FIXME: Multiline base64 currently does not work.
+/// ```
+pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], AuthenticateData> {
+    map(terminated(base64, CRLF), |data| {
+        AuthenticateData(Secret::new(data))
+    })(input) // FIXME: many0 deleted
+}
+
 #[cfg(test)]
 mod tests {
-    use imap_types::message::{AuthMechanism, AuthMechanismOther};
-
-    use super::auth_type;
+    use super::*;
     use crate::testing::{known_answer_test_encode, known_answer_test_parse};
 
     #[test]

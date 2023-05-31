@@ -30,7 +30,7 @@
 //! ```
 //! use imap_types::{
 //!     command::{Command, CommandBody},
-//!     message::Tag,
+//!     core::Tag,
 //! };
 //!
 //! // # Variant 1
@@ -61,14 +61,10 @@
 //! use std::{borrow::Cow, num::NonZeroU32};
 //!
 //! use imap_types::{
+//!     body::{BasicFields, Body, BodyStructure, SinglePartExtensionData, SpecificFields},
 //!     core::{IString, NString, NonEmptyVec},
-//!     response::{
-//!         data::{
-//!             BasicFields, Body, BodyStructure, FetchAttributeValue, SinglePartExtensionData,
-//!             SpecificFields,
-//!         },
-//!         Data, Response,
-//!     },
+//!     fetch::FetchAttributeValue,
+//!     response::{Data, Response},
 //! };
 //!
 //! let fetch = {
@@ -111,128 +107,12 @@
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
-mod imap4rev1;
-pub mod secret;
-pub mod utils;
-
-// -- API -----------------------------------------------------------------------------------
-
-pub mod state;
-
-pub mod core {
-    //! # Core Data Types
-    //!
-    //! This module exposes IMAPs "core data types" (or "string types").
-    //! It is loosely based on the IMAP standard.
-    //! Some additional types are defined and some might be missing.
-    //!
-    //! "IMAP4rev1 uses textual commands and responses.
-    //! Data in IMAP4rev1 can be in one of several forms: atom, number, string, parenthesized list, or NIL.
-    //! Note that a particular data item may take more than one form; for example, a data item defined as using "astring" syntax may be either an atom or a string." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
-    //!
-    //! ## (Incomplete) Summary
-    //!
-    //! ```text
-    //!        ┌───────┐ ┌─────────────────┐
-    //!        │AString│ │     NString     │
-    //!        └──┬─┬──┘ │(Option<IString>)│
-    //!           │ │    └─────┬───────────┘
-    //!           │ └──────┐   │
-    //!           │        │   │
-    //! ┌────┐ ┌──▼────┐ ┌─▼───▼─┐
-    //! │Atom│ │AtomExt│ │IString│
-    //! └────┘ └───────┘ └┬─────┬┘
-    //!                   │     │
-    //!             ┌─────▼─┐ ┌─▼────┐
-    //!             │Literal│ │Quoted│
-    //!             └───────┘ └──────┘
-    //! ```
-
-    pub use crate::imap4rev1::core::{
-        AString, Atom, AtomError, AtomExt, AtomExtError, IString, Literal, LiteralError, NString,
-        NonEmptyVec, NonEmptyVecError, Quoted, QuotedCharError, QuotedError, TagError, TextError,
-    };
-}
-
-pub mod message {
-    //! # Types used in commands and responses
-
-    pub use crate::imap4rev1::{
-        core::{Charset, Tag},
-        datetime::{DateTime, NaiveDate},
-        flag::{Flag, FlagError, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
-        mailbox::{Mailbox, MailboxOther},
-        section::{Part, PartSpecifier, Section},
-        AuthMechanism, AuthMechanismOther,
-    };
-}
-
-pub mod command {
-    //! # Types used in commands
-
-    pub use crate::imap4rev1::{
-        command::{
-            AppendError, AuthenticateData, Command, CommandBody, CopyError, ListError, LoginError,
-            RenameError,
-        },
-        mailbox::{ListCharString, ListMailbox},
-        sequence::{SeqOrUid, Sequence, SequenceSet, SequenceSetError, Strategy},
-    };
-
-    pub mod status {
-        //! # Types used in STATUS command
-
-        pub use crate::imap4rev1::status_attributes::StatusAttribute;
-    }
-
-    pub mod search {
-        //! # Types used in SEARCH command
-
-        pub use crate::imap4rev1::command::search::SearchKey;
-    }
-
-    pub mod fetch {
-        //! # Types used in FETCH command
-
-        pub use crate::imap4rev1::fetch_attributes::{
-            FetchAttribute, Macro, MacroOrFetchAttributes,
-        };
-    }
-
-    pub mod store {
-        //! # Types used in STORE command
-        pub use crate::imap4rev1::flag::{StoreResponse, StoreType};
-    }
-}
-
-pub mod response {
-    //! # Types used in responses
-
-    pub use crate::imap4rev1::{
-        core::Text,
-        response::{
-            Code, CodeOther, Continue, ContinueBasic, Data, Greeting, GreetingKind, Response,
-            Status,
-        },
-    };
-
-    pub mod data {
-        pub use crate::imap4rev1::{
-            address::Address,
-            body::{
-                BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
-                MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
-            },
-            core::QuotedChar,
-            envelope::Envelope,
-            fetch_attributes::FetchAttributeValue,
-            flag::FlagNameAttribute,
-            response::{Capability, CapabilityOther},
-            status_attributes::StatusAttributeValue,
-        };
-    }
-}
-
+pub mod auth;
+pub mod body;
+pub mod command;
+pub mod core;
+pub mod datetime;
+pub mod envelope;
 #[cfg(any(
     feature = "ext_compress",
     feature = "ext_enable",
@@ -243,8 +123,14 @@ pub mod response {
     feature = "ext_unselect",
 ))]
 pub mod extensions;
-
-// -- Re-exports -----------------------------------------------------------------------------------
-
-#[cfg(feature = "bounded-static")]
-pub use bounded_static;
+pub mod fetch;
+pub mod flag;
+pub mod mailbox;
+pub mod response;
+pub mod search;
+pub mod secret;
+pub mod section;
+pub mod sequence;
+pub mod state;
+pub mod status;
+pub mod utils;

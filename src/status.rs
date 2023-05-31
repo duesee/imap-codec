@@ -1,5 +1,6 @@
 use abnf_core::streaming::SP;
-use imap_types::{command::status::StatusAttribute, response::data::StatusAttributeValue};
+/// Re-export everything from imap-types.
+pub use imap_types::status::*;
 use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,
@@ -10,8 +11,8 @@ use nom::{
 };
 
 #[cfg(feature = "ext_quota")]
-use crate::imap4rev1::core::number64;
-use crate::imap4rev1::core::{number, nz_number};
+use crate::core::number64;
+use crate::core::{number, nz_number};
 
 /// `status-att = "MESSAGES" /
 ///               "RECENT" /

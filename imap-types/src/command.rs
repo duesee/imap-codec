@@ -18,21 +18,19 @@ use crate::extensions::compress::CompressionAlgorithm;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::QuotaSet;
 use crate::{
-    command::{
-        fetch::MacroOrFetchAttributes,
-        search::SearchKey,
-        status::StatusAttribute,
-        store::{StoreResponse, StoreType},
-        ListMailbox, SequenceSet,
-    },
-    core::{AString, Literal},
-    message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Tag},
+    auth::AuthMechanism,
+    core::{AString, Charset, Literal, Tag},
+    datetime::DateTime,
+    fetch::MacroOrFetchAttributes,
+    flag::{Flag, StoreResponse, StoreType},
+    mailbox::{ListMailbox, Mailbox},
+    search::SearchKey,
     secret::Secret,
+    sequence::SequenceSet,
+    status::StatusAttribute,
 };
 #[cfg(feature = "ext_enable")]
 use crate::{core::NonEmptyVec, extensions::enable::CapabilityEnable};
-
-pub mod search;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -1608,29 +1606,25 @@ pub enum CopyError<S, M> {
     Mailbox(M),
 }
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthenticateData(pub Secret<Vec<u8>>);
-
 #[cfg(test)]
 mod tests {
     use chrono::DateTime as ChronoDateTime;
 
+    use super::*;
     #[cfg(feature = "ext_compress")]
     use crate::extensions::compress::CompressionAlgorithm;
     use crate::{
-        command::{
-            fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
-            search::SearchKey,
-            status::StatusAttribute,
-            store::{StoreResponse, StoreType},
-            CommandBody, ListMailbox, SeqOrUid, Sequence, SequenceSet,
-        },
-        core::{AString, IString, Literal},
-        message::{AuthMechanism, Charset, DateTime, Flag, Mailbox, Part, Section},
+        auth::AuthMechanism,
+        core::{AString, Charset, IString, Literal},
+        datetime::DateTime,
+        fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
+        flag::{Flag, StoreType},
+        mailbox::{ListMailbox, Mailbox},
+        search::SearchKey,
         secret::Secret,
+        section::{Part, Section},
+        sequence::{SeqOrUid, Sequence, SequenceSet},
+        status::StatusAttribute,
     };
     #[cfg(feature = "ext_enable")]
     use crate::{

@@ -9,6 +9,7 @@
 use std::io::Write;
 
 use abnf_core::streaming::SP;
+/// Re-export everything from imap-types.
 pub use imap_types::extensions::enable::*;
 use nom::{
     bytes::streaming::tag_no_case,
@@ -21,7 +22,7 @@ use nom::{
 use crate::{
     codec::{CoreEncode, EncodeContext},
     command::CommandBody,
-    imap4rev1::core::atom,
+    core::atom,
     response::Data,
 };
 

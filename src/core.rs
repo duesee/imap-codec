@@ -2,11 +2,8 @@ use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-use imap_types::{
-    core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
-    message::{Charset, Tag},
-    response::{data::QuotedChar, Text},
-};
+/// Re-export everything from imap-types.
+pub use imap_types::core::*;
 #[cfg(feature = "ext_literal")]
 use nom::character::streaming::char;
 use nom::{
@@ -19,7 +16,7 @@ use nom::{
     IResult,
 };
 
-use crate::{imap4rev1::mailbox::is_list_wildcards, utils::unescape_quoted};
+use crate::utils::{indicators::is_list_wildcards, unescape_quoted};
 
 // ----- number -----
 
@@ -352,8 +349,6 @@ pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::core::Quoted;
-
     use super::*;
     use crate::codec::Encode;
 

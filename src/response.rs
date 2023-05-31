@@ -2,13 +2,8 @@ use std::str::from_utf8;
 
 use abnf_core::streaming::{CRLF, SP};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-use imap_types::{
-    core::NonEmptyVec,
-    response::{
-        data::Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response,
-        Status, Text,
-    },
-};
+/// Re-export everything from imap-types.
+pub use imap_types::response::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_until, take_while},
@@ -20,9 +15,9 @@ use nom::{
 
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::enable_data;
-use crate::imap4rev1::{
-    core::{atom, charset, nz_number, tag_imap, text},
-    fetch_attributes::msg_att,
+use crate::{
+    core::{atom, charset, nz_number, tag_imap, text, NonEmptyVec, Text},
+    fetch::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
 };
@@ -375,18 +370,14 @@ pub fn message_data(input: &[u8]) -> IResult<&[u8], Data> {
 mod tests {
     use std::num::NonZeroU32;
 
-    use imap_types::{
-        message::{FlagNameAttribute, Tag},
-        response::data::QuotedChar,
-    };
-
     use super::*;
     use crate::{
-        core::{IString, NString},
-        response::data::{
+        body::{
             BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
             SinglePartExtensionData, SpecificFields,
         },
+        core::{IString, NString, QuotedChar, Tag},
+        flag::FlagNameAttribute,
         testing::{
             kat_inverse_continue, kat_inverse_greeting, kat_inverse_response,
             known_answer_test_encode,
