@@ -15,7 +15,7 @@
 //!
 //! ## Serialization
 //!
-//! Serialization is implemented via the [Encode](crate::codec::CoreEncode) trait.
+//! Serialization is implemented via the [`Encode`](crate::codec::Encode) trait.
 //! See the [imap-types](imap_types) documentation for the module layout and how to construct messages.
 //!
 //! ## Example

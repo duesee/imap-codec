@@ -2,16 +2,16 @@
 //!
 //! This extension adds a new method ...
 //!
-//! *  [CommandBody::idle()](crate::command::CommandBody#method.idle)
+//! *  [`CommandBody::idle()`](crate::command::CommandBody#method.idle)
 //!
 //! ... adds a new type ...
 //!
-//! * [IdleDone](crate::command::idle::IdleDone)
+//! * [`IdleDone`](crate::extensions::idle::IdleDone)
 //!
 //! ... and extends ...
 //!
-//! * [CommandBody](crate::command::CommandBody) enum with a new variant [CommandBody::Idle](crate::command::CommandBody#variant.Idle), and
-//! * [Capability](crate::response::Capability) enum with a new variant [Capability::Idle](crate::response::Capability#variant.Idle).
+//! * [`CommandBody`](crate::command::CommandBody) enum with a new variant [`CommandBody::Idle`](crate::command::CommandBody#variant.Idle), and
+//! * [`Capability`](crate::response::Capability) enum with a new variant [`Capability::Idle`](crate::response::Capability#variant.Idle).
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;

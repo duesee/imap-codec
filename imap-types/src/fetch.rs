@@ -83,7 +83,7 @@ pub enum FetchAttribute<'a> {
         ///
         /// An empty section specification refers to the entire message, including the header.
         ///
-        /// See [Section](Section) and [PartSpecifier](PartSpecifier).
+        /// See [`crate::section::Section`] and [`crate::section::PartSpecifier`].
         ///
         /// Every message has at least one part number.  Non-[MIME-IMB]
         /// messages, and non-multipart [MIME-IMB] messages with no
@@ -198,10 +198,10 @@ pub enum FetchAttributeValue<'a> {
     ///
     ///    Note: The origin octet facility MUST NOT be used by a server
     ///    in a FETCH response unless the client specifically requested
-    ///    it by means of a FETCH of a BODY[<section>]<<partial>> data
+    ///    it by means of a FETCH of a BODY\[\<section\>\]\<\<partial\>\> data
     ///    item.
     ///
-    /// 8-bit textual data is permitted if a [CHARSET] identifier is
+    /// 8-bit textual data is permitted if a \[CHARSET\] identifier is
     /// part of the body parameter parenthesized list for this section.
     /// Note that headers (part specifiers HEADER or MIME, or the
     /// header portion of a MESSAGE/RFC822 part), MUST be 7-bit; 8-bit
@@ -254,11 +254,11 @@ pub enum FetchAttributeValue<'a> {
     /// `RFC822`
     Rfc822(NString<'a>),
 
-    /// Equivalent to BODY[HEADER].  Note that this did not result in
+    /// Equivalent to BODY\[HEADER\].  Note that this did not result in
     /// \Seen being set, because RFC822.HEADER response data occurs as
-    /// a result of a FETCH of RFC822.HEADER.  BODY[HEADER] response
-    /// data occurs as a result of a FETCH of BODY[HEADER] (which sets
-    /// \Seen) or BODY.PEEK[HEADER] (which does not set \Seen).
+    /// a result of a FETCH of RFC822.HEADER.  BODY\[HEADER\] response
+    /// data occurs as a result of a FETCH of BODY\[HEADER\] (which sets
+    /// \Seen) or BODY.PEEK\[HEADER\] (which does not set \Seen).
     ///
     /// `RFC822.HEADER`
     Rfc822Header(NString<'a>),
@@ -268,7 +268,7 @@ pub enum FetchAttributeValue<'a> {
     /// `RFC822.SIZE`
     Rfc822Size(u32),
 
-    /// Equivalent to BODY[TEXT].
+    /// Equivalent to BODY\[TEXT\].
     ///
     /// `RFC822.TEXT`
     Rfc822Text(NString<'a>),

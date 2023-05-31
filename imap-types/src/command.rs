@@ -139,18 +139,18 @@ pub enum CommandBody<'a> {
     ///   * OK - starttls completed, begin TLS negotiation
     ///   * BAD - command unknown or arguments invalid
     ///
-    /// A [TLS] negotiation begins immediately after the CRLF at the end
+    /// A \[TLS\] negotiation begins immediately after the CRLF at the end
     /// of the tagged OK response from the server.  Once a client issues a
     /// STARTTLS command, it MUST NOT issue further commands until a
-    /// server response is seen and the [TLS] negotiation is complete.
+    /// server response is seen and the \[TLS\] negotiation is complete.
     ///
     /// The server remains in the non-authenticated state, even if client
-    /// credentials are supplied during the [TLS] negotiation.  This does
+    /// credentials are supplied during the \[TLS\] negotiation.  This does
     /// not preclude an authentication mechanism such as EXTERNAL (defined
-    /// in [SASL]) from using client identity determined by the [TLS]
+    /// in \[SASL\]) from using client identity determined by the \[TLS\]
     /// negotiation.
     ///
-    /// Once [TLS] has been started, the client MUST discard cached
+    /// Once \[TLS\] has been started, the client MUST discard cached
     /// information about server capabilities and SHOULD re-issue the
     /// CAPABILITY command.  This is necessary to protect against man-in-
     /// the-middle attacks which alter the capabilities list prior to
@@ -170,7 +170,7 @@ pub enum CommandBody<'a> {
     ///   * BAD - command unknown or arguments invalid,
     ///           authentication exchange cancelled
     ///
-    /// The AUTHENTICATE command indicates a [SASL] authentication
+    /// The AUTHENTICATE command indicates a \[SASL\] authentication
     /// mechanism to the server.  If the server supports the requested
     /// authentication mechanism, it performs an authentication protocol
     /// exchange to authenticate and identify the client.  It MAY also
@@ -180,11 +180,11 @@ pub enum CommandBody<'a> {
     /// sending a tagged NO response.
     ///
     /// The AUTHENTICATE command does not support the optional "initial
-    /// response" feature of [SASL].  Section 5.1 of [SASL] specifies how
+    /// response" feature of \[SASL\].  Section 5.1 of \[SASL\] specifies how
     /// to handle an authentication mechanism which uses an initial
     /// response.
     ///
-    /// The service name specified by this protocol's profile of [SASL] is
+    /// The service name specified by this protocol's profile of \[SASL\] is
     /// "imap".
     ///
     /// The authentication protocol exchange consists of a series of
@@ -198,7 +198,7 @@ pub enum CommandBody<'a> {
     /// response, it MUST reject the AUTHENTICATE command by sending a
     /// tagged BAD response.
     ///
-    /// If a security layer is negotiated through the [SASL]
+    /// If a security layer is negotiated through the \[SASL\]
     /// authentication exchange, it takes effect immediately following the
     /// CRLF that concludes the authentication exchange for the client,
     /// and the CRLF of the tagged OK response for the server.
@@ -218,8 +218,8 @@ pub enum CommandBody<'a> {
     ///   which permits a plaintext password mechanism without
     ///   such a protection mechanism against password snooping.
     ///   Client and server implementations SHOULD implement
-    ///   additional [SASL] mechanisms that do not use plaintext
-    ///   passwords, such the GSSAPI mechanism described in [SASL]
+    ///   additional \[SASL\] mechanisms that do not use plaintext
+    ///   passwords, such the GSSAPI mechanism described in \[SASL\]
     ///   and/or the [DIGEST-MD5] mechanism.
     ///
     /// Servers and clients can support multiple authentication
@@ -234,7 +234,7 @@ pub enum CommandBody<'a> {
     /// automatic capabilities.  This should only be done if a security
     /// layer was not negotiated by the AUTHENTICATE command, because the
     /// tagged OK response as part of an AUTHENTICATE command is not
-    /// protected by encryption/integrity checking.  [SASL] requires the
+    /// protected by encryption/integrity checking.  \[SASL\] requires the
     /// client to re-issue a CAPABILITY command in this case.
     ///
     /// If an AUTHENTICATE command fails with a NO response, the client
@@ -321,32 +321,32 @@ pub enum CommandBody<'a> {
     ///   FLAGS       Defined flags in the mailbox.  See the description
     ///               of the FLAGS response for more detail.
     ///
-    ///   <n> EXISTS  The number of messages in the mailbox.  See the
+    ///   \<n\> EXISTS  The number of messages in the mailbox.  See the
     ///               description of the EXISTS response for more detail.
     ///
-    ///   <n> RECENT  The number of messages with the \Recent flag set.
+    ///   \<n\> RECENT  The number of messages with the \Recent flag set.
     ///               See the description of the RECENT response for more
     ///               detail.
     ///
-    ///   OK [UNSEEN <n>]
+    ///   OK [UNSEEN \<n\>]
     ///               The message sequence number of the first unseen
     ///               message in the mailbox.  If this is missing, the
     ///               client can not make any assumptions about the first
     ///               unseen message in the mailbox, and needs to issue a
     ///               SEARCH command if it wants to find it.
     ///
-    ///   OK [PERMANENTFLAGS (<list of flags>)]
+    ///   OK [PERMANENTFLAGS (\<list of flags\>)]
     ///               A list of message flags that the client can change
     ///               permanently.  If this is missing, the client should
     ///               assume that all flags can be changed permanently.
     ///
-    ///   OK [UIDNEXT <n>]
+    ///   OK [UIDNEXT \<n\>]
     ///               The next unique identifier value.  Refer to section
     ///               2.3.1.1 for more information.  If this is missing,
     ///               the client can not make any assumptions about the
     ///               next unique identifier value.
     ///
-    ///   OK [UIDVALIDITY <n>]
+    ///   OK [UIDVALIDITY \<n\>]
     ///               The unique identifier validity value.  Refer to
     ///               section 2.3.1.1 for more information.  If this is
     ///               missing, the server does not support unique
@@ -822,7 +822,7 @@ pub enum CommandBody<'a> {
     /// If the destination mailbox does not exist, a server MUST return an
     /// error, and MUST NOT automatically create the mailbox.  Unless it
     /// is certain that the destination mailbox can not be created, the
-    /// server MUST send the response code "[TRYCREATE]" as the prefix of
+    /// server MUST send the response code "\[TRYCREATE\]" as the prefix of
     /// the text of the tagged NO response.  This gives a hint to the
     /// client that it can attempt a CREATE command and retry the APPEND
     /// if the CREATE is successful.
@@ -834,7 +834,7 @@ pub enum CommandBody<'a> {
     /// that, a CHECK command) after one or more APPEND commands.
     ///
     ///   Note: The APPEND command is not used for message delivery,
-    ///   because it does not provide a mechanism to transfer [SMTP]
+    ///   because it does not provide a mechanism to transfer \[SMTP\]
     ///   envelope information.
     Append {
         mailbox: Mailbox<'a>,
@@ -914,12 +914,12 @@ pub enum CommandBody<'a> {
     /// ### 6.4.4.  SEARCH Command
     ///
     /// * Arguments:
-    ///   * OPTIONAL [CHARSET] specification
+    ///   * OPTIONAL \[CHARSET\] specification
     ///   * searching criteria (one or more)
     /// * Responses:  REQUIRED untagged response: SEARCH
     /// * Result:
     ///   * OK - search completed
-    ///   * NO - search error: can't search that [CHARSET] or criteria
+    ///   * NO - search error: can't search that \[CHARSET\] or criteria
     ///   * BAD - command unknown or arguments invalid
     ///
     /// The SEARCH command searches the mailbox for messages that match
@@ -940,18 +940,18 @@ pub enum CommandBody<'a> {
     /// terminal content media types other than TEXT and MESSAGE from
     /// consideration in SEARCH matching.
     ///
-    /// The OPTIONAL [CHARSET] specification consists of the word
-    /// "CHARSET" followed by a registered [CHARSET].  It indicates the
-    /// [CHARSET] of the strings that appear in the search criteria.
+    /// The OPTIONAL \[CHARSET\] specification consists of the word
+    /// "CHARSET" followed by a registered \[CHARSET\].  It indicates the
+    /// \[CHARSET\] of the strings that appear in the search criteria.
     /// [MIME-IMB] content transfer encodings, and [MIME-HDRS] strings in
     /// [RFC-2822]/[MIME-IMB] headers, MUST be decoded before comparing
-    /// text in a [CHARSET] other than US-ASCII.  US-ASCII MUST be
-    /// supported; other [CHARSET]s MAY be supported.
+    /// text in a \[CHARSET\] other than US-ASCII.  US-ASCII MUST be
+    /// supported; other \[CHARSET\]s MAY be supported.
     ///
-    /// If the server does not support the specified [CHARSET], it MUST
+    /// If the server does not support the specified \[CHARSET\], it MUST
     /// return a tagged NO response (not a BAD).  This response SHOULD
     /// contain the BADCHARSET response code, which MAY list the
-    /// [CHARSET]s supported by the server.
+    /// \[CHARSET\]s supported by the server.
     ///
     /// In all search keys that use strings, a message matches the key if
     /// the string is a substring of the field.  The matching is
@@ -1027,27 +1027,27 @@ pub enum CommandBody<'a> {
     ///
     /// The currently defined data items that can be stored are:
     ///
-    /// FLAGS <flag list>
+    /// FLAGS \<flag list\>
     ///    Replace the flags for the message (other than \Recent) with the
     ///    argument.  The new value of the flags is returned as if a FETCH
     ///    of those flags was done.
     ///
-    /// FLAGS.SILENT <flag list>
+    /// FLAGS.SILENT \<flag list\>
     ///    Equivalent to FLAGS, but without returning a new value.
     ///
-    /// +FLAGS <flag list>
+    /// +FLAGS \<flag list\>
     ///    Add the argument to the flags for the message.  The new value
     ///    of the flags is returned as if a FETCH of those flags was done.
     ///
-    /// +FLAGS.SILENT <flag list>
+    /// +FLAGS.SILENT \<flag list\>
     ///    Equivalent to +FLAGS, but without returning a new value.
     ///
-    /// -FLAGS <flag list>
+    /// -FLAGS \<flag list\>
     ///    Remove the argument from the flags for the message.  The new
     ///    value of the flags is returned as if a FETCH of those flags was
     ///    done.
     ///
-    /// -FLAGS.SILENT <flag list>
+    /// -FLAGS.SILENT \<flag list\>
     ///    Equivalent to -FLAGS, but without returning a new value.
     Store {
         sequence_set: SequenceSet,
@@ -1075,7 +1075,7 @@ pub enum CommandBody<'a> {
     /// If the destination mailbox does not exist, a server SHOULD return
     /// an error.  It SHOULD NOT automatically create the mailbox.  Unless
     /// it is certain that the destination mailbox can not be created, the
-    /// server MUST send the response code "[TRYCREATE]" as the prefix of
+    /// server MUST send the response code "\[TRYCREATE\]" as the prefix of
     /// the text of the tagged NO response.  This gives a hint to the
     /// client that it can attempt a CREATE command and retry the COPY if
     /// the CREATE is successful.

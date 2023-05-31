@@ -771,7 +771,7 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 //    8-bit textual and binary mail is supported through the use of a
 //    [MIME-IMB] content transfer encoding.  IMAP4rev1 implementations MAY
 //    transmit 8-bit or multi-octet characters in literals, but SHOULD do
-//    so only when the [CHARSET] is identified.
+//    so only when the \[CHARSET\] is identified.
 //
 //    Although a BINARY body encoding is defined, unencoded binary strings
 //    are not permitted.  A "binary string" is any string with NUL

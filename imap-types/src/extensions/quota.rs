@@ -2,36 +2,36 @@
 //!
 //! This extends ...
 //!
-//! * [Capability](crate::response::data::Capability) with new variants:
+//! * [`Capability`](crate::response::Capability) with new variants:
 //!
-//!     - [Capability::Quota](crate::response::data::Capability::Quota)
-//!     - [Capability::QuotaRes](crate::response::data::Capability::QuotaRes)
-//!     - [Capability::QuotaSet](crate::response::data::Capability::QuotaSet)
+//!     - [`Capability::Quota`](crate::response::Capability::Quota)
+//!     - [`Capability::QuotaRes`](crate::response::Capability::QuotaRes)
+//!     - [`Capability::QuotaSet`](crate::response::Capability::QuotaSet)
 //!
-//! * [CommandBody](crate::command::CommandBody) with new variants:
+//! * [`CommandBod`y](crate::command::CommandBody) with new variants:
 //!
-//!     - [Command::GetQuota](crate::command::CommandBody::GetQuota)
-//!     - [Command::GetQuotaRoot](crate::command::CommandBody::GetQuotaRoot)
-//!     - [Command::SetQuota](crate::command::CommandBody::SetQuota)
+//!     - [`Command::GetQuota`](crate::command::CommandBody::GetQuota)
+//!     - [`Command::GetQuotaRoot`](crate::command::CommandBody::GetQuotaRoot)
+//!     - [`Command::SetQuota`](crate::command::CommandBody::SetQuota)
 //!
-//! * [Data](crate::response::Data) with new variants:
+//! * [`Data`](crate::response::Data) with new variants:
 //!
-//!     - [Data::Quota](crate::response::Data::Quota)
-//!     - [Data::QuotaRoot](crate::response::Data::QuotaRoot)
+//!     - [`Data::Quota`](crate::response::Data::Quota)
+//!     - [`Data::QuotaRoot`](crate::response::Data::QuotaRoot)
 //!
-//! * [Code](crate::response::Code) with a new variant:
+//! * [`Code`](crate::response::Code) with a new variant:
 //!
-//!     - [Code::OverQuota](crate::response::Code::OverQuota)
+//!     - [`Code::OverQuota`](crate::response::Code::OverQuota)
 //!
-//! * [StatusAttribute](crate::command::status::StatusAttribute) with new variants:
+//! * [`StatusAttribute`](crate::status::StatusAttribute) with new variants:
 //!
-//!     - [StatusAttribute::Deleted](crate::command::status::StatusAttribute::Deleted)
-//!     - [StatusAttribute::DeletedStorage](crate::command::status::StatusAttribute::DeletedStorage)
+//!     - [`StatusAttribute::Deleted`](crate::status::StatusAttribute::Deleted)
+//!     - [`StatusAttribute::DeletedStorage`](crate::status::StatusAttribute::DeletedStorage)
 //!
-//! * [StatusAttributeValue](crate::response::data::StatusAttributeValue) with new variants:
+//! * [`StatusAttributeValue`](crate::status::StatusAttributeValue) with new variants:
 //!
-//!     - [StatusAttributeValue::Deleted](crate::response::data::StatusAttributeValue::Deleted)
-//!     - [StatusAttributeValue::DeletedStorage](crate::response::data::StatusAttributeValue::DeletedStorage)
+//!     - [`StatusAttributeValue::Deleted`](crate::status::StatusAttributeValue::Deleted)
+//!     - [`StatusAttributeValue::DeletedStorage`](crate::status::StatusAttributeValue::DeletedStorage)
 
 use std::borrow::Cow;
 
@@ -157,7 +157,7 @@ pub enum Resource<'a> {
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-MAILBOX" capability.
     Mailbox,
-    /// The maximum size of all annotations [RFC5257], in units of 1024 octets, associated with all
+    /// The maximum size of all annotations \[RFC5257\], in units of 1024 octets, associated with all
     /// messages in the mailboxes governed by the quota root.
     ///
     /// Support for this resource MUST be indicated by the server by advertising the

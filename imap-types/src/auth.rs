@@ -13,7 +13,7 @@ use crate::{
     secret::Secret,
 };
 
-/// Note: Defined by [SASL]
+/// Note: Defined by \[SASL\]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
