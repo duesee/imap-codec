@@ -2,13 +2,13 @@
 //!
 //! This extension defines a new type ...
 //!
-//! * [CompressionAlgorithm](crate::extensions::rfc4987::CompressionAlgorithm)
+//! * [`CompressionAlgorithm`](crate::extensions::compress::CompressionAlgorithm)
 //!
 //! ... and extends ...
 //!
-//! * the [Capability](crate::response::Capability) enum with a new variant [Capability::Compress](crate::response::Capability#variant.Compress),
-//! * the [Command](crate::command::Command) enum with a new variant [Command::Compress](crate::command::Command#variant.Compress), and
-//! * the [Code](crate::response::Code) enum with a new variant [Code::CompressionActive](crate::response::Code#variant.CompressionActive).
+//! * the [`Capability`](crate::response::Capability) enum with a new variant [`Capability::Compress`](crate::response::Capability#variant.Compress),
+//! * the [`Command`](crate::command::Command) enum with a new variant [`Command::Compress`](crate::command::Command#variant.Compress), and
+//! * the [`Code`](crate::response::Code) enum with a new variant [`Code::CompressionActive`](crate::response::Code#variant.CompressionActive).
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;

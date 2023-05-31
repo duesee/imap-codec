@@ -1,16 +1,18 @@
 use abnf_core::streaming::CRLF;
 /// Re-export everything from imap-types.
 pub use imap_types::auth::*;
-use crate::secret::Secret;
 use nom::{combinator::map, sequence::terminated, IResult};
 
-use crate::core::{atom, base64};
+use crate::{
+    core::{atom, base64},
+    secret::Secret,
+};
 
 // ----- Unsorted IMAP parsers -----
 
 /// `auth-type = atom`
 ///
-/// Note: Defined by [SASL]
+/// Note: Defined by \[SASL\]
 pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     let (rem, atom) = atom(input)?;
 

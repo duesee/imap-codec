@@ -152,7 +152,7 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 ///
 /// literal8 = <defined in RFC 4466>
 /// ```
-/// -- https://datatracker.ietf.org/doc/html/rfc7888#section-8
+/// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
 pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     #[cfg(not(feature = "ext_literal"))]
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;

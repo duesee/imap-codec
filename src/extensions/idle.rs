@@ -1,6 +1,6 @@
 //! IMAP4 IDLE command
 //!
-//! This extension enables the [CommandBody::Idle](crate::types::command::CommandBody#variant.Idle) variant.
+//! This extension enables the [`CommandBody::Idle`](crate::command::CommandBody#variant.Idle) variant.
 //! No additional types are used.
 
 // Additional changes:

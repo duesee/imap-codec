@@ -249,7 +249,7 @@ pub enum BodyStructure<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SinglePartExtensionData<'a> {
-    /// A string giving the body MD5 value as defined in [MD5].
+    /// A string giving the body MD5 value as defined in \[MD5\].
     pub md5: NString<'a>,
 
     /// (Optional) additional data.
@@ -291,7 +291,7 @@ pub struct MultiPartExtensionData<'a> {
 pub struct Disposition<'a> {
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
-    /// attribute/value pairs as defined in [DISPOSITION].
+    /// attribute/value pairs as defined in \[DISPOSITION\].
     pub disposition: Option<(IString<'a>, Vec<(IString<'a>, IString<'a>)>)>,
 
     /// (Optional) additional data.
@@ -316,7 +316,7 @@ pub struct Language<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Location<'a> {
-    /// A string list giving the body content URI as defined in [LOCATION].
+    /// A string list giving the body content URI as defined in \[LOCATION\].
     pub location: NString<'a>,
 
     /// Extension data.
