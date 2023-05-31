@@ -1,7 +1,5 @@
-use imap_types::{
-    command::{SeqOrUid, Sequence, SequenceSet},
-    core::NonEmptyVec,
-};
+/// Re-export everything from imap-types.
+pub use imap_types::sequence::*;
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -11,7 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::core::nz_number;
+use crate::core::{nz_number, NonEmptyVec};
 
 /// `sequence-set = (seq-number / seq-range) ["," sequence-set]`
 ///

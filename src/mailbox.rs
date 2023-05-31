@@ -1,9 +1,6 @@
 use abnf_core::streaming::{DQUOTE, SP};
-use imap_types::{
-    command::{ListCharString, ListMailbox},
-    message::{FlagNameAttribute, Mailbox},
-    response::{data::QuotedChar, Data},
-};
+/// Re-export everything from imap-types.
+pub use imap_types::mailbox::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
@@ -15,10 +12,15 @@ use nom::{
 
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::{quota_response, quotaroot_response};
-use crate::imap4rev1::{
-    core::{astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string},
-    flag::{flag_list, mbx_list_flags},
-    status_attributes::status_att_list,
+use crate::{
+    core::{
+        astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
+        QuotedChar,
+    },
+    flag::{flag_list, mbx_list_flags, FlagNameAttribute},
+    response::Data,
+    status::status_att_list,
+    utils::indicators::is_list_wildcards,
 };
 
 /// `list-mailbox = 1*list-char / string`
@@ -41,11 +43,6 @@ pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
 /// `list-char = ATOM-CHAR / list-wildcards / resp-specials`
 pub fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
-}
-
-/// `list-wildcards = "%" / "*"`
-pub fn is_list_wildcards(i: u8) -> bool {
-    i == b'%' || i == b'*'
 }
 
 /// `mailbox = "INBOX" / astring`

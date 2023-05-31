@@ -3,11 +3,9 @@ use std::num::NonZeroU32;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
     codec::Encode,
-    command::{
-        fetch::{FetchAttribute, MacroOrFetchAttributes},
-        Command, CommandBody,
-    },
-    message::Section,
+    command::{Command, CommandBody},
+    fetch::{FetchAttribute, MacroOrFetchAttributes},
+    section::Section,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {

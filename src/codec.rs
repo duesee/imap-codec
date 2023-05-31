@@ -35,21 +35,22 @@ pub use decode::{Decode, DecodeError};
     feature = "ext_quota",
 ))]
 pub(crate) use encode::CoreEncode;
-pub use encode::{Action, Encode, EncodeContext};
+pub use encode::{Action, Encode, EncodeContext, Encoder};
 
 mod decode;
 mod encode;
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, num::NonZeroU32};
+    use std::num::NonZeroU32;
 
-    use super::{Decode, DecodeError};
+    use super::*;
     use crate::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
-        message::Mailbox,
-        response::{data::FetchAttributeValue, Data, Greeting, GreetingKind, Response},
+        fetch::FetchAttributeValue,
+        mailbox::Mailbox,
+        response::{Data, Greeting, GreetingKind, Response},
         testing::{kat_inverse_command, kat_inverse_greeting, kat_inverse_response},
     };
 

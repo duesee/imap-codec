@@ -1,5 +1,6 @@
 use std::io::Write;
 
+/// Re-export everything from imap-types.
 pub use imap_types::extensions::literal::*;
 
 use crate::codec::{CoreEncode, EncodeContext};
@@ -19,7 +20,7 @@ mod tests {
     use crate::{
         command::{Command, CommandBody},
         core::{Literal, NonEmptyVec},
-        response::{data::Capability, Code, Greeting},
+        response::{Capability, Code, Greeting},
         testing::{kat_inverse_command, kat_inverse_greeting},
     };
 

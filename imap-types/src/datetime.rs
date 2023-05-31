@@ -147,7 +147,7 @@ impl ToBoundedStatic for NaiveDate {
 mod tests {
     use chrono::{TimeZone, Timelike};
 
-    use crate::{imap4rev1::datetime::DateTimeError, message::DateTime};
+    use super::*;
 
     #[test]
     fn test_conversion_date_time_failing() {

@@ -1,7 +1,7 @@
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
     command::CommandBody,
-    response::{data::Capability, Continue, Data, Greeting, Response, Status},
+    response::{Capability, Continue, Data, Greeting, Response, Status},
     tokio::server::{Action, ImapServerCodec, OutcomeServer},
 };
 use tokio::{self, net::TcpListener};

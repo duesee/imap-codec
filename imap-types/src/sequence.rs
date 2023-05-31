@@ -388,8 +388,8 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::{SeqOrUid, Sequence, Strategy};
-    use crate::{command::SequenceSet, core::NonEmptyVec, imap4rev1::sequence::SequenceSetError};
+    use super::*;
+    use crate::core::NonEmptyVec;
 
     #[test]
     fn test_creation_of_sequence_from_u32() {

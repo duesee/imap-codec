@@ -1,11 +1,6 @@
 use abnf_core::streaming::SP;
-use imap_types::{
-    core::{IString, NString, NonEmptyVec},
-    response::data::{
-        BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
-        MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
-    },
-};
+/// Re-export everything from imap-types.
+pub use imap_types::body::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -15,8 +10,8 @@ use nom::{
     IResult,
 };
 
-use crate::imap4rev1::{
-    core::{nil, nstring, number, string},
+use crate::{
+    core::{nil, nstring, number, string, IString, NString, NonEmptyVec},
     envelope::envelope,
 };
 
@@ -547,10 +542,8 @@ mod tests {
     use super::*;
     use crate::{
         core::{Literal, Quoted},
-        response::{
-            data::{FetchAttributeValue, SpecificFields::Basic},
-            Data, Response,
-        },
+        fetch::FetchAttributeValue,
+        response::{Data, Response},
         testing::{kat_inverse_response, known_answer_test_encode},
     };
 
@@ -657,7 +650,7 @@ mod tests {
                                                         ),
                                                         size: 0,
                                                     },
-                                                    specific: Basic {
+                                                    specific: SpecificFields::Basic {
                                                         type_: IString::from(
                                                             Literal::try_from(b"".as_ref())
                                                                 .unwrap(),

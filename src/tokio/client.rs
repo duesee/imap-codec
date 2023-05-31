@@ -1,7 +1,7 @@
 use std::io::{Error, Write};
 
+use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::bounded_static::IntoBoundedStatic;
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
@@ -192,14 +192,15 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use imap_types::{
-        core::{Literal, NString},
-        message::Section,
-        response::{data::FetchAttributeValue, Data, GreetingKind},
-    };
     use tokio_util::codec::Decoder;
 
     use super::*;
+    use crate::{
+        core::{Literal, NString},
+        fetch::FetchAttributeValue,
+        response::{Data, GreetingKind},
+        section::Section,
+    };
 
     #[test]
     fn test_decoder_line() {

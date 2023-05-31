@@ -101,7 +101,13 @@
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 
+pub mod auth;
+pub mod body;
 pub mod codec;
+pub mod command;
+pub mod core;
+pub mod datetime;
+pub mod envelope;
 #[cfg(any(
     feature = "ext_compress",
     feature = "ext_condstore_qresync",
@@ -113,13 +119,16 @@ pub mod codec;
     feature = "ext_unselect",
 ))]
 pub mod extensions;
-mod imap4rev1;
+pub mod fetch;
+pub mod flag;
+pub mod mailbox;
+pub mod response;
+pub mod search;
+pub mod section;
+pub mod sequence;
+pub mod status;
 #[cfg(test)]
 mod testing;
-
-pub use imap_types::{command, core, message, response, secret, state, utils};
-
-// ----------- Compatibility modules -----------
-
 #[cfg(any(feature = "tokio"))]
 pub mod tokio;
+pub use imap_types::{secret, state, utils};

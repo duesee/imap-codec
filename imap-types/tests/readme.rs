@@ -4,8 +4,7 @@ use imap_types::{
 };
 #[cfg(feature = "unchecked")]
 use imap_types::{
-    core::{AString, Atom},
-    message::Tag,
+    core::{AString, Atom, Tag},
     secret::Secret,
 };
 

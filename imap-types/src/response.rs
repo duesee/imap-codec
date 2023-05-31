@@ -20,19 +20,18 @@ use crate::extensions::compress::CompressionAlgorithm;
 use crate::extensions::enable::CapabilityEnable;
 #[cfg(feature = "ext_literal")]
 use crate::extensions::literal::LiteralCapability;
+use crate::{
+    auth::AuthMechanism,
+    core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text, TextError},
+    fetch::FetchAttributeValue,
+    flag::{Flag, FlagNameAttribute, FlagPerm},
+    mailbox::Mailbox,
+    status::StatusAttributeValue,
+};
 #[cfg(feature = "ext_quota")]
 use crate::{
     core::AString,
     extensions::quota::{QuotaGet, Resource},
-};
-use crate::{
-    core::{Atom, NonEmptyVec},
-    imap4rev1::core::{impl_try_from, TextError},
-    message::{AuthMechanism, Charset, Flag, FlagNameAttribute, FlagPerm, Mailbox, Tag},
-    response::{
-        data::{FetchAttributeValue, QuotedChar, StatusAttributeValue},
-        Text,
-    },
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

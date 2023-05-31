@@ -7,27 +7,27 @@ use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 #[cfg(feature = "ext_compress")]
 use crate::extensions::compress::CompressionAlgorithm;
 use crate::{
-    command::{
-        fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
-        search::SearchKey,
-        status::StatusAttribute,
-        store::{StoreResponse, StoreType},
-        AuthenticateData, Command, CommandBody, ListCharString, ListMailbox, SeqOrUid, Sequence,
-        SequenceSet,
+    auth::{AuthMechanism, AuthMechanismOther, AuthenticateData},
+    body::{
+        BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
+        MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
-    core::{AString, Atom, AtomExt, IString, Literal, NString, Quoted},
-    message::{
-        AuthMechanism, AuthMechanismOther, Charset, DateTime, Flag, FlagExtension, FlagFetch,
-        FlagNameAttribute, FlagPerm, Mailbox, MailboxOther, NaiveDate, Part, Section, Tag,
+    command::{Command, CommandBody},
+    core::{
+        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
     },
+    datetime::{DateTime, NaiveDate},
+    envelope::{Address, Envelope},
+    fetch::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
+    flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
+    mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
-        data::{
-            Address, BasicFields, Body, BodyExtension, BodyStructure, Capability, Disposition,
-            Envelope, FetchAttributeValue, Language, Location, MultiPartExtensionData, QuotedChar,
-            SinglePartExtensionData, SpecificFields, StatusAttributeValue,
-        },
-        Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status, Text,
+        Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
     },
+    search::SearchKey,
+    section::{Part, Section},
+    sequence::{SeqOrUid, Sequence, SequenceSet},
+    status::{StatusAttribute, StatusAttributeValue},
     utils::escape_quoted,
 };
 
@@ -1767,15 +1767,15 @@ mod utils {
 mod tests {
     use std::num::NonZeroU32;
 
-    use imap_types::{
+    use super::*;
+    use crate::{
+        auth::AuthMechanism,
+        command::{Command, CommandBody},
         core::{AString, Literal, NString, NonEmptyVec},
-        message::AuthMechanism,
-        response::{data::FetchAttributeValue, Data, Response},
+        fetch::FetchAttributeValue,
+        response::{Data, Response},
         utils::escape_byte_string,
     };
-
-    use super::{Action, Encode};
-    use crate::command::{Command, CommandBody};
 
     #[test]
     fn test_api_encoder_usage() {

@@ -2,10 +2,7 @@
 
 use thiserror::Error;
 
-use crate::{
-    command::{CommandBody, SequenceSet},
-    message::Mailbox,
-};
+use crate::{command::CommandBody, mailbox::Mailbox, sequence::SequenceSet};
 
 impl<'a> CommandBody<'a> {
     pub fn r#move<S, M>(

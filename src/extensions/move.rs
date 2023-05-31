@@ -1,13 +1,11 @@
 //! IMAP - MOVE Extension
 
 use abnf_core::streaming::SP;
+/// Re-export everything from imap-types.
 pub use imap_types::extensions::r#move::*;
 use nom::{bytes::streaming::tag_no_case, sequence::tuple, IResult};
 
-use crate::{
-    command::CommandBody,
-    imap4rev1::{mailbox::mailbox, sequence::sequence_set},
-};
+use crate::{command::CommandBody, mailbox::mailbox, sequence::sequence_set};
 
 /// ```abnf
 /// move = "MOVE" SP sequence-set SP mailbox

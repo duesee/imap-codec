@@ -6,17 +6,22 @@ use crate::extensions::enable::CapabilityEnableOther;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::ResourceOther;
 use crate::{
-    command::{search::SearchKey, ListCharString, SequenceSet},
-    core::{AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted},
-    imap4rev1::body::{BasicFields, SinglePartExtensionData},
-    message::{AuthMechanismOther, DateTime, FlagExtension, Mailbox, MailboxOther, NaiveDate, Tag},
-    response::{
-        data::{
-            Body, BodyExtension, BodyStructure, Capability, Envelope, MultiPartExtensionData,
-            QuotedChar, SpecificFields,
-        },
-        Code, CodeOther, ContinueBasic, Text,
+    auth::AuthMechanismOther,
+    body::{
+        BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
+        SinglePartExtensionData, SpecificFields,
     },
+    core::{
+        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted, QuotedChar, Tag,
+        Text,
+    },
+    datetime::{DateTime, NaiveDate},
+    envelope::Envelope,
+    flag::FlagExtension,
+    mailbox::{ListCharString, Mailbox, MailboxOther},
+    response::{Capability, Code, CodeOther, ContinueBasic},
+    search::SearchKey,
+    sequence::SequenceSet,
 };
 
 macro_rules! implement_tryfrom {

@@ -9,6 +9,7 @@
 
 use std::io::Write;
 
+/// Re-export everything from imap-types.
 pub use imap_types::extensions::idle::*;
 use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
@@ -58,10 +59,10 @@ impl CoreEncode for IdleDone {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         codec::{Decode, DecodeError},
         command::{Command, CommandBody},
-        extensions::idle::IdleDone,
         testing::kat_inverse_command,
     };
 
