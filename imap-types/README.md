@@ -1,10 +1,10 @@
-# Misuse-resistant IMAP Types
+# Misuse-resistant IMAP types
 
-This crate provides common types, i.e., `struct`s and `enum`s, to support [IMAP] implementations.
-It tries to become the "standard library" for IMAP in Rust that can be used as a common basis for a diverse set of IMAP
-crates, such as parsers, serializers, clients, and servers.
-If you are looking for a rock-solid IMAP "codec" implementation, i.e., parsers and serializers, that uses imap-types,
-see [imap-codec].
+This crate provides a complete set of well-designed types for the [IMAP] protocol.
+Notably, it does *not* provide parsers, nor serializers, but tries to become the IMAP "standard library" in Rust that is
+useful for a broad range of crates.
+
+If you are looking for a complete codec implementation, i.e., parsers, serializers, and network support, head over to [imap-codec].
 
 ## Features
 
@@ -16,13 +16,11 @@ see [imap-codec].
 ## Working with imap-types
 
 To ensure correctness, imap-types makes use of types such as
-[AString](core::AString),
-[Atom](core::Atom),
-[IString](core::IString),
-[Quoted](core::Quoted), and
-[Literal](core::Literal) (from the [core] module).
-It's good to know these types because IMAP requires different message flows depending on how an information, such as a
-username or password is represented, e.g., as an atom or literal.
+[`AString`](core::AString),
+[`Atom`](core::Atom),
+[`IString`](core::IString),
+[`Quoted`](core::Quoted), and
+[`Literal`](core::Literal).
 When constructing messages, imap-types can automatically choose the best representation.
 However, it's always possible to manually choose a specific representation.
 

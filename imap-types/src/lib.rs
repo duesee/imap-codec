@@ -1,29 +1,29 @@
-//! # Misuse-resistant Types for the IMAP Protocol
+//! # Misuse-resistant IMAP types
 //!
-//! The main types in imap-types are [Greeting](response::Greeting), [Command](command::Command), and [Response](response::Response), and we use the term "message" to refer to either of them.
-//!
-//! ## Module structure
-//!
-//! The module structure reflects this terminology:
-//! types that are specific to commands are in the [command](command) module;
-//! types that are specific to responses (including the greeting) are in the [response](response) module;
-//! types used in both are in the [message](message) module.
-//! The [codec](codec) module contains the [Decode](codec::Decode) trait used to serialize messages.
-//! The [core] module contains "string types" -- there should be no need to use them directly.
-//!
-//! ## Simple construction of messages.
-//!
+//! The most prominent types in imap-types are [`Greeting`](response::Greeting), [`Command`](command::Command), and [`Response`](response::Response), and we use the term "message" to refer to either of them.
 //! Messages can be created in different ways.
 //! However, what all ways have in common is, that the API does not allow the creation of invalid ones.
 //!
-//! For example, all commands in IMAP (and many responses) are prefixed with a "tag".
-//! Although IMAP tags are just strings, they have additional rules, such as that no whitespace is allowed.
-//! Thus, imap-codec encapsulates tags in the [Tag](message::Tag) struct and ensures no invalid tag can be created.
-//! This is why [Result](std::result::Result) is often used in associated functions or methods.
+//! For example, all commands in IMAP are prefixed with a "tag".
+//! Although IMAP's tags are just strings, they have additional rules, such as that no whitespace is allowed.
+//! Thus, imap-types encapsulate them in [`Tag`](core::Tag) struct to ensure that invalid ones can't be created.
 //!
-//! Generally, imap-codec relies a lot on the [From](std::convert::From), [TryFrom](std::convert::TryFrom), [Into](std::convert::Into), and [TryInto](std::convert::TryInto) traits.
+//! ## Understanding and using the core types
+//!
+//! Similar to [`Tag`](core::Tag)s, there are more "core types" (or "string types"), such as, [`Atom`](core::Atom), [`Quoted`](core::Quoted), or [`Literal`](core::Literal).
+//! Besides being used for correctness, these types play a crucial role in IMAP because they determine the IMAP protocol flow.
+//! Sending a password as a literal requires a different protocol flow than sending the password as an atom or a quoted string.
+//! So, even though imap-types can choose the most efficient representation for a datum automatically, it's good to become familiar with the [`core`] module at some point to master the IMAP protocol.
+//!
+//! ## Construction of messages
+//!
+//! imap-types relies a lot on the standard conversion traits, i.e., [`From`], [`TryFrom`], [`Into`], and [`TryInto`].
 //! Make good use of them.
-//! For types that are more cumbersome to create, there are helper methods available.
+//! More convenient constructors are available for types that are more cumbersome to create.
+//!
+//! Note: When you are *sure* that the thing you want to create is valid, you can unlock various `unchecked(...)` functions through the `unchecked` feature.
+//! This allows us to bypass certain checks in release builds.
+//!
 //!
 //! ### Example
 //!
@@ -35,7 +35,7 @@
 //!
 //! // # Variant 1
 //! // Create a `Command` with `tag` "A123" and `body` "NOOP".
-//! // (Note: `Command::new()` returns `Result::Err(...)` when the tag is invalid.)
+//! // (Note: `Command::new()` returns `Err(...)` when the tag is invalid.)
 //! let cmd = Command::new("A123", CommandBody::Noop).unwrap();
 //!
 //! // # Variant 2
@@ -51,11 +51,11 @@
 //! };
 //! ```
 //!
-//! ## More complex messages.
+//! ## More complex messages
 //!
 //! ### Example
 //!
-//! The following example is a server fetch response containing the size and MIME structure of message 42.
+//! The following example is a server fetch response containing the size and MIME structure of a message with the sequence number (or UID) 42.
 //!
 //! ```
 //! use std::{borrow::Cow, num::NonZeroU32};
@@ -97,10 +97,6 @@
 //!     Response::Data(data)
 //! };
 //! ```
-//!
-//! # A Note on Types
-//!
-//! Due to the correctness guarantees, this library uses multiple "string types" like `Atom`, `Tag`, `NString`, and `IString`. See the [core](core) module.
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]

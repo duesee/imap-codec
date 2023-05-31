@@ -1,14 +1,8 @@
 //! Core data types
 //!
-//! This module exposes IMAPs "core data types" (or "string types").
-//! It is loosely based on the IMAP standard.
-//! Some additional types are defined and some might be missing.
+//! This module exposes imap-types' "core types" (or "string types").
 //!
-//! "IMAP4rev1 uses textual commands and responses.
-//! Data in IMAP4rev1 can be in one of several forms: atom, number, string, parenthesized list, or NIL.
-//! Note that a particular data item may take more than one form; for example, a data item defined as using "astring" syntax may be either an atom or a string." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
-//!
-//! ## (Incomplete) Summary
+//! # Overview
 //!
 //! ```text
 //!        ┌───────┐ ┌─────────────────┐
