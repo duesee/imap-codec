@@ -1,7 +1,31 @@
 //! # IMAP Protocol Library
 //!
 //! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
-//! It is based on [imap-types](imap_types) and extends it with parsing support via [nom](nom).
+//! It is based on [imap-types] and extends it with parsing support using [nom].
+//!
+//! ## Example
+//!
+//! ```rust
+//! use imap_codec::{
+//!     codec::{Decode, Encode},
+//!     command::Command,
+//! };
+//!
+//! // We assume here that the message is already complete.
+//! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
+//!
+//! let (_remainder, parsed) = Command::decode(input).unwrap();
+//! println!("// Parsed:");
+//! println!("{parsed:#?}");
+//!
+//! let serialized = parsed.encode().dump();
+//!
+//! // Not every IMAP message is valid UTF-8.
+//! // We ignore that here, so that we can print the message.
+//! let serialized = String::from_utf8(serialized).unwrap();
+//! println!("// Serialized:");
+//! println!("// {serialized}");
+//! ```
 //!
 //! ## Decoding
 //!
@@ -13,61 +37,16 @@
 //! Note, however, that certain message flows require other parsers as well.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
-//! ### Handling IMAP literals
+//! ### Example
+//!
+//! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
 //!
 //! IMAP literals make separating the parsing logic from the application logic difficult.
 //! When a server recognizes a literal (e.g. "{42}"), it first needs to agree to receive more data by sending a so-called "continuation request" (`+ ...`).
 //! Without a continuation request, a client won't send more data, and the parser on the server would always return `Incomplete(42)`.
-//!
-//! A possible solution is to implement a framing codec first.
-//! This strategy is motivated by the IMAP RFC:
-//!
-//! ```text
-//! The protocol receiver of an IMAP4rev1 client or server is either reading a line,
-//! or is reading a sequence of octets with a known count followed by a line.
-//! ```
-//!
-//! The framing codec can be implemented like this ...
-//!
-//! ```ignore
-//! loop {
-//!     line = read_line()
-//!     if line.has_literal() {
-//!         literal = read_literal(amount)
-//!     }
-//! }
-//! ```
-//!
-//! ... and a variant of this procedure is provided through the [tokio_util::codec] crate (when using the `tokio` feature).
-//! You can also have a look at the [parse_command] example and the [demo server].
-//!
-//! ### Example
-//!
-//! ```rust
-//! use imap_codec::{
-//!     codec::{Decode, Encode},
-//!     command::Command,
-//! };
-//!
-//! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
-//!
-//! let (_remainder, parsed) = Command::decode(input).unwrap();
-//! println!("// Parsed:");
-//! println!("{:#?}", parsed);
-//!
-//! let serialized = parsed.encode().dump();
-//!
-//! let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
-//! println!("// Serialized:"); // We just ignore that, so that we can print the message.
-//! println!("// {}", serialized);
-//! ```
+//! This makes real-world decoding of IMAP a bit more elaborate.
 //!
 //! ## Encoding
-//!
-//! Serialization is implemented via the [`Encode`](crate::codec::Encode) trait.
-//! See the [`imap-types`] documentation for the module layout and how to construct messages.
-//!
-//! ### Handling IMAP literals
 //!
 //! The [`Encode::encode(...)`](codec::Encode::encode) method will return an instance of [`Encoded`](codec::Encoded)
 //! that facilitates handling of literals (and other protocol flows). The idea is that the encoder not only "dumps"

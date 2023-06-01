@@ -12,15 +12,16 @@ pub trait Decode<'a>: Sized + 'a {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DecodeError {
-    /// Parser needs more data.
+    /// More data is needed.
     Incomplete,
 
-    /// Parser needs more data, and (likely) an action
-    /// is required, e.g., a literal acknowledgement
-    /// must be send from the server.
+    /// More data is needed (and further action may be necessary).
+    ///
+    /// The decoder stopped at the beginning of literal data. When in the role of a server, sending
+    /// a continuation request may be necessary to agree to the receival of the remaining data.
     LiteralAckRequired,
 
-    // Parser failed.
+    // Decoding failed.
     Failed,
 }
 
