@@ -14,7 +14,7 @@ pub use imap_types::extensions::idle::*;
 use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
 
 use crate::{
-    codec::{CoreEncode, EncodeContext},
+    codec::{EncodeContext, Encoder},
     command::CommandBody,
 };
 
@@ -51,8 +51,8 @@ pub fn idle_done(input: &[u8]) -> IResult<&[u8], IdleDone> {
     value(IdleDone, tag_no_case("DONE\r\n"))(input)
 }
 
-impl CoreEncode for IdleDone {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+impl Encoder for IdleDone {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         writer.write_all(b"DONE\r\n")
     }
 }

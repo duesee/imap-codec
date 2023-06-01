@@ -34,8 +34,8 @@ pub use decode::{Decode, DecodeError};
     feature = "ext_literal",
     feature = "ext_quota",
 ))]
-pub(crate) use encode::CoreEncode;
-pub use encode::{Action, Encode, EncodeContext, Encoder};
+pub(crate) use encode::Encoder;
+pub use encode::{Action, Encode, EncodeContext, Encoded};
 
 mod decode;
 mod encode;

@@ -14,7 +14,7 @@ use nom::{
 };
 
 use crate::{
-    codec::{CoreEncode, EncodeContext},
+    codec::{EncodeContext, Encoder},
     command::CommandBody,
     core::{astring, atom, number64, AString, NonEmptyVec},
     mailbox::mailbox,
@@ -189,34 +189,34 @@ pub fn setquota_resource(input: &[u8]) -> IResult<&[u8], QuotaSet> {
 //     Ok((remaining, Capability::QuotaRes(resource)))
 // }
 
-impl<'a> CoreEncode for Resource<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+impl<'a> Encoder for Resource<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Resource::Storage => writer.write_all(b"STORAGE"),
             Resource::Message => writer.write_all(b"MESSAGE"),
             Resource::Mailbox => writer.write_all(b"MAILBOX"),
             Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
-            Resource::Other(atom) => atom.core_encode(writer),
+            Resource::Other(atom) => atom.encode_ctx(writer),
         }
     }
 }
 
-impl<'a> CoreEncode for ResourceOther<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().core_encode(writer)
+impl<'a> Encoder for ResourceOther<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.inner().encode_ctx(writer)
     }
 }
 
-impl<'a> CoreEncode for QuotaGet<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.resource.core_encode(writer)?;
+impl<'a> Encoder for QuotaGet<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.encode_ctx(writer)?;
         write!(writer, " {} {}", self.usage, self.limit)
     }
 }
 
-impl<'a> CoreEncode for QuotaSet<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.resource.core_encode(writer)?;
+impl<'a> Encoder for QuotaSet<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.encode_ctx(writer)?;
         write!(writer, " {}", self.limit)
     }
 }

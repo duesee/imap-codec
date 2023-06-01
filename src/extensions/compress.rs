@@ -18,7 +18,7 @@ use nom::{
 };
 
 use crate::{
-    codec::{CoreEncode, EncodeContext},
+    codec::{EncodeContext, Encoder},
     command::CommandBody,
 };
 
@@ -34,8 +34,8 @@ pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
     })(input)
 }
 
-impl CoreEncode for CompressionAlgorithm {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+impl Encoder for CompressionAlgorithm {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
         }
