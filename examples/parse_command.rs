@@ -21,6 +21,10 @@ fn main() {
 
                 // ... and proceed with the remaining data.
                 buffer = remaining.to_vec();
+
+                // Note: The `command` object is currently bounded to the `buffer`, i.e., we have
+                // something like a `Command<'buffer>` here. We can use the `bounded-static` feature
+                // and call `command.into_static()` to convert it into a more flexible `Command<'static>`.
             }
             // Parser needs more data.
             Err(DecodeError::Incomplete) => {
