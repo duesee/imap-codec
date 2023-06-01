@@ -176,10 +176,7 @@ mod tests {
             (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
             (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
             // LiteralAckRequired
-            (
-                b"a select {5}\r\n".as_ref(),
-                Err(DecodeError::LiteralAckRequired),
-            ),
+            (b"a select {5}\r\n".as_ref(), Err(DecodeError::LiteralFound)),
             // Incomplete (after literal)
             (
                 b"a select {5}\r\nxxx".as_ref(),
