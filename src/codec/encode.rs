@@ -39,7 +39,7 @@ pub trait Encode {
 /// Message encoder.
 ///
 /// This encoder facilitates the implementation of IMAP client- and server implementations by
-/// yielding the encoding of a message through [`Action`]s. This is required, because the usage of
+/// yielding the encoding of a message through [`Fragment`]s. This is required, because the usage of
 /// literals (and some other types) may change the IMAP message flow. Thus, in many cases, it is an
 /// error to just "dump" a message and send it over the network.
 ///
@@ -47,59 +47,36 @@ pub trait Encode {
 ///
 /// ```rust
 /// use imap_codec::{
-///     codec::{Action, Encode},
+///     codec::{Encode, Fragment},
 ///     command::{Command, CommandBody},
 /// };
 ///
 /// let cmd = Command::new("A", CommandBody::login("alice", "pass").unwrap()).unwrap();
 ///
-/// for action in cmd.encode() {
-///     match action {
-///         Action::Send { data } => {}
-///         Action::RecvContinuationRequest => {}
-///         Action::Unknown => {}
+/// for fragment in cmd.encode() {
+///     match fragment {
+///         Fragment::Line { data } => {}
+///         #[cfg(not(feature = "ext_literal"))]
+///         Fragment::Literal { data } => {}
+///         #[cfg(feature = "ext_literal")]
+///         Fragment::Literal { data, sync } => {}
 ///     }
 /// }
 /// ```
 #[derive(Clone, Debug)]
 pub struct Encoded {
-    items: Vec<Action>,
+    items: Vec<Fragment>,
 }
 
 impl Encoded {
-    /// Dump the (remaining) encoded data without being guided by [`Action`]s.
-    ///
-    /// Note: This method should (likely) not be used in a real implementation. It is often not
-    /// possible to send a full message at once in IMAP. Notably, a client needs to wait for
-    /// continuation requests before sending literals.
-    ///
-    /// Prefer to iterate over the encoder and follow the yielded actions:
-    ///
-    /// ```rust
-    /// use imap_codec::{
-    ///     codec::{Action, Encode},
-    ///     command::{Command, CommandBody},
-    /// };
-    ///
-    /// let cmd = Command::new("A", CommandBody::login("alice", "pass").unwrap()).unwrap();
-    ///
-    /// for action in cmd.encode() {
-    ///     match action {
-    ///         Action::Send { data } => {}
-    ///         Action::RecvContinuationRequest => {}
-    ///         Action::Unknown => {}
-    ///     }
-    /// }
-    /// ```
+    /// Dump the (remaining) encoded data without being guided by [`Fragment`]s.
     pub fn dump(self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for action in self.items {
-            match action {
-                Action::Send { mut data } => out.append(&mut data),
-                Action::RecvContinuationRequest | Action::Unknown => {
-                    // Nothing to do.
-                }
+        for fragment in self.items {
+            match fragment {
+                Fragment::Line { mut data } => out.append(&mut data),
+                Fragment::Literal { mut data, .. } => out.append(&mut data),
             }
         }
 
@@ -108,7 +85,7 @@ impl Encoded {
 }
 
 impl Iterator for Encoded {
-    type Item = Action;
+    type Item = Fragment;
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.items.is_empty() {
@@ -121,15 +98,16 @@ impl Iterator for Encoded {
 
 /// The intended action of a client or server.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Action {
-    /// Send this data over the network.
-    Send { data: Vec<u8> },
-    /// (Maybe) wait for a continuation request.
-    ///
-    /// Note: This action MUST be ignored by a server.
-    RecvContinuationRequest,
-    /// Encoding of a non-supported type may (or may not) require further action.
-    Unknown,
+pub enum Fragment {
+    /// A line that is ready to be send.
+    Line { data: Vec<u8> },
+
+    /// A literal that may require an action before it should be send.
+    Literal {
+        data: Vec<u8>,
+        #[cfg(feature = "ext_literal")]
+        sync: bool,
+    },
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -137,7 +115,7 @@ pub enum Action {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct EncodeContext {
     accumulator: Vec<u8>,
-    items: Vec<Action>,
+    items: Vec<Fragment>,
 }
 
 impl EncodeContext {
@@ -145,51 +123,45 @@ impl EncodeContext {
         Self::default()
     }
 
-    pub fn into_items(mut self) -> Vec<Action> {
-        if !self.accumulator.is_empty() {
-            self.items.push(Action::Send {
-                data: self.accumulator,
-            })
-        }
-        // Not needed, as it is dropped anyway.
-        // self.accumulator.clear();
-
-        self.items
+    pub fn push_line(&mut self) {
+        self.items.push(Fragment::Line {
+            data: std::mem::replace(&mut self.accumulator, Vec::new()),
+        })
     }
 
-    pub fn dump(mut self) -> Vec<u8> {
-        if !self.accumulator.is_empty() {
-            self.items.push(Action::Send {
-                data: self.accumulator.clone(),
-            })
-        }
-        self.accumulator.clear();
+    pub fn push_literal(&mut self, #[cfg(feature = "ext_literal")] sync: bool) {
+        self.items.push(Fragment::Literal {
+            data: std::mem::replace(&mut self.accumulator, Vec::new()),
+            #[cfg(feature = "ext_literal")]
+            sync,
+        })
+    }
 
-        self.items
-            .into_iter()
-            .fold(vec![], |mut acc, action| match action {
-                Action::Send { mut data } => {
-                    acc.append(&mut data);
-                    acc
+    pub fn into_items(self) -> Vec<Fragment> {
+        let Self {
+            accumulator,
+            mut items,
+        } = self;
+
+        if !accumulator.is_empty() {
+            items.push(Fragment::Line { data: accumulator });
+        }
+
+        items
+    }
+
+    pub fn dump(self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for item in self.into_items() {
+            match item {
+                Fragment::Line { data } | Fragment::Literal { data, .. } => {
+                    out.extend_from_slice(&data)
                 }
-                Action::RecvContinuationRequest | Action::Unknown => acc,
-            })
-    }
+            }
+        }
 
-    pub fn recv_continuation_request(&mut self) {
-        self.items.push(Action::Send {
-            data: self.accumulator.clone(),
-        });
-        self.items.push(Action::RecvContinuationRequest);
-        self.accumulator.clear();
-    }
-
-    pub fn unknown(&mut self) {
-        self.items.push(Action::Send {
-            data: self.accumulator.clone(),
-        });
-        self.items.push(Action::Unknown);
-        self.accumulator.clear();
+        out
     }
 }
 
@@ -245,37 +217,7 @@ impl<'a> Encoder for Command<'a> {
         self.tag.encode_ctx(ctx)?;
         ctx.write_all(b" ")?;
         self.body.encode_ctx(ctx)?;
-        ctx.write_all(b"\r\n")?;
-
-        // Note: We need to do this here because we must do it after the final \r\n was sent.
-        match &self.body {
-            #[cfg(not(feature = "ext_sasl_ir"))]
-            CommandBody::Authenticate { .. } => {
-                ctx.recv_continuation_request();
-            }
-            #[cfg(feature = "ext_sasl_ir")]
-            CommandBody::Authenticate {
-                mechanism,
-                initial_response,
-            } => {
-                if initial_response.is_some() {
-                    match mechanism {
-                        AuthMechanism::Plain => {
-                            // Nothing to wait for here.
-                        }
-                        AuthMechanism::Login => {
-                            ctx.recv_continuation_request();
-                        }
-                        _ => ctx.unknown(),
-                    }
-                } else {
-                    ctx.recv_continuation_request();
-                }
-            }
-            _ => {}
-        }
-
-        Ok(())
+        ctx.write_all(b"\r\n")
     }
 }
 
@@ -611,20 +553,25 @@ impl<'a> Encoder for IString<'a> {
 impl<'a> Encoder for Literal<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         #[cfg(not(feature = "ext_literal"))]
-        {
-            write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
-            ctx.recv_continuation_request();
-        }
+        write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
 
         #[cfg(feature = "ext_literal")]
         if self.sync {
             write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
-            ctx.recv_continuation_request();
         } else {
             write!(ctx, "{{{}+}}\r\n", self.as_ref().len())?;
         }
 
-        ctx.write_all(self.as_ref())
+        ctx.push_line();
+
+        ctx.write_all(self.as_ref())?;
+
+        #[cfg(not(feature = "ext_literal"))]
+        ctx.push_literal();
+        #[cfg(feature = "ext_literal")]
+        ctx.push_literal(self.sync);
+
+        Ok(())
     }
 }
 
@@ -1803,15 +1750,27 @@ mod tests {
 
         for x in encoder {
             match x {
-                Action::Send { data } => {
+                Fragment::Line { data } => {
                     println!("C: {}", escape_byte_string(&data));
                     out.extend_from_slice(&data);
                 }
-                Action::RecvContinuationRequest => {
+                #[cfg(not(feature = "ext_literal"))]
+                Fragment::Literal { data } => {
                     println!("C: <Waiting for continuation request>");
+
+                    println!("C: {}", escape_byte_string(&data));
+                    out.extend_from_slice(&data);
                 }
-                Action::Unknown => {
-                    println!("C: <Custom message flow required>");
+                #[cfg(feature = "ext_literal")]
+                Fragment::Literal { data, sync } => {
+                    if sync {
+                        println!("C: <Waiting for continuation request>");
+                    } else {
+                        println!("C: <Skipped continuation request>");
+                    }
+
+                    println!("C: {}", escape_byte_string(&data));
+                    out.extend_from_slice(&data);
                 }
             }
         }
@@ -1824,7 +1783,7 @@ mod tests {
         kat_encoder(&[
             (
                 Command::new("A", CommandBody::login("alice", "pass").unwrap()).unwrap(),
-                [Action::Send {
+                [Fragment::Line {
                     data: b"A LOGIN alice pass\r\n".to_vec(),
                 }]
                 .as_ref(),
@@ -1836,12 +1795,16 @@ mod tests {
                 )
                 .unwrap(),
                 [
-                    Action::Send {
+                    Fragment::Line {
                         data: b"A LOGIN alice {2}\r\n".to_vec(),
                     },
-                    Action::RecvContinuationRequest,
-                    Action::Send {
-                        data: b"\xCA\xFE\r\n".to_vec(),
+                    Fragment::Literal {
+                        data: b"\xCA\xFE".to_vec(),
+                        #[cfg(feature = "ext_literal")]
+                        sync: true,
+                    },
+                    Fragment::Line {
+                        data: b"\r\n".to_vec(),
                     },
                 ]
                 .as_ref(),
@@ -1856,12 +1819,9 @@ mod tests {
                     ),
                 )
                 .unwrap(),
-                [
-                    Action::Send {
-                        data: b"A AUTHENTICATE LOGIN\r\n".to_vec(),
-                    },
-                    Action::RecvContinuationRequest,
-                ]
+                [Fragment::Line {
+                    data: b"A AUTHENTICATE LOGIN\r\n".to_vec(),
+                }]
                 .as_ref(),
             ),
             #[cfg(feature = "ext_sasl_ir")]
@@ -1871,23 +1831,17 @@ mod tests {
                     CommandBody::authenticate(AuthMechanism::Login, Some(b"alice")),
                 )
                 .unwrap(),
-                [
-                    Action::Send {
-                        data: b"A AUTHENTICATE LOGIN YWxpY2U=\r\n".to_vec(),
-                    },
-                    Action::RecvContinuationRequest,
-                ]
+                [Fragment::Line {
+                    data: b"A AUTHENTICATE LOGIN YWxpY2U=\r\n".to_vec(),
+                }]
                 .as_ref(),
             ),
             #[cfg(feature = "ext_sasl_ir")]
             (
                 Command::new("A", CommandBody::authenticate(AuthMechanism::Plain, None)).unwrap(),
-                [
-                    Action::Send {
-                        data: b"A AUTHENTICATE PLAIN\r\n".to_vec(),
-                    },
-                    Action::RecvContinuationRequest,
-                ]
+                [Fragment::Line {
+                    data: b"A AUTHENTICATE PLAIN\r\n".to_vec(),
+                }]
                 .as_ref(),
             ),
             #[cfg(feature = "ext_sasl_ir")]
@@ -1897,7 +1851,7 @@ mod tests {
                     CommandBody::authenticate(AuthMechanism::Plain, Some(b"\x00alice\x00pass")),
                 )
                 .unwrap(),
-                [Action::Send {
+                [Fragment::Line {
                     data: b"A AUTHENTICATE PLAIN AGFsaWNlAHBhc3M=\r\n".to_vec(),
                 }]
                 .as_ref(),
@@ -1922,12 +1876,16 @@ mod tests {
                     }),
                 }),
                 [
-                    Action::Send {
+                    Fragment::Line {
                         data: b"* 12345 FETCH (BODY[] {5}\r\n".to_vec(),
                     },
-                    Action::RecvContinuationRequest,
-                    Action::Send {
-                        data: b"ABCDE)\r\n".to_vec(),
+                    Fragment::Literal {
+                        data: b"ABCDE".to_vec(),
+                        #[cfg(feature = "ext_literal")]
+                        sync: true,
+                    },
+                    Fragment::Line {
+                        data: b")\r\n".to_vec(),
                     },
                 ]
                 .as_ref(),
@@ -1942,9 +1900,18 @@ mod tests {
                         data: NString::from(Literal::unchecked(b"ABCDE".as_ref(), false)),
                     }),
                 }),
-                [Action::Send {
-                    data: b"* 12345 FETCH (BODY[] {5+}\r\nABCDE)\r\n".to_vec(),
-                }]
+                [
+                    Fragment::Line {
+                        data: b"* 12345 FETCH (BODY[] {5+}\r\n".to_vec(),
+                    },
+                    Fragment::Literal {
+                        data: b"ABCDE".to_vec(),
+                        sync: false,
+                    },
+                    Fragment::Line {
+                        data: b")\r\n".to_vec(),
+                    },
+                ]
                 .as_ref(),
             ),
         ])
@@ -1953,7 +1920,7 @@ mod tests {
     fn kat_encoder<Object, Actions>(tests: &[(Object, Actions)])
     where
         Object: Encode,
-        Actions: AsRef<[Action]>,
+        Actions: AsRef<[Fragment]>,
     {
         for (i, (obj, actions)) in tests.iter().enumerate() {
             println!("# Testing {i}");

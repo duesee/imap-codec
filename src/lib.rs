@@ -56,27 +56,33 @@
 //!
 //! ```rust
 //! use imap_codec::{
-//!     codec::{Action, Decode, Encode},
+//!     codec::{Decode, Encode, Fragment},
 //!     command::Command,
 //! };
 //! use imap_types::command::CommandBody;
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
 //!
-//! for action in command.encode() {
-//!     match action {
-//!         Action::Send { data } => {
-//!             // Send this over the network.
+//! for fragment in command.encode() {
+//!     match fragment {
+//!         Fragment::Line { data } => {
+//!             // A line that is ready to be send.
 //!             println!("C: {}", String::from_utf8(data).unwrap());
 //!         }
-//!         Action::RecvContinuationRequest => {
+//!         #[cfg(not(feature = "ext_literal"))]
+//!         Fragment::Literal { data } => {
 //!             // Wait for a continuation request.
 //!             println!("S: + ...")
 //!         }
-//!         Action::Unknown => {
-//!             // Unknown action required.
-//!             // This could happen when custom extensions are used.
-//!             unreachable!()
+//!         #[cfg(feature = "ext_literal")]
+//!         Fragment::Literal { data, sync } => {
+//!             if sync {
+//!                 // Wait for a continuation request.
+//!                 println!("S: + ...")
+//!             } else {
+//!                 // We don't need to wait for a continuation request
+//!                 // as the server will also not send it.
+//!             }
 //!         }
 //!     }
 //! }
