@@ -75,7 +75,7 @@ pub enum SpecificFields<'a> {
     /// ```
     Basic {
         /// A string giving the content media type name as defined in [MIME-IMB].
-        type_: IString<'a>,
+        r#type: IString<'a>,
 
         /// A string giving the content subtype name as defined in [MIME-IMB].
         subtype: IString<'a>,
