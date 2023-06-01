@@ -36,7 +36,6 @@ pub trait Encode {
     fn encode(&self) -> Encoded;
 }
 
-#[allow(missing_debug_implementations)]
 /// Message encoder.
 ///
 /// This encoder facilitates the implementation of IMAP client- and server implementations by
@@ -62,6 +61,7 @@ pub trait Encode {
 ///     }
 /// }
 /// ```
+#[derive(Clone, Debug)]
 pub struct Encoded {
     items: Vec<Action>,
 }
