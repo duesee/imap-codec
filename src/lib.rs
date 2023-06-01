@@ -3,22 +3,45 @@
 //! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
 //! It is based on [imap-types](imap_types) and extends it with parsing support via [nom](nom).
 //!
-//! ## Parsing
+//! ## Decoding
 //!
-//! Parsing is implemented through the [Decode](crate::codec::Decode) trait.
+//! Parsing is implemented through the [`Decode`](crate::codec::Decode) trait.
 //! The main entry points for parsing are
-//! [Greeting::decode(...)](response::Greeting#method.decode) (to parse the first message from a server)),
-//! [Command::decode(...)](command::Command#method.decode) (to parse commands from a client), and
-//! [Response::decode(...)](response::Response#method.decode) (to parse responses or results from a server).
+//! [`Greeting::decode(...)`](response::Greeting#method.decode) (to parse the first message from a server),
+//! [`Command::decode(...)`](command::Command#method.decode) (to parse commands from a client), and
+//! [`Response::decode(...)`](response::Response#method.decode) (to parse responses or results from a server).
 //! Note, however, that certain message flows require other parsers as well.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
-//! ## Serialization
+//! ### Handling IMAP literals
 //!
-//! Serialization is implemented via the [`Encode`](crate::codec::Encode) trait.
-//! See the [imap-types](imap_types) documentation for the module layout and how to construct messages.
+//! IMAP literals make separating the parsing logic from the application logic difficult.
+//! When a server recognizes a literal (e.g. "{42}"), it first needs to agree to receive more data by sending a so-called "continuation request" (`+ ...`).
+//! Without a continuation request, a client won't send more data, and the parser on the server would always return `Incomplete(42)`.
 //!
-//! ## Example
+//! A possible solution is to implement a framing codec first.
+//! This strategy is motivated by the IMAP RFC:
+//!
+//! ```text
+//! The protocol receiver of an IMAP4rev1 client or server is either reading a line,
+//! or is reading a sequence of octets with a known count followed by a line.
+//! ```
+//!
+//! The framing codec can be implemented like this ...
+//!
+//! ```ignore
+//! loop {
+//!     line = read_line()
+//!     if line.has_literal() {
+//!         literal = read_literal(amount)
+//!     }
+//! }
+//! ```
+//!
+//! ... and a variant of this procedure is provided through the [tokio_util::codec] crate (when using the `tokio` feature).
+//! You can also have a look at the [parse_command] example and the [demo server].
+//!
+//! ### Example
 //!
 //! ```rust
 //! use imap_codec::{
@@ -37,6 +60,55 @@
 //! let serialized = String::from_utf8(serialized).unwrap(); // Not every IMAP message is valid UTF-8.
 //! println!("// Serialized:"); // We just ignore that, so that we can print the message.
 //! println!("// {}", serialized);
+//! ```
+//!
+//! ## Encoding
+//!
+//! Serialization is implemented via the [`Encode`](crate::codec::Encode) trait.
+//! See the [`imap-types`] documentation for the module layout and how to construct messages.
+//!
+//! ### Handling IMAP literals
+//!
+//! The [`Encode::encode(...)`](codec::Encode::encode) method will return an instance of [`Encoded`](codec::Encoded)
+//! that facilitates handling of literals (and other protocol flows). The idea is that the encoder not only "dumps"
+//! the final serialization of a message but can be iterated over.
+//!
+//! ### Example
+//!
+//! ```rust
+//! use imap_codec::{
+//!     codec::{Action, Decode, Encode},
+//!     command::Command,
+//! };
+//! use imap_types::command::CommandBody;
+//!
+//! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
+//!
+//! for action in command.encode() {
+//!     match action {
+//!         Action::Send { data } => {
+//!             // Send this over the network.
+//!             println!("C: {}", String::from_utf8(data).unwrap());
+//!         }
+//!         Action::RecvContinuationRequest => {
+//!             // Wait for a continuation request.
+//!             println!("S: + ...")
+//!         }
+//!         Action::Unknown => {
+//!             // Unknown action required.
+//!             // This could happen when custom extensions are used.
+//!             unreachable!()
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! Output of example:
+//!
+//! ```imap
+//! C: A1 LOGIN alice {10}
+//! S: + ...
+//! C: Pa²²W0rD
 //! ```
 //!
 //! # Features
@@ -80,10 +152,12 @@
 //! When the "serde" feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
 //! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits.
 //! The "tokio_util_compat" feature unlocks an implementation of [tokio_util::codec](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
-//! See the
-//! [tokio client](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client) and
-//! [tokio server](https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server) demos.
+//! See the [tokio client] and [tokio server] demos.
 //!
+//! [tokio client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
+//! [tokio server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
+//! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html
+//! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
 //! [RFC 2088]: https://datatracker.ietf.org/doc/html/rfc2088
 //! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
 //! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193

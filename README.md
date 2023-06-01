@@ -5,9 +5,9 @@
 
 # imap-codec
 
-This library provides parsing, serialization, and support for [IMAP4rev1] implementations.
+This library provides parsing, serialization, and general support for [IMAP4rev1] implementations.
 It is based on [imap-types] and aims to become a rock-solid building block for IMAP client and server implementations in Rust.
-The complete [formal syntax] of IMAP4rev1 and several IMAP extensions are implemented.
+The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
 Please see the [documentation] for more information.
 
 ## Features
@@ -186,45 +186,9 @@ Status(Ok { tag: Some(Tag("a006")), code: None, text: Text("LOGOUT completed") }
 // a006 OK LOGOUT completed
 ```
 
-## A Note on IMAP literals
-
-IMAP literals make separating the parsing logic from the application logic difficult.
-When a parser recognizes a literal (e.g. "{42}"), a so-called continuation response (`+ ...`) must be sent.
-Otherwise, the client or server will not send more data, and a parser would always return `Incomplete(42)`.
-
-A possible solution is to implement a framing codec first.
-This strategy is motivated by the IMAP RFC:
-
-```
-The protocol receiver of an IMAP4rev1 client or server is either reading a line,
-or is reading a sequence of octets with a known count followed by a line.
-```
-
-The framing codec can be implemented like this ...
-
-```rust
-loop {
-    line = read_line()
-    if line.has_literal() {
-        literal = read_literal(amount)
-    }
-}
-```
-
-... and variants of this procedure are provided in the [parse_command] example and the [demo server].
-
 # License
 
 This crate is dual-licensed under Apache 2.0 and MIT terms.
-
-[IMAP4rev1]: https://tools.ietf.org/html/rfc3501
-[imap-types]: https://github.com/duesee/imap-codec/imap-types
-[formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
-[documentation]: https://docs.rs/imap-codec/latest/imap_codec/
-[cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
-[demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
-[demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
-[parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
 
 # Thanks
 
@@ -235,3 +199,13 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/221422192-60d28ed4-10bb-441e-957d-93af58166707.png"/>
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262235-0db02da9-7c6c-498e-a3d2-7ea7901637bf.png"/>
 </div>
+
+[IMAP4rev1]: https://tools.ietf.org/html/rfc3501
+[imap-types]: https://github.com/duesee/imap-codec/imap-types
+[formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
+[extensions]: https://docs.rs/imap-codec/latest/imap_codec/#features
+[documentation]: https://docs.rs/imap-codec/latest/imap_codec/
+[cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
+[demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
+[demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
+[parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
