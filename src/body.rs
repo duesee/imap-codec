@@ -94,7 +94,16 @@ pub fn body_type_basic(input: &[u8]) -> IResult<&[u8], (BasicFields, SpecificFie
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
-    Ok((remaining, (basic, SpecificFields::Basic { type_, subtype })))
+    Ok((
+        remaining,
+        (
+            basic,
+            SpecificFields::Basic {
+                r#type: type_,
+                subtype,
+            },
+        ),
+    ))
 }
 
 /// `body-type-msg = media-message SP
@@ -651,7 +660,7 @@ mod tests {
                                                         size: 0,
                                                     },
                                                     specific: SpecificFields::Basic {
-                                                        type_: IString::from(
+                                                        r#type: IString::from(
                                                             Literal::try_from(b"".as_ref())
                                                                 .unwrap(),
                                                         ),

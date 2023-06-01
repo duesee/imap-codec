@@ -595,7 +595,7 @@ mod tests {
                             size: 123,
                         },
                         specific: SpecificFields::Basic {
-                            type_: IString::try_from("application").unwrap(),
+                            r#type: IString::try_from("application").unwrap(),
                             subtype: IString::try_from("voodoo").unwrap(),
                         },
                     },

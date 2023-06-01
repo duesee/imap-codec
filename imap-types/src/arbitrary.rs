@@ -227,7 +227,7 @@ impl<'a> Arbitrary<'a> for BodyStructure<'a> {
                     basic: BasicFields::arbitrary(u)?,
                     specific: match u.int_in_range(1..=2)? {
                         1 => SpecificFields::Basic {
-                            type_: IString::arbitrary(u)?,
+                            r#type: IString::arbitrary(u)?,
                             subtype: IString::arbitrary(u)?,
                         },
                         // No SpecificFields::Message because it would recurse.
@@ -256,7 +256,7 @@ impl<'a> Arbitrary<'a> for BodyStructure<'a> {
                         basic: BasicFields::arbitrary(u)?,
                         specific: match u.int_in_range(1..=3)? {
                             1 => SpecificFields::Basic {
-                                type_: IString::arbitrary(u)?,
+                                r#type: IString::arbitrary(u)?,
                                 subtype: IString::arbitrary(u)?,
                             },
                             2 => SpecificFields::Message {

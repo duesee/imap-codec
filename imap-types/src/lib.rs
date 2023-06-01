@@ -84,7 +84,7 @@
 //!                         size: 512,
 //!                     },
 //!                     specific: SpecificFields::Basic {
-//!                         type_: IString::try_from("text").unwrap(),
+//!                         r#type: IString::try_from("text").unwrap(),
 //!                         subtype: IString::try_from("html").unwrap(),
 //!                     },
 //!                 },

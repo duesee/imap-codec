@@ -1471,7 +1471,7 @@ impl<'a> CoreEncode for Body<'a> {
     fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self.specific {
             SpecificFields::Basic {
-                ref type_,
+                r#type: ref type_,
                 ref subtype,
             } => {
                 type_.core_encode(writer)?;
