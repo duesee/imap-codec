@@ -20,7 +20,7 @@ use nom::{
 };
 
 use crate::{
-    codec::{CoreEncode, EncodeContext},
+    codec::{EncodeContext, Encoder},
     command::CommandBody,
     core::atom,
     response::Data,
@@ -69,21 +69,21 @@ pub fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
     Ok((remaining, { Data::Enabled { capabilities } }))
 }
 
-impl<'a> CoreEncode for CapabilityEnable<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+impl<'a> Encoder for CapabilityEnable<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
             Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => writer.write_all(b"CONDSTORE"),
-            Self::Other(other) => other.core_encode(writer),
+            Self::Other(other) => other.encode_ctx(writer),
         }
     }
 }
 
-impl<'a> CoreEncode for CapabilityEnableOther<'a> {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().core_encode(writer)
+impl<'a> Encoder for CapabilityEnableOther<'a> {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+        self.inner().encode_ctx(writer)
     }
 }
 

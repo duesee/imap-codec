@@ -3,10 +3,10 @@ use std::io::Write;
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::literal::*;
 
-use crate::codec::{CoreEncode, EncodeContext};
+use crate::codec::{EncodeContext, Encoder};
 
-impl CoreEncode for LiteralCapability {
-    fn core_encode(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+impl Encoder for LiteralCapability {
+    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Plus => writer.write_all(b"LITERAL+"),
             Self::Minus => writer.write_all(b"LITERAL-"),
