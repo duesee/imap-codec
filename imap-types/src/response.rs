@@ -390,7 +390,7 @@ pub enum Data<'a> {
         /// Name
         mailbox: Mailbox<'a>,
         /// Status parenthesized list
-        attributes: Vec<StatusAttributeValue>,
+        attributes: Cow<'a, [StatusAttributeValue]>,
     },
 
     /// ### 7.2.5. SEARCH Response

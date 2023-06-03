@@ -587,7 +587,8 @@ mod tests {
                         StatusAttributeValue::Messages(12),
                         StatusAttributeValue::Deleted(4),
                         StatusAttributeValue::DeletedStorage(8),
-                    ],
+                    ]
+                    .into(),
                 }),
             ),
             (
