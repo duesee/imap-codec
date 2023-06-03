@@ -245,7 +245,7 @@ pub fn status(input: &[u8]) -> IResult<&[u8], CommandBody> {
         remaining,
         CommandBody::Status {
             mailbox,
-            attributes,
+            attributes: attributes.into(),
         },
     ))
 }

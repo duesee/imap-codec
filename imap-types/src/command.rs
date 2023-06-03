@@ -2,7 +2,6 @@
 //!
 //! see <https://tools.ietf.org/html/rfc3501#section-6>
 
-#[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
 #[cfg(feature = "arbitrary")]
@@ -777,7 +776,7 @@ pub enum CommandBody<'a> {
     ///   reasonable performance.
     Status {
         mailbox: Mailbox<'a>,
-        attributes: Vec<StatusAttribute>,
+        attributes: Cow<'a, [StatusAttribute]>,
     },
 
     /// 6.3.11. APPEND Command
@@ -1432,13 +1431,14 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    pub fn status<M>(mailbox: M, attributes: Vec<StatusAttribute>) -> Result<Self, M::Error>
+    pub fn status<M, A>(mailbox: M, attributes: A) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
+        A: Into<Cow<'a, [StatusAttribute]>>,
     {
         Ok(CommandBody::Status {
             mailbox: mailbox.try_into()?,
-            attributes,
+            attributes: attributes.into(),
         })
     }
 
@@ -1898,7 +1898,7 @@ mod tests {
             (
                 CommandBody::Status {
                     mailbox: Mailbox::Inbox,
-                    attributes: vec![],
+                    attributes: vec![].into(),
                 },
                 "STATUS",
             ),

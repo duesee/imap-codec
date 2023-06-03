@@ -101,7 +101,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
             )),
             |(_, _, mailbox, _, attributes)| Data::Status {
                 mailbox,
-                attributes: attributes.unwrap_or_default(),
+                attributes: attributes.unwrap_or_default().into(),
             },
         ),
         map(
