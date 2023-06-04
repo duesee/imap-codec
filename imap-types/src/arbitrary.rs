@@ -69,7 +69,6 @@ implement_tryfrom! { CapabilityEnableOther<'a>, Atom<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
-implement_tryfrom! { SequenceSet, &str }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for ContinueBasic<'a> {

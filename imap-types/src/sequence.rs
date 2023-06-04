@@ -14,6 +14,7 @@ use thiserror::Error;
 
 use crate::core::NonEmptyVec;
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
