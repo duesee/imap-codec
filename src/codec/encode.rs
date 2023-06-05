@@ -1209,11 +1209,8 @@ impl<'a> Encoder for Data<'a> {
             Data::Exists(count) => write!(ctx, "* {count} EXISTS")?,
             Data::Recent(count) => write!(ctx, "* {count} RECENT")?,
             Data::Expunge(msg) => write!(ctx, "* {msg} EXPUNGE")?,
-            Data::Fetch {
-                seq_or_uid,
-                attributes,
-            } => {
-                write!(ctx, "* {seq_or_uid} FETCH (")?;
+            Data::Fetch { seq, attributes } => {
+                write!(ctx, "* {seq} FETCH (")?;
                 join_serializable(attributes.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
@@ -1864,7 +1861,7 @@ mod tests {
         kat_encoder(&[
             (
                 Response::Data(Data::Fetch {
-                    seq_or_uid: NonZeroU32::new(12345).unwrap(),
+                    seq: NonZeroU32::new(12345).unwrap(),
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,
@@ -1893,7 +1890,7 @@ mod tests {
             #[cfg(feature = "ext_literal")]
             (
                 Response::Data(Data::Fetch {
-                    seq_or_uid: NonZeroU32::new(12345).unwrap(),
+                    seq: NonZeroU32::new(12345).unwrap(),
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,

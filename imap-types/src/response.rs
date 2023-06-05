@@ -509,7 +509,7 @@ pub enum Data<'a> {
     /// flag updates).
     Fetch {
         /// Message SEQ or UID
-        seq_or_uid: NonZeroU32,
+        seq: NonZeroU32,
         /// Message data
         attributes: NonEmptyVec<FetchAttributeValue<'a>>,
     },
@@ -569,17 +569,17 @@ impl<'a> Data<'a> {
     //     unimplemented!()
     // }
 
-    pub fn expunge(seq_or_uid: u32) -> Result<Self, TryFromIntError> {
-        Ok(Self::Expunge(NonZeroU32::try_from(seq_or_uid)?))
+    pub fn expunge(seq: u32) -> Result<Self, TryFromIntError> {
+        Ok(Self::Expunge(NonZeroU32::try_from(seq)?))
     }
 
-    pub fn fetch<I, A>(seq_or_uid: I, attributes: A) -> Result<Self, FetchError<I::Error, A::Error>>
+    pub fn fetch<I, A>(seq: I, attributes: A) -> Result<Self, FetchError<I::Error, A::Error>>
     where
         I: TryInto<NonZeroU32>,
         A: TryInto<NonEmptyVec<FetchAttributeValue<'a>>>,
     {
         Ok(Self::Fetch {
-            seq_or_uid: seq_or_uid.try_into().map_err(FetchError::SeqOrUid)?,
+            seq: seq.try_into().map_err(FetchError::SeqOrUid)?,
             attributes: attributes.try_into().map_err(FetchError::Attributes)?,
         })
     }

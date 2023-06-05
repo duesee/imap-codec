@@ -69,7 +69,7 @@
 //!
 //! let fetch = {
 //!     let data = Data::Fetch {
-//!         seq_or_uid: NonZeroU32::new(42).unwrap(),
+//!         seq: NonZeroU32::new(42).unwrap(),
 //!         attributes: NonEmptyVec::try_from(vec![
 //!             FetchAttributeValue::Rfc822Size(1337),
 //!             FetchAttributeValue::Body(BodyStructure::Single {

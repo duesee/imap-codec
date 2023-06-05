@@ -130,7 +130,7 @@ mod tests {
                 b"* 1 FETCH (RFC822 {5}\r\nhello)\r\n",
                 b"",
                 Response::Data(Data::Fetch {
-                    seq_or_uid: NonZeroU32::new(1).unwrap(),
+                    seq: NonZeroU32::new(1).unwrap(),
                     attributes: NonEmptyVec::from(FetchAttributeValue::Rfc822(NString(Some(
                         IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
                     )))),
