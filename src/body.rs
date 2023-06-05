@@ -639,7 +639,7 @@ mod tests {
             b"* 3372220415 FETCH (BODYSTRUCTURE ((((((({0}\r\n {0}\r\n NIL NIL NIL {0}\r\n 0 \"FOO\" NIL NIL \"LOCATION\" 1337) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n".as_ref(),
             b"".as_ref(),
             Response::Data(Data::Fetch {
-                seq_or_uid: NonZeroU32::try_from(3372220415).unwrap(),
+                seq: NonZeroU32::try_from(3372220415).unwrap(),
                 attributes: NonEmptyVec::from(FetchAttributeValue::BodyStructure(
                     BodyStructure::Multi {
                         bodies: NonEmptyVec::from(BodyStructure::Multi {
