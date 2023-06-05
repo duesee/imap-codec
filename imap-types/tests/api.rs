@@ -4,6 +4,7 @@ use imap_types::{
     command::{Command, CommandBody, LoginError},
     core::{Atom, AtomExt},
     response::Data,
+    sequence::{SeqOrUid, Sequence, SequenceSet, MAX, MIN},
 };
 
 #[test]
@@ -66,4 +67,110 @@ fn test_construction_of_command() {
     for test in tests.into_iter() {
         println!("{test:?} // {test}");
     }
+}
+
+#[test]
+fn test_construction_of_sequence_etc() {
+    // # From
+    // ## SequenceSet
+    let _ = SequenceSet::from(MIN);
+    let _ = SequenceSet::from(MAX);
+    let _ = SequenceSet::from(..);
+    let _ = SequenceSet::from(MIN..);
+    let _ = SequenceSet::try_from(MIN..MAX).unwrap();
+    let _ = SequenceSet::from(MIN..=MAX);
+    let _ = SequenceSet::try_from(..MAX).unwrap();
+    let _ = SequenceSet::from(MIN..=MAX);
+    // ## Sequence
+    let _ = Sequence::from(MIN);
+    let _ = Sequence::from(MAX);
+    let _ = Sequence::from(..);
+    let _ = Sequence::from(MIN..);
+    let _ = Sequence::try_from(MIN..MAX).unwrap();
+    let _ = Sequence::from(MIN..=MAX);
+    let _ = Sequence::try_from(..MAX).unwrap();
+    let _ = Sequence::from(MIN..=MAX);
+    // ## SeqOrUid
+    let _ = SeqOrUid::from(MIN);
+    let _ = SeqOrUid::from(MAX);
+
+    macro_rules! try_from {
+        ($min:literal, $max:literal) => {
+            let _ = SequenceSet::try_from($min).unwrap();
+            let _ = SequenceSet::try_from($max).unwrap();
+            let _ = SequenceSet::try_from(..).unwrap();
+            let _ = SequenceSet::try_from($min..).unwrap();
+            let _ = SequenceSet::try_from($min..$max).unwrap();
+            let _ = SequenceSet::try_from(..$max).unwrap();
+            let _ = SequenceSet::try_from($min..$max).unwrap();
+
+            let _ = Sequence::try_from($min).unwrap();
+            let _ = Sequence::try_from($max).unwrap();
+            let _ = Sequence::try_from(..).unwrap();
+            let _ = Sequence::try_from($min..).unwrap();
+            let _ = Sequence::try_from($min..$max).unwrap();
+            let _ = Sequence::try_from(..$max).unwrap();
+            let _ = Sequence::try_from($min..$max).unwrap();
+
+            let _ = SeqOrUid::try_from($min).unwrap();
+            let _ = SeqOrUid::try_from($max).unwrap();
+        };
+    }
+
+    try_from!(1i8, 127i8);
+    try_from!(1i16, 32_767i16);
+    try_from!(1i32, 2_147_483_647i32);
+    try_from!(1i64, 2_147_483_647i64);
+    try_from!(1isize, 2_147_483_647isize);
+    try_from!(1u8, 255u8);
+    try_from!(1u16, 65_535u16);
+    try_from!(1u32, 4_294_967_295u32);
+    try_from!(1u64, 4_294_967_295u64);
+    try_from!(1usize, 4_294_967_295usize);
+
+    macro_rules! try_from_fail_zero {
+        ($min:literal, $max:literal) => {
+            let _ = SequenceSet::try_from($min).unwrap_err();
+            let _ = SequenceSet::try_from($min..).unwrap_err();
+            let _ = SequenceSet::try_from($min..$max).unwrap_err();
+            let _ = SequenceSet::try_from($min..$max).unwrap_err();
+
+            let _ = Sequence::try_from($min).unwrap_err();
+            let _ = Sequence::try_from($min..).unwrap_err();
+            let _ = Sequence::try_from($min..$max).unwrap_err();
+            let _ = Sequence::try_from($min..$max).unwrap_err();
+
+            let _ = SeqOrUid::try_from($min).unwrap_err();
+        };
+    }
+
+    try_from_fail_zero!(0i8, 127i8);
+    try_from_fail_zero!(0i16, 32_767i16);
+    try_from_fail_zero!(0i32, 2_147_483_647i32);
+    try_from_fail_zero!(0i64, 2_147_483_647i64);
+    try_from_fail_zero!(0isize, 2_147_483_647isize);
+    try_from_fail_zero!(0u8, 255u8);
+    try_from_fail_zero!(0u16, 65_535u16);
+    try_from_fail_zero!(0u32, 4_294_967_295u32);
+    try_from_fail_zero!(0u64, 4_294_967_295u64);
+    try_from_fail_zero!(0usize, 4_294_967_295usize);
+
+    macro_rules! try_from_fail_max {
+        ($min:literal, $max:literal) => {
+            let _ = SequenceSet::try_from($max).unwrap_err();
+            let _ = SequenceSet::try_from($min..$max).unwrap_err();
+            let _ = SequenceSet::try_from(..$max).unwrap_err();
+            let _ = SequenceSet::try_from($min..$max).unwrap_err();
+
+            let _ = Sequence::try_from($max).unwrap_err();
+            let _ = Sequence::try_from($min..$max).unwrap_err();
+            let _ = Sequence::try_from(..$max).unwrap_err();
+            let _ = Sequence::try_from($min..$max).unwrap_err();
+
+            let _ = SeqOrUid::try_from($max).unwrap_err();
+        };
+    }
+
+    try_from_fail_max!(1i64, 9_223_372_036_854_775_807i64);
+    try_from_fail_max!(1u64, 18_446_744_073_709_551_615u64);
 }
