@@ -101,26 +101,26 @@ impl Decoder for ImapServerCodec {
                                     }
                                 },
                                 // Literal found.
-                                Ok(Some(needed)) => {
-                                    if self.max_literal_size < needed as usize {
+                                Ok(Some(length)) => {
+                                    if self.max_literal_size < length as usize {
                                         src.advance(*to_consume_acc);
                                         self.state =
                                             LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                                         return Ok(Some(OutcomeServer::ActionRequired(
-                                            Action::SendLiteralReject(needed),
+                                            Action::SendLiteralReject(length),
                                         )));
                                     }
 
-                                    src.reserve(needed as usize);
+                                    src.reserve(length as usize);
 
                                     self.state = LiteralFramingState::ReadLiteral {
                                         to_consume_acc: *to_consume_acc,
-                                        needed,
+                                        length,
                                     };
 
                                     return Ok(Some(OutcomeServer::ActionRequired(
-                                        Action::SendLiteralAck(needed),
+                                        Action::SendLiteralAck(length),
                                     )));
                                 }
                                 // Error processing literal.
@@ -148,11 +148,11 @@ impl Decoder for ImapServerCodec {
                 }
                 LiteralFramingState::ReadLiteral {
                     to_consume_acc,
-                    needed,
+                    length,
                 } => {
-                    if to_consume_acc + needed as usize <= src.len() {
+                    if to_consume_acc + length as usize <= src.len() {
                         self.state = LiteralFramingState::ReadLine {
-                            to_consume_acc: to_consume_acc + needed as usize,
+                            to_consume_acc: to_consume_acc + length as usize,
                         }
                     } else {
                         return Ok(None);

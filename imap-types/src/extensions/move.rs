@@ -24,8 +24,8 @@ impl<'a> CommandBody<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum MoveError<S, M> {
-    #[error("Invalid sequence: {0:?}")]
+    #[error("Invalid sequence: {0}")]
     Sequence(S),
-    #[error("Invalid mailbox: {0:?}")]
+    #[error("Invalid mailbox: {0}")]
     Mailbox(M),
 }
