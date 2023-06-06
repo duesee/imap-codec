@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 pub mod client;
 pub mod server;
 
@@ -11,18 +13,22 @@ enum LiteralFramingState {
     ReadLine { to_consume_acc: usize },
     /// ... is reading a sequence of octets
     /// with a known count followed by a line.
-    ReadLiteral { to_consume_acc: usize, needed: u32 },
+    ReadLiteral { to_consume_acc: usize, length: u32 },
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum LineError {
+    #[error("Expected `\r\n`, got only `\n`")]
     NotCrLf,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum LiteralError {
-    TooLarge(u32),
+    #[error("Expected a maximum literal length of {max_length}, got {length}")]
+    TooLarge { max_length: u32, length: u32 },
+    #[error("Could not parse literal length")]
     BadNumber,
+    #[error("Could not find literal length")]
     NoOpeningBrace,
 }
 

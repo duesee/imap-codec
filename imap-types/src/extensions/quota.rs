@@ -255,7 +255,7 @@ impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
 pub enum ResourceOtherError {
     #[error(transparent)]
     Atom(#[from] AtomError),
-    #[error("Reserved. Please use one of the typed variants.")]
+    #[error("Reserved: Please use one of the typed variants")]
     Reserved,
 }
 
@@ -300,24 +300,24 @@ impl<'a> QuotaSet<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum QuotaError<R, Q> {
-    #[error("Invalid root: {0:?}")]
+    #[error("Invalid root: {0}")]
     Root(R),
-    #[error("Invalid quotas: {0:?}")]
+    #[error("Invalid quotas: {0}")]
     Quotas(Q),
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum QuotaRootError<M, R> {
-    #[error("Invalid root: {0:?}")]
+    #[error("Invalid mailbox: {0}")]
     Mailbox(M),
-    #[error("Invalid quotas: {0:?}")]
+    #[error("Invalid roots: {0}")]
     Roots(R),
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum SetQuotaError<R, S> {
-    #[error("Invalid root: {0:?}")]
+    #[error("Invalid root: {0}")]
     Root(R),
-    #[error("Invalid quota set: {0:?}")]
+    #[error("Invalid quota set: {0}")]
     QuotaSet(S),
 }

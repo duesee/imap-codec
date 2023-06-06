@@ -43,6 +43,7 @@ chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { path = "imap-types", default-features = false, features = ["unchecked"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
+thiserror = "1.0.29"
 tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
 
 [dev-dependencies]

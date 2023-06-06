@@ -85,7 +85,7 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum CapabilityEnableOtherError {
-    #[error("Please use one of the supported variants.")]
+    #[error("Reserved: Please use one of the typed variants")]
     Reserved,
 }
 

@@ -108,7 +108,7 @@ impl<'a> AsRef<str> for AuthMechanismOther<'a> {
 pub enum AuthMechanismOtherError {
     #[error(transparent)]
     Atom(#[from] AtomError),
-    #[error("Reserved. Please use one of the typed variants.")]
+    #[error("Reserved: Please use one of the typed variants")]
     Reserved,
 }
 
