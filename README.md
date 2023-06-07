@@ -12,13 +12,11 @@ Please see the [documentation] for more information.
 
 ## Features
 
-* Rust's type system is used to enforce correctness and make the library misuse-resistant.
-It should not be possible to construct messages that violate the IMAP specification.
-* Every parser works in streaming mode, i.e., all parsers will return `Incomplete` when there is insufficient data to make a final decision. 
-No command or response will ever be truncated.
-* Parsing is zero-copy by default but all types can easily be converted into owned variants when needed.
-* Fuzzing (via [cargo fuzz]) and property-based tests are used to uncover parsing and serialization bugs.
-For example, the library is fuzz-tested never to produce a message it can not parse itself.
+* Correctness and misuse-resistance are enforced on the type level. It's not possible to construct a message that violates the IMAP specification.
+* Messages automatically use the most efficient representation. For example, atoms are preferred over quoted strings, and quoted strings are preferred over literals. It's equally easy to manually choose a representation.
+* Parsing works in streaming mode. `Incomplete` is returned when there is insufficient data to make a final decision. No message will be truncated.
+* Parsing is zero-copy by default. Allocation is avoided during parsing, but all messages can explicitly be converted into more flexible owned variants.
+* Fuzzing and property-based tests exercise the library. The library is fuzz-tested never to produce a message it can't parse itself.
 
 ## Usage
 
