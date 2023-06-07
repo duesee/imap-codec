@@ -45,6 +45,7 @@ impl<'a> Data<'a> {
 pub enum CapabilityEnable<'a> {
     Utf8(Utf8Kind),
     #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     CondStore,
     Other(CapabilityEnableOther<'a>),
 }

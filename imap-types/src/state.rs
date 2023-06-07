@@ -91,9 +91,11 @@ pub enum State<'a> {
     Logout,
 
     #[cfg(feature = "ext_idle")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     IdleAuthenticated(Tag<'a>),
 
     #[cfg(feature = "ext_idle")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     IdleSelected(Tag<'a>, Mailbox<'a>),
 }
 

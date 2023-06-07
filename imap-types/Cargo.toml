@@ -44,3 +44,7 @@ thiserror = "1.0.29"
 [dev-dependencies]
 criterion = "0.4"
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

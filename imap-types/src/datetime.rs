@@ -13,6 +13,7 @@ pub struct DateTime(chrono::DateTime<FixedOffset>);
 
 impl DateTime {
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked(value: chrono::DateTime<FixedOffset>) -> Self {
         Self(value)
     }
@@ -89,6 +90,7 @@ pub struct NaiveDate(chrono::NaiveDate);
 
 impl NaiveDate {
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked(value: chrono::NaiveDate) -> Self {
         Self(value)
     }

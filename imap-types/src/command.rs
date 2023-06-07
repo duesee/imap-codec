@@ -156,6 +156,7 @@ pub enum CommandBody<'a> {
     /// STARTTLS.  The server MAY advertise different capabilities after
     /// STARTTLS.
     #[cfg(feature = "starttls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTLS,
 
     /// ### 6.2.2.  AUTHENTICATE Command
@@ -251,6 +252,7 @@ pub enum CommandBody<'a> {
         mechanism: AuthMechanism<'a>,
         /// Already base64-decoded
         #[cfg(feature = "ext_sasl_ir")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
         initial_response: Option<Secret<Cow<'a, [u8]>>>,
     },
 
@@ -374,6 +376,7 @@ pub enum CommandBody<'a> {
     Select { mailbox: Mailbox<'a> },
 
     #[cfg(feature = "ext_unselect")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_unselect")))]
     Unselect,
 
     /// 6.3.2.  EXAMINE Command
@@ -1175,14 +1178,17 @@ pub enum CommandBody<'a> {
     // by issuing the associated experimental command.
     //X,
     #[cfg(feature = "ext_idle")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     Idle,
 
     #[cfg(feature = "ext_enable")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enable {
         capabilities: NonEmptyVec<CapabilityEnable<'a>>,
     },
 
     #[cfg(feature = "ext_compress")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     Compress { algorithm: CompressionAlgorithm },
 
     /// Takes the name of a quota root and returns the quota root's resource usage and limits in an untagged QUOTA response.
@@ -1208,6 +1214,7 @@ pub enum CommandBody<'a> {
     /// S: G0001 OK Getquota complete
     /// ```
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     GetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1242,6 +1249,7 @@ pub enum CommandBody<'a> {
     /// S: G0002 OK Getquotaroot complete
     /// ```
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     GetQuotaRoot {
         /// Name of mailbox.
         mailbox: Mailbox<'a>,
@@ -1286,6 +1294,7 @@ pub enum CommandBody<'a> {
     /// S: S0002 NO Cannot change system limit
     /// ```
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     SetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1294,6 +1303,7 @@ pub enum CommandBody<'a> {
     },
 
     #[cfg(feature = "ext_move")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move {
         sequence_set: SequenceSet,
         mailbox: Mailbox<'a>,
@@ -1315,11 +1325,13 @@ impl<'a> CommandBody<'a> {
     // ----- Constructors -----
 
     #[cfg(not(feature = "ext_sasl_ir"))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     pub fn authenticate(mechanism: AuthMechanism<'a>) -> Self {
         CommandBody::Authenticate { mechanism }
     }
 
     #[cfg(feature = "ext_sasl_ir")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     pub fn authenticate(mechanism: AuthMechanism<'a>, initial_response: Option<&'a [u8]>) -> Self {
         CommandBody::Authenticate {
             mechanism,

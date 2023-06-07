@@ -515,11 +515,13 @@ pub enum Data<'a> {
     },
 
     #[cfg(feature = "ext_enable")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enabled {
         capabilities: Vec<CapabilityEnable<'a>>,
     },
 
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Quota {
         /// Quota root.
         root: AString<'a>,
@@ -528,6 +530,7 @@ pub enum Data<'a> {
     },
 
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaRoot {
         /// Mailbox name.
         mailbox: Mailbox<'a>,
@@ -779,18 +782,25 @@ pub enum Code<'a> {
     /// IMAP4 Login Referrals (RFC 2221)
     // TODO(misuse): the imap url is more complicated than that...
     #[cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals")))
+    )]
     Referral(Cow<'a, str>),
 
     #[cfg(feature = "ext_compress")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     CompressionActive,
 
     /// SHOULD be returned in the tagged NO response to an APPEND/COPY/MOVE when the addition of the
     /// message(s) puts the target mailbox over any one of its quota limits.
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     OverQuota,
 
     /// Server got a non-synchronizing literal larger than 4096 bytes.
     #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     TooBig,
 
     /// Additional response codes defined by particular client or server
@@ -845,6 +855,7 @@ pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 impl<'a> CodeOther<'a> {
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<D: 'a>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
@@ -865,41 +876,54 @@ pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
     #[cfg(feature = "starttls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     LoginDisabled,
     #[cfg(feature = "starttls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTls,
     #[cfg(feature = "ext_idle")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     /// See RFC 2177.
     Idle,
     /// See RFC 2193.
     #[cfg(feature = "ext_mailbox_referrals")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_mailbox_referrals")))]
     MailboxReferrals,
     /// See RFC 2221.
     #[cfg(feature = "ext_login_referrals")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_login_referrals")))]
     LoginReferrals,
     #[cfg(feature = "ext_sasl_ir")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     SaslIr,
     /// See RFC 5161.
     #[cfg(feature = "ext_enable")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enable,
     #[cfg(feature = "ext_compress")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     Compress {
         algorithm: CompressionAlgorithm,
     },
     /// See RFC 2087 and RFC 9208
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Quota,
     /// See RFC 9208.
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaRes(Resource<'a>),
     /// See RFC 9208.
     #[cfg(feature = "ext_quota")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaSet,
     /// See RFC 7888.
     #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     Literal(LiteralCapability),
     /// See RFC 6851.
     #[cfg(feature = "ext_move")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
@@ -1008,6 +1032,7 @@ pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
 
 impl<'a> CapabilityOther<'a> {
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,

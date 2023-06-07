@@ -356,6 +356,7 @@ pub fn authenticate(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 ///                CRLF is parsed by upper command parser.
 /// ```
 #[cfg(feature = "ext_sasl_ir")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
 #[allow(clippy::type_complexity)]
 pub fn authenticate_sasl_ir(
     input: &[u8],

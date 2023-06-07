@@ -85,6 +85,7 @@ impl<'a> Atom<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -199,6 +200,7 @@ impl<'a> AtomExt<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -388,7 +390,6 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
     pub(crate) data: Cow<'a, [u8]>,
-    #[cfg(feature = "ext_literal")]
     /// Specifies whether this is a synchronizing or non-synchronizing literal.
     ///
     /// `true` (default) denotes a synchronizing literal, e.g., `{3}\r\nfoo`.
@@ -396,6 +397,8 @@ pub struct Literal<'a> {
     ///
     /// Note: In the special case that a server advertised a `LITERAL-` capability, AND the literal
     /// has more than 4096 bytes a non-synchronizing literal must still be treated as synchronizing.
+    #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub sync: bool,
 }
 
@@ -418,12 +421,14 @@ impl<'a> Literal<'a> {
     }
 
     #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub fn into_sync(mut self) -> Self {
         self.sync = true;
         self
     }
 
     #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub fn into_non_sync(mut self) -> Self {
         self.sync = false;
         self
@@ -441,6 +446,7 @@ impl<'a> Literal<'a> {
     /// Call this function only when you are sure that the byte sequence
     /// is a valid literal, i.e., that it does not contain 0x00.
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
@@ -566,6 +572,7 @@ impl<'a> Quoted<'a> {
     /// Call this function only when you are sure that the str
     /// is a valid quoted.
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -836,6 +843,7 @@ impl<'a> Tag<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -937,6 +945,7 @@ impl<'a> Text<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -1023,6 +1032,7 @@ impl QuotedChar {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked(inner: char) -> Self {
         #[cfg(debug_assertions)]
         Self::verify(inner).unwrap();
@@ -1143,6 +1153,7 @@ impl<T> NonEmptyVec<T> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
         Self::verify(&inner).unwrap();

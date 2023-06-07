@@ -37,6 +37,7 @@ impl<'a> ListCharString<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
