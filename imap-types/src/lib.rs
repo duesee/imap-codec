@@ -100,6 +100,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
@@ -118,6 +119,7 @@ pub mod envelope;
     feature = "ext_quota",
     feature = "ext_unselect",
 ))]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
 pub mod extensions;
 pub mod fetch;
 pub mod flag;

@@ -41,6 +41,7 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
 ///
 /// Defined in RFC 9051
 #[cfg(feature = "ext_quota")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
 pub fn number64(input: &[u8]) -> IResult<&[u8], u64> {
     map_res(
         // # Safety

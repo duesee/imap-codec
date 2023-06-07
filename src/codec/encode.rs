@@ -106,6 +106,7 @@ pub enum Fragment {
     Literal {
         data: Vec<u8>,
         #[cfg(feature = "ext_literal")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
         sync: bool,
     },
 }

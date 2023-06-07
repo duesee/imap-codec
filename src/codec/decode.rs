@@ -67,6 +67,7 @@ impl<'a> Decode<'a> for AuthenticateData {
 }
 
 #[cfg(feature = "ext_idle")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 impl<'a> Decode<'a> for IdleDone {
     fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
         match idle_done(input) {

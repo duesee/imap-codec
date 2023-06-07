@@ -159,6 +159,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod auth;
 pub mod body;
@@ -177,6 +178,7 @@ pub mod envelope;
     feature = "ext_quota",
     feature = "ext_unselect",
 ))]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
 pub mod extensions;
 pub mod fetch;
 pub mod flag;
@@ -189,5 +191,6 @@ pub mod status;
 #[cfg(test)]
 mod testing;
 #[cfg(any(feature = "tokio"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 pub mod tokio;
 pub use imap_types::{secret, state, utils};

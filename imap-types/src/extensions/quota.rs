@@ -212,6 +212,7 @@ impl<'a> ResourceOther<'a> {
     }
 
     #[cfg(feature = "unchecked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
     pub fn unchecked<C>(value: C) -> Self
     where
         C: Into<Cow<'a, str>>,
