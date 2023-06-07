@@ -158,9 +158,9 @@ impl<'a> AsRef<str> for Atom<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum AtomError {
-    #[error("Must not be empty.")]
+    #[error("Must not be empty")]
     Empty,
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -270,7 +270,7 @@ impl<'a> AsRef<str> for AtomExt<'a> {
 pub enum AtomExtError {
     #[error("Must not be empty.")]
     Empty,
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -522,7 +522,7 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum LiteralError {
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -623,7 +623,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum QuotedError {
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -901,7 +901,7 @@ impl<'a> AsRef<str> for Tag<'a> {
 pub enum TagError {
     #[error("Must not be empty.")]
     Empty,
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -996,7 +996,7 @@ impl<'a> TryFrom<String> for Text<'a> {
 pub enum TextError {
     #[error("Must not be empty.")]
     Empty,
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 

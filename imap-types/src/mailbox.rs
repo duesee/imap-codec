@@ -74,7 +74,7 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
 pub enum ListCharStringError {
     #[error("Must not be empty.")]
     Empty,
-    #[error("Byte \\x{found:02x} at index {position} is not allowed.")]
+    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
     ByteNotAllowed { found: u8, position: usize },
 }
 
@@ -253,7 +253,7 @@ impl<'a> AsRef<[u8]> for MailboxOther<'a> {
 pub enum MailboxOtherError {
     #[error(transparent)]
     Literal(#[from] LiteralError),
-    #[error("Reserved. Please use one of the typed variants.")]
+    #[error("Reserved: Please use one of the typed variants")]
     Reserved,
 }
 

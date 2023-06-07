@@ -1,7 +1,8 @@
-use std::io::{Error, Write};
+use std::io::{Error as IoError, Write};
 
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
+use thiserror::Error;
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
@@ -16,24 +17,28 @@ use crate::{
 pub struct ImapClientCodec {
     state: LiteralFramingState,
     imap_state: ImapState<'static>,
-    max_literal_size: usize,
+    max_literal_length: u32,
 }
 
 impl ImapClientCodec {
-    pub fn new(max_literal_size: usize) -> Self {
+    pub fn new(max_literal_length: u32) -> Self {
         Self {
             state: LiteralFramingState::ReadLine { to_consume_acc: 0 },
             imap_state: ImapState::Greeting,
-            max_literal_size,
+            max_literal_length,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ImapClientCodecError {
-    Io(Error),
-    Line(LineError),
-    Literal(LiteralError),
+    #[error(transparent)]
+    Io(#[from] IoError),
+    #[error(transparent)]
+    Line(#[from] LineError),
+    #[error(transparent)]
+    Literal(#[from] LiteralError),
+    #[error("Parsing failed")]
     ResponseParsingFailed,
 }
 
@@ -49,21 +54,14 @@ impl PartialEq for ImapClientCodecError {
     }
 }
 
-impl From<Error> for ImapClientCodecError {
-    fn from(error: Error) -> Self {
-        Self::Io(error)
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
-pub enum OutcomeClient {
+pub enum Event {
     Greeting(Greeting<'static>),
     Response(Response<'static>),
-    // More might be require.
 }
 
 impl Decoder for ImapClientCodec {
-    type Item = OutcomeClient;
+    type Item = Event;
     type Error = ImapClientCodecError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -82,12 +80,12 @@ impl Decoder for ImapClientCodec {
                                     let parser = match self.imap_state {
                                         ImapState::Greeting => |input| {
                                             Greeting::decode(input).map(|(rem, grt)| {
-                                                (rem, OutcomeClient::Greeting(grt.into_static()))
+                                                (rem, Event::Greeting(grt.into_static()))
                                             })
                                         },
                                         _ => |input| {
                                             Response::decode(input).map(|(rem, rsp)| {
-                                                (rem, OutcomeClient::Response(rsp.into_static()))
+                                                (rem, Event::Response(rsp.into_static()))
                                             })
                                         },
                                     };
@@ -117,23 +115,26 @@ impl Decoder for ImapClientCodec {
                                     }
                                 }
                                 // Literal found.
-                                Ok(Some(needed)) => {
-                                    if self.max_literal_size < needed as usize {
+                                Ok(Some(length)) => {
+                                    if self.max_literal_length < length {
                                         src.advance(*to_consume_acc);
                                         self.state =
                                             LiteralFramingState::ReadLine { to_consume_acc: 0 };
 
                                         // TODO: What should the client do?
                                         return Err(ImapClientCodecError::Literal(
-                                            LiteralError::TooLarge(needed),
+                                            LiteralError::TooLarge {
+                                                max_length: self.max_literal_length,
+                                                length,
+                                            },
                                         ));
                                     }
 
-                                    src.reserve(needed as usize);
+                                    src.reserve(length as usize);
 
                                     self.state = LiteralFramingState::ReadLiteral {
                                         to_consume_acc: *to_consume_acc,
-                                        needed,
+                                        length,
                                     };
                                 }
                                 // Error processing literal.
@@ -161,11 +162,11 @@ impl Decoder for ImapClientCodec {
                 }
                 LiteralFramingState::ReadLiteral {
                     to_consume_acc,
-                    needed,
+                    length,
                 } => {
-                    if to_consume_acc + needed as usize <= src.len() {
+                    if to_consume_acc + length as usize <= src.len() {
                         self.state = LiteralFramingState::ReadLine {
-                            to_consume_acc: to_consume_acc + needed as usize,
+                            to_consume_acc: to_consume_acc + length as usize,
                         }
                     } else {
                         return Ok(None);
@@ -177,9 +178,9 @@ impl Decoder for ImapClientCodec {
 }
 
 impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
-    type Error = Error;
+    type Error = IoError;
 
-    fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), Error> {
+    fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), Self::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         // TODO(225): Don't use `dump` here.
@@ -210,7 +211,7 @@ mod tests {
             (b"OK ...\r", Ok(None)),
             (
                 b"\n",
-                Ok(Some(OutcomeClient::Greeting(
+                Ok(Some(Event::Greeting(
                     Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
                 ))),
             ),
@@ -237,7 +238,7 @@ mod tests {
         let tests = [
             (
                 b"* OK ...\r\n".as_ref(),
-                Ok(Some(OutcomeClient::Greeting(
+                Ok(Some(Event::Greeting(
                     Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
                 ))),
             ),
@@ -249,7 +250,7 @@ mod tests {
             (b"\r", Ok(None)),
             (
                 b"\n",
-                Ok(Some(OutcomeClient::Response(Response::Data(
+                Ok(Some(Event::Response(Response::Data(
                     Data::fetch(
                         12,
                         vec![FetchAttributeValue::BodyExt {
@@ -282,7 +283,7 @@ mod tests {
             // We still need to process the greeting first.
             (
                 b"* OK ...\r\n".as_ref(),
-                Ok(Some(OutcomeClient::Greeting(
+                Ok(Some(Event::Greeting(
                     Greeting::new(GreetingKind::Ok, None, "...").unwrap(),
                 ))),
             ),
@@ -296,7 +297,10 @@ mod tests {
             ),
             (
                 b"* 1 fetch (BODY[] {17}\r\naaaaaaaaaaaaaaaa)\r\n",
-                Err(ImapClientCodecError::Literal(LiteralError::TooLarge(17))),
+                Err(ImapClientCodecError::Literal(LiteralError::TooLarge {
+                    max_length: 16,
+                    length: 17,
+                })),
             ),
         ];
 
