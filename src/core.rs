@@ -152,7 +152,7 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
 pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     #[cfg(not(feature = "ext_literal"))]
-    let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
+    let (remaining, length) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
 
     #[cfg(feature = "ext_literal")]
     let (remaining, (length, plus)) = terminated(
@@ -160,13 +160,8 @@ pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
         crlf,
     )(input)?;
 
-    // TODO(#40)
-    // Signal that an continuation request *could be* required.
-    // There are some issues with this ...
-    //   * The return type is ad-hoc and does not tell *how* many bytes are about to be send
-    //   * It doesn't capture the case when there is something in the buffer already.
-    //     This is basically good for us, but there could be issues with servers violating the
-    //     IMAP protocol and sending data right away.
+    // Signal that an continuation request could be required.
+    // Note: This doesn't trigger when there is data following the literal prefix.
     if remaining.is_empty() {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
