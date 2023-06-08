@@ -1,6 +1,6 @@
 use abnf_core::{
-    is_digit as is_DIGIT,
-    streaming::{dquote as DQUOTE, sp as SP},
+    is_digit,
+    streaming::{dquote, sp},
 };
 use chrono::{
     FixedOffset, LocalResult, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone,
@@ -21,7 +21,7 @@ use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
 /// date = date-text / DQUOTE date-text DQUOTE
 /// ```
 pub fn date(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
-    alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
+    alt((date_text, delimited(dquote, date_text, dquote)))(input)
 }
 
 /// ```abnf
@@ -101,19 +101,19 @@ pub fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
 /// ```
 pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
     let mut parser = delimited(
-        DQUOTE,
+        dquote,
         tuple((
             date_day_fixed,
             tag(b"-"),
             date_month,
             tag(b"-"),
             date_year,
-            SP,
+            sp,
             time,
-            SP,
+            sp,
             zone,
         )),
-        DQUOTE,
+        dquote,
     );
 
     let (remaining, (d, _, m, _, y, _, time, _, zone)) = parser(input)?;
@@ -148,7 +148,7 @@ pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
 pub fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
     alt((
         map(
-            preceded(SP, take_while_m_n(1, 1, is_DIGIT)),
+            preceded(sp, take_while_m_n(1, 1, is_digit)),
             |bytes: &[u8]| bytes[0] - b'0',
         ),
         digit_2,
@@ -182,7 +182,7 @@ pub fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
 
 fn digit_1_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
     map_res(
-        map(take_while_m_n(1, 2, is_DIGIT), |bytes| {
+        map(take_while_m_n(1, 2, is_digit), |bytes| {
             // # Safety
             //
             // `bytes` is always UTF-8.
@@ -194,7 +194,7 @@ fn digit_1_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
 
 fn digit_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
     map_res(
-        map(take_while_m_n(2, 2, is_DIGIT), |bytes| {
+        map(take_while_m_n(2, 2, is_digit), |bytes| {
             // # Safety
             //
             // `bytes` is always UTF-8.
@@ -206,7 +206,7 @@ fn digit_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
 
 fn digit_4(input: &[u8]) -> IMAPResult<&[u8], u16> {
     map_res(
-        map(take_while_m_n(4, 4, is_DIGIT), |bytes| {
+        map(take_while_m_n(4, 4, is_digit), |bytes| {
             // # Safety
             //
             // `bytes` is always UTF-8.

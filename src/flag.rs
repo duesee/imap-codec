@@ -1,4 +1,4 @@
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::flag::*;
 use nom::{
@@ -53,7 +53,7 @@ pub fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
 
 /// `flag-list = "(" [flag *(SP flag)] ")"`
 pub fn flag_list(input: &[u8]) -> IMAPResult<&[u8], Vec<Flag>> {
-    delimited(tag(b"("), separated_list0(SP, flag), tag(b")"))(input)
+    delimited(tag(b"("), separated_list0(sp, flag), tag(b")"))(input)
 }
 
 /// `flag-fetch = flag / "\Recent"`
@@ -84,7 +84,7 @@ pub fn flag_perm(input: &[u8]) -> IMAPResult<&[u8], FlagPerm> {
 ///             We could parse any flag and check for multiple occurrences of sflag later.
 pub fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) =
-        separated_list1(SP, map(preceded(char('\\'), atom), FlagNameAttribute::from))(input)?;
+        separated_list1(sp, map(preceded(char('\\'), atom), FlagNameAttribute::from))(input)?;
 
     // TODO(#155): Do we really want to enforce this?
     // let sflag_count = flags

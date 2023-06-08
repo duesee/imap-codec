@@ -1,4 +1,4 @@
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::search::*;
 use nom::{
@@ -27,10 +27,10 @@ pub fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"SEARCH"),
         opt(map(
-            tuple((SP, tag_no_case(b"CHARSET"), SP, charset)),
+            tuple((sp, tag_no_case(b"CHARSET"), sp, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(SP, search_key(9))),
+        many1(preceded(sp, search_key(9))),
     ));
 
     let (remaining, (_, charset, mut criteria)) = parser(input)?;
@@ -114,51 +114,51 @@ fn search_key_limited<'a>(
         alt((
             value(SearchKey::All, tag_no_case(b"ALL")),
             value(SearchKey::Answered, tag_no_case(b"ANSWERED")),
-            map(tuple((tag_no_case(b"BCC"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"BCC"), sp, astring)), |(_, _, val)| {
                 SearchKey::Bcc(val)
             }),
             map(
-                tuple((tag_no_case(b"BEFORE"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"BEFORE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::Before(date),
             ),
-            map(tuple((tag_no_case(b"BODY"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"BODY"), sp, astring)), |(_, _, val)| {
                 SearchKey::Body(val)
             }),
-            map(tuple((tag_no_case(b"CC"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"CC"), sp, astring)), |(_, _, val)| {
                 SearchKey::Cc(val)
             }),
             value(SearchKey::Deleted, tag_no_case(b"DELETED")),
             value(SearchKey::Flagged, tag_no_case(b"FLAGGED")),
-            map(tuple((tag_no_case(b"FROM"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"FROM"), sp, astring)), |(_, _, val)| {
                 SearchKey::From(val)
             }),
             map(
                 // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
-                tuple((tag_no_case(b"KEYWORD"), SP, atom)),
+                tuple((tag_no_case(b"KEYWORD"), sp, atom)),
                 |(_, _, val)| SearchKey::Keyword(val),
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
             value(SearchKey::Old, tag_no_case(b"OLD")),
             map(
-                tuple((tag_no_case(b"ON"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"ON"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::On(date),
             ),
             value(SearchKey::Recent, tag_no_case(b"RECENT")),
             value(SearchKey::Seen, tag_no_case(b"SEEN")),
             map(
-                tuple((tag_no_case(b"SINCE"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SINCE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::Since(date),
             ),
             map(
-                tuple((tag_no_case(b"SUBJECT"), SP, astring)),
+                tuple((tag_no_case(b"SUBJECT"), sp, astring)),
                 |(_, _, val)| SearchKey::Subject(val),
             ),
-            map(tuple((tag_no_case(b"TEXT"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"TEXT"), sp, astring)), |(_, _, val)| {
                 SearchKey::Text(val)
             }),
-            map(tuple((tag_no_case(b"TO"), SP, astring)), |(_, _, val)| {
+            map(tuple((tag_no_case(b"TO"), sp, astring)), |(_, _, val)| {
                 SearchKey::To(val)
             }),
         )),
@@ -170,51 +170,51 @@ fn search_key_limited<'a>(
                 // Note: `flag_keyword` parser returns `Flag`. Because Rust does not have first-class enum variants
                 // it is not possible to fix SearchKey(Flag::Keyword), but only SearchKey(Flag).
                 // Thus `SearchKey::Keyword(Atom)` is used instead. This is, why we use also `atom` parser here and not `flag_keyword` parser.
-                tuple((tag_no_case(b"UNKEYWORD"), SP, atom)),
+                tuple((tag_no_case(b"UNKEYWORD"), sp, atom)),
                 |(_, _, val)| SearchKey::Unkeyword(val),
             ),
             value(SearchKey::Unseen, tag_no_case(b"UNSEEN")),
             value(SearchKey::Draft, tag_no_case(b"DRAFT")),
             map(
-                tuple((tag_no_case(b"HEADER"), SP, header_fld_name, SP, astring)),
+                tuple((tag_no_case(b"HEADER"), sp, header_fld_name, sp, astring)),
                 |(_, _, key, _, val)| SearchKey::Header(key, val),
             ),
             map(
-                tuple((tag_no_case(b"LARGER"), SP, number)),
+                tuple((tag_no_case(b"LARGER"), sp, number)),
                 |(_, _, val)| SearchKey::Larger(val),
             ),
             map(
-                tuple((tag_no_case(b"NOT"), SP, search_key)),
+                tuple((tag_no_case(b"NOT"), sp, search_key)),
                 |(_, _, val)| SearchKey::Not(Box::new(val)),
             ),
             map(
-                tuple((tag_no_case(b"OR"), SP, search_key, SP, search_key)),
+                tuple((tag_no_case(b"OR"), sp, search_key, sp, search_key)),
                 |(_, _, alt1, _, alt2)| SearchKey::Or(Box::new(alt1), Box::new(alt2)),
             ),
             map(
-                tuple((tag_no_case(b"SENTBEFORE"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTBEFORE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentBefore(date),
             ),
             map(
-                tuple((tag_no_case(b"SENTON"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTON"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentOn(date),
             ),
             map(
-                tuple((tag_no_case(b"SENTSINCE"), SP, map_opt(date, |date| date))),
+                tuple((tag_no_case(b"SENTSINCE"), sp, map_opt(date, |date| date))),
                 |(_, _, date)| SearchKey::SentSince(date),
             ),
             map(
-                tuple((tag_no_case(b"SMALLER"), SP, number)),
+                tuple((tag_no_case(b"SMALLER"), sp, number)),
                 |(_, _, val)| SearchKey::Smaller(val),
             ),
             map(
-                tuple((tag_no_case(b"UID"), SP, sequence_set)),
+                tuple((tag_no_case(b"UID"), sp, sequence_set)),
                 |(_, _, val)| SearchKey::Uid(val),
             ),
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
             map(sequence_set, SearchKey::SequenceSet),
             map(
-                delimited(tag(b"("), separated_list1(SP, search_key), tag(b")")),
+                delimited(tag(b"("), separated_list1(sp, search_key), tag(b")")),
                 |val| SearchKey::And(NonEmptyVec::unchecked(val)),
             ),
         )),

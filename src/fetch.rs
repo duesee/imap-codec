@@ -1,6 +1,6 @@
 use std::num::NonZeroU32;
 
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::fetch::*;
 use nom::{
@@ -83,7 +83,7 @@ pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValu
     delimited(
         tag(b"("),
         map(
-            separated_list1(SP, alt((msg_att_dynamic, msg_att_static))),
+            separated_list1(sp, alt((msg_att_dynamic, msg_att_static))),
             NonEmptyVec::unchecked,
         ),
         tag(b")"),
@@ -96,8 +96,8 @@ pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValu
 pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
-        SP,
-        delimited(tag(b"("), opt(separated_list1(SP, flag_fetch)), tag(b")")),
+        sp,
+        delimited(tag(b"("), opt(separated_list1(sp, flag_fetch)), tag(b")")),
     ));
 
     let (remaining, (_, _, flags)) = parser(input)?;
@@ -120,35 +120,35 @@ pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
 pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
     alt((
         map(
-            tuple((tag_no_case(b"ENVELOPE"), SP, envelope)),
+            tuple((tag_no_case(b"ENVELOPE"), sp, envelope)),
             |(_, _, envelope)| FetchAttributeValue::Envelope(envelope),
         ),
         map(
-            tuple((tag_no_case(b"INTERNALDATE"), SP, date_time)),
+            tuple((tag_no_case(b"INTERNALDATE"), sp, date_time)),
             |(_, _, date_time)| FetchAttributeValue::InternalDate(date_time),
         ),
         map(
-            tuple((tag_no_case(b"RFC822.HEADER"), SP, nstring)),
+            tuple((tag_no_case(b"RFC822.HEADER"), sp, nstring)),
             |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring),
         ),
         map(
-            tuple((tag_no_case(b"RFC822.TEXT"), SP, nstring)),
+            tuple((tag_no_case(b"RFC822.TEXT"), sp, nstring)),
             |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring),
         ),
         map(
-            tuple((tag_no_case(b"RFC822.SIZE"), SP, number)),
+            tuple((tag_no_case(b"RFC822.SIZE"), sp, number)),
             |(_, _, num)| FetchAttributeValue::Rfc822Size(num),
         ),
         map(
-            tuple((tag_no_case(b"RFC822"), SP, nstring)),
+            tuple((tag_no_case(b"RFC822"), sp, nstring)),
             |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring),
         ),
         map(
-            tuple((tag_no_case(b"BODYSTRUCTURE"), SP, body(8))),
+            tuple((tag_no_case(b"BODYSTRUCTURE"), sp, body(8))),
             |(_, _, body)| FetchAttributeValue::BodyStructure(body),
         ),
         map(
-            tuple((tag_no_case(b"BODY"), SP, body(8))),
+            tuple((tag_no_case(b"BODY"), sp, body(8))),
             |(_, _, body)| FetchAttributeValue::Body(body),
         ),
         map(
@@ -156,7 +156,7 @@ pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
                 tag_no_case(b"BODY"),
                 section,
                 opt(delimited(tag(b"<"), number, tag(b">"))),
-                SP,
+                sp,
                 nstring,
             )),
             |(_, section, origin, _, data)| FetchAttributeValue::BodyExt {
@@ -165,7 +165,7 @@ pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
                 data,
             },
         ),
-        map(tuple((tag_no_case(b"UID"), SP, uniqueid)), |(_, _, uid)| {
+        map(tuple((tag_no_case(b"UID"), sp, uniqueid)), |(_, _, uid)| {
             FetchAttributeValue::Uid(uid)
         }),
     ))(input)

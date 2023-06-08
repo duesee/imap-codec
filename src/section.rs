@@ -1,6 +1,6 @@
 use std::num::NonZeroU32;
 
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::section::*;
 use nom::{
@@ -62,11 +62,11 @@ pub fn section_spec(input: &[u8]) -> IMAPResult<&[u8], Section> {
 pub fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
     alt((
         map(
-            tuple((tag_no_case(b"HEADER.FIELDS.NOT"), SP, header_list)),
+            tuple((tag_no_case(b"HEADER.FIELDS.NOT"), sp, header_list)),
             |(_, _, header_list)| PartSpecifier::HeaderFieldsNot(header_list),
         ),
         map(
-            tuple((tag_no_case(b"HEADER.FIELDS"), SP, header_list)),
+            tuple((tag_no_case(b"HEADER.FIELDS"), sp, header_list)),
             |(_, _, header_list)| PartSpecifier::HeaderFields(header_list),
         ),
         value(PartSpecifier::Header, tag_no_case(b"HEADER")),
@@ -98,7 +98,7 @@ pub fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 /// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
 pub fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
     map(
-        delimited(tag(b"("), separated_list1(SP, header_fld_name), tag(b")")),
+        delimited(tag(b"("), separated_list1(sp, header_fld_name), tag(b")")),
         NonEmptyVec::unchecked,
     )(input)
 }
