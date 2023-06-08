@@ -1,4 +1,4 @@
-use abnf_core::streaming::crlf as CRLF;
+use abnf_core::streaming::crlf;
 /// Re-export everything from imap-types.
 pub use imap_types::auth::*;
 use nom::{combinator::map, sequence::terminated};
@@ -31,7 +31,7 @@ pub fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
 pub fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
-    map(terminated(base64, CRLF), |data| {
+    map(terminated(base64, crlf), |data| {
         AuthenticateData(Secret::new(data))
     })(input) // FIXME: many0 deleted
 }

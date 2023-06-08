@@ -1,8 +1,8 @@
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 use abnf_core::{
-    is_alpha as is_ALPHA, is_char as is_CHAR, is_ctl as is_CTL, is_digit as is_DIGIT,
-    streaming::{crlf as CRLF, dquote as DQUOTE},
+    is_alpha, is_char, is_ctl, is_digit,
+    streaming::{crlf, dquote},
 };
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
@@ -83,7 +83,7 @@ pub fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
 /// quoted chars need to be replaced.
 pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
     let mut parser = tuple((
-        DQUOTE,
+        dquote,
         map(
             escaped(
                 take_while1(is_any_text_char_except_quoted_specials),
@@ -95,7 +95,7 @@ pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
             // `unwrap` is safe because val contains ASCII-only characters.
             |val| from_utf8(val).unwrap(),
         ),
-        DQUOTE,
+        dquote,
     ));
 
     let (remaining, (_, quoted, _)) = parser(input)?;
@@ -152,12 +152,12 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
 pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     #[cfg(not(feature = "ext_literal"))]
-    let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
+    let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
 
     #[cfg(feature = "ext_literal")]
     let (remaining, (length, plus)) = terminated(
         delimited(tag(b"{"), tuple((number, opt(char('+')))), tag(b"}")),
-        CRLF,
+        crlf,
     )(input)?;
 
     // TODO(#40)
@@ -232,14 +232,14 @@ pub fn is_astring_char(i: u8) -> bool {
 
 /// `ATOM-CHAR = <any CHAR except atom-specials>`
 pub fn is_atom_char(b: u8) -> bool {
-    is_CHAR(b) && !is_atom_specials(b)
+    is_char(b) && !is_atom_specials(b)
 }
 
 /// `atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials`
 pub fn is_atom_specials(i: u8) -> bool {
     match i {
         b'(' | b')' | b'{' | b' ' => true,
-        c if is_CTL(c) => true,
+        c if is_ctl(c) => true,
         c if is_list_wildcards(c) => true,
         c if is_quoted_specials(c) => true,
         c if is_resp_specials(c) => true,
@@ -319,7 +319,7 @@ pub fn base64(input: &[u8]) -> IMAPResult<&[u8], Vec<u8>> {
 
 /// `base64-char = ALPHA / DIGIT / "+" / "/" ; Case-sensitive`
 pub fn is_base64_char(i: u8) -> bool {
-    is_ALPHA(i) || is_DIGIT(i) || i == b'+' || i == b'/'
+    is_alpha(i) || is_digit(i) || i == b'+' || i == b'/'
 }
 
 // base64-terminal = (2base64-char "==") / (3base64-char "=")

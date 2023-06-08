@@ -33,7 +33,7 @@ pub mod indicators {
     ///
     /// CHAR = %x01-7F
     #[allow(non_snake_case)]
-    pub fn is_CHAR(byte: u8) -> bool {
+    pub fn is_char(byte: u8) -> bool {
         matches!(byte, 0x01..=0x7f)
     }
 
@@ -41,7 +41,7 @@ pub mod indicators {
     ///
     /// CTL = %x00-1F / %x7F
     #[allow(non_snake_case)]
-    pub fn is_CTL(byte: u8) -> bool {
+    pub fn is_ctl(byte: u8) -> bool {
         matches!(byte, 0x00..=0x1f | 0x7f)
     }
 
@@ -61,14 +61,14 @@ pub mod indicators {
 
     /// `ATOM-CHAR = <any CHAR except atom-specials>`
     pub fn is_atom_char(b: u8) -> bool {
-        is_CHAR(b) && !is_atom_specials(b)
+        is_char(b) && !is_atom_specials(b)
     }
 
     /// `atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials`
     pub fn is_atom_specials(i: u8) -> bool {
         match i {
             b'(' | b')' | b'{' | b' ' => true,
-            c if is_CTL(c) => true,
+            c if is_ctl(c) => true,
             c if is_list_wildcards(c) => true,
             c if is_quoted_specials(c) => true,
             c if is_resp_specials(c) => true,

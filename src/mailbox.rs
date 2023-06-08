@@ -1,4 +1,4 @@
-use abnf_core::streaming::{dquote as DQUOTE, sp as SP};
+use abnf_core::streaming::{dquote, sp};
 /// Re-export everything from imap-types.
 pub use imap_types::mailbox::*;
 use nom::{
@@ -68,11 +68,11 @@ pub fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
 pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
         map(
-            tuple((tag_no_case(b"FLAGS"), SP, flag_list)),
+            tuple((tag_no_case(b"FLAGS"), sp, flag_list)),
             |(_, _, flags)| Data::Flags(flags),
         ),
         map(
-            tuple((tag_no_case(b"LIST"), SP, mailbox_list)),
+            tuple((tag_no_case(b"LIST"), sp, mailbox_list)),
             |(_, _, (items, delimiter, mailbox))| Data::List {
                 items: items.unwrap_or_default(),
                 mailbox,
@@ -80,7 +80,7 @@ pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             },
         ),
         map(
-            tuple((tag_no_case(b"LSUB"), SP, mailbox_list)),
+            tuple((tag_no_case(b"LSUB"), sp, mailbox_list)),
             |(_, _, (items, delimiter, mailbox))| Data::Lsub {
                 items: items.unwrap_or_default(),
                 mailbox,
@@ -88,15 +88,15 @@ pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             },
         ),
         map(
-            tuple((tag_no_case(b"SEARCH"), many0(preceded(SP, nz_number)))),
+            tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
         map(
             tuple((
                 tag_no_case(b"STATUS"),
-                SP,
+                sp,
                 mailbox,
-                SP,
+                sp,
                 delimited(tag(b"("), opt(status_att_list), tag(b")")),
             )),
             |(_, _, mailbox, _, attributes)| Data::Status {
@@ -105,11 +105,11 @@ pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             },
         ),
         map(
-            tuple((number, SP, tag_no_case(b"EXISTS"))),
+            tuple((number, sp, tag_no_case(b"EXISTS"))),
             |(num, _, _)| Data::Exists(num),
         ),
         map(
-            tuple((number, SP, tag_no_case(b"RECENT"))),
+            tuple((number, sp, tag_no_case(b"RECENT"))),
             |(num, _, _)| Data::Recent(num),
         ),
         #[cfg(feature = "ext_quota")]
@@ -128,12 +128,12 @@ pub fn mailbox_list(
 ) -> IMAPResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
     let mut parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
-        SP,
+        sp,
         alt((
-            map(delimited(DQUOTE, quoted_char, DQUOTE), Option::Some),
+            map(delimited(dquote, quoted_char, dquote), Option::Some),
             value(None, nil),
         )),
-        SP,
+        sp,
         mailbox,
     ));
 

@@ -1,6 +1,6 @@
 use std::str::from_utf8;
 
-use abnf_core::streaming::{crlf as CRLF, sp as SP};
+use abnf_core::streaming::{crlf, sp};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::response::*;
@@ -28,12 +28,12 @@ use crate::{
 pub fn greeting(input: &[u8]) -> IMAPResult<&[u8], Greeting> {
     let mut parser = tuple((
         tag(b"*"),
-        SP,
+        sp,
         alt((
             resp_cond_auth,
             map(resp_cond_bye, |resp_text| (GreetingKind::Bye, resp_text)),
         )),
-        CRLF,
+        crlf,
     ));
 
     let (remaining, (_, _, (kind, (code, text)), _)) = parser(input)?;
@@ -51,7 +51,7 @@ pub fn resp_cond_auth(input: &[u8]) -> IMAPResult<&[u8], (GreetingKind, (Option<
             value(GreetingKind::Ok, tag_no_case(b"OK")),
             value(GreetingKind::PreAuth, tag_no_case(b"PREAUTH")),
         )),
-        SP,
+        sp,
         resp_text,
     ));
 
@@ -74,7 +74,7 @@ pub fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
                     ),
                 )),
             ),
-            SP,
+            sp,
         )),
         text,
     ))(input)
@@ -102,8 +102,8 @@ pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
             tuple((
                 tag_no_case(b"BADCHARSET"),
                 opt(preceded(
-                    SP,
-                    delimited(tag(b"("), separated_list1(SP, charset), tag(b")")),
+                    sp,
+                    delimited(tag(b"("), separated_list1(sp, charset), tag(b")")),
                 )),
             )),
             |(_, maybe_charsets)| Code::BadCharset {
@@ -115,10 +115,10 @@ pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         map(
             tuple((
                 tag_no_case(b"PERMANENTFLAGS"),
-                SP,
+                sp,
                 delimited(
                     tag(b"("),
-                    map(opt(separated_list1(SP, flag_perm)), |maybe_flags| {
+                    map(opt(separated_list1(sp, flag_perm)), |maybe_flags| {
                         maybe_flags.unwrap_or_default()
                     }),
                     tag(b")"),
@@ -130,15 +130,15 @@ pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         value(Code::ReadWrite, tag_no_case(b"READ-WRITE")),
         value(Code::TryCreate, tag_no_case(b"TRYCREATE")),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), SP, nz_number)),
+            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
             |(_, _, num)| Code::UidNext(num),
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), SP, nz_number)),
+            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
             |(_, _, num)| Code::UidValidity(num),
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), SP, nz_number)),
+            tuple((tag_no_case(b"UNSEEN"), sp, nz_number)),
             |(_, _, num)| Code::Unseen(num),
         ),
         #[cfg(feature = "ext_compress")]
@@ -157,8 +157,8 @@ pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 pub fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
-        SP,
-        separated_list1(SP, capability),
+        sp,
+        separated_list1(sp, capability),
     ));
 
     let (rem, (_, _, caps)) = parser(input)?;
@@ -175,7 +175,7 @@ pub fn capability(input: &[u8]) -> IMAPResult<&[u8], Capability> {
 
 /// `resp-cond-bye = "BYE" SP resp-text`
 pub fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
-    let mut parser = tuple((tag_no_case(b"BYE"), SP, resp_text));
+    let mut parser = tuple((tag_no_case(b"BYE"), sp, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
 
@@ -219,7 +219,7 @@ pub fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
             ),
             map(resp_text, Either::Basic),
         )),
-        CRLF,
+        crlf,
     ));
 
     let (remaining, (_, either, _)) = parser(input)?;
@@ -242,7 +242,7 @@ pub fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
 pub fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
     let mut parser = tuple((
         tag(b"*"),
-        SP,
+        sp,
         alt((
             map(resp_cond_state, |(raw_status, code, text)| {
                 let status = match raw_status.to_ascii_lowercase().as_ref() {
@@ -277,7 +277,7 @@ pub fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
             #[cfg(feature = "ext_enable")]
             map(enable_data, Response::Data),
         )),
-        CRLF,
+        crlf,
     ));
 
     let (remaining, (_, _, response, _)) = parser(input)?;
@@ -291,7 +291,7 @@ pub fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
 pub fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (&str, Option<Code>, Text)> {
     let mut parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
-        SP,
+        sp,
         resp_text,
     ));
 
@@ -313,7 +313,7 @@ pub fn response_done(input: &[u8]) -> IMAPResult<&[u8], Status> {
 
 /// `response-tagged = tag SP resp-cond-state CRLF`
 pub fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
-    let mut parser = tuple((tag_imap, SP, resp_cond_state, CRLF));
+    let mut parser = tuple((tag_imap, sp, resp_cond_state, crlf));
 
     let (remaining, (tag, _, (raw_status, code, text), _)) = parser(input)?;
 
@@ -343,7 +343,7 @@ pub fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
 ///
 /// Server closes connection immediately
 pub fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
-    let mut parser = tuple((tag(b"*"), SP, resp_cond_bye, CRLF));
+    let mut parser = tuple((tag(b"*"), sp, resp_cond_bye, crlf));
 
     let (remaining, (_, _, (code, text), _)) = parser(input)?;
 
@@ -352,12 +352,12 @@ pub fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
 
 /// `message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))`
 pub fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
-    let (remaining, seq) = terminated(nz_number, SP)(input)?;
+    let (remaining, seq) = terminated(nz_number, sp)(input)?;
 
     alt((
         map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq)),
         map(
-            tuple((tag_no_case(b"FETCH"), SP, msg_att)),
+            tuple((tag_no_case(b"FETCH"), sp, msg_att)),
             move |(_, _, attributes)| Data::Fetch { seq, attributes },
         ),
     ))(remaining)

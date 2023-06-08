@@ -8,7 +8,7 @@
 
 use std::io::Write;
 
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::enable::*;
 use nom::{
@@ -39,7 +39,7 @@ use crate::{
 pub fn enable(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("ENABLE"),
-        many1(preceded(SP, capability_enable)),
+        many1(preceded(sp, capability_enable)),
     ));
 
     let (remaining, (_, capabilities)) = parser(input)?;
@@ -60,7 +60,7 @@ pub fn capability_enable(input: &[u8]) -> IMAPResult<&[u8], CapabilityEnable> {
 pub fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case(b"ENABLED"),
-        many0(preceded(SP, capability_enable)),
+        many0(preceded(sp, capability_enable)),
     ));
 
     let (remaining, (_, capabilities)) = parser(input)?;

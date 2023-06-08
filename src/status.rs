@@ -1,4 +1,4 @@
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::status::*;
 use nom::{
@@ -47,7 +47,7 @@ pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusAttribute> {
 ///
 /// Note: See errata id: 261
 pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusAttributeValue>> {
-    separated_list1(SP, status_att_val)(input)
+    separated_list1(sp, status_att_val)(input)
 }
 
 /// `status-att-val  = ("MESSAGES" SP number) /
@@ -60,33 +60,33 @@ pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusAttributeVal
 fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusAttributeValue> {
     alt((
         map(
-            tuple((tag_no_case(b"MESSAGES"), SP, number)),
+            tuple((tag_no_case(b"MESSAGES"), sp, number)),
             |(_, _, num)| StatusAttributeValue::Messages(num),
         ),
         map(
-            tuple((tag_no_case(b"RECENT"), SP, number)),
+            tuple((tag_no_case(b"RECENT"), sp, number)),
             |(_, _, num)| StatusAttributeValue::Recent(num),
         ),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), SP, nz_number)),
+            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
             |(_, _, next)| StatusAttributeValue::UidNext(next),
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), SP, nz_number)),
+            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
             |(_, _, val)| StatusAttributeValue::UidValidity(val),
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), SP, number)),
+            tuple((tag_no_case(b"UNSEEN"), sp, number)),
             |(_, _, num)| StatusAttributeValue::Unseen(num),
         ),
         #[cfg(feature = "ext_quota")]
         map(
-            tuple((tag_no_case(b"DELETED-STORAGE"), SP, number64)),
+            tuple((tag_no_case(b"DELETED-STORAGE"), sp, number64)),
             |(_, _, num)| StatusAttributeValue::DeletedStorage(num),
         ),
         #[cfg(feature = "ext_quota")]
         map(
-            tuple((tag_no_case(b"DELETED"), SP, number)),
+            tuple((tag_no_case(b"DELETED"), sp, number)),
             |(_, _, num)| StatusAttributeValue::Deleted(num),
         ),
     ))(input)

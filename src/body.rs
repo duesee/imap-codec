@@ -1,4 +1,4 @@
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::body::*;
 use nom::{
@@ -72,7 +72,7 @@ fn body_type_1part_limited<'a>(
 
     let mut parser = tuple((
         alt((body_type_msg, body_type_text, body_type_basic)),
-        opt(preceded(SP, body_ext_1part)),
+        opt(preceded(sp, body_ext_1part)),
     ));
 
     let (remaining, ((basic, specific), extension_data)) = parser(input)?;
@@ -90,7 +90,7 @@ fn body_type_1part_limited<'a>(
 ///
 /// MESSAGE subtype MUST NOT be "RFC822"
 pub fn body_type_basic(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
-    let mut parser = tuple((media_basic, SP, body_fields));
+    let mut parser = tuple((media_basic, sp, body_fields));
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
 
@@ -129,13 +129,13 @@ fn body_type_msg_limited<'a>(
 
     let mut parser = tuple((
         media_message,
-        SP,
+        sp,
         body_fields,
-        SP,
+        sp,
         envelope,
-        SP,
+        sp,
         body,
-        SP,
+        sp,
         body_fld_lines,
     ));
 
@@ -159,7 +159,7 @@ fn body_type_msg_limited<'a>(
 ///                   body-fields SP
 ///                   body-fld-lines`
 pub fn body_type_text(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
-    let mut parser = tuple((media_text, SP, body_fields, SP, body_fld_lines));
+    let mut parser = tuple((media_text, sp, body_fields, sp, body_fld_lines));
 
     let (remaining, (subtype, _, basic, _, number_of_lines)) = parser(input)?;
 
@@ -183,13 +183,13 @@ pub fn body_type_text(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificF
 pub fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
     let mut parser = tuple((
         body_fld_param,
-        SP,
+        sp,
         body_fld_id,
-        SP,
+        sp,
         body_fld_desc,
-        SP,
+        sp,
         body_fld_enc,
-        SP,
+        sp,
         body_fld_octets,
     ));
 
@@ -217,8 +217,8 @@ pub fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>
         delimited(
             tag(b"("),
             separated_list1(
-                SP,
-                map(tuple((string, SP, string)), |(key, _, value)| (key, value)),
+                sp,
+                map(tuple((string, sp, string)), |(key, _, value)| (key, value)),
             ),
             tag(b")"),
         ),
@@ -290,14 +290,14 @@ pub fn body_ext_1part(input: &[u8]) -> IMAPResult<&[u8], SinglePartExtensionData
             body_fld_md5,
             opt(map(
                 tuple((
-                    preceded(SP, body_fld_dsp),
+                    preceded(sp, body_fld_dsp),
                     opt(map(
                         tuple((
-                            preceded(SP, body_fld_lang),
+                            preceded(sp, body_fld_lang),
                             opt(map(
                                 tuple((
-                                    preceded(SP, body_fld_loc),
-                                    many0(preceded(SP, body_extension(8))),
+                                    preceded(sp, body_fld_loc),
+                                    many0(preceded(sp, body_extension(8))),
                                 )),
                                 |(location, extensions)| Location {
                                     location,
@@ -328,7 +328,7 @@ pub fn body_fld_dsp(input: &[u8]) -> IMAPResult<&[u8], Option<(IString, Vec<(ISt
         delimited(
             tag(b"("),
             map(
-                tuple((string, SP, body_fld_param)),
+                tuple((string, sp, body_fld_param)),
                 |(string, _, body_fld_param)| Some((string, body_fld_param)),
             ),
             tag(b")"),
@@ -344,7 +344,7 @@ pub fn body_fld_lang(input: &[u8]) -> IMAPResult<&[u8], Vec<IString>> {
             Some(item) => vec![item],
             None => vec![],
         }),
-        delimited(tag(b"("), separated_list1(SP, string), tag(b")")),
+        delimited(tag(b"("), separated_list1(sp, string), tag(b")")),
     ))(input)
 }
 
@@ -392,7 +392,7 @@ fn body_extension_limited<'a>(
         map(nstring, BodyExtension::NString),
         map(number, BodyExtension::Number),
         map(
-            delimited(tag(b"("), separated_list1(SP, body_extension), tag(b")")),
+            delimited(tag(b"("), separated_list1(sp, body_extension), tag(b")")),
             |body_extensions| BodyExtension::List(NonEmptyVec::unchecked(body_extensions)),
         ),
     ))(input)
@@ -417,9 +417,9 @@ fn body_type_mpart_limited(
 
     let mut parser = tuple((
         many1(body(remaining_recursion)),
-        SP,
+        sp,
         media_subtype,
-        opt(preceded(SP, body_ext_mpart)),
+        opt(preceded(sp, body_ext_mpart)),
     ));
 
     let (remaining, (bodies, _, subtype, extension_data)) = parser(input)?;
@@ -451,14 +451,14 @@ pub fn body_ext_mpart(input: &[u8]) -> IMAPResult<&[u8], MultiPartExtensionData>
             body_fld_param,
             opt(map(
                 tuple((
-                    preceded(SP, body_fld_dsp),
+                    preceded(sp, body_fld_dsp),
                     opt(map(
                         tuple((
-                            preceded(SP, body_fld_lang),
+                            preceded(sp, body_fld_lang),
                             opt(map(
                                 tuple((
-                                    preceded(SP, body_fld_loc),
-                                    many0(preceded(SP, body_extension(8))),
+                                    preceded(sp, body_fld_loc),
+                                    many0(preceded(sp, body_extension(8))),
                                 )),
                                 |(location, extensions)| Location {
                                     location,
@@ -501,7 +501,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IMAPResult<&[u8], MultiPartExtensionData>
 ///
 /// Defined in [MIME-IMT]
 pub fn media_basic(input: &[u8]) -> IMAPResult<&[u8], (IString, IString)> {
-    let mut parser = tuple((string, SP, media_subtype));
+    let mut parser = tuple((string, sp, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
 

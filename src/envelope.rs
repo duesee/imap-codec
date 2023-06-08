@@ -1,4 +1,4 @@
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::envelope::*;
 use nom::{
@@ -33,23 +33,23 @@ pub fn envelope(input: &[u8]) -> IMAPResult<&[u8], Envelope> {
         tag(b"("),
         tuple((
             env_date,
-            SP,
+            sp,
             env_subject,
-            SP,
+            sp,
             env_from,
-            SP,
+            sp,
             env_sender,
-            SP,
+            sp,
             env_reply_to,
-            SP,
+            sp,
             env_to,
-            SP,
+            sp,
             env_cc,
-            SP,
+            sp,
             env_bcc,
-            SP,
+            sp,
             env_in_reply_to,
-            SP,
+            sp,
             env_message_id,
         )),
         tag(b")"),
@@ -178,7 +178,7 @@ pub fn env_message_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
 pub fn address(input: &[u8]) -> IMAPResult<&[u8], Address> {
     let mut parser = delimited(
         tag(b"("),
-        tuple((addr_name, SP, addr_adl, SP, addr_mailbox, SP, addr_host)),
+        tuple((addr_name, sp, addr_adl, sp, addr_mailbox, sp, addr_host)),
         tag(b")"),
     );
 

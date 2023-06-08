@@ -2,7 +2,7 @@
 
 use std::io::Write;
 
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 use imap_types::extensions::quota::*;
 use nom::{
@@ -61,7 +61,7 @@ pub fn getquotaroot(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// resource-limit = number64
 /// ```
 pub fn quota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaGet> {
-    let mut parser = tuple((resource_name, SP, number64, SP, number64));
+    let mut parser = tuple((resource_name, sp, number64, sp, number64));
 
     let (remaining, (resource, _, usage, _, limit)) = parser(input)?;
 
@@ -97,8 +97,8 @@ pub fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case("QUOTA "),
         quota_root_name,
-        SP,
-        delimited(tag("("), separated_list1(SP, quota_resource), tag(")")),
+        sp,
+        delimited(tag("("), separated_list1(sp, quota_resource), tag(")")),
     ));
 
     let (remaining, (_, root, _, quotas)) = parser(input)?;
@@ -120,7 +120,7 @@ pub fn quotaroot_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case("QUOTAROOT "),
         mailbox,
-        many0(preceded(SP, quota_root_name)),
+        many0(preceded(sp, quota_root_name)),
     ));
 
     let (remaining, (_, mailbox, roots)) = parser(input)?;
@@ -137,8 +137,8 @@ pub fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("SETQUOTA "),
         quota_root_name,
-        SP,
-        delimited(tag("("), separated_list0(SP, setquota_resource), tag(")")),
+        sp,
+        delimited(tag("("), separated_list0(sp, setquota_resource), tag(")")),
     ));
 
     let (remaining, (_, root, _, quotas)) = parser(input)?;
@@ -150,7 +150,7 @@ pub fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// setquota-resource = resource-name SP resource-limit
 /// ```
 pub fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
-    let mut parser = tuple((resource_name, SP, number64));
+    let mut parser = tuple((resource_name, sp, number64));
 
     let (remaining, (resource, _, limit)) = parser(input)?;
 

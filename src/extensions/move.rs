@@ -1,6 +1,6 @@
 //! IMAP - MOVE Extension
 
-use abnf_core::streaming::sp as SP;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::r#move::*;
 use nom::{bytes::streaming::tag_no_case, sequence::tuple};
@@ -11,7 +11,7 @@ use crate::{codec::IMAPResult, command::CommandBody, mailbox::mailbox, sequence:
 /// move = "MOVE" SP sequence-set SP mailbox
 /// ```
 pub fn r#move(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"MOVE"), SP, sequence_set, SP, mailbox));
+    let mut parser = tuple((tag_no_case(b"MOVE"), sp, sequence_set, sp, mailbox));
 
     let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
 
