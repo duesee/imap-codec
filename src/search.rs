@@ -1,4 +1,4 @@
-use abnf_core::streaming::SP;
+use abnf_core::streaming::sp as SP;
 /// Re-export everything from imap-types.
 pub use imap_types::search::*;
 use nom::{
@@ -7,10 +7,10 @@ use nom::{
     combinator::{map, map_opt, opt, value},
     multi::{many1, separated_list1},
     sequence::{delimited, preceded, tuple},
-    IResult,
 };
 
 use crate::{
+    codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
     command::CommandBody,
     core::{astring, atom, charset, number, NonEmptyVec},
     datetime::date,
@@ -23,7 +23,7 @@ use crate::{
 /// Note: CHARSET argument MUST be registered with IANA
 ///
 /// errata id: 261
-pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"SEARCH"),
         opt(map(
@@ -92,19 +92,19 @@ pub fn search(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///
 /// This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-pub fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IResult<&[u8], SearchKey> {
+pub fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IMAPResult<&[u8], SearchKey> {
     move |input: &[u8]| search_key_limited(input, remaining_recursions)
 }
 
 fn search_key_limited<'a>(
     input: &'a [u8],
     remaining_recursion: usize,
-) -> IResult<&'a [u8], SearchKey> {
+) -> IMAPResult<&'a [u8], SearchKey> {
     if remaining_recursion == 0 {
-        return Err(nom::Err::Failure(nom::error::make_error(
+        return Err(nom::Err::Failure(IMAPParseError {
             input,
-            nom::error::ErrorKind::TooLarge,
-        )));
+            kind: IMAPErrorKind::RecursionLimitExceeded,
+        }));
     }
 
     let search_key =

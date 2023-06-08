@@ -1,4 +1,4 @@
-use abnf_core::streaming::{DQUOTE, SP};
+use abnf_core::streaming::{dquote as DQUOTE, sp as SP};
 /// Re-export everything from imap-types.
 pub use imap_types::mailbox::*;
 use nom::{
@@ -7,12 +7,12 @@ use nom::{
     combinator::{map, opt, value},
     multi::many0,
     sequence::{delimited, preceded, tuple},
-    IResult,
 };
 
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::{quota_response, quotaroot_response};
 use crate::{
+    codec::IMAPResult,
     core::{
         astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
         QuotedChar,
@@ -24,7 +24,7 @@ use crate::{
 };
 
 /// `list-mailbox = 1*list-char / string`
-pub fn list_mailbox(input: &[u8]) -> IResult<&[u8], ListMailbox> {
+pub fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
             // # Safety
@@ -54,7 +54,7 @@ pub fn is_list_char(i: u8) -> bool {
 /// "I" "N" "B" "O" "X" is considered to be INBOX and not an astring.
 ///
 /// Refer to section 5.1 for further semantic details of mailbox names.
-pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
+pub fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
     map(astring, Mailbox::from)(input)
 }
 
@@ -65,7 +65,7 @@ pub fn mailbox(input: &[u8]) -> IResult<&[u8], Mailbox> {
 ///                 "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                 number SP "EXISTS" /
 ///                 number SP "RECENT"`
-pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
+pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
         map(
             tuple((tag_no_case(b"FLAGS"), SP, flag_list)),
@@ -125,7 +125,7 @@ pub fn mailbox_data(input: &[u8]) -> IResult<&[u8], Data> {
 #[allow(clippy::type_complexity)]
 pub fn mailbox_list(
     input: &[u8],
-) -> IResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
+) -> IMAPResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
     let mut parser = tuple((
         delimited(tag(b"("), opt(mbx_list_flags), tag(b")")),
         SP,

@@ -11,10 +11,10 @@ use std::io::Write;
 
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::idle::*;
-use nom::{bytes::streaming::tag_no_case, combinator::value, IResult};
+use nom::{bytes::streaming::tag_no_case, combinator::value};
 
 use crate::{
-    codec::{EncodeContext, Encoder},
+    codec::{EncodeContext, Encoder, IMAPResult},
     command::CommandBody,
 };
 
@@ -29,7 +29,7 @@ use crate::{
 /// ```
 ///
 /// Valid only in Authenticated or Selected state
-pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn idle(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     value(CommandBody::Idle, tag_no_case("IDLE"))(input)
 }
 
@@ -47,7 +47,7 @@ pub fn idle(input: &[u8]) -> IResult<&[u8], CommandBody> {
 ///
 /// Note: This parser must be executed *instead* of the command parser
 /// when the server is in the IDLE state.
-pub fn idle_done(input: &[u8]) -> IResult<&[u8], IdleDone> {
+pub fn idle_done(input: &[u8]) -> IMAPResult<&[u8], IdleDone> {
     value(IdleDone, tag_no_case("DONE\r\n"))(input)
 }
 

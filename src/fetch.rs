@@ -1,6 +1,6 @@
 use std::num::NonZeroU32;
 
-use abnf_core::streaming::SP;
+use abnf_core::streaming::sp as SP;
 /// Re-export everything from imap-types.
 pub use imap_types::fetch::*;
 use nom::{
@@ -9,11 +9,11 @@ use nom::{
     combinator::{map, opt, value},
     multi::separated_list1,
     sequence::{delimited, tuple},
-    IResult,
 };
 
 use crate::{
     body::body,
+    codec::IMAPResult,
     core::{nstring, number, nz_number, NonEmptyVec},
     datetime::date_time,
     envelope::envelope,
@@ -29,7 +29,7 @@ use crate::{
 ///              "UID" /
 ///              "BODY" section ["<" number "." nz-number ">"] /
 ///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
-pub fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
+pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], FetchAttribute> {
     alt((
         value(FetchAttribute::Envelope, tag_no_case(b"ENVELOPE")),
         value(FetchAttribute::Flags, tag_no_case(b"FLAGS")),
@@ -79,7 +79,7 @@ pub fn fetch_att(input: &[u8]) -> IResult<&[u8], FetchAttribute> {
 /// `msg-att = "("
 ///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///            ")"`
-pub fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>> {
+pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValue>> {
     delimited(
         tag(b"("),
         map(
@@ -93,7 +93,7 @@ pub fn msg_att(input: &[u8]) -> IResult<&[u8], NonEmptyVec<FetchAttributeValue>>
 /// `msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"`
 ///
 /// Note: MAY change for a message
-pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         SP,
@@ -117,7 +117,7 @@ pub fn msg_att_dynamic(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
 ///                   "UID" SP uniqueid`
 ///
 /// Note: MUST NOT change for a message
-pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), SP, envelope)),
@@ -175,7 +175,7 @@ pub fn msg_att_static(input: &[u8]) -> IResult<&[u8], FetchAttributeValue> {
 /// `uniqueid = nz-number`
 ///
 /// Note: Strictly ascending
-pub fn uniqueid(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
+pub fn uniqueid(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     nz_number(input)
 }
 

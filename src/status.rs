@@ -1,4 +1,4 @@
-use abnf_core::streaming::SP;
+use abnf_core::streaming::sp as SP;
 /// Re-export everything from imap-types.
 pub use imap_types::status::*;
 use nom::{
@@ -7,19 +7,21 @@ use nom::{
     combinator::{map, value},
     multi::separated_list1,
     sequence::tuple,
-    IResult,
 };
 
 #[cfg(feature = "ext_quota")]
 use crate::core::number64;
-use crate::core::{number, nz_number};
+use crate::{
+    codec::IMAPResult,
+    core::{number, nz_number},
+};
 
 /// `status-att = "MESSAGES" /
 ///               "RECENT" /
 ///               "UIDNEXT" /
 ///               "UIDVALIDITY" /
 ///               "UNSEEN"`
-pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
+pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusAttribute> {
     alt((
         value(StatusAttribute::Messages, tag_no_case(b"MESSAGES")),
         value(StatusAttribute::Recent, tag_no_case(b"RECENT")),
@@ -44,7 +46,7 @@ pub fn status_att(input: &[u8]) -> IResult<&[u8], StatusAttribute> {
 /// `status-att-list = status-att-val *(SP status-att-val)`
 ///
 /// Note: See errata id: 261
-pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusAttributeValue>> {
+pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusAttributeValue>> {
     separated_list1(SP, status_att_val)(input)
 }
 
@@ -55,7 +57,7 @@ pub fn status_att_list(input: &[u8]) -> IResult<&[u8], Vec<StatusAttributeValue>
 ///                    ("UNSEEN" SP number)`
 ///
 /// Note: See errata id: 261
-fn status_att_val(input: &[u8]) -> IResult<&[u8], StatusAttributeValue> {
+fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusAttributeValue> {
     alt((
         map(
             tuple((tag_no_case(b"MESSAGES"), SP, number)),

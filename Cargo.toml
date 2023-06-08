@@ -33,7 +33,7 @@ ext_sasl_ir = ["imap-types/ext_sasl_ir"]
 ext_unselect = ["imap-types/ext_unselect"]
 
 [dependencies]
-abnf-core = "0.5"
+abnf-core = "0.6.0"
 base64 = "0.21"
 bytes = { version = "1", optional = true }
 bounded-static = { version = "0.5.0", optional = true }
