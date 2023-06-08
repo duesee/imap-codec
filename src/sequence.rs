@@ -6,10 +6,12 @@ use nom::{
     combinator::{map, value},
     multi::separated_list1,
     sequence::tuple,
-    IResult,
 };
 
-use crate::core::{nz_number, NonEmptyVec};
+use crate::{
+    codec::IMAPResult,
+    core::{nz_number, NonEmptyVec},
+};
 
 /// `sequence-set = (seq-number / seq-range) ["," sequence-set]`
 ///
@@ -30,7 +32,7 @@ use crate::core::{nz_number, NonEmptyVec};
 /// Simplified:
 ///
 /// `sequence-set = (seq-number / seq-range) *("," (seq-number / seq-range))`
-pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
+pub fn sequence_set(input: &[u8]) -> IMAPResult<&[u8], SequenceSet> {
     map(
         separated_list1(
             tag(b","),
@@ -52,7 +54,7 @@ pub fn sequence_set(input: &[u8]) -> IResult<&[u8], SequenceSet> {
 ///
 /// Example: a unique identifier sequence range of 3291:* includes the UID
 ///          of the last message in the mailbox, even if that value is less than 3291.
-pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqOrUid, SeqOrUid)> {
+pub fn seq_range(input: &[u8]) -> IMAPResult<&[u8], (SeqOrUid, SeqOrUid)> {
     let mut parser = tuple((seq_number, tag(b":"), seq_number));
 
     let (remaining, (from, _, to)) = parser(input)?;
@@ -73,7 +75,7 @@ pub fn seq_range(input: &[u8]) -> IResult<&[u8], (SeqOrUid, SeqOrUid)> {
 /// The server should respond with a tagged BAD response to a command that uses a message
 /// sequence number greater than the number of messages in the selected mailbox.
 /// This includes "*" if the selected mailbox is empty.
-pub fn seq_number(input: &[u8]) -> IResult<&[u8], SeqOrUid> {
+pub fn seq_number(input: &[u8]) -> IMAPResult<&[u8], SeqOrUid> {
     alt((
         map(nz_number, SeqOrUid::Value),
         value(SeqOrUid::Asterisk, tag(b"*")),

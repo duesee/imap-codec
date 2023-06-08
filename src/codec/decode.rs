@@ -1,3 +1,7 @@
+use std::num::{ParseIntError, TryFromIntError};
+
+use nom::error::{ErrorKind, FromExternalError, ParseError};
+
 #[cfg(feature = "ext_idle")]
 use crate::extensions::idle::{idle_done, IdleDone};
 use crate::{
@@ -5,6 +9,75 @@ use crate::{
     command::{command, Command},
     response::{continue_req, greeting, response, Continue, Greeting, Response},
 };
+
+/// An extended version of [`nom::IResult`].
+pub type IMAPResult<I, O> = Result<(I, O), nom::Err<IMAPParseError<I>>>;
+
+/// An extended version of [`nom::error::Error`].
+#[derive(Debug)]
+pub struct IMAPParseError<I> {
+    pub input: I,
+    pub kind: IMAPErrorKind,
+}
+
+/// An extended version of [`nom::error::ErrorKind`].
+#[derive(Debug)]
+pub enum IMAPErrorKind {
+    Literal {
+        length: u32,
+        #[cfg(feature = "ext_literal")]
+        sync: bool,
+    },
+    BadNumber,
+    BadBase64,
+    BadDateTime,
+    LiteralContainsNull,
+    RecursionLimitExceeded,
+    Nom(ErrorKind),
+}
+
+impl<I> ParseError<I> for IMAPParseError<I> {
+    fn from_error_kind(input: I, kind: ErrorKind) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::Nom(kind),
+        }
+    }
+
+    fn append(input: I, kind: ErrorKind, _: Self) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::Nom(kind),
+        }
+    }
+}
+
+impl<I> FromExternalError<I, ParseIntError> for IMAPParseError<I> {
+    fn from_external_error(input: I, _: ErrorKind, _: ParseIntError) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::BadNumber,
+        }
+    }
+}
+
+impl<I> FromExternalError<I, TryFromIntError> for IMAPParseError<I> {
+    fn from_external_error(input: I, _: ErrorKind, _: TryFromIntError) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::BadNumber,
+        }
+    }
+}
+
+impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<I> {
+    fn from_external_error(input: I, _: ErrorKind, _: base64::DecodeError) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::BadBase64,
+        }
+    }
+}
 
 pub trait Decode<'a>: Sized + 'a {
     fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError>;
@@ -19,7 +92,11 @@ pub enum DecodeError {
     ///
     /// The decoder stopped at the beginning of literal data. When in the role of a server, sending
     /// a continuation request may be necessary to agree to the receival of the remaining data.
-    LiteralFound,
+    LiteralFound {
+        length: u32,
+        #[cfg(feature = "ext_literal")]
+        sync: bool,
+    },
 
     // Decoding failed.
     Failed,
@@ -27,85 +104,49 @@ pub enum DecodeError {
 
 // -------------------------------------------------------------------------------------------------
 
-impl<'a> Decode<'a> for Greeting<'a> {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match greeting(input) {
-            Ok((rem, grt)) => Ok((rem, grt)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(error)) => match error.code {
-                nom::error::ErrorKind::Fix => Err(DecodeError::LiteralFound),
-                _ => Err(DecodeError::Failed),
-            },
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+macro_rules! impl_decode_for_object {
+    ($object:ty, $parser:ident) => {
+        impl<'a> Decode<'a> for $object {
+            fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
+                match $parser(input) {
+                    Ok((rem, grt)) => Ok((rem, grt)),
+                    Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+                    Err(nom::Err::Failure(error)) => match error {
+                        IMAPParseError {
+                            kind:
+                                IMAPErrorKind::Literal {
+                                    length,
+                                    #[cfg(feature = "ext_literal")]
+                                    sync,
+                                },
+                            ..
+                        } => Err(DecodeError::LiteralFound {
+                            length,
+                            #[cfg(feature = "ext_literal")]
+                            sync,
+                        }),
+                        _ => Err(DecodeError::Failed),
+                    },
+                    Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+                }
+            }
         }
-    }
+    };
 }
 
-impl<'a> Decode<'a> for Command<'a> {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match command(input) {
-            Ok((rem, cmd)) => Ok((rem, cmd)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(error)) => match error.code {
-                nom::error::ErrorKind::Fix => Err(DecodeError::LiteralFound),
-                _ => Err(DecodeError::Failed),
-            },
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-        }
-    }
-}
+impl_decode_for_object!(Greeting<'a>, greeting);
 
-impl<'a> Decode<'a> for AuthenticateData {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match authenticate_data(input) {
-            Ok((rem, auth_data)) => Ok((rem, auth_data)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(_)) => Err(DecodeError::Failed),
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-        }
-    }
-}
+impl_decode_for_object!(Command<'a>, command);
+
+impl_decode_for_object!(AuthenticateData, authenticate_data);
 
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
-impl<'a> Decode<'a> for IdleDone {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match idle_done(input) {
-            Ok((rem, done)) => Ok((rem, done)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(_)) => Err(DecodeError::Failed),
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-        }
-    }
-}
+impl_decode_for_object!(IdleDone, idle_done);
 
-impl<'a> Decode<'a> for Response<'a> {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match response(input) {
-            Ok((rem, rsp)) => Ok((rem, rsp)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(error)) => match error.code {
-                nom::error::ErrorKind::Fix => Err(DecodeError::Incomplete),
-                _ => Err(DecodeError::Failed),
-            },
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-        }
-    }
-}
+impl_decode_for_object!(Response<'a>, response);
 
-impl<'a> Decode<'a> for Continue<'a> {
-    fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError> {
-        match continue_req(input) {
-            Ok((rem, continue_req)) => Ok((rem, continue_req)),
-            Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-            Err(nom::Err::Failure(error)) => match error.code {
-                nom::error::ErrorKind::Fix => Err(DecodeError::Incomplete),
-                _ => Err(DecodeError::Failed),
-            },
-            Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-        }
-    }
-}
+impl_decode_for_object!(Continue<'a>, continue_req);
 
 #[cfg(test)]
 mod tests {
@@ -219,7 +260,15 @@ mod tests {
             (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
             (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
             // LiteralAckRequired
-            (b"a select {5}\r\n".as_ref(), Err(DecodeError::LiteralFound)),
+            (
+                b"a select {5}\r\n".as_ref(),
+                Err(DecodeError::LiteralFound {
+                    length: 5,
+
+                    #[cfg(feature = "ext_literal")]
+                    sync: true,
+                }),
+            ),
             // Incomplete (after literal)
             (
                 b"a select {5}\r\nxxx".as_ref(),
@@ -328,10 +377,14 @@ mod tests {
                     }),
                 )),
             ),
-            // LiteralAck treated as Incomplete
+            // LiteralAck treated the same as in response, even though it could be `Incomplete`.
             (
                 b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
-                Err(DecodeError::Incomplete),
+                Err(DecodeError::LiteralFound {
+                    length: 5,
+                    #[cfg(feature = "ext_literal")]
+                    sync: true,
+                }),
             ),
             // Failed
             (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),

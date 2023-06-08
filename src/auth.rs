@@ -1,9 +1,10 @@
-use abnf_core::streaming::CRLF;
+use abnf_core::streaming::crlf as CRLF;
 /// Re-export everything from imap-types.
 pub use imap_types::auth::*;
-use nom::{combinator::map, sequence::terminated, IResult};
+use nom::{combinator::map, sequence::terminated};
 
 use crate::{
+    codec::IMAPResult,
     core::{atom, base64},
     secret::Secret,
 };
@@ -13,7 +14,7 @@ use crate::{
 /// `auth-type = atom`
 ///
 /// Note: Defined by \[SASL\]
-pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
+pub fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
     let (rem, atom) = atom(input)?;
 
     Ok((rem, AuthMechanism::from(atom)))
@@ -29,7 +30,7 @@ pub fn auth_type(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 ///                CRLF is additionally parsed in this parser.
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
-pub fn authenticate_data(input: &[u8]) -> IResult<&[u8], AuthenticateData> {
+pub fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
     map(terminated(base64, CRLF), |data| {
         AuthenticateData(Secret::new(data))
     })(input) // FIXME: many0 deleted

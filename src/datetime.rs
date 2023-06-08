@@ -1,4 +1,7 @@
-use abnf_core::streaming::{is_DIGIT, DQUOTE, SP};
+use abnf_core::{
+    is_digit as is_DIGIT,
+    streaming::{dquote as DQUOTE, sp as SP},
+};
 use chrono::{
     FixedOffset, LocalResult, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone,
 };
@@ -9,22 +12,22 @@ use nom::{
     bytes::streaming::{tag, tag_no_case, take_while_m_n},
     character::streaming::char,
     combinator::{map, map_res, value},
-    error::ErrorKind,
     sequence::{delimited, preceded, tuple},
-    IResult,
 };
+
+use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
 
 /// ```abnf
 /// date = date-text / DQUOTE date-text DQUOTE
 /// ```
-pub fn date(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+pub fn date(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
     alt((date_text, delimited(DQUOTE, date_text, DQUOTE)))(input)
 }
 
 /// ```abnf
 /// date-text = date-day "-" date-month "-" date-year
 /// ```
-pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
+pub fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
@@ -40,7 +43,7 @@ pub fn date_text(input: &[u8]) -> IResult<&[u8], Option<NaiveDate>> {
 /// ```abnf
 /// date-day = 1*2DIGIT
 /// ```
-pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
+pub fn date_day(input: &[u8]) -> IMAPResult<&[u8], u8> {
     digit_1_2(input)
 }
 
@@ -49,7 +52,7 @@ pub fn date_day(input: &[u8]) -> IResult<&[u8], u8> {
 ///              "May" / "Jun" / "Jul" / "Aug" /
 ///              "Sep" / "Oct" / "Nov" / "Dec"
 /// ```
-pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
+pub fn date_month(input: &[u8]) -> IMAPResult<&[u8], u8> {
     alt((
         value(1, tag_no_case(b"Jan")),
         value(2, tag_no_case(b"Feb")),
@@ -69,7 +72,7 @@ pub fn date_month(input: &[u8]) -> IResult<&[u8], u8> {
 /// ```abnf
 /// date-year = 4DIGIT
 /// ```
-pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
+pub fn date_year(input: &[u8]) -> IMAPResult<&[u8], u16> {
     digit_4(input)
 }
 
@@ -78,7 +81,7 @@ pub fn date_year(input: &[u8]) -> IResult<&[u8], u16> {
 /// ```abnf
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 /// ```
-pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
+pub fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
     let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
@@ -96,7 +99,7 @@ pub fn time(input: &[u8]) -> IResult<&[u8], Option<NaiveTime>> {
 ///              zone
 ///             DQUOTE
 /// ```
-pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
+pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
     let mut parser = delimited(
         DQUOTE,
         tuple((
@@ -121,20 +124,19 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
         (Some(date), Some(time), Some(zone)) => {
             let local_datetime = NaiveDateTime::new(date, time);
 
-            // TODO: Not sure about that...
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
                 Ok((remaining, DateTime::unchecked(datetime)))
             } else {
-                Err(nom::Err::Failure(nom::error::Error::new(
-                    remaining,
-                    ErrorKind::Verify,
-                )))
+                Err(nom::Err::Failure(IMAPParseError {
+                    input,
+                    kind: IMAPErrorKind::BadDateTime,
+                }))
             }
         }
-        _ => Err(nom::Err::Failure(nom::error::Error::new(
-            remaining,
-            ErrorKind::Verify,
-        ))),
+        _ => Err(nom::Err::Failure(IMAPParseError {
+            input,
+            kind: IMAPErrorKind::BadDateTime,
+        })),
     }
 }
 
@@ -143,11 +145,12 @@ pub fn date_time(input: &[u8]) -> IResult<&[u8], DateTime> {
 /// ```abnf
 /// date-day-fixed = (SP DIGIT) / 2DIGIT
 /// ```
-pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
+pub fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
     alt((
-        map(preceded(SP, take_while_m_n(1, 1, is_DIGIT)), |bytes| {
-            bytes[0] - b'0'
-        }),
+        map(
+            preceded(SP, take_while_m_n(1, 1, is_DIGIT)),
+            |bytes: &[u8]| bytes[0] - b'0',
+        ),
         digit_2,
     ))(input)
 }
@@ -161,7 +164,7 @@ pub fn date_day_fixed(input: &[u8]) -> IResult<&[u8], u8> {
 /// ```abnf
 /// zone = ("+" / "-") 4DIGIT
 /// ```
-pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
+pub fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;
@@ -177,7 +180,7 @@ pub fn zone(input: &[u8]) -> IResult<&[u8], Option<FixedOffset>> {
     Ok((remaining, zone))
 }
 
-fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
+fn digit_1_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
     map_res(
         map(take_while_m_n(1, 2, is_DIGIT), |bytes| {
             // # Safety
@@ -189,7 +192,7 @@ fn digit_1_2(input: &[u8]) -> IResult<&[u8], u8> {
     )(input)
 }
 
-fn digit_2(input: &[u8]) -> IResult<&[u8], u8> {
+fn digit_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
     map_res(
         map(take_while_m_n(2, 2, is_DIGIT), |bytes| {
             // # Safety
@@ -201,7 +204,7 @@ fn digit_2(input: &[u8]) -> IResult<&[u8], u8> {
     )(input)
 }
 
-fn digit_4(input: &[u8]) -> IResult<&[u8], u16> {
+fn digit_4(input: &[u8]) -> IMAPResult<&[u8], u16> {
     map_res(
         map(take_while_m_n(4, 4, is_DIGIT), |bytes| {
             // # Safety

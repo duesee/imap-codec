@@ -27,6 +27,7 @@
 //! ```
 
 pub use decode::{Decode, DecodeError};
+pub(crate) use decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 #[cfg(any(
     feature = "ext_compress",
     feature = "ext_enable",
@@ -176,7 +177,22 @@ mod tests {
             (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
             (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
             // LiteralAckRequired
-            (b"a select {5}\r\n".as_ref(), Err(DecodeError::LiteralFound)),
+            (
+                b"a select {5}\r\n".as_ref(),
+                Err(DecodeError::LiteralFound {
+                    length: 5,
+                    #[cfg(feature = "ext_literal")]
+                    sync: true,
+                }),
+            ),
+            #[cfg(feature = "ext_literal")]
+            (
+                b"a select {5+}\r\n".as_ref(),
+                Err(DecodeError::LiteralFound {
+                    length: 5,
+                    sync: false,
+                }),
+            ),
             // Incomplete (after literal)
             (
                 b"a select {5}\r\nxxx".as_ref(),
@@ -215,7 +231,11 @@ mod tests {
             // LiteralAck treated as Incomplete
             (
                 b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
-                Err(DecodeError::Incomplete),
+                Err(DecodeError::LiteralFound {
+                    length: 5,
+                    #[cfg(feature = "ext_literal")]
+                    sync: true,
+                }),
             ),
             // Failed
             (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),

@@ -14,21 +14,20 @@ use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},
     sequence::preceded,
-    IResult,
 };
 
 use crate::{
-    codec::{EncodeContext, Encoder},
+    codec::{EncodeContext, Encoder, IMAPResult},
     command::CommandBody,
 };
 
 /// `algorithm = "DEFLATE"`
-pub fn algorithm(input: &[u8]) -> IResult<&[u8], CompressionAlgorithm> {
+pub fn algorithm(input: &[u8]) -> IMAPResult<&[u8], CompressionAlgorithm> {
     value(CompressionAlgorithm::Deflate, tag_no_case("DEFLATE"))(input)
 }
 
 /// `compress = "COMPRESS" SP algorithm`
-pub fn compress(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     map(preceded(tag_no_case("COMPRESS "), algorithm), |algorithm| {
         CommandBody::Compress { algorithm }
     })(input)

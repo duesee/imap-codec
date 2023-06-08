@@ -1,6 +1,9 @@
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
-use abnf_core::streaming::{is_ALPHA, is_CHAR, is_CTL, is_DIGIT, CRLF, DQUOTE};
+use abnf_core::{
+    is_alpha as is_ALPHA, is_char as is_CHAR, is_ctl as is_CTL, is_digit as is_DIGIT,
+    streaming::{crlf as CRLF, dquote as DQUOTE},
+};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::core::*;
@@ -11,19 +14,20 @@ use nom::{
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
     character::streaming::{digit1, one_of},
     combinator::{map, map_res, opt, recognize},
-    error::ErrorKind,
     sequence::{delimited, terminated, tuple},
-    IResult,
 };
 
-use crate::utils::{indicators::is_list_wildcards, unescape_quoted};
+use crate::{
+    codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
+    utils::{indicators::is_list_wildcards, unescape_quoted},
+};
 
 // ----- number -----
 
 /// `number = 1*DIGIT`
 ///
 /// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
-pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
+pub fn number(input: &[u8]) -> IMAPResult<&[u8], u32> {
     map_res(
         // # Safety
         //
@@ -42,7 +46,7 @@ pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
 /// Defined in RFC 9051
 #[cfg(feature = "ext_quota")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
-pub fn number64(input: &[u8]) -> IResult<&[u8], u64> {
+pub fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
     map_res(
         // # Safety
         //
@@ -55,16 +59,8 @@ pub fn number64(input: &[u8]) -> IResult<&[u8], u64> {
 /// `nz-number = digit-nz *DIGIT`
 ///
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
-pub fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
-    let (remaining, number) = number(input)?;
-
-    match NonZeroU32::new(number) {
-        Some(number) => Ok((remaining, number)),
-        None => Err(nom::Err::Failure(nom::error::make_error(
-            input,
-            nom::error::ErrorKind::Verify,
-        ))),
-    }
+pub fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
+    map_res(number, NonZeroU32::try_from)(input)
 }
 
 // 1-9
@@ -77,7 +73,7 @@ pub fn nz_number(input: &[u8]) -> IResult<&[u8], NonZeroU32> {
 // ----- string -----
 
 /// `string = quoted / literal`
-pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
+pub fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
     alt((map(quoted, IString::Quoted), map(literal, IString::Literal)))(input)
 }
 
@@ -85,7 +81,7 @@ pub fn string(input: &[u8]) -> IResult<&[u8], IString> {
 ///
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
-pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
+pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
     let mut parser = tuple((
         DQUOTE,
         map(
@@ -108,7 +104,7 @@ pub fn quoted(input: &[u8]) -> IResult<&[u8], Quoted> {
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
-pub fn quoted_char(input: &[u8]) -> IResult<&[u8], QuotedChar> {
+pub fn quoted_char(input: &[u8]) -> IMAPResult<&[u8], QuotedChar> {
     map(
         alt((
             map(
@@ -154,12 +150,12 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// literal8 = <defined in RFC 4466>
 /// ```
 /// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
-pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     #[cfg(not(feature = "ext_literal"))]
     let (remaining, number) = terminated(delimited(tag(b"{"), number, tag(b"}")), CRLF)(input)?;
 
     #[cfg(feature = "ext_literal")]
-    let (remaining, (number, plus)) = terminated(
+    let (remaining, (length, plus)) = terminated(
         delimited(tag(b"{"), tuple((number, opt(char('+')))), tag(b"}")),
         CRLF,
     )(input)?;
@@ -172,13 +168,17 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
     //     This is basically good for us, but there could be issues with servers violating the
     //     IMAP protocol and sending data right away.
     if remaining.is_empty() {
-        return Err(nom::Err::Failure(nom::error::Error::new(
-            remaining,
-            ErrorKind::Fix,
-        )));
+        return Err(nom::Err::Failure(IMAPParseError {
+            input,
+            kind: IMAPErrorKind::Literal {
+                length,
+                #[cfg(feature = "ext_literal")]
+                sync: plus.is_none(),
+            },
+        }));
     }
 
-    let (remaining, data) = take(number)(remaining)?;
+    let (remaining, data) = take(length)(remaining)?;
 
     match Literal::try_from(data) {
         #[cfg(not(feature = "ext_literal"))]
@@ -191,10 +191,10 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
 
             Ok((remaining, literal))
         }
-        Err(_) => Err(nom::Err::Failure(nom::error::Error::new(
-            remaining,
-            ErrorKind::Verify,
-        ))),
+        Err(_) => Err(nom::Err::Failure(IMAPParseError {
+            input,
+            kind: IMAPErrorKind::LiteralContainsNull,
+        })),
     }
 }
 
@@ -209,7 +209,7 @@ pub fn literal(input: &[u8]) -> IResult<&[u8], Literal> {
 // ----- astring ----- atom (roughly) or string
 
 /// `astring = 1*ASTRING-CHAR / string`
-pub fn astring(input: &[u8]) -> IResult<&[u8], AString> {
+pub fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             // # Safety
@@ -254,7 +254,7 @@ pub fn is_resp_specials(i: u8) -> bool {
 }
 
 /// `atom = 1*ATOM-CHAR`
-pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
+pub fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
@@ -270,7 +270,7 @@ pub fn atom(input: &[u8]) -> IResult<&[u8], Atom> {
 // ----- nstring ----- nil or string
 
 /// `nstring = string / nil`
-pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
+pub fn nstring(input: &[u8]) -> IMAPResult<&[u8], NString> {
     alt((
         map(string, |item| NString(Some(item))),
         map(nil, |_| NString(None)),
@@ -279,14 +279,14 @@ pub fn nstring(input: &[u8]) -> IResult<&[u8], NString> {
 
 #[inline]
 /// `nil = "NIL"`
-pub fn nil(input: &[u8]) -> IResult<&[u8], &[u8]> {
+pub fn nil(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
     tag_no_case(b"NIL")(input)
 }
 
 // ----- text -----
 
 /// `text = 1*TEXT-CHAR`
-pub fn text(input: &[u8]) -> IResult<&[u8], Text> {
+pub fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
     map(take_while1(is_text_char), |bytes|
         // # Safety
         // 
@@ -307,7 +307,7 @@ pub fn is_text_char(c: u8) -> bool {
 // ----- base64 -----
 
 /// `base64 = *(4base64-char) [base64-terminal]`
-pub fn base64(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+pub fn base64(input: &[u8]) -> IMAPResult<&[u8], Vec<u8>> {
     map_res(
         recognize(tuple((
             take_while(is_base64_char),
@@ -329,14 +329,14 @@ pub fn is_base64_char(i: u8) -> bool {
 /// `charset = atom / quoted`
 ///
 /// Note: see errata id: 261
-pub fn charset(input: &[u8]) -> IResult<&[u8], Charset> {
+pub fn charset(input: &[u8]) -> IMAPResult<&[u8], Charset> {
     alt((map(atom, Charset::Atom), map(quoted, Charset::Quoted)))(input)
 }
 
 // ----- tag -----
 
 /// `tag = 1*<any ASTRING-CHAR except "+">`
-pub fn tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
+pub fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
     map(
         map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
             // # Safety

@@ -8,7 +8,7 @@
 
 use std::io::Write;
 
-use abnf_core::streaming::SP;
+use abnf_core::streaming::sp as SP;
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::enable::*;
 use nom::{
@@ -16,11 +16,10 @@ use nom::{
     combinator::map,
     multi::{many0, many1},
     sequence::{preceded, tuple},
-    IResult,
 };
 
 use crate::{
-    codec::{EncodeContext, Encoder},
+    codec::{EncodeContext, Encoder, IMAPResult},
     command::CommandBody,
     core::atom,
     response::Data,
@@ -37,7 +36,7 @@ use crate::{
 ///
 /// command-any =/ enable
 /// ```
-pub fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
+pub fn enable(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("ENABLE"),
         many1(preceded(SP, capability_enable)),
@@ -53,12 +52,12 @@ pub fn enable(input: &[u8]) -> IResult<&[u8], CommandBody> {
     ))
 }
 
-pub fn capability_enable(input: &[u8]) -> IResult<&[u8], CapabilityEnable> {
+pub fn capability_enable(input: &[u8]) -> IMAPResult<&[u8], CapabilityEnable> {
     map(atom, CapabilityEnable::from)(input)
 }
 
 /// `enable-data = "ENABLED" *(SP capability)`
-pub fn enable_data(input: &[u8]) -> IResult<&[u8], Data> {
+pub fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case(b"ENABLED"),
         many0(preceded(SP, capability_enable)),
