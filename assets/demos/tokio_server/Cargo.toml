@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.71"
 futures = "0.3"
 imap-codec = { path = "../../../", features = ["tokio"] }
 tokio = { version = "1", features = ["full"] }
