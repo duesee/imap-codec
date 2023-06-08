@@ -57,13 +57,13 @@ You can also start the [demo server] with ...
 
 ```sh
 $ cd assets/demos/tokio_server
-$ cargo run
+$ cargo run <host>:<port>
 ```
 
 ... and connect to it with ...
 
 ```sh
-$ netcat -C 127.0.0.1 14300
+$ netcat -C <host> <port>
 ```
 
 There is also a [demo client] available.
