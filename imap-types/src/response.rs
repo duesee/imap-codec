@@ -272,12 +272,30 @@ impl<'a> Status<'a> {
 
     // ---------------------------------------------------------------------------------------------
 
+    pub fn tag(&self) -> Option<&Tag> {
+        match self {
+            Status::Ok { tag, .. } | Status::No { tag, .. } | Status::Bad { tag, .. } => {
+                tag.as_ref()
+            }
+            Status::Bye { .. } => None,
+        }
+    }
+
     pub fn code(&self) -> Option<&Code> {
         match self {
             Status::Ok { code, .. }
             | Status::No { code, .. }
             | Status::Bad { code, .. }
             | Status::Bye { code, .. } => code.as_ref(),
+        }
+    }
+
+    pub fn text(&self) -> &Text {
+        match self {
+            Status::Ok { text, .. }
+            | Status::No { text, .. }
+            | Status::Bad { text, .. }
+            | Status::Bye { text, .. } => text,
         }
     }
 }
