@@ -31,7 +31,7 @@ async fn main() -> Result<(), Error> {
             let (stream, _) = listener
                 .accept()
                 .await
-                .context(format!("Could not accept connection"))?;
+                .context("Could not accept connection")?;
 
             stream
         };

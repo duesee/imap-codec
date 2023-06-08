@@ -126,13 +126,13 @@ impl EncodeContext {
 
     pub fn push_line(&mut self) {
         self.items.push(Fragment::Line {
-            data: std::mem::replace(&mut self.accumulator, Vec::new()),
+            data: std::mem::take(&mut self.accumulator),
         })
     }
 
     pub fn push_literal(&mut self, #[cfg(feature = "ext_literal")] sync: bool) {
         self.items.push(Fragment::Literal {
-            data: std::mem::replace(&mut self.accumulator, Vec::new()),
+            data: std::mem::take(&mut self.accumulator),
             #[cfg(feature = "ext_literal")]
             sync,
         })
