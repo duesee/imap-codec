@@ -1,61 +1,55 @@
-use std::io::{Error, Write};
+use std::io::{Error as IoError, Write};
 
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
+use thiserror::Error;
 use tokio_util::codec::{Decoder, Encoder};
 
-use super::{find_crlf_inclusive, parse_literal, LineError, LiteralError, LiteralFramingState};
+use super::{find_crlf_inclusive, FramingError, FramingState};
 use crate::{
-    codec::{Decode, Encode},
+    codec::{Decode, DecodeError, Encode},
     command::Command,
     response::{Greeting, Response},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImapServerCodec {
-    state: LiteralFramingState,
+    state: FramingState,
     max_literal_size: usize,
 }
 
 impl ImapServerCodec {
     pub fn new(max_literal_size: usize) -> Self {
         Self {
-            state: LiteralFramingState::ReadLine { to_consume_acc: 0 },
+            state: FramingState::ReadLine { to_consume_acc: 0 },
             max_literal_size,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ImapServerCodecError {
-    Io(Error),
-    Line(LineError),
-    Literal(LiteralError),
-    CommandParsingFailed,
-    ActionRequired,
+    #[error(transparent)]
+    Io(#[from] IoError),
+    #[error(transparent)]
+    Framing(#[from] FramingError),
+    #[error("Parsing failed")]
+    ParsingFailed,
 }
 
 impl PartialEq for ImapServerCodecError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Io(error1), Self::Io(error2)) => error1.kind() == error2.kind(),
-            (Self::Line(kind1), Self::Line(kind2)) => kind1 == kind2,
-            (Self::Literal(kind1), Self::Literal(kind2)) => kind1 == kind2,
-            (Self::CommandParsingFailed, Self::CommandParsingFailed) => true,
-            (Self::ActionRequired, Self::ActionRequired) => true,
+            (Self::Framing(kind1), Self::Framing(kind2)) => kind1 == kind2,
+            (Self::ParsingFailed, Self::ParsingFailed) => true,
             _ => false,
         }
     }
 }
 
-impl From<Error> for ImapServerCodecError {
-    fn from(error: Error) -> Self {
-        Self::Io(error)
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
-pub enum OutcomeServer {
+pub enum Event {
     Command(Command<'static>),
     ActionRequired(Action),
     // More might be require.
@@ -68,90 +62,94 @@ pub enum Action {
 }
 
 impl Decoder for ImapServerCodec {
-    type Item = OutcomeServer;
+    type Item = Event;
     type Error = ImapServerCodecError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         loop {
             match self.state {
-                LiteralFramingState::ReadLine {
+                FramingState::ReadLine {
                     ref mut to_consume_acc,
-                } => {
-                    match find_crlf_inclusive(*to_consume_acc, src) {
-                        Ok(Some(to_consume)) => {
+                } => match find_crlf_inclusive(*to_consume_acc, src) {
+                    Some(line) => match line {
+                        // After skipping `to_consume_acc` bytes, we need `to_consume` more
+                        // bytes to form a full line (including the `\r\n`).
+                        Ok(to_consume) => {
                             *to_consume_acc += to_consume;
+                            let line = &src[..*to_consume_acc];
 
-                            match parse_literal(&src[..*to_consume_acc - 2]) {
-                                // No literal.
-                                Ok(None) => match Command::decode(&src[..*to_consume_acc]) {
-                                    Ok((rem, cmd)) => {
-                                        assert!(rem.is_empty());
-                                        let cmd = cmd.into_static();
+                            // TODO: Choose the required parser.
+                            match Command::decode(line) {
+                                // We got a complete message.
+                                Ok((rem, cmd)) => {
+                                    assert!(rem.is_empty());
+                                    let cmd = cmd.into_static();
 
-                                        src.advance(*to_consume_acc);
-                                        self.state =
-                                            LiteralFramingState::ReadLine { to_consume_acc: 0 };
+                                    src.advance(*to_consume_acc);
+                                    self.state = FramingState::ReadLine { to_consume_acc: 0 };
 
-                                        return Ok(Some(OutcomeServer::Command(cmd)));
+                                    return Ok(Some(Event::Command(cmd)));
+                                }
+                                Err(error) => match error {
+                                    // We supposedly need more data ...
+                                    //
+                                    // This should not happen because a line that doesn't end
+                                    // with a literal is always "complete" in IMAP.
+                                    DecodeError::Incomplete => {
+                                        unreachable!();
                                     }
-                                    Err(_) => {
-                                        src.advance(*to_consume_acc);
+                                    // We found a literal.
+                                    DecodeError::LiteralFound { length, .. } => {
+                                        if length as usize <= self.max_literal_size {
+                                            src.reserve(length as usize);
 
-                                        return Err(ImapServerCodecError::CommandParsingFailed);
+                                            self.state = FramingState::ReadLiteral {
+                                                to_consume_acc: *to_consume_acc,
+                                                length,
+                                            };
+
+                                            return Ok(Some(Event::ActionRequired(
+                                                Action::SendLiteralAck(length),
+                                            )));
+                                        } else {
+                                            src.advance(*to_consume_acc);
+
+                                            self.state =
+                                                FramingState::ReadLine { to_consume_acc: 0 };
+
+                                            return Ok(Some(Event::ActionRequired(
+                                                Action::SendLiteralReject(length),
+                                            )));
+                                        }
+                                    }
+                                    DecodeError::Failed => {
+                                        return Err(ImapServerCodecError::ParsingFailed)
                                     }
                                 },
-                                // Literal found.
-                                Ok(Some(length)) => {
-                                    if self.max_literal_size < length as usize {
-                                        src.advance(*to_consume_acc);
-                                        self.state =
-                                            LiteralFramingState::ReadLine { to_consume_acc: 0 };
-
-                                        return Ok(Some(OutcomeServer::ActionRequired(
-                                            Action::SendLiteralReject(length),
-                                        )));
-                                    }
-
-                                    src.reserve(length as usize);
-
-                                    self.state = LiteralFramingState::ReadLiteral {
-                                        to_consume_acc: *to_consume_acc,
-                                        length,
-                                    };
-
-                                    return Ok(Some(OutcomeServer::ActionRequired(
-                                        Action::SendLiteralAck(length),
-                                    )));
-                                }
-                                // Error processing literal.
-                                Err(error) => {
-                                    src.clear();
-                                    self.state =
-                                        LiteralFramingState::ReadLine { to_consume_acc: 0 };
-
-                                    return Err(ImapServerCodecError::Literal(error));
-                                }
                             }
                         }
-                        // More data needed.
-                        Ok(None) => {
-                            return Ok(None);
-                        }
-                        // Error processing newline.
-                        Err(error) => {
-                            src.clear();
-                            self.state = LiteralFramingState::ReadLine { to_consume_acc: 0 };
+                        // After skipping `to_consume_acc` bytes, we need `to_consume` more
+                        // bytes to form a full line (including the `\n`).
+                        //
+                        // Note: This line is missing the `\r\n` and should be discarded.
+                        Err(to_discard) => {
+                            src.advance(*to_consume_acc + to_discard);
+                            self.state = FramingState::ReadLine { to_consume_acc: 0 };
 
-                            return Err(ImapServerCodecError::Line(error));
+                            return Err(ImapServerCodecError::Framing(FramingError::NotCrLf));
                         }
+                    },
+                    // More data needed.
+                    None => {
+                        return Ok(None);
                     }
-                }
-                LiteralFramingState::ReadLiteral {
+                },
+                FramingState::ReadLiteral {
                     to_consume_acc,
                     length,
                 } => {
                     if to_consume_acc + length as usize <= src.len() {
-                        self.state = LiteralFramingState::ReadLine {
+                        self.state = FramingState::ReadLine {
                             to_consume_acc: to_consume_acc + length as usize,
                         }
                     } else {
@@ -163,10 +161,10 @@ impl Decoder for ImapServerCodec {
     }
 }
 
-impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
-    type Error = Error;
+impl Encoder<&Greeting<'_>> for ImapServerCodec {
+    type Error = IoError;
 
-    fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), Error> {
+    fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), Self::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         // TODO(225): Don't use `dump` here.
@@ -176,10 +174,10 @@ impl<'a> Encoder<&Greeting<'a>> for ImapServerCodec {
     }
 }
 
-impl<'a> Encoder<&Response<'a>> for ImapServerCodec {
-    type Error = Error;
+impl Encoder<&Response<'_>> for ImapServerCodec {
+    type Error = IoError;
 
-    fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), Error> {
+    fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), Self::Error> {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         // TODO(225): Don't use `dump` here.
@@ -209,13 +207,13 @@ mod tests {
             (b"\r", Ok(None)),
             (
                 b"\n",
-                Ok(Some(OutcomeServer::Command(
+                Ok(Some(Event::Command(
                     Command::new("a", CommandBody::Noop).unwrap(),
                 ))),
             ),
             (b"", Ok(None)),
             (b"xxxx", Ok(None)),
-            (b"\r\n", Err(ImapServerCodecError::CommandParsingFailed)),
+            (b"\r\n", Err(ImapServerCodecError::ParsingFailed)),
         ];
 
         let mut src = BytesMut::new();
@@ -241,9 +239,7 @@ mod tests {
             (b"}", Ok(None)),
             (
                 b"\r\n",
-                Ok(Some(OutcomeServer::ActionRequired(Action::SendLiteralAck(
-                    5,
-                )))),
+                Ok(Some(Event::ActionRequired(Action::SendLiteralAck(5)))),
             ),
             (b"a", Ok(None)),
             (b"l", Ok(None)),
@@ -252,7 +248,7 @@ mod tests {
             (b" ", Ok(None)),
             (
                 b"password\r\n",
-                Ok(Some(OutcomeServer::Command(
+                Ok(Some(Event::Command(
                     Command::new(
                         "a",
                         CommandBody::Login {
@@ -287,21 +283,19 @@ mod tests {
         let tests = [
             (
                 b"xxx\r\n".as_ref(),
-                Err(ImapServerCodecError::CommandParsingFailed),
+                Err(ImapServerCodecError::ParsingFailed),
             ),
             (
                 b"a noop\n",
-                Err(ImapServerCodecError::Line(LineError::NotCrLf)),
+                Err(ImapServerCodecError::Framing(FramingError::NotCrLf)),
             ),
             (
                 b"a login alice {16}\r\n",
-                Ok(Some(OutcomeServer::ActionRequired(Action::SendLiteralAck(
-                    16,
-                )))),
+                Ok(Some(Event::ActionRequired(Action::SendLiteralAck(16)))),
             ),
             (
                 b"aaaaaaaaaaaaaaaa\r\n",
-                Ok(Some(OutcomeServer::Command(
+                Ok(Some(Event::Command(
                     Command::new(
                         "a",
                         CommandBody::login("alice", Literal::try_from("aaaaaaaaaaaaaaaa").unwrap())
@@ -312,17 +306,15 @@ mod tests {
             ),
             (
                 b"a login alice {17}\r\n",
-                Ok(Some(OutcomeServer::ActionRequired(
-                    Action::SendLiteralReject(17),
-                ))),
+                Ok(Some(Event::ActionRequired(Action::SendLiteralReject(17)))),
             ),
             (
                 b"a login alice {1-}\r\n",
-                Err(ImapServerCodecError::Literal(LiteralError::BadNumber)),
+                Err(ImapServerCodecError::ParsingFailed),
             ),
             (
                 b"a login alice }\r\n",
-                Err(ImapServerCodecError::Literal(LiteralError::NoOpeningBrace)),
+                Err(ImapServerCodecError::ParsingFailed),
             ),
         ];
 
