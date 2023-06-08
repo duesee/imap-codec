@@ -31,7 +31,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // First, we read the server greeting.
-    let greeting = match framed
+    match framed
         .next()
         .await
         // We get an `Option<Result<...>>` here that denotes ...
@@ -40,12 +40,13 @@ async fn main() -> Result<(), Error> {
         .context("Connection closed unexpectedly")?
         .context("Failed to obtain next message")?
     {
-        Event::Greeting(greeting) => greeting,
+        Event::Greeting(greeting) => {
+            println!("S: {BLUE}{greeting:#?}{RESET}");
+        }
         Event::Response(response) => {
             return Err(Error::msg(format!("Expected greeting, got `{response:?}`")));
         }
     };
-    println!("S: {BLUE}{greeting:#?}{RESET}");
 
     // Then, we send a login command to the server ...
     let tag_login = Tag::unchecked("A1");
@@ -59,35 +60,70 @@ async fn main() -> Result<(), Error> {
     // ... and process the response(s). We must read zero or many data responses before we can
     // finally examine the status response that tells us whether the login succeeded.
     loop {
-        match framed
+        let frame = framed
             .next()
             .await
             .context("Connection closed unexpectedly")?
-            .context("Failed to obtain next message")?
-        {
+            .context("Failed to obtain next message")?;
+        println!("S: {BLUE}{frame:#?}{RESET}");
+
+        match frame {
             Event::Greeting(greeting) => {
                 return Err(Error::msg(format!("Expected response, got `{greeting:?}`")));
             }
             Event::Response(response) => match response {
-                Response::Data(_) => {
-                    println!("[!] got data");
+                Response::Status(ref status) if status.tag() == Some(&tag_login) => {
+                    if matches!(status, Status::Ok { .. }) {
+                        println!("[!] got login done (successful)");
+                    } else {
+                        println!("[!] got login done (failed)");
+                    }
+
+                    break;
                 }
-                Response::Status(Status::Ok {
-                    tag: Some(ref tag), ..
-                }) if *tag == tag_login => {
-                    println!("[!] login successful");
-                    return Ok(());
-                }
-                Response::Status(Status::No {
-                    tag: Some(ref tag), ..
-                }) if *tag == tag_login => {
-                    println!("[!] login failed");
-                    return Ok(());
-                }
-                unexpected => {
-                    return Err(Error::msg(format!("Unexpected response `{unexpected:?}`")));
+                _ => {
+                    println!("[!] unexpected response");
                 }
             },
         }
     }
+
+    let tag_logout = Tag::unchecked("A2");
+    let cmd = Command {
+        tag: tag_logout.clone(),
+        body: CommandBody::Logout,
+    };
+    framed.send(&cmd).await.context("Could not send command")?;
+    println!("C: {RED}{cmd:#?}{RESET}");
+
+    loop {
+        let frame = framed
+            .next()
+            .await
+            .context("Connection closed unexpectedly")?
+            .context("Failed to obtain next message")?;
+        println!("S: {BLUE}{frame:#?}{RESET}");
+
+        match frame {
+            Event::Greeting(greeting) => {
+                return Err(Error::msg(format!("Expected response, got `{greeting:?}`")));
+            }
+            Event::Response(response) => match response {
+                Response::Status(Status::Bye { .. }) => {
+                    println!("[!] got bye");
+                }
+                Response::Status(Status::Ok {
+                    tag: Some(ref tag), ..
+                }) if *tag == tag_logout => {
+                    println!("[!] got logout done");
+                    break;
+                }
+                _ => {
+                    println!("[!] unexpected response");
+                }
+            },
+        }
+    }
+
+    Ok(())
 }
