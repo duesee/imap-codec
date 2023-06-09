@@ -138,6 +138,8 @@ impl Decoder for ImapClientCodec {
                                         }
                                         DecodeError::Failed => {
                                             src.advance(*to_consume_acc);
+                                            self.state =
+                                                FramingState::ReadLine { to_consume_acc: 0 };
 
                                             return Err(ImapClientCodecError::ParsingFailed);
                                         }
