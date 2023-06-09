@@ -1,4 +1,7 @@
+#[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
+#[cfg(feature = "quirk_crlf_relaxed")]
+use abnf_core::streaming::crlf_relaxed as crlf;
 /// Re-export everything from imap-types.
 pub use imap_types::auth::*;
 use nom::{combinator::map, sequence::terminated};
