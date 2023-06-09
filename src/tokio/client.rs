@@ -196,6 +196,8 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU32;
+
     use bytes::BytesMut;
     use tokio_util::codec::Decoder;
 
@@ -297,7 +299,12 @@ mod tests {
             ),
             (
                 b"* search 1\n",
+                #[cfg(not(feature = "quirk_crlf_relaxed"))]
                 Err(ImapClientCodecError::Framing(FramingError::NotCrLf)),
+                #[cfg(feature = "quirk_crlf_relaxed")]
+                Ok(Some(Event::Response(Response::Data(Data::Search(vec![
+                    NonZeroU32::try_from(1).unwrap(),
+                ]))))),
             ),
             (
                 b"* 1 fetch (BODY[] {17}\r\naaaaaaaaaaaaaaaa)\r\n",

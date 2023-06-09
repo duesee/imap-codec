@@ -9,9 +9,13 @@
 
 use std::io::Write;
 
+#[cfg(not(feature = "quirk_crlf_relaxed"))]
+use abnf_core::streaming::crlf;
+#[cfg(feature = "quirk_crlf_relaxed")]
+use abnf_core::streaming::crlf_relaxed as crlf;
 /// Re-export everything from imap-types.
 pub use imap_types::extensions::idle::*;
-use nom::{bytes::streaming::tag_no_case, combinator::value};
+use nom::{bytes::streaming::tag_no_case, combinator::value, sequence::tuple};
 
 use crate::{
     codec::{EncodeContext, Encoder, IMAPResult},
@@ -48,7 +52,7 @@ pub fn idle(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// Note: This parser must be executed *instead* of the command parser
 /// when the server is in the IDLE state.
 pub fn idle_done(input: &[u8]) -> IMAPResult<&[u8], IdleDone> {
-    value(IdleDone, tag_no_case("DONE\r\n"))(input)
+    value(IdleDone, tuple((tag_no_case("DONE"), crlf)))(input)
 }
 
 impl Encoder for IdleDone {

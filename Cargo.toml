@@ -32,6 +32,9 @@ ext_quota = ["imap-types/ext_quota"]
 ext_sasl_ir = ["imap-types/ext_sasl_ir"]
 ext_unselect = ["imap-types/ext_unselect"]
 
+# IMAP quirks
+quirk_crlf_relaxed = []
+
 [dependencies]
 abnf-core = "0.6.0"
 base64 = "0.21"

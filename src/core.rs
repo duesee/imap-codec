@@ -1,9 +1,10 @@
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
-use abnf_core::{
-    is_alpha, is_char, is_ctl, is_digit,
-    streaming::{crlf, dquote},
-};
+#[cfg(not(feature = "quirk_crlf_relaxed"))]
+use abnf_core::streaming::crlf;
+#[cfg(feature = "quirk_crlf_relaxed")]
+use abnf_core::streaming::crlf_relaxed as crlf;
+use abnf_core::{is_alpha, is_char, is_ctl, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::core::*;

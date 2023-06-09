@@ -193,6 +193,8 @@ impl Encoder<&Response<'_>> for ImapServerCodec {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
+    #[cfg(feature = "quirk_crlf_relaxed")]
+    use imap_types::core::Tag;
     use tokio_util::codec::Decoder;
 
     use super::*;
@@ -290,7 +292,13 @@ mod tests {
             ),
             (
                 b"a noop\n",
+                #[cfg(not(feature = "quirk_crlf_relaxed"))]
                 Err(ImapServerCodecError::Framing(FramingError::NotCrLf)),
+                #[cfg(feature = "quirk_crlf_relaxed")]
+                Ok(Some(Event::Command(Command {
+                    tag: Tag::unchecked("a"),
+                    body: CommandBody::Noop,
+                }))),
             ),
             (
                 b"a login alice {16}\r\n",

@@ -37,13 +37,17 @@ pub enum FramingError {
 /// `buf[..skip + length]` being the first line (including `\r\n`), or `Err(length)` with
 /// `buf[..skip + length]` being the first line (including `\n`) with a missing `\r`.
 fn find_crlf_inclusive(skip: usize, buf: &[u8]) -> Option<Result<usize, usize>> {
+    #[allow(clippy::manual_map)]
     match buf.iter().skip(skip).position(|item| *item == b'\n') {
         Some(position) => {
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             if buf[skip + position.saturating_sub(1)] == b'\r' {
                 Some(Ok(position + 1))
             } else {
                 Some(Err(position + 1))
             }
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            Some(Ok(position + 1))
         }
         None => None,
     }
@@ -58,12 +62,24 @@ mod tests {
         let tests = [
             (b"A\r".as_ref(), 0, None),
             (b"A\r\n", 0, Some(Ok(3))),
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             (b"A\n", 0, Some(Err(2))),
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            (b"A\n", 0, Some(Ok(2))),
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             (b"\n", 0, Some(Err(1))),
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            (b"\n", 0, Some(Ok(1))),
             (b"aaa\r\nA\r".as_ref(), 5, None),
             (b"aaa\r\nA\r\n", 5, Some(Ok(3))),
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             (b"aaa\r\nA\n", 5, Some(Err(2))),
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            (b"aaa\r\nA\n", 5, Some(Ok(2))),
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             (b"aaa\r\n\n", 5, Some(Err(1))),
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            (b"aaa\r\n\n", 5, Some(Ok(1))),
         ];
 
         for (test, skip, expected) in tests {

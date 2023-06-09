@@ -1,7 +1,11 @@
 #[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
-use abnf_core::streaming::{crlf, sp};
+#[cfg(not(feature = "quirk_crlf_relaxed"))]
+use abnf_core::streaming::crlf;
+#[cfg(feature = "quirk_crlf_relaxed")]
+use abnf_core::streaming::crlf_relaxed as crlf;
+use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::command::*;
 use nom::{

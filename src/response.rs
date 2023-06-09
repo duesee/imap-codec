@@ -1,6 +1,10 @@
 use std::str::from_utf8;
 
-use abnf_core::streaming::{crlf, sp};
+#[cfg(not(feature = "quirk_crlf_relaxed"))]
+use abnf_core::streaming::crlf;
+#[cfg(feature = "quirk_crlf_relaxed")]
+use abnf_core::streaming::crlf_relaxed as crlf;
+use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::response::*;
@@ -213,8 +217,20 @@ pub fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
     let mut parser = tuple((
         tag(b"+ "),
         alt((
+            #[cfg(not(feature = "quirk_crlf_relaxed"))]
             map(
                 map_res(take_until("\r\n"), |input| _base64.decode(input)),
+                Either::Base64,
+            ),
+            #[cfg(feature = "quirk_crlf_relaxed")]
+            map(
+                map_res(take_until("\n"), |input: &[u8]| {
+                    if !input.is_empty() && input[input.len().saturating_sub(1)] == b'\r' {
+                        _base64.decode(&input[..input.len().saturating_sub(1)])
+                    } else {
+                        _base64.decode(input)
+                    }
+                }),
                 Either::Base64,
             ),
             map(resp_text, Either::Basic),

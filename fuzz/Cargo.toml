@@ -39,6 +39,7 @@ ext = [
     "ext_sasl_ir",
     "ext_unselect",
 ]
+quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
 
 [dependencies]
 libfuzzer-sys = "0.4"
