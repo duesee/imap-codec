@@ -123,7 +123,10 @@ impl Decoder for ImapServerCodec {
                                         }
                                     }
                                     DecodeError::Failed => {
-                                        return Err(ImapServerCodecError::ParsingFailed)
+                                        src.advance(*to_consume_acc);
+                                        self.state = FramingState::ReadLine { to_consume_acc: 0 };
+
+                                        return Err(ImapServerCodecError::ParsingFailed);
                                     }
                                 },
                             }
@@ -313,8 +316,11 @@ mod tests {
                 Err(ImapServerCodecError::ParsingFailed),
             ),
             (
+                // Ohhhhhh, IMAP :-/
                 b"a login alice }\r\n",
-                Err(ImapServerCodecError::ParsingFailed),
+                Ok(Some(Event::Command(
+                    Command::new("a", CommandBody::login("alice", "}").unwrap()).unwrap(),
+                ))),
             ),
         ];
 
@@ -323,8 +329,8 @@ mod tests {
 
         for (test, expected) in tests {
             src.extend_from_slice(test);
+            dbg!(&src, &codec);
             let got = codec.decode(&mut src);
-
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
 
             assert_eq!(expected, got);
