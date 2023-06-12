@@ -196,6 +196,7 @@ impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "quirk_crlf_relaxed")]
     use std::num::NonZeroU32;
 
     use bytes::BytesMut;
