@@ -45,6 +45,8 @@ mod encode;
 mod tests {
     use std::num::NonZeroU32;
 
+    use imap_types::core::LiteralMode;
+
     use super::*;
     use crate::{
         command::{Command, CommandBody},
@@ -182,7 +184,7 @@ mod tests {
                 Err(DecodeError::LiteralFound {
                     length: 5,
                     #[cfg(feature = "ext_literal")]
-                    sync: true,
+                    mode: LiteralMode::Sync,
                 }),
             ),
             #[cfg(feature = "ext_literal")]
@@ -190,7 +192,7 @@ mod tests {
                 b"a select {5+}\r\n".as_ref(),
                 Err(DecodeError::LiteralFound {
                     length: 5,
-                    sync: false,
+                    mode: LiteralMode::NonSync,
                 }),
             ),
             // Incomplete (after literal)
@@ -234,7 +236,7 @@ mod tests {
                 Err(DecodeError::LiteralFound {
                     length: 5,
                     #[cfg(feature = "ext_literal")]
-                    sync: true,
+                    mode: LiteralMode::Sync,
                 }),
             ),
             // Failed

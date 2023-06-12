@@ -12,8 +12,8 @@ use crate::{
         SinglePartExtensionData, SpecificFields,
     },
     core::{
-        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted, QuotedChar, Tag,
-        Text,
+        AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, NonEmptyVec, Quoted,
+        QuotedChar, Tag, Text,
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,
@@ -85,7 +85,7 @@ impl<'a> Arbitrary<'a> for Literal<'a> {
             Ok(passed) => Ok(passed),
             #[cfg(feature = "ext_literal")]
             Ok(mut passed) => {
-                passed.sync = bool::arbitrary(u)?;
+                passed.mode = LiteralMode::arbitrary(u)?;
                 Ok(passed)
             }
             Err(_) => Err(arbitrary::Error::IncorrectFormat),

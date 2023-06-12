@@ -1,5 +1,6 @@
 use std::num::{ParseIntError, TryFromIntError};
 
+use imap_types::core::LiteralMode;
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
 #[cfg(feature = "ext_idle")]
@@ -26,7 +27,7 @@ pub enum IMAPErrorKind {
     Literal {
         length: u32,
         #[cfg(feature = "ext_literal")]
-        sync: bool,
+        mode: LiteralMode,
     },
     BadNumber,
     BadBase64,
@@ -95,7 +96,7 @@ pub enum DecodeError {
     LiteralFound {
         length: u32,
         #[cfg(feature = "ext_literal")]
-        sync: bool,
+        mode: LiteralMode,
     },
 
     // Decoding failed.
@@ -117,13 +118,13 @@ macro_rules! impl_decode_for_object {
                                 IMAPErrorKind::Literal {
                                     length,
                                     #[cfg(feature = "ext_literal")]
-                                    sync,
+                                    mode,
                                 },
                             ..
                         } => Err(DecodeError::LiteralFound {
                             length,
                             #[cfg(feature = "ext_literal")]
-                            sync,
+                            mode,
                         }),
                         _ => Err(DecodeError::Failed),
                     },
@@ -266,7 +267,7 @@ mod tests {
                     length: 5,
 
                     #[cfg(feature = "ext_literal")]
-                    sync: true,
+                    mode: LiteralMode::Sync,
                 }),
             ),
             // Incomplete (after literal)
@@ -383,7 +384,7 @@ mod tests {
                 Err(DecodeError::LiteralFound {
                     length: 5,
                     #[cfg(feature = "ext_literal")]
-                    sync: true,
+                    mode: LiteralMode::Sync,
                 }),
             ),
             // Failed
