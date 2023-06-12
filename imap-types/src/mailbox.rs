@@ -36,6 +36,13 @@ impl<'a> ListCharString<'a> {
         Ok(())
     }
 
+    /// Constructs a list char string without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
