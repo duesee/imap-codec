@@ -34,7 +34,7 @@ pub fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
 
     Ok((
         remaining,
-        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate::unchecked),
+        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate::unvalidated),
     ))
 }
 
@@ -125,7 +125,7 @@ pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
             let local_datetime = NaiveDateTime::new(date, time);
 
             if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, DateTime::unchecked(datetime)))
+                Ok((remaining, DateTime::unvalidated(datetime)))
             } else {
                 Err(nom::Err::Failure(IMAPParseError {
                     input,
@@ -255,21 +255,21 @@ mod tests {
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
         );
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
         );
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
         );
     }
 
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(rem, b"");
         assert_eq!(
             val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unchecked)
+            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
         );
     }
 

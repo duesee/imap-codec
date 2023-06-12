@@ -49,7 +49,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // Then, we send a login command to the server ...
-    let tag_login = Tag::unchecked("A1");
+    let tag_login = Tag::unvalidated("A1");
     let cmd = Command {
         tag: tag_login.clone(),
         body: CommandBody::login("alice", "password").context("Could not create command")?,
@@ -88,7 +88,7 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    let tag_logout = Tag::unchecked("A2");
+    let tag_logout = Tag::unvalidated("A2");
     let cmd = Command {
         tag: tag_logout.clone(),
         body: CommandBody::Logout,

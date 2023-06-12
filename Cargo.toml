@@ -43,7 +43,7 @@ bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 # The `unchecked` feature unlocks several `unchecked` methods that allow to bypass syntax checks when
 # creating types. This may allow to skip duplicate checks when all preconditions are known to be true.
-imap-types = { path = "imap-types", default-features = false, features = ["unchecked"] }
+imap-types = { path = "imap-types", default-features = false, features = ["unvalidated"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.29"

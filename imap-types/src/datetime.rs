@@ -12,9 +12,9 @@ use thiserror::Error;
 pub struct DateTime(chrono::DateTime<FixedOffset>);
 
 impl DateTime {
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked(value: chrono::DateTime<FixedOffset>) -> Self {
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated(value: chrono::DateTime<FixedOffset>) -> Self {
         Self(value)
     }
 }
@@ -89,9 +89,9 @@ impl ToBoundedStatic for DateTime {
 pub struct NaiveDate(chrono::NaiveDate);
 
 impl NaiveDate {
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked(value: chrono::NaiveDate) -> Self {
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated(value: chrono::NaiveDate) -> Self {
         Self(value)
     }
 }

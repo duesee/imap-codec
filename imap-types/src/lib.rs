@@ -21,7 +21,7 @@
 //! Make good use of them.
 //! More convenient constructors are available for types that are more cumbersome to create.
 //!
-//! Note: When you are *sure* that the thing you want to create is valid, you can unlock various `unchecked(...)` functions through the `unchecked` feature.
+//! Note: When you are *sure* that the thing you want to create is valid, you can unlock various `unvalidated(...)` functions through the `unvalidated` feature.
 //! This allows us to bypass certain checks in release builds.
 //!
 //!

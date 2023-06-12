@@ -2,7 +2,7 @@ use imap_types::{
     command::{Command, CommandBody},
     core::Literal,
 };
-#[cfg(feature = "unchecked")]
+#[cfg(feature = "unvalidated")]
 use imap_types::{
     core::{AString, Atom, Tag},
     secret::Secret,
@@ -22,15 +22,15 @@ fn test_readme() {
     )
     .unwrap();
 
-    #[cfg(feature = "unchecked")]
+    #[cfg(feature = "unvalidated")]
     {
         let tag = Tag::try_from("A1").unwrap();
 
         let _ = Command {
             tag,
             body: CommandBody::Login {
-                username: AString::from(Atom::unchecked("alice")),
-                password: Secret::new(AString::from(Atom::unchecked("password"))),
+                username: AString::from(Atom::unvalidated("alice")),
+                password: Secret::new(AString::from(Atom::unvalidated("password"))),
             },
         };
     }

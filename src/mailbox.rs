@@ -31,8 +31,8 @@ pub fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
             //
             // `unwrap` is safe here, because `is_list_char` enforces that the bytes ...
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
-            //   * are valid according to `ListCharString::verify()`, i.e., `unchecked` is safe.
-            ListMailbox::Token(ListCharString::unchecked(
+            //   * are valid according to `ListCharString::verify()`, i.e., `unvalidated` is safe.
+            ListMailbox::Token(ListCharString::unvalidated(
                 std::str::from_utf8(bytes).unwrap(),
             ))
         }),

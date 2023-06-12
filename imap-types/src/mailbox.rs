@@ -19,7 +19,7 @@ use crate::{
 pub struct ListCharString<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> ListCharString<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), ListCharStringError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ListCharStringError> {
         let value = value.as_ref();
 
         if value.is_empty() {
@@ -36,16 +36,16 @@ impl<'a> ListCharString<'a> {
         Ok(())
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -55,7 +55,7 @@ impl<'a> TryFrom<&'a str> for ListCharString<'a> {
     type Error = ListCharStringError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Self(Cow::Borrowed(value)))
     }
@@ -65,7 +65,7 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
     type Error = ListCharStringError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Self(Cow::Owned(value)))
     }
@@ -200,7 +200,7 @@ impl<'a> From<AString<'a>> for Mailbox<'a> {
 pub struct MailboxOther<'a>(pub(crate) AString<'a>);
 
 impl<'a> MailboxOther<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), MailboxOtherError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), MailboxOtherError> {
         if value.as_ref().to_ascii_lowercase() == b"inbox" {
             return Err(MailboxOtherError::Reserved);
         }
@@ -221,7 +221,7 @@ macro_rules! impl_try_from {
             fn try_from(value: $from) -> Result<Self, Self::Error> {
                 let astring = AString::try_from(value)?;
 
-                Self::verify(&astring)?;
+                Self::validate(&astring)?;
 
                 Ok(Self(astring))
             }
@@ -238,7 +238,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     type Error = MailboxOtherError;
 
     fn try_from(value: AString<'a>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Self(value))
     }

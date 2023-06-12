@@ -296,7 +296,7 @@ mod tests {
                 Err(ImapServerCodecError::Framing(FramingError::NotCrLf)),
                 #[cfg(feature = "quirk_crlf_relaxed")]
                 Ok(Some(Event::Command(Command {
-                    tag: Tag::unchecked("a"),
+                    tag: Tag::unvalidated("a"),
                     body: CommandBody::Noop,
                 }))),
             ),

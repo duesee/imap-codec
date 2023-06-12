@@ -393,7 +393,7 @@ fn body_extension_limited<'a>(
         map(number, BodyExtension::Number),
         map(
             delimited(tag(b"("), separated_list1(sp, body_extension), tag(b")")),
-            |body_extensions| BodyExtension::List(NonEmptyVec::unchecked(body_extensions)),
+            |body_extensions| BodyExtension::List(NonEmptyVec::unvalidated(body_extensions)),
         ),
     ))(input)
 }
