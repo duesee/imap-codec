@@ -59,7 +59,7 @@
 //!     codec::{Decode, Encode, Fragment},
 //!     command::Command,
 //! };
-//! use imap_types::command::CommandBody;
+//! use imap_types::{command::CommandBody, core::LiteralMode};
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
 //!
@@ -75,15 +75,16 @@
 //!             println!("S: + ...")
 //!         }
 //!         #[cfg(feature = "ext_literal")]
-//!         Fragment::Literal { data, sync } => {
-//!             if sync {
+//!         Fragment::Literal { data, mode } => match mode {
+//!             LiteralMode::Sync => {
 //!                 // Wait for a continuation request.
 //!                 println!("S: + ...")
-//!             } else {
+//!             }
+//!             LiteralMode::NonSync => {
 //!                 // We don't need to wait for a continuation request
 //!                 // as the server will also not send it.
 //!             }
-//!         }
+//!         },
 //!     }
 //! }
 //! ```

@@ -156,8 +156,17 @@ pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     let (remaining, length) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
 
     #[cfg(feature = "ext_literal")]
-    let (remaining, (length, plus)) = terminated(
-        delimited(tag(b"{"), tuple((number, opt(char('+')))), tag(b"}")),
+    let (remaining, (length, mode)) = terminated(
+        delimited(
+            tag(b"{"),
+            tuple((
+                number,
+                map(opt(char('+')), |i| {
+                    i.map(|_| LiteralMode::NonSync).unwrap_or(LiteralMode::Sync)
+                }),
+            )),
+            tag(b"}"),
+        ),
         crlf,
     )(input)?;
 
@@ -169,7 +178,7 @@ pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
             kind: IMAPErrorKind::Literal {
                 length,
                 #[cfg(feature = "ext_literal")]
-                sync: plus.is_none(),
+                mode,
             },
         }));
     }
@@ -181,9 +190,7 @@ pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
         Ok(literal) => Ok((remaining, literal)),
         #[cfg(feature = "ext_literal")]
         Ok(mut literal) => {
-            if plus.is_some() {
-                literal.sync = false;
-            }
+            literal.set_mode(mode);
 
             Ok((remaining, literal))
         }

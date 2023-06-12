@@ -413,7 +413,7 @@ pub struct Literal<'a> {
     /// has more than 4096 bytes a non-synchronizing literal must still be treated as synchronizing.
     #[cfg(feature = "ext_literal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
-    pub sync: bool,
+    pub(crate) mode: LiteralMode,
 }
 
 impl<'a> Literal<'a> {
@@ -436,15 +436,27 @@ impl<'a> Literal<'a> {
 
     #[cfg(feature = "ext_literal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
+    pub fn mode(&self) -> LiteralMode {
+        self.mode
+    }
+
+    #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
+    pub fn set_mode(&mut self, mode: LiteralMode) {
+        self.mode = mode;
+    }
+
+    #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub fn into_sync(mut self) -> Self {
-        self.sync = true;
+        self.mode = LiteralMode::Sync;
         self
     }
 
     #[cfg(feature = "ext_literal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub fn into_non_sync(mut self) -> Self {
-        self.sync = false;
+        self.mode = LiteralMode::NonSync;
         self
     }
 
@@ -461,7 +473,7 @@ impl<'a> Literal<'a> {
     /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
-    pub fn unvalidated<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
+    pub fn unvalidated<D>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
     {
@@ -473,7 +485,26 @@ impl<'a> Literal<'a> {
         Self {
             data,
             #[cfg(feature = "ext_literal")]
-            sync,
+            mode: LiteralMode::Sync,
+        }
+    }
+
+    #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated_non_sync<D>(data: D) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        let data = data.into();
+
+        #[cfg(debug_assertions)]
+        Self::validate(&data).unwrap();
+
+        Self {
+            data,
+            mode: LiteralMode::NonSync,
         }
     }
 }
@@ -487,7 +518,7 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
         Ok(Literal {
             data: Cow::Borrowed(value),
             #[cfg(feature = "ext_literal")]
-            sync: true,
+            mode: LiteralMode::Sync,
         })
     }
 }
@@ -501,7 +532,7 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
         Ok(Literal {
             data: Cow::Owned(value),
             #[cfg(feature = "ext_literal")]
-            sync: true,
+            mode: LiteralMode::Sync,
         })
     }
 }
@@ -515,7 +546,7 @@ impl<'a> TryFrom<&'a str> for Literal<'a> {
         Ok(Literal {
             data: Cow::Borrowed(value.as_bytes()),
             #[cfg(feature = "ext_literal")]
-            sync: true,
+            mode: LiteralMode::Sync,
         })
     }
 }
@@ -529,7 +560,7 @@ impl<'a> TryFrom<String> for Literal<'a> {
         Ok(Literal {
             data: Cow::Owned(value.into_bytes()),
             #[cfg(feature = "ext_literal")]
-            sync: true,
+            mode: LiteralMode::Sync,
         })
     }
 }
@@ -538,6 +569,20 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
     fn as_ref(&self) -> &[u8] {
         &self.data
     }
+}
+
+/// Literal mode, i.e., sync or non-sync.
+#[cfg(feature = "ext_literal")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LiteralMode {
+    /// A synchronizing literal, i.e., `{<n>}\r\n<data>`.
+    Sync,
+    /// A non-synchronizing literal according to RFC 7888, i.e., `{<n>+}\r\n<data>`.
+    NonSync,
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]

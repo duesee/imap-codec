@@ -2,6 +2,7 @@ use std::{io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
+use imap_types::core::LiteralMode;
 use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
 #[cfg(feature = "ext_compress")]
@@ -59,7 +60,7 @@ pub trait Encode {
 ///         #[cfg(not(feature = "ext_literal"))]
 ///         Fragment::Literal { data } => {}
 ///         #[cfg(feature = "ext_literal")]
-///         Fragment::Literal { data, sync } => {}
+///         Fragment::Literal { data, mode } => {}
 ///     }
 /// }
 /// ```
@@ -107,7 +108,7 @@ pub enum Fragment {
         data: Vec<u8>,
         #[cfg(feature = "ext_literal")]
         #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
-        sync: bool,
+        mode: LiteralMode,
     },
 }
 
@@ -130,11 +131,11 @@ impl EncodeContext {
         })
     }
 
-    pub fn push_literal(&mut self, #[cfg(feature = "ext_literal")] sync: bool) {
+    pub fn push_literal(&mut self, #[cfg(feature = "ext_literal")] mode: LiteralMode) {
         self.items.push(Fragment::Literal {
             data: std::mem::take(&mut self.accumulator),
             #[cfg(feature = "ext_literal")]
-            sync,
+            mode,
         })
     }
 
@@ -557,10 +558,9 @@ impl<'a> Encoder for Literal<'a> {
         write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
 
         #[cfg(feature = "ext_literal")]
-        if self.sync {
-            write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
-        } else {
-            write!(ctx, "{{{}+}}\r\n", self.as_ref().len())?;
+        match self.mode() {
+            LiteralMode::Sync => write!(ctx, "{{{}}}\r\n", self.as_ref().len())?,
+            LiteralMode::NonSync => write!(ctx, "{{{}+}}\r\n", self.as_ref().len())?,
         }
 
         ctx.push_line();
@@ -570,7 +570,7 @@ impl<'a> Encoder for Literal<'a> {
         #[cfg(not(feature = "ext_literal"))]
         ctx.push_literal();
         #[cfg(feature = "ext_literal")]
-        ctx.push_literal(self.sync);
+        ctx.push_literal(self.mode());
 
         Ok(())
     }
@@ -1727,11 +1727,12 @@ mod tests {
         let cmd = Command::new(
             "A",
             CommandBody::login(
-                AString::from(Literal::unvalidated(
-                    b"alice".as_ref(),
+                AString::from(
+                    #[cfg(not(feature = "ext_literal"))]
+                    Literal::unvalidated(b"alice".as_ref()),
                     #[cfg(feature = "ext_literal")]
-                    false,
-                )),
+                    Literal::unvalidated_non_sync(b"alice".as_ref()),
+                ),
                 "password",
             )
             .unwrap(),
@@ -1760,11 +1761,10 @@ mod tests {
                     out.extend_from_slice(&data);
                 }
                 #[cfg(feature = "ext_literal")]
-                Fragment::Literal { data, sync } => {
-                    if sync {
-                        println!("C: <Waiting for continuation request>");
-                    } else {
-                        println!("C: <Skipped continuation request>");
+                Fragment::Literal { data, mode } => {
+                    match mode {
+                        LiteralMode::Sync => println!("C: <Waiting for continuation request>"),
+                        LiteralMode::NonSync => println!("C: <Skipped continuation request>"),
                     }
 
                     println!("C: {}", escape_byte_string(&data));
@@ -1799,7 +1799,7 @@ mod tests {
                     Fragment::Literal {
                         data: b"\xCA\xFE".to_vec(),
                         #[cfg(feature = "ext_literal")]
-                        sync: true,
+                        mode: LiteralMode::Sync,
                     },
                     Fragment::Line {
                         data: b"\r\n".to_vec(),
@@ -1866,11 +1866,7 @@ mod tests {
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,
-                        data: NString::from(Literal::unvalidated(
-                            b"ABCDE".as_ref(),
-                            #[cfg(feature = "ext_literal")]
-                            true,
-                        )),
+                        data: NString::from(Literal::unvalidated(b"ABCDE".as_ref())),
                     }),
                 }),
                 [
@@ -1880,7 +1876,7 @@ mod tests {
                     Fragment::Literal {
                         data: b"ABCDE".to_vec(),
                         #[cfg(feature = "ext_literal")]
-                        sync: true,
+                        mode: LiteralMode::Sync,
                     },
                     Fragment::Line {
                         data: b")\r\n".to_vec(),
@@ -1895,7 +1891,7 @@ mod tests {
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,
-                        data: NString::from(Literal::unvalidated(b"ABCDE".as_ref(), false)),
+                        data: NString::from(Literal::unvalidated_non_sync(b"ABCDE".as_ref())),
                     }),
                 }),
                 [
@@ -1904,7 +1900,7 @@ mod tests {
                     },
                     Fragment::Literal {
                         data: b"ABCDE".to_vec(),
-                        sync: false,
+                        mode: LiteralMode::NonSync,
                     },
                     Fragment::Line {
                         data: b")\r\n".to_vec(),

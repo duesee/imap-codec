@@ -139,7 +139,7 @@ impl<'a> CompareCT<Literal<'a>> for Literal<'a> {
         #[cfg(not(feature = "ext_literal"))]
         return self.as_ref().ct_eq(other.as_ref()).unwrap_u8() == 1;
         #[cfg(feature = "ext_literal")]
-        return self.as_ref().ct_eq(other.as_ref()).unwrap_u8() == 1 && self.sync == other.sync;
+        return self.as_ref().ct_eq(other.as_ref()).unwrap_u8() == 1 && self.mode == other.mode;
     }
 }
 
