@@ -1324,18 +1324,26 @@ impl<'a> CommandBody<'a> {
 
     // ----- Constructors -----
 
-    #[cfg(not(feature = "ext_sasl_ir"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     pub fn authenticate(mechanism: AuthMechanism<'a>) -> Self {
-        CommandBody::Authenticate { mechanism }
+        #[cfg(feature = "ext_sasl_ir")]
+        return CommandBody::Authenticate {
+            mechanism,
+            initial_response: None,
+        };
+
+        #[cfg(not(feature = "ext_sasl_ir"))]
+        return CommandBody::Authenticate { mechanism };
     }
 
     #[cfg(feature = "ext_sasl_ir")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
-    pub fn authenticate(mechanism: AuthMechanism<'a>, initial_response: Option<&'a [u8]>) -> Self {
+    pub fn authenticate_with_ir<I>(mechanism: AuthMechanism<'a>, initial_response: I) -> Self
+    where
+        I: Into<Cow<'a, [u8]>>,
+    {
         CommandBody::Authenticate {
             mechanism,
-            initial_response: initial_response.map(|ir| Secret::new(Cow::Borrowed(ir))),
+            initial_response: Some(Secret::new(initial_response.into())),
         }
     }
 
@@ -1652,26 +1660,12 @@ mod tests {
             CommandBody::Logout,
             #[cfg(feature = "starttls")]
             CommandBody::StartTLS,
-            CommandBody::authenticate(
-                AuthMechanism::Plain,
-                #[cfg(feature = "ext_sasl_ir")]
-                None,
-            ),
-            CommandBody::authenticate(
-                AuthMechanism::Login,
-                #[cfg(feature = "ext_sasl_ir")]
-                None,
-            ),
-            CommandBody::authenticate(
-                AuthMechanism::Plain,
-                #[cfg(feature = "ext_sasl_ir")]
-                Some(b"XXXXXXXX"),
-            ),
-            CommandBody::authenticate(
-                AuthMechanism::Login,
-                #[cfg(feature = "ext_sasl_ir")]
-                Some(b"YYYYYYYY"),
-            ),
+            CommandBody::authenticate(AuthMechanism::Plain),
+            CommandBody::authenticate(AuthMechanism::Login),
+            #[cfg(feature = "ext_sasl_ir")]
+            CommandBody::authenticate_with_ir(AuthMechanism::Plain, b"XXXXXXXX".as_ref()),
+            #[cfg(feature = "ext_sasl_ir")]
+            CommandBody::authenticate_with_ir(AuthMechanism::Login, b"YYYYYYYY".as_ref()),
             CommandBody::login("alice", "I_am_an_atom").unwrap(),
             CommandBody::login("alice", "I am \\ \"quoted\"").unwrap(),
             CommandBody::login("alice", "I am a literal²").unwrap(),

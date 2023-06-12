@@ -1808,15 +1808,7 @@ mod tests {
                 .as_ref(),
             ),
             (
-                Command::new(
-                    "A",
-                    CommandBody::authenticate(
-                        AuthMechanism::Login,
-                        #[cfg(feature = "ext_sasl_ir")]
-                        None,
-                    ),
-                )
-                .unwrap(),
+                Command::new("A", CommandBody::authenticate(AuthMechanism::Login)).unwrap(),
                 [Fragment::Line {
                     data: b"A AUTHENTICATE LOGIN\r\n".to_vec(),
                 }]
@@ -1826,7 +1818,7 @@ mod tests {
             (
                 Command::new(
                     "A",
-                    CommandBody::authenticate(AuthMechanism::Login, Some(b"alice")),
+                    CommandBody::authenticate_with_ir(AuthMechanism::Login, b"alice".as_ref()),
                 )
                 .unwrap(),
                 [Fragment::Line {
@@ -1834,9 +1826,8 @@ mod tests {
                 }]
                 .as_ref(),
             ),
-            #[cfg(feature = "ext_sasl_ir")]
             (
-                Command::new("A", CommandBody::authenticate(AuthMechanism::Plain, None)).unwrap(),
+                Command::new("A", CommandBody::authenticate(AuthMechanism::Plain)).unwrap(),
                 [Fragment::Line {
                     data: b"A AUTHENTICATE PLAIN\r\n".to_vec(),
                 }]
@@ -1846,7 +1837,10 @@ mod tests {
             (
                 Command::new(
                     "A",
-                    CommandBody::authenticate(AuthMechanism::Plain, Some(b"\x00alice\x00pass")),
+                    CommandBody::authenticate_with_ir(
+                        AuthMechanism::Plain,
+                        b"\x00alice\x00pass".as_ref(),
+                    ),
                 )
                 .unwrap(),
                 [Fragment::Line {
