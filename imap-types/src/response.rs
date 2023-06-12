@@ -872,6 +872,13 @@ impl<'a> Code<'a> {
 pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 impl<'a> CodeOther<'a> {
+    /// Constructs an unsupported code without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `data` is valid. Failing to do so may create invalid/unparsable
+    /// IMAP messages, or even produce unintended protocol flows. Do not call this constructor with
+    /// untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D: 'a>(data: D) -> Self
@@ -1049,6 +1056,13 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
 
 impl<'a> CapabilityOther<'a> {
+    /// Constructs an unsupported capability without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `data` is valid. Failing to do so may create invalid/unparsable
+    /// IMAP messages, or even produce unintended protocol flows. Do not call this constructor with
+    /// untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self

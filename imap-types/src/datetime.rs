@@ -12,17 +12,7 @@ use thiserror::Error;
 pub struct DateTime(chrono::DateTime<FixedOffset>);
 
 impl DateTime {
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
-    pub fn unvalidated(value: chrono::DateTime<FixedOffset>) -> Self {
-        Self(value)
-    }
-}
-
-impl TryFrom<chrono::DateTime<FixedOffset>> for DateTime {
-    type Error = DateTimeError;
-
-    fn try_from(value: chrono::DateTime<FixedOffset>) -> Result<Self, Self::Error> {
+    pub fn validate(value: &chrono::DateTime<FixedOffset>) -> Result<(), DateTimeError> {
         // Only a subset of `chrono`s `DateTime<FixedOffset>` is valid in IMAP.
         if !(0..=9999).contains(&value.year()) {
             return Err(DateTimeError::YearOutOfRange { got: value.year() });
@@ -39,6 +29,29 @@ impl TryFrom<chrono::DateTime<FixedOffset>> for DateTime {
                 got: value.offset().local_minus_utc() % 60,
             });
         }
+
+        Ok(())
+    }
+
+    /// Constructs a date time without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated(value: chrono::DateTime<FixedOffset>) -> Self {
+        Self(value)
+    }
+}
+
+impl TryFrom<chrono::DateTime<FixedOffset>> for DateTime {
+    type Error = DateTimeError;
+
+    fn try_from(value: chrono::DateTime<FixedOffset>) -> Result<Self, Self::Error> {
+        Self::validate(&value)?;
 
         Ok(Self(value))
     }
@@ -89,6 +102,22 @@ impl ToBoundedStatic for DateTime {
 pub struct NaiveDate(chrono::NaiveDate);
 
 impl NaiveDate {
+    pub fn validate(value: &chrono::NaiveDate) -> Result<(), NaiveDateError> {
+        // Only a subset of `chrono`s `NaiveDate` is valid in IMAP.
+        if !(0..=9999).contains(&value.year()) {
+            return Err(NaiveDateError::YearOutOfRange { got: value.year() });
+        }
+
+        Ok(())
+    }
+
+    /// Constructs a naive date without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: chrono::NaiveDate) -> Self {
@@ -100,10 +129,7 @@ impl TryFrom<chrono::NaiveDate> for NaiveDate {
     type Error = NaiveDateError;
 
     fn try_from(value: chrono::NaiveDate) -> Result<Self, Self::Error> {
-        // Only a subset of `chrono`s `NaiveDate` is valid in IMAP.
-        if !(0..=9999).contains(&value.year()) {
-            return Err(NaiveDateError::YearOutOfRange { got: value.year() });
-        }
+        Self::validate(&value)?;
 
         Ok(Self(value))
     }

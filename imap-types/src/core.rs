@@ -84,6 +84,13 @@ impl<'a> Atom<'a> {
         self.0
     }
 
+    /// Constructs an atom without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -199,6 +206,13 @@ impl<'a> AtomExt<'a> {
         self.0
     }
 
+    /// Constructs an extended atom without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -438,13 +452,13 @@ impl<'a> Literal<'a> {
         self.data
     }
 
-    /// Create a literal from a byte sequence without checking
-    /// that it conforms to IMAP's literal specification.
+    /// Constructs a literal without validation.
     ///
-    /// # IMAP conformance
+    /// # Warning: IMAP conformance
     ///
-    /// Call this function only when you are sure that the byte sequence
-    /// is a valid literal, i.e., that it does not contain 0x00.
+    /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
@@ -564,13 +578,13 @@ impl<'a> Quoted<'a> {
         self.0
     }
 
-    /// Create a quoted from a string without checking
-    /// that it to conforms to IMAP's quoted specification.
+    /// Constructs a quoted string without validation.
     ///
-    /// # IMAP conformance
+    /// # Warning: IMAP conformance
     ///
-    /// Call this function only when you are sure that the str
-    /// is a valid quoted.
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -842,6 +856,13 @@ impl<'a> Tag<'a> {
         self.0.as_ref()
     }
 
+    /// Constructs a tag without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -944,6 +965,13 @@ impl<'a> Text<'a> {
         self.0
     }
 
+    /// Constructs a text without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1031,6 +1059,13 @@ impl QuotedChar {
         self.0
     }
 
+    /// Constructs a quoted char without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: char) -> Self {
@@ -1152,6 +1187,13 @@ impl<T> NonEmptyVec<T> {
         Ok(())
     }
 
+    /// Constructs a non-empty vector without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: Vec<T>) -> Self {
