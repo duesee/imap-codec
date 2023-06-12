@@ -81,7 +81,7 @@ pub fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 pub fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> {
     map(
         separated_list1(tag(b"."), nz_number),
-        NonEmptyVec::unchecked,
+        NonEmptyVec::unvalidated,
     )(input)
 }
 
@@ -99,7 +99,7 @@ pub fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 pub fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
     map(
         delimited(tag(b"("), separated_list1(sp, header_fld_name), tag(b")")),
-        NonEmptyVec::unchecked,
+        NonEmptyVec::unvalidated,
     )(input)
 }
 

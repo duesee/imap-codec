@@ -74,7 +74,7 @@ pub fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
                     terminated(resp_text_code, tag(b"]")),
                     map(
                         terminated(take_while(|b: u8| b != b']'), tag(b"]")),
-                        |bytes: &[u8]| Code::Other(CodeOther::unchecked(bytes)),
+                        |bytes: &[u8]| Code::Other(CodeOther::unvalidated(bytes)),
                     ),
                 )),
             ),
@@ -167,7 +167,7 @@ pub fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    Ok((rem, NonEmptyVec::unchecked(caps)))
+    Ok((rem, NonEmptyVec::unvalidated(caps)))
 }
 
 /// `capability = ("AUTH=" auth-type) /

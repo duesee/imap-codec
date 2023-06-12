@@ -22,8 +22,8 @@ fn test_construction_of_atom() {
     // Panics
     // let mut atm = Atom::try_from(" x ").unwrap();
 
-    // #[cfg(feature = "unchecked")]
-    // let atm = Atom::unchecked(" x ");
+    // #[cfg(feature = "unvalidated")]
+    // let atm = Atom::unvalidated(" x ");
 }
 
 #[test]

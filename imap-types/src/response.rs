@@ -872,9 +872,9 @@ impl<'a> Code<'a> {
 pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 impl<'a> CodeOther<'a> {
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<D: 'a>(data: D) -> Self
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<D: 'a>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
     {
@@ -1049,13 +1049,13 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
 
 impl<'a> CapabilityOther<'a> {
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
-        Self(Atom::unchecked(inner))
+        Self(Atom::unvalidated(inner))
     }
 
     pub fn inner(&self) -> &Atom<'a> {

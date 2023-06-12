@@ -51,7 +51,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 pub struct AuthMechanismOther<'a>(Atom<'a>);
 
 impl<'a> AuthMechanismOther<'a> {
-    pub fn verify(atom: &Atom<'a>) -> Result<(), AuthMechanismOtherError> {
+    pub fn validate(atom: &Atom<'a>) -> Result<(), AuthMechanismOtherError> {
         if matches!(
             atom.as_ref().to_ascii_lowercase().as_ref(),
             "plain" | "login",
@@ -75,7 +75,7 @@ macro_rules! impl_try_from {
             fn try_from(value: $from) -> Result<Self, Self::Error> {
                 let atom = Atom::try_from(value)?;
 
-                Self::verify(&atom)?;
+                Self::validate(&atom)?;
 
                 Ok(Self(atom))
             }
@@ -92,7 +92,7 @@ impl<'a> TryFrom<Atom<'a>> for AuthMechanismOther<'a> {
     type Error = AuthMechanismOtherError;
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        Self::verify(&atom)?;
+        Self::validate(&atom)?;
 
         Ok(Self(atom))
     }
