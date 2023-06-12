@@ -59,7 +59,7 @@ pub(crate) use impl_try_from;
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Atom<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), AtomError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomError> {
         let value = value.as_ref();
 
         if value.is_empty() {
@@ -84,16 +84,23 @@ impl<'a> Atom<'a> {
         self.0
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    /// Constructs an atom without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -103,9 +110,9 @@ impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
     type Error = AtomError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
@@ -114,9 +121,9 @@ impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
     type Error = AtomError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
@@ -125,7 +132,7 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
     type Error = AtomError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Self(Cow::Borrowed(value)))
     }
@@ -135,7 +142,7 @@ impl<'a> TryFrom<String> for Atom<'a> {
     type Error = AtomError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Atom(Cow::Owned(value)))
     }
@@ -145,7 +152,7 @@ impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
     type Error = AtomError;
 
     fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
-        Self::verify(value.as_bytes())?;
+        Self::validate(value.as_bytes())?;
 
         Ok(Atom(value))
     }
@@ -174,7 +181,7 @@ pub enum AtomError {
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> AtomExt<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), AtomExtError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomExtError> {
         let value = value.as_ref();
 
         if value.is_empty() {
@@ -199,16 +206,23 @@ impl<'a> AtomExt<'a> {
         self.0
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    /// Constructs an extended atom without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -218,9 +232,9 @@ impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
     type Error = AtomExtError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
@@ -229,9 +243,9 @@ impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
     type Error = AtomExtError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
@@ -240,7 +254,7 @@ impl<'a> TryFrom<&'a str> for AtomExt<'a> {
     type Error = AtomExtError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Self(Cow::Borrowed(value)))
     }
@@ -250,7 +264,7 @@ impl<'a> TryFrom<String> for AtomExt<'a> {
     type Error = AtomExtError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Self(Cow::Owned(value)))
     }
@@ -403,7 +417,7 @@ pub struct Literal<'a> {
 }
 
 impl<'a> Literal<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), LiteralError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), LiteralError> {
         let value = value.as_ref();
 
         if let Some(position) = value.iter().position(|b| !is_char8(*b)) {
@@ -438,23 +452,23 @@ impl<'a> Literal<'a> {
         self.data
     }
 
-    /// Create a literal from a byte sequence without checking
-    /// that it conforms to IMAP's literal specification.
+    /// Constructs a literal without validation.
     ///
-    /// # Safety
+    /// # Warning: IMAP conformance
     ///
-    /// Call this function only when you are sure that the byte sequence
-    /// is a valid literal, i.e., that it does not contain 0x00.
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
+    /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<D>(data: D, #[cfg(feature = "ext_literal")] sync: bool) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
     {
         let data = data.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(&data).unwrap();
+        Self::validate(&data).unwrap();
 
         Self {
             data,
@@ -468,7 +482,7 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
     type Error = LiteralError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Literal {
             data: Cow::Borrowed(value),
@@ -482,7 +496,7 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
     type Error = LiteralError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Literal {
             data: Cow::Owned(value),
@@ -496,7 +510,7 @@ impl<'a> TryFrom<&'a str> for Literal<'a> {
     type Error = LiteralError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Literal {
             data: Cow::Borrowed(value.as_bytes()),
@@ -510,7 +524,7 @@ impl<'a> TryFrom<String> for Literal<'a> {
     type Error = LiteralError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Literal {
             data: Cow::Owned(value.into_bytes()),
@@ -543,7 +557,7 @@ pub enum LiteralError {
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Quoted<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), QuotedError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), QuotedError> {
         let value = value.as_ref();
 
         if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
@@ -564,23 +578,23 @@ impl<'a> Quoted<'a> {
         self.0
     }
 
-    /// Create a quoted from a string without checking
-    /// that it to conforms to IMAP's quoted specification.
+    /// Constructs a quoted string without validation.
     ///
-    /// # Safety
+    /// # Warning: IMAP conformance
     ///
-    /// Call this function only when you are sure that the str
-    /// is a valid quoted.
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -590,9 +604,9 @@ impl<'a> TryFrom<&'a [u8]> for Quoted<'a> {
     type Error = QuotedError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Quoted::verify(value)?;
+        Quoted::validate(value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Quoted(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
@@ -601,9 +615,9 @@ impl TryFrom<Vec<u8>> for Quoted<'_> {
     type Error = QuotedError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Quoted::verify(&value)?;
+        Quoted::validate(&value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Quoted(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
@@ -612,7 +626,7 @@ impl<'a> TryFrom<&'a str> for Quoted<'a> {
     type Error = QuotedError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Quoted::verify(value)?;
+        Quoted::validate(value)?;
 
         Ok(Quoted(Cow::Borrowed(value)))
     }
@@ -622,7 +636,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
     type Error = QuotedError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Quoted::verify(&value)?;
+        Quoted::validate(&value)?;
 
         Ok(Quoted(Cow::Owned(value)))
     }
@@ -818,7 +832,7 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Tag<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), TagError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TagError> {
         let value = value.as_ref();
 
         if value.is_empty() {
@@ -842,16 +856,23 @@ impl<'a> Tag<'a> {
         self.0.as_ref()
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    /// Constructs a tag without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -861,9 +882,9 @@ impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
     type Error = TagError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
-        // Safety: `unwrap` can't fail due to `verify`.
+        // Safety: `unwrap` can't fail due to `validate`.
         Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
@@ -872,9 +893,9 @@ impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
     type Error = TagError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
-        // Safety: `unwrap` can't fail due to `verify`.
+        // Safety: `unwrap` can't fail due to `validate`.
         Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
@@ -883,7 +904,7 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
     type Error = TagError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Self(Cow::Borrowed(value)))
     }
@@ -893,7 +914,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
     type Error = TagError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Self(Cow::Owned(value)))
     }
@@ -919,7 +940,7 @@ pub enum TagError {
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Text<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), TextError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TextError> {
         let value = value.as_ref();
 
         if value.is_empty() {
@@ -944,16 +965,23 @@ impl<'a> Text<'a> {
         self.0
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(inner: C) -> Self
+    /// Constructs a text without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
         let inner = inner.into();
 
         #[cfg(debug_assertions)]
-        Self::verify(inner.as_bytes()).unwrap();
+        Self::validate(inner.as_bytes()).unwrap();
 
         Self(inner)
     }
@@ -963,9 +991,9 @@ impl<'a> TryFrom<&'a [u8]> for Text<'a> {
     type Error = TextError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Borrowed(from_utf8(value).unwrap())))
     }
 }
@@ -974,9 +1002,9 @@ impl<'a> TryFrom<Vec<u8>> for Text<'a> {
     type Error = TextError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
-        // Safety: `unwrap` can't panic due to `verify`.
+        // Safety: `unwrap` can't panic due to `validate`.
         Ok(Self(Cow::Owned(String::from_utf8(value).unwrap())))
     }
 }
@@ -985,7 +1013,7 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
     type Error = TextError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(Self(Cow::Borrowed(value)))
     }
@@ -995,7 +1023,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     type Error = TextError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::verify(&value)?;
+        Self::validate(&value)?;
 
         Ok(Self(Cow::Owned(value)))
     }
@@ -1015,7 +1043,7 @@ pub enum TextError {
 pub struct QuotedChar(char);
 
 impl QuotedChar {
-    pub fn verify(input: char) -> Result<(), QuotedCharError> {
+    pub fn validate(input: char) -> Result<(), QuotedCharError> {
         if input.is_ascii()
             && (is_any_text_char_except_quoted_specials(input as u8)
                 || input == '\\'
@@ -1031,11 +1059,18 @@ impl QuotedChar {
         self.0
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked(inner: char) -> Self {
+    /// Constructs a quoted char without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated(inner: char) -> Self {
         #[cfg(debug_assertions)]
-        Self::verify(inner).unwrap();
+        Self::validate(inner).unwrap();
 
         Self(inner)
     }
@@ -1045,7 +1080,7 @@ impl TryFrom<char> for QuotedChar {
     type Error = QuotedCharError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
-        Self::verify(value)?;
+        Self::validate(value)?;
 
         Ok(QuotedChar(value))
     }
@@ -1144,7 +1179,7 @@ impl<'a> AsRef<str> for Charset<'a> {
 pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
 
 impl<T> NonEmptyVec<T> {
-    pub fn verify(value: &[T]) -> Result<(), NonEmptyVecError> {
+    pub fn validate(value: &[T]) -> Result<(), NonEmptyVecError> {
         if value.is_empty() {
             return Err(NonEmptyVecError::Empty);
         }
@@ -1152,11 +1187,18 @@ impl<T> NonEmptyVec<T> {
         Ok(())
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked(inner: Vec<T>) -> Self {
+    /// Constructs a non-empty vector without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
-        Self::verify(&inner).unwrap();
+        Self::validate(&inner).unwrap();
 
         Self(inner)
     }
@@ -1176,7 +1218,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     type Error = NonEmptyVecError;
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
-        Self::verify(&inner)?;
+        Self::validate(&inner)?;
 
         Ok(Self(inner))
     }

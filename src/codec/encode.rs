@@ -1727,7 +1727,7 @@ mod tests {
         let cmd = Command::new(
             "A",
             CommandBody::login(
-                AString::from(Literal::unchecked(
+                AString::from(Literal::unvalidated(
                     b"alice".as_ref(),
                     #[cfg(feature = "ext_literal")]
                     false,
@@ -1860,7 +1860,7 @@ mod tests {
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,
-                        data: NString::from(Literal::unchecked(
+                        data: NString::from(Literal::unvalidated(
                             b"ABCDE".as_ref(),
                             #[cfg(feature = "ext_literal")]
                             true,
@@ -1889,7 +1889,7 @@ mod tests {
                     attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
                         section: None,
                         origin: None,
-                        data: NString::from(Literal::unchecked(b"ABCDE".as_ref(), false)),
+                        data: NString::from(Literal::unvalidated(b"ABCDE".as_ref(), false)),
                     }),
                 }),
                 [

@@ -10,11 +10,11 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [features]
-arbitrary = ["dep:arbitrary", "unchecked", "chrono/arbitrary", "chrono/std"]
+arbitrary = ["dep:arbitrary", "unvalidated", "chrono/arbitrary", "chrono/std"]
 default = []
 bounded-static = ["dep:bounded-static", "bounded-static/derive"]
 serde = ["dep:serde", "chrono/serde"]
-unchecked = []
+unvalidated = []
 
 # IMAP
 starttls = []

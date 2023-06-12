@@ -200,7 +200,7 @@ impl<'a> ResourceOther<'a> {
 }
 
 impl<'a> ResourceOther<'a> {
-    pub fn verify(value: impl AsRef<[u8]>) -> Result<(), ResourceOtherError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ResourceOtherError> {
         if matches!(
             value.as_ref().to_ascii_lowercase().as_slice(),
             b"storage" | b"message" | b"mailbox" | b"annotation-storage",
@@ -211,13 +211,20 @@ impl<'a> ResourceOther<'a> {
         Ok(())
     }
 
-    #[cfg(feature = "unchecked")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unchecked")))]
-    pub fn unchecked<C>(value: C) -> Self
+    /// Constructs an unsupported resource without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    #[cfg(feature = "unvalidated")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
+    pub fn unvalidated<C>(value: C) -> Self
     where
         C: Into<Cow<'a, str>>,
     {
-        Self(Atom::unchecked(value))
+        Self(Atom::unvalidated(value))
     }
 }
 
@@ -229,7 +236,7 @@ macro_rules! impl_try_from {
             fn try_from(value: $from) -> Result<Self, Self::Error> {
                 let atom = Atom::try_from(value)?;
 
-                Self::verify(atom.as_ref())?;
+                Self::validate(atom.as_ref())?;
 
                 Ok(Self(atom))
             }
@@ -246,7 +253,7 @@ impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
     type Error = ResourceOtherError;
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        Self::verify(atom.as_ref())?;
+        Self::validate(atom.as_ref())?;
 
         Ok(Self(atom))
     }

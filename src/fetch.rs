@@ -84,7 +84,7 @@ pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValu
         tag(b"("),
         map(
             separated_list1(sp, alt((msg_att_dynamic, msg_att_static))),
-            NonEmptyVec::unchecked,
+            NonEmptyVec::unvalidated,
         ),
         tag(b")"),
     )(input)

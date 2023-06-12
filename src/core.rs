@@ -101,7 +101,7 @@ pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
 
     let (remaining, (_, quoted, _)) = parser(input)?;
 
-    Ok((remaining, Quoted::unchecked(unescape_quoted(quoted))))
+    Ok((remaining, Quoted::unvalidated(unescape_quoted(quoted))))
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
@@ -123,7 +123,7 @@ pub fn quoted_char(input: &[u8]) -> IMAPResult<&[u8], QuotedChar> {
                 },
             ),
         )),
-        QuotedChar::unchecked,
+        QuotedChar::unvalidated,
     )(input)
 }
 
@@ -212,8 +212,8 @@ pub fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
             //
             // `unwrap` is safe, because `is_astring_char` enforces that the bytes ...
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
-            //   * are valid according to `AtomExt::verify(), i.e., `unchecked` is safe.
-            AString::Atom(AtomExt::unchecked(Cow::Borrowed(
+            //   * are valid according to `AtomExt::verify(), i.e., `unvalidated` is safe.
+            AString::Atom(AtomExt::unvalidated(Cow::Borrowed(
                 std::str::from_utf8(bytes).unwrap(),
             )))
         }),
@@ -260,7 +260,10 @@ pub fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
     // `unwrap` is safe, because `is_atom_char` enforces ...
     // * that the string is always UTF8, and ...
     // * contains only the allowed characters.
-    Ok((remaining, Atom::unchecked(from_utf8(parsed_atom).unwrap())))
+    Ok((
+        remaining,
+        Atom::unvalidated(from_utf8(parsed_atom).unwrap()),
+    ))
 }
 
 // ----- nstring ----- nil or string
@@ -288,7 +291,7 @@ pub fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
         // 
         // `is_text_char` makes sure that the sequence of bytes
         // is always valid ASCII. Thus, it is also valid UTF-8.
-        Text::unchecked(from_utf8(bytes).unwrap()))(input)
+        Text::unvalidated(from_utf8(bytes).unwrap()))(input)
 }
 
 /// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`
@@ -333,15 +336,12 @@ pub fn charset(input: &[u8]) -> IMAPResult<&[u8], Charset> {
 
 /// `tag = 1*<any ASTRING-CHAR except "+">`
 pub fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
-    map(
-        map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
-            // # Safety
-            //
-            // `is_astring_char` ensures that `val` is UTF-8.
-            from_utf8(val).unwrap()
-        }),
-        Tag::unchecked,
-    )(input)
+    map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
+        // # Safety
+        //
+        // `is_astring_char` ensures that `val` is UTF-8.
+        Tag::unvalidated(from_utf8(val).unwrap())
+    })(input)
 }
 
 #[cfg(test)]
