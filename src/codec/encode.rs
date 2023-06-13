@@ -518,7 +518,8 @@ impl<'a> Encoder for AuthMechanismOther<'a> {
 impl Encoder for AuthenticateData {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         let encoded = base64.encode(self.0.declassify());
-        ctx.write_all(encoded.as_bytes())
+        ctx.write_all(encoded.as_bytes())?;
+        ctx.write_all(b"\r\n")
     }
 }
 
