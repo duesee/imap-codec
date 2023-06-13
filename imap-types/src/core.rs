@@ -1,6 +1,20 @@
-//! Core data types
+//! Core data types.
 //!
-//! This module exposes imap-types' "core types" (or "string types").
+//! To ensure correctness and to support all forms of data transmission, imap-types uses types such
+//! as [`AString`], [`Atom`], [`IString`], [`Quoted`], and [`Literal`]. When constructing messages,
+//! imap-types can automatically choose the best representation. However, it's always possible to
+//! manually select a specific representation.
+//!
+//! The core types exist for two reasons. First, they guarantee that invalid messages cannot be
+//! produced. For example, a [`Tag`] will never contain whitespace as this would break parsing.
+//! Furthermore, the representation of a value may change the IMAP protocol flow. A username, for
+//! example, can be represented as an atom, a quoted string, or a literal. While atoms and quoted
+//! strings are similar, a literal requires a different protocol flow and implementations must take
+//! this into account.
+//!
+//! While this seems complicated at first, there are good news: You don't need to think about IMAP
+//! too much. imap-types *ensures* that everything you do is correct. If you are able to construct
+//! an invalid message, this is considered a bug in imap-types.
 //!
 //! # Overview
 //!
@@ -50,15 +64,37 @@ macro_rules! impl_try_from {
 
 pub(crate) use impl_try_from;
 
-/// An atom.
+/// A string subset to model IMAP's `atom`s.
 ///
-/// "An atom consists of one or more non-special characters." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+/// Rules:
+///
+/// * Length must be >= 1
+/// * Only some characters are allowed, e.g., no whitespace
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// atom            = 1*ATOM-CHAR
+/// ATOM-CHAR       = <any CHAR except atom-specials>
+/// CHAR            = %x01-7F
+///                    ; any 7-bit US-ASCII character, excluding NUL
+/// atom-specials   = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials
+/// SP              = %x20
+/// CTL             = %x00-1F / %x7F
+///                    ; controls
+/// list-wildcards  = "%" / "*"
+/// quoted-specials = DQUOTE / "\"
+/// DQUOTE          = %x22
+///                    ; " (Double Quote)
+/// resp-specials   = "]"
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Atom<'a> {
+    /// Validates if value conforms to atom's ABNF definition.
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomError> {
         let value = value.as_ref();
 
@@ -76,10 +112,12 @@ impl<'a> Atom<'a> {
         Ok(())
     }
 
+    /// Returns a reference to the inner value.
     pub fn inner(&self) -> &str {
         self.0.as_ref()
     }
 
+    /// Consumes the atom, returning the inner value.
     pub fn into_inner(self) -> Cow<'a, str> {
         self.0
     }
@@ -164,6 +202,7 @@ impl<'a> AsRef<str> for Atom<'a> {
     }
 }
 
+/// Error during creation of an atom.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum AtomError {
     #[error("Must not be empty")]
@@ -172,15 +211,36 @@ pub enum AtomError {
     ByteNotAllowed { found: u8, position: usize },
 }
 
-/// An (extended) atom.
+/// A string subset to model IMAP's `1*ASTRING-CHAR` ("extended `atom`").
 ///
-/// According to IMAP's formal syntax, an atom with additional allowed chars.
+/// This type is required due to the use of `1*ASTRING-CHAR` in `astring`, see ABNF definition below.
+///
+/// Rules:
+///
+/// * Length must be >= 1
+/// * Only some characters are allowed, e.g., no whitespace
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// astring      = 1*ASTRING-CHAR / string
+/// ;              ^^^^^^^^^^^^^^
+/// ;              |
+/// ;              `AtomExt`
+///
+/// ASTRING-CHAR = ATOM-CHAR / resp-specials
+/// ;              ^^^^^^^^^   ^^^^^^^^^^^^^
+/// ;              |           |
+/// ;              |           Additionally allowed in `AtomExt`
+/// ;              See `Atom`
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> AtomExt<'a> {
+    /// Validates if value conforms to extended atom's ABNF definition.
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomExtError> {
         let value = value.as_ref();
 
@@ -198,10 +258,12 @@ impl<'a> AtomExt<'a> {
         Ok(())
     }
 
+    /// Returns a reference to the inner value.
     pub fn inner(&self) -> &str {
         self.0.as_ref()
     }
 
+    /// Consumes the atom, returning the inner value.
     pub fn into_inner(self) -> Cow<'a, str> {
         self.0
     }
@@ -282,6 +344,7 @@ impl<'a> AsRef<str> for AtomExt<'a> {
     }
 }
 
+/// Error during creation of an extended atom.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum AtomExtError {
     #[error("Must not be empty.")]
@@ -290,22 +353,28 @@ pub enum AtomExtError {
     ByteNotAllowed { found: u8, position: usize },
 }
 
-// ## 4.2. Number
-//
-// A number consists of one or more digit characters, and
-// represents a numeric value.
-
-// ## 4.3. String
-
-/// Either a literal or a quoted string.
+/// Either a quoted string or a literal.
 ///
-/// "The empty string is represented as either "" (a quoted string with zero characters between double quotes) or as {0} followed by CRLF (a literal with an octet count of 0)." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+/// Note: The empty string is represented as either "" (a quoted string with zero characters between
+/// double quotes) or as {0} followed by CRLF (a literal with an octet count of 0).
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// string = quoted / literal
+/// ;        ^^^^^^   ^^^^^^^
+/// ;        |        |
+/// ;        |        See `Literal`
+/// ;        See `Quoted`
+/// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IString<'a> {
+    /// Literal, see [`Literal`].
     Literal(Literal<'a>),
+    /// Quoted string, see[`Quoted`].
     Quoted(Quoted<'a>),
 }
 
@@ -386,19 +455,35 @@ impl<'a> From<Quoted<'a>> for IString<'a> {
 impl<'a> AsRef<[u8]> for IString<'a> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            Self::Literal(literal) => literal.as_ref(),
             Self::Quoted(quoted) => quoted.as_ref().as_bytes(),
+            Self::Literal(literal) => literal.as_ref(),
         }
     }
 }
 
-/// A literal.
+/// A sequence of zero or more (non-null) bytes prefixed with a length.
 ///
 /// "A literal is a sequence of zero or more octets (including CR and LF), prefix-quoted with an octet count in the form of an open brace ("{"), the number of octets, close brace ("}"), and CRLF.
 /// In the case of literals transmitted from server to client, the CRLF is immediately followed by the octet data.
 /// In the case of literals transmitted from client to server, the client MUST wait to receive a command continuation request (...) before sending the octet data (and the remainder of the command).
 ///
 /// Note: Even if the octet count is 0, a client transmitting a literal MUST wait to receive a command continuation request." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// literal = "{" number "}" CRLF *CHAR8
+///           ; Number represents the number of CHAR8s
+/// number  = 1*DIGIT
+///           ; Unsigned 32-bit integer
+///           ; (0 <= n < 4,294,967,296)
+/// DIGIT   = %x30-39
+///           ; 0-9
+/// CRLF    = CR LF
+///           ; Internet standard newline
+/// CHAR8   = %x01-ff
+///           ; any OCTET except NUL, %x00
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -585,6 +670,7 @@ pub enum LiteralMode {
     NonSync,
 }
 
+/// Error during creation of a literal.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum LiteralError {
     #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
@@ -596,6 +682,23 @@ pub enum LiteralError {
 /// "The quoted string form is an alternative that avoids the overhead of processing a literal at the cost of limitations of characters which may be used.
 ///
 /// A quoted string is a sequence of zero or more 7-bit characters, excluding CR and LF, with double quote (<">) characters at each end." ([RFC 3501](https://www.rfc-editor.org/rfc/rfc3501.html))
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// quoted          = DQUOTE *QUOTED-CHAR DQUOTE
+/// DQUOTE          = %x22
+///                   ; " (Double Quote)
+/// QUOTED-CHAR     = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
+/// TEXT-CHAR       = <any CHAR except CR and LF>
+/// CHAR            = %x01-7F
+///                   ; any 7-bit US-ASCII character, excluding NUL
+/// CR              = %x0D
+///                   ; carriage return
+/// LF              = %x0A
+///                   ; linefeed
+/// quoted-specials = DQUOTE / "\"
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -687,6 +790,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
     }
 }
 
+/// Error during creation of a quoted string.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum QuotedError {
     #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
@@ -702,6 +806,17 @@ impl<'a> AsRef<str> for Quoted<'a> {
 /// Either NIL or a string.
 ///
 /// This is modeled using Rust's `Option` type.
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// nstring = string / nil
+/// ;         ^^^^^^
+/// ;         |
+/// ;         See `IString`
+///
+/// nil     = "NIL"
+/// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -739,6 +854,15 @@ impl<'a> From<Quoted<'a>> for NString<'a> {
 }
 
 /// Either an (extended) atom or a string.
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// astring = 1*ASTRING-CHAR / string
+/// ;         ^^^^^^^^^^^^^^
+/// ;         |
+/// ;         See `AtomExt`
+/// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -832,45 +956,29 @@ impl<'a> AsRef<[u8]> for AString<'a> {
     }
 }
 
-// 4.3.1.  8-bit and Binary Strings
-//
-//    8-bit textual and binary mail is supported through the use of a
-//    [MIME-IMB] content transfer encoding.  IMAP4rev1 implementations MAY
-//    transmit 8-bit or multi-octet characters in literals, but SHOULD do
-//    so only when the \[CHARSET\] is identified.
-//
-//    Although a BINARY body encoding is defined, unencoded binary strings
-//    are not permitted.  A "binary string" is any string with NUL
-//    characters.  Implementations MUST encode binary data into a textual
-//    form, such as BASE64, before transmitting the data.  A string with an
-//    excessive amount of CTL characters MAY also be considered to be
-//    binary.
-
-// 4.4.    Parenthesized List
-//
-//    Data structures are represented as a "parenthesized list"; a sequence
-//    of data items, delimited by space, and bounded at each end by
-//    parentheses.  A parenthesized list can contain other parenthesized
-//    lists, using multiple levels of parentheses to indicate nesting.
-//
-//    The empty list is represented as () -- a parenthesized list with no
-//    members.
-
-/// 4.5. NIL
+/// A short alphanumeric identifier.
 ///
-/// The special form "NIL" represents the non-existence of a particular
-/// data item that is represented as a string or parenthesized list, as
-/// distinct from the empty string "" or the empty parenthesized list ().
+/// Each client command is prefixed with an identifier (typically, e.g., A0001, A0002, etc.) called
+/// a "tag".
 ///
-///  Note: NIL is never used for any data item which takes the
-///  form of an atom.  For example, a mailbox name of "NIL" is a
-///  mailbox named NIL as opposed to a non-existent mailbox
-///  name.  This is because mailbox uses "astring" syntax which
-///  is an atom or a string.  Conversely, an addr-name of NIL is
-///  a non-existent personal name, because addr-name uses
-///  "nstring" syntax which is NIL or a string, but never an
-///  atom.
-
+/// # ABNF definition
+///
+/// ```abnf
+/// tag             = 1*<any ASTRING-CHAR except "+">
+/// ASTRING-CHAR    = ATOM-CHAR / resp-specials
+/// ATOM-CHAR       = <any CHAR except atom-specials>
+/// CHAR            = %x01-7F
+///                    ; any 7-bit US-ASCII character, excluding NUL
+/// atom-specials   = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials
+/// SP              = %x20
+/// CTL             = %x00-1F / %x7F
+///                    ; controls
+/// list-wildcards  = "%" / "*"
+/// quoted-specials = DQUOTE / "\"
+/// DQUOTE          = %x22
+///                    ; " (Double Quote)
+/// resp-specials   = "]"
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -971,6 +1079,7 @@ impl<'a> AsRef<str> for Tag<'a> {
     }
 }
 
+/// Error during creation of a tag.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TagError {
     #[error("Must not be empty.")]
@@ -979,6 +1088,26 @@ pub enum TagError {
     ByteNotAllowed { found: u8, position: usize },
 }
 
+/// A human-readable text string used in some server responses.
+///
+/// # Example
+///
+/// ```imap
+/// S: * OK IMAP4rev1 server ready
+/// //      ^^^^^^^^^^^^^^^^^^^^^^
+/// //      |
+/// //      `Text`
+/// ```
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// text      = 1*TEXT-CHAR
+/// TEXT-CHAR = <any CHAR except CR and LF>
+/// CHAR      = %x01-7F                     ; any 7-bit US-ASCII character, excluding NUL
+/// CR        = %x0D                        ; carriage return
+/// LF        = %x0A                        ; linefeed
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -1074,6 +1203,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
+/// Error during creation of a human-readable text.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TextError {
     #[error("Must not be empty.")]
@@ -1082,6 +1212,19 @@ pub enum TextError {
     ByteNotAllowed { found: u8, position: usize },
 }
 
+/// A quoted char.
+///
+/// # ABNF definition
+///
+/// ```abnf
+/// QUOTED-CHAR     = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials
+/// TEXT-CHAR       = <any CHAR except CR and LF>
+/// CHAR            = %x01-7F                     ; any 7-bit US-ASCII character, excluding NUL
+/// CR              = %x0D                        ; carriage return
+/// LF              = %x0A                        ; linefeed
+/// quoted-specials = DQUOTE / "\"
+/// DQUOTE          =  %x22                       ; " (Double Quote)
+/// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
@@ -1131,12 +1274,38 @@ impl TryFrom<char> for QuotedChar {
     }
 }
 
+/// Error during creation of a quoted char.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum QuotedCharError {
     #[error("Invalid character `{0}`.")]
     Invalid(char),
 }
 
+/// A charset.
+///
+/// # ABNF definition
+///
+/// Note: IMAP is not very clear on what constitutes a charset string. We try to figure it out by
+/// looking at the `search` rule. (See [#266](https://github.com/duesee/imap-codec/issues/266).)
+///
+/// ```abnf
+/// search          = "SEARCH" [SP "CHARSET" SP astring] 1*(SP search-key)
+/// ;                                           ^^^^^^^
+/// ;                                           |
+/// ;                                           `Charset`
+//                     ; CHARSET argument to MUST be registered with IANA
+/// ```
+/// 
+/// So, it seems that it should be an `AString`. However the IMAP standard also points to ...
+/// ```abnf
+/// mime-charset       = 1*mime-charset-chars
+/// mime-charset-chars = ALPHA / DIGIT /
+///                      "!" / "#" / "$" / "%" / "&" /
+///                      "'" / "+" / "-" / "^" / "_" /
+///                      "`" / "{" / "}" / "~"
+/// ALPHA              = "A".."Z" ; Case insensitive ASCII Letter
+/// DIGIT              = "0".."9" ; Numeric digit
+/// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -1218,6 +1387,9 @@ impl<'a> AsRef<str> for Charset<'a> {
 }
 
 /// A `Vec` that always contains >= 1 elements.
+///
+/// Some messages in IMAP require a list of at least one element. We encoded these situations in a
+/// non-empty vector type to not produce invalid messages.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1278,6 +1450,7 @@ impl<T> IntoIterator for NonEmptyVec<T> {
     }
 }
 
+/// Error during creation of a non-empty vector.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum NonEmptyVecError {
     #[error("Must not be empty.")]

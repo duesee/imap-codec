@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::datetime`].
+
 use abnf_core::{
     is_digit,
     streaming::{dquote, sp},

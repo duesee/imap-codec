@@ -1,4 +1,4 @@
-//! # Serialization of messages
+//! # (De)serialization of messages.
 //!
 //! All messages implement the `Encode` trait.
 //! You can `use imap_codec::Encode` and call the `.encode()` (or `.encode().dump()`) method to serialize a message.

@@ -1,5 +1,8 @@
+//! Functions that may come in handy.
+
 use std::borrow::Cow;
 
+/// Converts bytes into a ready-to-be-printed form.
 pub fn escape_byte_string<B>(bytes: B) -> String
 where
     B: AsRef<[u8]>,

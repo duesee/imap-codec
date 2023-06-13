@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::auth`].
+
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]

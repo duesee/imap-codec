@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::body`].
+
 use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 pub use imap_types::body::*;

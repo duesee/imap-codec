@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::section`].
+
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::sp;

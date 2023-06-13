@@ -1,3 +1,5 @@
+//! Support for tokio and (tokio_util::codec).
+
 use thiserror::Error;
 
 pub mod client;
