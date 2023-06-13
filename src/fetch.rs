@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::fetch`].
+
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::sp;

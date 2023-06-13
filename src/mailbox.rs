@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::mailbox`].
+
 use abnf_core::streaming::{dquote, sp};
 /// Re-export everything from imap-types.
 pub use imap_types::mailbox::*;

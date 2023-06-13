@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::core`].
+
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]

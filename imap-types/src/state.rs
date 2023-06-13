@@ -1,4 +1,4 @@
-//! # State and Flow Diagram
+//! IMAP protocol state.
 //!
 //! "Once the connection between client and server is established, an IMAP4rev1 connection is in one of four states.
 //! The initial state is identified in the server greeting.

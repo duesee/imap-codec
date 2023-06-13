@@ -1,3 +1,8 @@
+//! Handling of secret values.
+//!
+//! This module provides a `Secret<T>` ensuring that secret values are neither logged nor compared
+//! in non-constant time.
+
 use std::{
     borrow::Cow,
     fmt::{Debug, Formatter},

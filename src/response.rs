@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::response`].
+
 use std::str::from_utf8;
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]

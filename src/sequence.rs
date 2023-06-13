@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::sequence`].
+
 /// Re-export everything from imap-types.
 pub use imap_types::sequence::*;
 use nom::{

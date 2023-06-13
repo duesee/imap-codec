@@ -1,3 +1,5 @@
+//! Please refer to [`imap_types::command`].
+
 #[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
