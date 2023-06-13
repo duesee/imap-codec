@@ -32,7 +32,6 @@ pub mod indicators {
     /// Any 7-bit US-ASCII character, excluding NUL
     ///
     /// CHAR = %x01-7F
-    #[allow(non_snake_case)]
     pub fn is_char(byte: u8) -> bool {
         matches!(byte, 0x01..=0x7f)
     }
@@ -40,7 +39,6 @@ pub mod indicators {
     /// Controls
     ///
     /// CTL = %x00-1F / %x7F
-    #[allow(non_snake_case)]
     pub fn is_ctl(byte: u8) -> bool {
         matches!(byte, 0x00..=0x1f | 0x7f)
     }
