@@ -205,7 +205,7 @@ mod tests {
     use super::*;
     use crate::{
         core::{Literal, NString},
-        fetch::FetchAttributeValue,
+        fetch::MessageDataItem,
         response::{Data, GreetingKind},
         section::Section,
     };
@@ -260,7 +260,7 @@ mod tests {
                 Ok(Some(Event::Response(Response::Data(
                     Data::fetch(
                         12,
-                        vec![FetchAttributeValue::BodyExt {
+                        vec![MessageDataItem::BodyExt {
                             section: Some(Section::Header(None)),
                             origin: None,
                             data: NString(Some(Literal::try_from("abc").unwrap().into())),

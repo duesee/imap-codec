@@ -23,15 +23,15 @@
 //!
 //!     - [`Code::OverQuota`](crate::response::Code::OverQuota)
 //!
-//! * [`StatusAttribute`](crate::status::StatusAttribute) with new variants:
+//! * [`StatusDataItemName`](crate::status::StatusDataItemName) with new variants:
 //!
-//!     - [`StatusAttribute::Deleted`](crate::status::StatusAttribute::Deleted)
-//!     - [`StatusAttribute::DeletedStorage`](crate::status::StatusAttribute::DeletedStorage)
+//!     - [`StatusDataItemName::Deleted`](crate::status::StatusDataItemName::Deleted)
+//!     - [`StatusDataItemName::DeletedStorage`](crate::status::StatusDataItemName::DeletedStorage)
 //!
-//! * [`StatusAttributeValue`](crate::status::StatusAttributeValue) with new variants:
+//! * [`StatusDataItem`](crate::status::StatusDataItem) with new variants:
 //!
-//!     - [`StatusAttributeValue::Deleted`](crate::status::StatusAttributeValue::Deleted)
-//!     - [`StatusAttributeValue::DeletedStorage`](crate::status::StatusAttributeValue::DeletedStorage)
+//!     - [`StatusDataItem::Deleted`](crate::status::StatusDataItem::Deleted)
+//!     - [`StatusDataItem::DeletedStorage`](crate::status::StatusDataItem::DeletedStorage)
 
 use std::borrow::Cow;
 

@@ -35,7 +35,7 @@ use crate::{
     codec::IMAPResult,
     core::{astring, literal, tag_imap, AString},
     datetime::date_time,
-    fetch::{fetch_att, Macro, MacroOrFetchAttributes},
+    fetch::{fetch_att, Macro, MacroOrMessageDataItemNames},
     flag::{flag, flag_list, Flag, StoreResponse, StoreType},
     mailbox::{list_mailbox, mailbox},
     search::search,
@@ -245,13 +245,13 @@ pub fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         delimited(tag(b"("), separated_list0(sp, status_att), tag(b")")),
     ));
 
-    let (remaining, (_, _, mailbox, _, attributes)) = parser(input)?;
+    let (remaining, (_, _, mailbox, _, item_names)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::Status {
             mailbox,
-            attributes: attributes.into(),
+            item_names: item_names.into(),
         },
     ))
 }
@@ -443,34 +443,34 @@ pub fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         sp,
         alt((
             value(
-                MacroOrFetchAttributes::Macro(Macro::All),
+                MacroOrMessageDataItemNames::Macro(Macro::All),
                 tag_no_case(b"ALL"),
             ),
             value(
-                MacroOrFetchAttributes::Macro(Macro::Fast),
+                MacroOrMessageDataItemNames::Macro(Macro::Fast),
                 tag_no_case(b"FAST"),
             ),
             value(
-                MacroOrFetchAttributes::Macro(Macro::Full),
+                MacroOrMessageDataItemNames::Macro(Macro::Full),
                 tag_no_case(b"FULL"),
             ),
             map(fetch_att, |fetch_att| {
-                MacroOrFetchAttributes::FetchAttributes(vec![fetch_att])
+                MacroOrMessageDataItemNames::MessageDataItemNames(vec![fetch_att])
             }),
             map(
                 delimited(tag(b"("), separated_list0(sp, fetch_att), tag(b")")),
-                MacroOrFetchAttributes::FetchAttributes,
+                MacroOrMessageDataItemNames::MessageDataItemNames,
             ),
         )),
     ));
 
-    let (remaining, (_, _, sequence_set, _, attributes)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, macro_or_item_names)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::Fetch {
             sequence_set,
-            attributes,
+            macro_or_item_names,
             uid: false,
         },
     ))
@@ -564,7 +564,7 @@ mod tests {
     use crate::codec::Encode;
     #[cfg(feature = "ext_sasl_ir")]
     use crate::core::Tag;
-    use crate::{fetch::FetchAttribute, section::Section};
+    use crate::{fetch::MessageDataItemName, section::Section};
 
     #[test]
     fn test_parse_fetch() {
@@ -574,18 +574,18 @@ mod tests {
     #[test]
     fn test_parse_fetch_att() {
         let tests = [
-            (FetchAttribute::Envelope, "ENVELOPE???"),
-            (FetchAttribute::Flags, "FLAGS???"),
-            (FetchAttribute::InternalDate, "INTERNALDATE???"),
-            (FetchAttribute::Rfc822, "RFC822???"),
-            (FetchAttribute::Rfc822Header, "RFC822.HEADER???"),
-            (FetchAttribute::Rfc822Size, "RFC822.SIZE???"),
-            (FetchAttribute::Rfc822Text, "RFC822.TEXT???"),
-            (FetchAttribute::Body, "BODY???"),
-            (FetchAttribute::BodyStructure, "BODYSTRUCTURE???"),
-            (FetchAttribute::Uid, "UID???"),
+            (MessageDataItemName::Envelope, "ENVELOPE???"),
+            (MessageDataItemName::Flags, "FLAGS???"),
+            (MessageDataItemName::InternalDate, "INTERNALDATE???"),
+            (MessageDataItemName::Rfc822, "RFC822???"),
+            (MessageDataItemName::Rfc822Header, "RFC822.HEADER???"),
+            (MessageDataItemName::Rfc822Size, "RFC822.SIZE???"),
+            (MessageDataItemName::Rfc822Text, "RFC822.TEXT???"),
+            (MessageDataItemName::Body, "BODY???"),
+            (MessageDataItemName::BodyStructure, "BODYSTRUCTURE???"),
+            (MessageDataItemName::Uid, "UID???"),
             (
-                FetchAttribute::BodyExt {
+                MessageDataItemName::BodyExt {
                     partial: None,
                     peek: false,
                     section: None,
@@ -593,7 +593,7 @@ mod tests {
                 "BODY[]???",
             ),
             (
-                FetchAttribute::BodyExt {
+                MessageDataItemName::BodyExt {
                     partial: None,
                     peek: true,
                     section: None,
@@ -601,7 +601,7 @@ mod tests {
                 "BODY.PEEK[]???",
             ),
             (
-                FetchAttribute::BodyExt {
+                MessageDataItemName::BodyExt {
                     partial: None,
                     peek: true,
                     section: Some(Section::Text(None)),
@@ -609,7 +609,7 @@ mod tests {
                 "BODY.PEEK[TEXT]???",
             ),
             (
-                FetchAttribute::BodyExt {
+                MessageDataItemName::BodyExt {
                     partial: Some((42, NonZeroU32::try_from(1337).unwrap())),
                     peek: true,
                     section: Some(Section::Text(None)),

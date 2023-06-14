@@ -31,12 +31,18 @@ use crate::{
 ///              "UID" /
 ///              "BODY" section ["<" number "." nz-number ">"] /
 ///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
-pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], FetchAttribute> {
+pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
-        value(FetchAttribute::Envelope, tag_no_case(b"ENVELOPE")),
-        value(FetchAttribute::Flags, tag_no_case(b"FLAGS")),
-        value(FetchAttribute::InternalDate, tag_no_case(b"INTERNALDATE")),
-        value(FetchAttribute::BodyStructure, tag_no_case(b"BODYSTRUCTURE")),
+        value(MessageDataItemName::Envelope, tag_no_case(b"ENVELOPE")),
+        value(MessageDataItemName::Flags, tag_no_case(b"FLAGS")),
+        value(
+            MessageDataItemName::InternalDate,
+            tag_no_case(b"INTERNALDATE"),
+        ),
+        value(
+            MessageDataItemName::BodyStructure,
+            tag_no_case(b"BODYSTRUCTURE"),
+        ),
         map(
             tuple((
                 tag_no_case(b"BODY.PEEK"),
@@ -47,7 +53,7 @@ pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], FetchAttribute> {
                     tag(b">"),
                 )),
             )),
-            |(_, section, byterange)| FetchAttribute::BodyExt {
+            |(_, section, byterange)| MessageDataItemName::BodyExt {
                 section,
                 partial: byterange.map(|(start, _, end)| (start, end)),
                 peek: true,
@@ -63,25 +69,28 @@ pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], FetchAttribute> {
                     tag(b">"),
                 )),
             )),
-            |(_, section, byterange)| FetchAttribute::BodyExt {
+            |(_, section, byterange)| MessageDataItemName::BodyExt {
                 section,
                 partial: byterange.map(|(start, _, end)| (start, end)),
                 peek: false,
             },
         ),
-        value(FetchAttribute::Body, tag_no_case(b"BODY")),
-        value(FetchAttribute::Uid, tag_no_case(b"UID")),
-        value(FetchAttribute::Rfc822Header, tag_no_case(b"RFC822.HEADER")),
-        value(FetchAttribute::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
-        value(FetchAttribute::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
-        value(FetchAttribute::Rfc822, tag_no_case(b"RFC822")),
+        value(MessageDataItemName::Body, tag_no_case(b"BODY")),
+        value(MessageDataItemName::Uid, tag_no_case(b"UID")),
+        value(
+            MessageDataItemName::Rfc822Header,
+            tag_no_case(b"RFC822.HEADER"),
+        ),
+        value(MessageDataItemName::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
+        value(MessageDataItemName::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
+        value(MessageDataItemName::Rfc822, tag_no_case(b"RFC822")),
     ))(input)
 }
 
 /// `msg-att = "("
 ///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///            ")"`
-pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValue>> {
+pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> {
     delimited(
         tag(b"("),
         map(
@@ -95,7 +104,7 @@ pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<FetchAttributeValu
 /// `msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"`
 ///
 /// Note: MAY change for a message
-pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         sp,
@@ -104,10 +113,7 @@ pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
 
     let (remaining, (_, _, flags)) = parser(input)?;
 
-    Ok((
-        remaining,
-        FetchAttributeValue::Flags(flags.unwrap_or_default()),
-    ))
+    Ok((remaining, MessageDataItem::Flags(flags.unwrap_or_default())))
 }
 
 /// `msg-att-static = "ENVELOPE" SP envelope /
@@ -119,39 +125,39 @@ pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
 ///                   "UID" SP uniqueid`
 ///
 /// Note: MUST NOT change for a message
-pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
+pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), sp, envelope)),
-            |(_, _, envelope)| FetchAttributeValue::Envelope(envelope),
+            |(_, _, envelope)| MessageDataItem::Envelope(envelope),
         ),
         map(
             tuple((tag_no_case(b"INTERNALDATE"), sp, date_time)),
-            |(_, _, date_time)| FetchAttributeValue::InternalDate(date_time),
+            |(_, _, date_time)| MessageDataItem::InternalDate(date_time),
         ),
         map(
             tuple((tag_no_case(b"RFC822.HEADER"), sp, nstring)),
-            |(_, _, nstring)| FetchAttributeValue::Rfc822Header(nstring),
+            |(_, _, nstring)| MessageDataItem::Rfc822Header(nstring),
         ),
         map(
             tuple((tag_no_case(b"RFC822.TEXT"), sp, nstring)),
-            |(_, _, nstring)| FetchAttributeValue::Rfc822Text(nstring),
+            |(_, _, nstring)| MessageDataItem::Rfc822Text(nstring),
         ),
         map(
             tuple((tag_no_case(b"RFC822.SIZE"), sp, number)),
-            |(_, _, num)| FetchAttributeValue::Rfc822Size(num),
+            |(_, _, num)| MessageDataItem::Rfc822Size(num),
         ),
         map(
             tuple((tag_no_case(b"RFC822"), sp, nstring)),
-            |(_, _, nstring)| FetchAttributeValue::Rfc822(nstring),
+            |(_, _, nstring)| MessageDataItem::Rfc822(nstring),
         ),
         map(
             tuple((tag_no_case(b"BODYSTRUCTURE"), sp, body(8))),
-            |(_, _, body)| FetchAttributeValue::BodyStructure(body),
+            |(_, _, body)| MessageDataItem::BodyStructure(body),
         ),
         map(
             tuple((tag_no_case(b"BODY"), sp, body(8))),
-            |(_, _, body)| FetchAttributeValue::Body(body),
+            |(_, _, body)| MessageDataItem::Body(body),
         ),
         map(
             tuple((
@@ -161,14 +167,14 @@ pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], FetchAttributeValue> {
                 sp,
                 nstring,
             )),
-            |(_, section, origin, _, data)| FetchAttributeValue::BodyExt {
+            |(_, section, origin, _, data)| MessageDataItem::BodyExt {
                 section,
                 origin,
                 data,
             },
         ),
         map(tuple((tag_no_case(b"UID"), sp, uniqueid)), |(_, _, uid)| {
-            FetchAttributeValue::Uid(uid)
+            MessageDataItem::Uid(uid)
         }),
     ))(input)
 }
@@ -193,26 +199,26 @@ mod tests {
     };
 
     #[test]
-    fn test_encode_fetch_attribute() {
+    fn test_encode_message_data_item_name() {
         let tests = [
-            (FetchAttribute::Body, b"BODY".as_ref()),
+            (MessageDataItemName::Body, b"BODY".as_ref()),
             (
-                FetchAttribute::BodyExt {
+                MessageDataItemName::BodyExt {
                     section: None,
                     partial: None,
                     peek: false,
                 },
                 b"BODY[]",
             ),
-            (FetchAttribute::BodyStructure, b"BODYSTRUCTURE"),
-            (FetchAttribute::Envelope, b"ENVELOPE"),
-            (FetchAttribute::Flags, b"FLAGS"),
-            (FetchAttribute::InternalDate, b"INTERNALDATE"),
-            (FetchAttribute::Rfc822, b"RFC822"),
-            (FetchAttribute::Rfc822Header, b"RFC822.HEADER"),
-            (FetchAttribute::Rfc822Size, b"RFC822.SIZE"),
-            (FetchAttribute::Rfc822Text, b"RFC822.TEXT"),
-            (FetchAttribute::Uid, b"UID"),
+            (MessageDataItemName::BodyStructure, b"BODYSTRUCTURE"),
+            (MessageDataItemName::Envelope, b"ENVELOPE"),
+            (MessageDataItemName::Flags, b"FLAGS"),
+            (MessageDataItemName::InternalDate, b"INTERNALDATE"),
+            (MessageDataItemName::Rfc822, b"RFC822"),
+            (MessageDataItemName::Rfc822Header, b"RFC822.HEADER"),
+            (MessageDataItemName::Rfc822Size, b"RFC822.SIZE"),
+            (MessageDataItemName::Rfc822Text, b"RFC822.TEXT"),
+            (MessageDataItemName::Uid, b"UID"),
         ];
 
         for test in tests {
@@ -221,10 +227,10 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_fetch_attribute_value() {
+    fn test_encode_message_data_item() {
         let tests = [
             (
-                FetchAttributeValue::Body(BodyStructure::Single {
+                MessageDataItem::Body(BodyStructure::Single {
                     body: Body {
                         basic: BasicFields {
                             parameter_list: vec![],
@@ -243,7 +249,7 @@ mod tests {
                 b"BODY (\"TEXT\" \"foo\" NIL NIL NIL \"base64\" 42 1337)".as_ref(),
             ),
             (
-                FetchAttributeValue::BodyExt {
+                MessageDataItem::BodyExt {
                     section: None,
                     origin: None,
                     data: NString(None),
@@ -251,7 +257,7 @@ mod tests {
                 b"BODY[] NIL",
             ),
             (
-                FetchAttributeValue::BodyExt {
+                MessageDataItem::BodyExt {
                     section: None,
                     origin: Some(123),
                     data: NString(None),
@@ -259,7 +265,7 @@ mod tests {
                 b"BODY[]<123> NIL",
             ),
             (
-                FetchAttributeValue::BodyStructure(BodyStructure::Single {
+                MessageDataItem::BodyStructure(BodyStructure::Single {
                     body: Body {
                         basic: BasicFields {
                             parameter_list: vec![],
@@ -278,7 +284,7 @@ mod tests {
                 b"BODYSTRUCTURE (\"TEXT\" \"\" NIL NIL NIL \"base64\" 213 224)",
             ),
             (
-                FetchAttributeValue::Envelope(Envelope {
+                MessageDataItem::Envelope(Envelope {
                     date: NString(None),
                     subject: NString(None),
                     from: vec![],
@@ -292,9 +298,9 @@ mod tests {
                 }),
                 b"ENVELOPE (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)",
             ),
-            (FetchAttributeValue::Flags(vec![]), b"FLAGS ()"),
+            (MessageDataItem::Flags(vec![]), b"FLAGS ()"),
             (
-                FetchAttributeValue::InternalDate(
+                MessageDataItem::InternalDate(
                     DateTime::try_from(
                         chrono::DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
                             .unwrap(),
@@ -303,18 +309,18 @@ mod tests {
                 ),
                 b"INTERNALDATE \"01-Jul-2003 10:52:37 +0200\"",
             ),
-            (FetchAttributeValue::Rfc822(NString(None)), b"RFC822 NIL"),
+            (MessageDataItem::Rfc822(NString(None)), b"RFC822 NIL"),
             (
-                FetchAttributeValue::Rfc822Header(NString(None)),
+                MessageDataItem::Rfc822Header(NString(None)),
                 b"RFC822.HEADER NIL",
             ),
-            (FetchAttributeValue::Rfc822Size(3456), b"RFC822.SIZE 3456"),
+            (MessageDataItem::Rfc822Size(3456), b"RFC822.SIZE 3456"),
             (
-                FetchAttributeValue::Rfc822Text(NString(None)),
+                MessageDataItem::Rfc822Text(NString(None)),
                 b"RFC822.TEXT NIL",
             ),
             (
-                FetchAttributeValue::Uid(NonZeroU32::try_from(u32::MAX).unwrap()),
+                MessageDataItem::Uid(NonZeroU32::try_from(u32::MAX).unwrap()),
                 b"UID 4294967295",
             ),
         ];

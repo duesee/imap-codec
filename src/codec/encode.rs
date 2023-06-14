@@ -19,7 +19,7 @@ use crate::{
     },
     datetime::{DateTime, NaiveDate},
     envelope::{Address, Envelope},
-    fetch::{FetchAttribute, FetchAttributeValue, Macro, MacroOrFetchAttributes},
+    fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItem, MessageDataItemName},
     flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
@@ -28,7 +28,7 @@ use crate::{
     search::SearchKey,
     section::{Part, Section},
     sequence::{SeqOrUid, Sequence, SequenceSet},
-    status::{StatusAttribute, StatusAttributeValue},
+    status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
 };
 
@@ -333,14 +333,14 @@ impl<'a> Encoder for CommandBody<'a> {
             }
             CommandBody::Status {
                 mailbox,
-                attributes,
+                item_names,
             } => {
                 ctx.write_all(b"STATUS")?;
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 ctx.write_all(b"(")?;
-                join_serializable(attributes, b" ", ctx)?;
+                join_serializable(item_names, b" ", ctx)?;
                 ctx.write_all(b")")
             }
             CommandBody::Append {
@@ -390,7 +390,7 @@ impl<'a> Encoder for CommandBody<'a> {
             }
             CommandBody::Fetch {
                 sequence_set,
-                attributes,
+                macro_or_item_names,
                 uid,
             } => {
                 if *uid {
@@ -401,7 +401,7 @@ impl<'a> Encoder for CommandBody<'a> {
 
                 sequence_set.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
-                attributes.encode_ctx(ctx)
+                macro_or_item_names.encode_ctx(ctx)
             }
             CommandBody::Store {
                 sequence_set,
@@ -613,20 +613,20 @@ impl<'a> Encoder for ListCharString<'a> {
     }
 }
 
-impl Encoder for StatusAttribute {
+impl Encoder for StatusDataItemName {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            StatusAttribute::Messages => ctx.write_all(b"MESSAGES"),
-            StatusAttribute::Recent => ctx.write_all(b"RECENT"),
-            StatusAttribute::UidNext => ctx.write_all(b"UIDNEXT"),
-            StatusAttribute::UidValidity => ctx.write_all(b"UIDVALIDITY"),
-            StatusAttribute::Unseen => ctx.write_all(b"UNSEEN"),
+            Self::Messages => ctx.write_all(b"MESSAGES"),
+            Self::Recent => ctx.write_all(b"RECENT"),
+            Self::UidNext => ctx.write_all(b"UIDNEXT"),
+            Self::UidValidity => ctx.write_all(b"UIDVALIDITY"),
+            Self::Unseen => ctx.write_all(b"UNSEEN"),
             #[cfg(feature = "ext_quota")]
-            StatusAttribute::Deleted => ctx.write_all(b"DELETED"),
+            Self::Deleted => ctx.write_all(b"DELETED"),
             #[cfg(feature = "ext_quota")]
-            StatusAttribute::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
+            Self::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
             #[cfg(feature = "ext_condstore_qresync")]
-            StatusAttribute::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
+            Self::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
         }
     }
 }
@@ -828,16 +828,16 @@ impl Encoder for NaiveDate {
     }
 }
 
-impl<'a> Encoder for MacroOrFetchAttributes<'a> {
+impl<'a> Encoder for MacroOrMessageDataItemNames<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            MacroOrFetchAttributes::Macro(m) => m.encode_ctx(ctx),
-            MacroOrFetchAttributes::FetchAttributes(attributes) => {
-                if attributes.len() == 1 {
-                    attributes[0].encode_ctx(ctx)
+            Self::Macro(m) => m.encode_ctx(ctx),
+            Self::MessageDataItemNames(item_names) => {
+                if item_names.len() == 1 {
+                    item_names[0].encode_ctx(ctx)
                 } else {
                     ctx.write_all(b"(")?;
-                    join_serializable(attributes.as_slice(), b" ", ctx)?;
+                    join_serializable(item_names.as_slice(), b" ", ctx)?;
                     ctx.write_all(b")")
                 }
             }
@@ -855,11 +855,11 @@ impl Encoder for Macro {
     }
 }
 
-impl<'a> Encoder for FetchAttribute<'a> {
+impl<'a> Encoder for MessageDataItemName<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            FetchAttribute::Body => ctx.write_all(b"BODY"),
-            FetchAttribute::BodyExt {
+            Self::Body => ctx.write_all(b"BODY"),
+            Self::BodyExt {
                 section,
                 partial,
                 peek,
@@ -879,15 +879,15 @@ impl<'a> Encoder for FetchAttribute<'a> {
 
                 Ok(())
             }
-            FetchAttribute::BodyStructure => ctx.write_all(b"BODYSTRUCTURE"),
-            FetchAttribute::Envelope => ctx.write_all(b"ENVELOPE"),
-            FetchAttribute::Flags => ctx.write_all(b"FLAGS"),
-            FetchAttribute::InternalDate => ctx.write_all(b"INTERNALDATE"),
-            FetchAttribute::Rfc822 => ctx.write_all(b"RFC822"),
-            FetchAttribute::Rfc822Header => ctx.write_all(b"RFC822.HEADER"),
-            FetchAttribute::Rfc822Size => ctx.write_all(b"RFC822.SIZE"),
-            FetchAttribute::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
-            FetchAttribute::Uid => ctx.write_all(b"UID"),
+            Self::BodyStructure => ctx.write_all(b"BODYSTRUCTURE"),
+            Self::Envelope => ctx.write_all(b"ENVELOPE"),
+            Self::Flags => ctx.write_all(b"FLAGS"),
+            Self::InternalDate => ctx.write_all(b"INTERNALDATE"),
+            Self::Rfc822 => ctx.write_all(b"RFC822"),
+            Self::Rfc822Header => ctx.write_all(b"RFC822.HEADER"),
+            Self::Rfc822Size => ctx.write_all(b"RFC822.SIZE"),
+            Self::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
+            Self::Uid => ctx.write_all(b"UID"),
         }
     }
 }
@@ -1185,14 +1185,11 @@ impl<'a> Encoder for Data<'a> {
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)?;
             }
-            Data::Status {
-                mailbox,
-                attributes,
-            } => {
+            Data::Status { mailbox, items } => {
                 ctx.write_all(b"* STATUS ")?;
                 mailbox.encode_ctx(ctx)?;
                 ctx.write_all(b" (")?;
-                join_serializable(attributes, b" ", ctx)?;
+                join_serializable(items, b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
             Data::Search(seqs) => {
@@ -1211,9 +1208,9 @@ impl<'a> Encoder for Data<'a> {
             Data::Exists(count) => write!(ctx, "* {count} EXISTS")?,
             Data::Recent(count) => write!(ctx, "* {count} RECENT")?,
             Data::Expunge(msg) => write!(ctx, "* {msg} EXPUNGE")?,
-            Data::Fetch { seq, attributes } => {
+            Data::Fetch { seq, items } => {
                 write!(ctx, "* {seq} FETCH (")?;
-                join_serializable(attributes.as_ref(), b" ", ctx)?;
+                join_serializable(items.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
             #[cfg(feature = "ext_enable")]
@@ -1273,7 +1270,7 @@ impl Encoder for QuotedChar {
     }
 }
 
-impl Encoder for StatusAttributeValue {
+impl Encoder for StatusDataItem {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Messages(count) => {
@@ -1310,7 +1307,7 @@ impl Encoder for StatusAttributeValue {
     }
 }
 
-impl<'a> Encoder for FetchAttributeValue<'a> {
+impl<'a> Encoder for MessageDataItem<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::BodyExt {
@@ -1718,7 +1715,7 @@ mod tests {
         auth::AuthMechanism,
         command::{Command, CommandBody},
         core::{AString, Literal, NString, NonEmptyVec},
-        fetch::FetchAttributeValue,
+        fetch::MessageDataItem,
         response::{Data, Response},
         utils::escape_byte_string,
     };
@@ -1858,7 +1855,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
+                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated(b"ABCDE".as_ref())),
@@ -1883,7 +1880,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    attributes: NonEmptyVec::from(FetchAttributeValue::BodyExt {
+                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated_non_sync(b"ABCDE".as_ref())),

@@ -101,9 +101,9 @@ pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 sp,
                 delimited(tag(b"("), opt(status_att_list), tag(b")")),
             )),
-            |(_, _, mailbox, _, attributes)| Data::Status {
+            |(_, _, mailbox, _, items)| Data::Status {
                 mailbox,
-                attributes: attributes.unwrap_or_default().into(),
+                items: items.unwrap_or_default().into(),
             },
         ),
         map(

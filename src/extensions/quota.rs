@@ -228,7 +228,7 @@ mod tests {
         core::{IString, Tag},
         mailbox::Mailbox,
         response::{Capability, Code, Response, Status},
-        status::{StatusAttribute, StatusAttributeValue},
+        status::{StatusDataItem, StatusDataItemName},
         testing::{kat_inverse_command, kat_inverse_response},
     };
 
@@ -413,9 +413,9 @@ mod tests {
             CommandBody::status(
                 "inbox",
                 vec![
-                    StatusAttribute::Messages,
-                    StatusAttribute::Deleted,
-                    StatusAttribute::DeletedStorage,
+                    StatusDataItemName::Messages,
+                    StatusDataItemName::Deleted,
+                    StatusDataItemName::DeletedStorage,
                 ],
             )
             .unwrap()
@@ -582,10 +582,10 @@ mod tests {
                 b"",
                 Response::Data(Data::Status {
                     mailbox: Mailbox::Inbox,
-                    attributes: vec![
-                        StatusAttributeValue::Messages(12),
-                        StatusAttributeValue::Deleted(4),
-                        StatusAttributeValue::DeletedStorage(8),
+                    items: vec![
+                        StatusDataItem::Messages(12),
+                        StatusDataItem::Deleted(4),
+                        StatusDataItem::DeletedStorage(8),
                     ]
                     .into(),
                 }),

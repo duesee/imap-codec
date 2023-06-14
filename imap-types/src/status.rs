@@ -12,7 +12,8 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StatusAttribute {
+#[doc(alias = "StatusAttribute")]
+pub enum StatusDataItemName {
     /// The number of messages in the mailbox.
     Messages,
 
@@ -48,7 +49,8 @@ pub enum StatusAttribute {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StatusAttributeValue {
+#[doc(alias = "StatusAttributeValue")]
+pub enum StatusDataItem {
     /// The number of messages in the mailbox.
     Messages(u32),
 

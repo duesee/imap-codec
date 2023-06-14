@@ -553,7 +553,7 @@ mod tests {
     use super::*;
     use crate::{
         core::{Literal, Quoted},
-        fetch::FetchAttributeValue,
+        fetch::MessageDataItem,
         response::{Data, Response},
         testing::{kat_inverse_response, known_answer_test_encode},
     };
@@ -642,7 +642,7 @@ mod tests {
             b"".as_ref(),
             Response::Data(Data::Fetch {
                 seq: NonZeroU32::try_from(3372220415).unwrap(),
-                attributes: NonEmptyVec::from(FetchAttributeValue::BodyStructure(
+                items: NonEmptyVec::from(MessageDataItem::BodyStructure(
                     BodyStructure::Multi {
                         bodies: NonEmptyVec::from(BodyStructure::Multi {
                             bodies: NonEmptyVec::from(BodyStructure::Multi {

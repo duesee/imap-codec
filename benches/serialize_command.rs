@@ -4,7 +4,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
     codec::Encode,
     command::{Command, CommandBody},
-    fetch::{FetchAttribute, MacroOrFetchAttributes},
+    fetch::{MacroOrMessageDataItemNames, MessageDataItemName},
     section::Section,
 };
 
@@ -17,16 +17,16 @@ fn criterion_benchmark(c: &mut Criterion) {
         "C123",
         CommandBody::fetch(
             "1:*,2,3,4,5,6,7,8,9",
-            MacroOrFetchAttributes::FetchAttributes(vec![
-                FetchAttribute::Rfc822Size,
-                FetchAttribute::BodyExt {
+            MacroOrMessageDataItemNames::MessageDataItemNames(vec![
+                MessageDataItemName::Rfc822Size,
+                MessageDataItemName::BodyExt {
                     section: Some(Section::Text(None)),
                     peek: true,
                     partial: Some((1, NonZeroU32::try_from(100).unwrap())),
                 },
-                FetchAttribute::BodyStructure,
-                FetchAttribute::Body,
-                FetchAttribute::Envelope,
+                MessageDataItemName::BodyStructure,
+                MessageDataItemName::Body,
+                MessageDataItemName::Envelope,
             ]),
             true,
         )
