@@ -1,30 +1,9 @@
 #![no_main]
 
-#[cfg(feature = "debug")]
-use imap_codec::utils::escape_byte_string;
-use imap_codec::{
-    codec::{Decode, Encode},
-    response::Response,
-};
+use imap_codec::response::Response;
+use imap_codec_fuzz::impl_to_bytes_and_back;
 use libfuzzer_sys::fuzz_target;
 
-fuzz_target!(|test: Response| {
-    #[cfg(feature = "debug")]
-    println!("[!] Input: {test:#?}");
-
-    let buffer = test.encode().dump();
-
-    #[cfg(feature = "debug")]
-    println!("[!] Serialized: {}", escape_byte_string(&buffer));
-
-    let (rem, parsed) = Response::decode(&buffer).unwrap();
-    assert!(rem.is_empty());
-
-    #[cfg(feature = "debug")]
-    println!("[!] Parsed: {parsed:?}");
-
-    assert_eq!(test, parsed);
-
-    #[cfg(feature = "debug")]
-    println!("{}", str::repeat("-", 120));
+fuzz_target!(|input: Response| {
+    impl_to_bytes_and_back!(input, Response);
 });
