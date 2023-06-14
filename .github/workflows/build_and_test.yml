@@ -2,13 +2,13 @@ name: Build & Test
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - "**.rs"
       - "**.toml"
       - ".github/workflows/**"
   pull_request:
-    branches: [main]
+    branches: [ main ]
     paths:
       - "**.rs"
       - "**.toml"
@@ -23,7 +23,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -78,7 +78,7 @@ jobs:
       - name: Test | Limited fuzzing (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          for fuzz_target in greeting command response greeting_to_bytes_and_back command_to_bytes_and_back response_to_bytes_and_back;
+          for fuzz_target in $(cargo +nightly fuzz list);
           do
           echo "# Fuzzing ${fuzz_target}";
           cargo +nightly fuzz run --features=ext ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs=25000
@@ -96,7 +96,7 @@ jobs:
           # 1.60 is the Minimum Supported Rust Version (MSRV) for imap-codec.
           rustup toolchain install 1.60 --profile minimal
           rustup toolchain install nightly --profile minimal
-          
+
       - name: Setup | Cache dependencies
         uses: Swatinem/rust-cache@v2.2.1
         id: cache
