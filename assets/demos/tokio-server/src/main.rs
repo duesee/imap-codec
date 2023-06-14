@@ -1,8 +1,9 @@
 use anyhow::{Context, Error};
+use argon2::Argon2;
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
     command::CommandBody,
-    core::NonEmptyVec,
+    core::{NonEmptyVec, Text},
     response::{Capability, Continue, Data, Greeting, Response, Status},
     tokio::server::{Action, Event, ImapServerCodec},
 };
@@ -76,18 +77,43 @@ async fn main() -> Result<(), Error> {
                         println!("S: {BLUE}{rsp:#?}{RESET}");
                     }
                     (tag, CommandBody::Login { username, password }) => {
-                        let rsp =
-                            if username.as_ref() == b"alice" && password.compare_with("password") {
-                                Response::Status(
-                                    Status::ok(Some(tag), None, "LOGIN succeeded")
-                                        .context("Could not create `Status`")?,
-                                )
-                            } else {
-                                Response::Status(
-                                    Status::no(Some(tag), None, "LOGIN failed")
-                                        .context("Could not create `Status`")?,
-                                )
+                        let login_okay = {
+                            let username_okay = username.as_ref() == b"alice";
+                            let password_okay = {
+                                // Salt should be unique per password.
+                                let salt = b"hf63l9nx43gf95ks";
+                                let password = password.declassify().as_ref();
+
+                                let mut output = [0u8; 32];
+                                Argon2::default()
+                                    .hash_password_into(password, salt, &mut output)
+                                    .map_err(|error| Error::msg(error.to_string()))
+                                    .context("Failed to hash password.")?;
+
+                                output
+                                    == [
+                                        227, 130, 151, 49, 100, 203, 239, 68, 119, 207, 247, 237,
+                                        214, 42, 85, 208, 198, 107, 116, 35, 64, 122, 143, 68, 236,
+                                        228, 130, 250, 31, 221, 217, 77,
+                                    ]
                             };
+
+                            username_okay && password_okay
+                        };
+
+                        let rsp = if login_okay {
+                            Response::Status(Status::Ok {
+                                tag: Some(tag),
+                                code: None,
+                                text: Text::unvalidated("LOGIN succeeded"),
+                            })
+                        } else {
+                            Response::Status(Status::Ok {
+                                tag: Some(tag),
+                                code: None,
+                                text: Text::unvalidated("LOGIN failed"),
+                            })
+                        };
                         framed.send(&rsp).await.context("Could not send response")?;
                         println!("S: {BLUE}{rsp:#?}{RESET}");
                     }

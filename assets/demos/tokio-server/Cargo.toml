@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
+argon2 = "0.5.0"
 futures = "0.3"
 imap-codec = { path = "../../../", features = ["tokio"] }
 tokio = { version = "1", features = ["full"] }
