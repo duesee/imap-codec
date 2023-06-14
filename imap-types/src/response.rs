@@ -526,9 +526,9 @@ pub enum Data<'a> {
     /// STORE command, as well as by unilateral server decision (e.g.,
     /// flag updates).
     Fetch {
-        /// Message SEQ or UID
+        /// Sequence number.
         seq: NonZeroU32,
-        /// Message data
+        /// Message data items.
         attributes: NonEmptyVec<FetchAttributeValue<'a>>,
     },
 
