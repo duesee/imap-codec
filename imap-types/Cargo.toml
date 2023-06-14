@@ -39,7 +39,6 @@ base64 = "0.21"
 bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 serde = { version = "1.0.103", features = ["derive"], optional = true }
-subtle = "2"
 thiserror = "1.0.29"
 
 [dev-dependencies]
