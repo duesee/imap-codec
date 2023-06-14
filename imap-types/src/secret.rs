@@ -18,6 +18,7 @@ use subtle::ConstantTimeEq;
 
 use crate::core::{AString, IString, Literal};
 
+/// A wrapper to ensure that secrets are neither logged nor compared in non-constant time.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -27,7 +28,6 @@ use crate::core::{AString, IString, Literal};
 #[derive(Clone, Hash)]
 pub struct Secret<T>(T);
 
-/// A trait to ensure that secrets are neither logged nor compared in non-constant time.
 impl<T> Secret<T> {
     /// Crate a new secret.
     pub fn new(inner: T) -> Self {
@@ -84,7 +84,9 @@ where
     }
 }
 
+/// A type that implements this trait can be compared in constant time.
 pub trait CompareCT<T> {
+    /// Compare in constant time.
     #[must_use]
     fn compare_ct(&self, other: &T) -> bool;
 }
