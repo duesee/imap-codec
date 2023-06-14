@@ -30,7 +30,7 @@ use crate::{
 ///              env-message-id
 ///            ")"
 /// ```
-pub fn envelope(input: &[u8]) -> IMAPResult<&[u8], Envelope> {
+pub(crate) fn envelope(input: &[u8]) -> IMAPResult<&[u8], Envelope> {
     let mut parser = delimited(
         tag(b"("),
         tuple((
@@ -101,18 +101,18 @@ pub fn envelope(input: &[u8]) -> IMAPResult<&[u8], Envelope> {
 
 #[inline]
 /// `env-date = nstring`
-pub fn env_date(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn env_date(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `env-subject = nstring`
-pub fn env_subject(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn env_subject(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
 /// `env-from = "(" 1*address ")" / nil`
-pub fn env_from(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_from(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -120,7 +120,7 @@ pub fn env_from(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 }
 
 /// `env-sender = "(" 1*address ")" / nil`
-pub fn env_sender(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_sender(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -128,7 +128,7 @@ pub fn env_sender(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 }
 
 /// `env-reply-to = "(" 1*address ")" / nil`
-pub fn env_reply_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_reply_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -136,7 +136,7 @@ pub fn env_reply_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 }
 
 /// `env-to = "(" 1*address ")" / nil`
-pub fn env_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -144,7 +144,7 @@ pub fn env_to(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 }
 
 /// `env-cc = "(" 1*address ")" / nil`
-pub fn env_cc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_cc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -152,7 +152,7 @@ pub fn env_cc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 }
 
 /// `env-bcc = "(" 1*address ")" / nil`
-pub fn env_bcc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
+pub(crate) fn env_bcc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
     alt((
         delimited(tag(b"("), many1(address), tag(b")")),
         map(nil, |_| Vec::new()),
@@ -161,13 +161,13 @@ pub fn env_bcc(input: &[u8]) -> IMAPResult<&[u8], Vec<Address>> {
 
 #[inline]
 /// `env-in-reply-to = nstring`
-pub fn env_in_reply_to(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn env_in_reply_to(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `env-message-id = nstring`
-pub fn env_message_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn env_message_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -177,7 +177,7 @@ pub fn env_message_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
 ///             addr-mailbox SP
 ///             addr-host
 ///             ")"`
-pub fn address(input: &[u8]) -> IMAPResult<&[u8], Address> {
+pub(crate) fn address(input: &[u8]) -> IMAPResult<&[u8], Address> {
     let mut parser = delimited(
         tag(b"("),
         tuple((addr_name, sp, addr_adl, sp, addr_mailbox, sp, addr_host)),
@@ -203,7 +203,7 @@ pub fn address(input: &[u8]) -> IMAPResult<&[u8], Address> {
 /// If non-NIL, holds phrase from [RFC-2822]
 /// mailbox after removing [RFC-2822] quoting
 /// TODO(misuse): use `Phrase`?
-pub fn addr_name(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn addr_name(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -212,7 +212,7 @@ pub fn addr_name(input: &[u8]) -> IMAPResult<&[u8], NString> {
 ///
 /// Holds route from [RFC-2822] route-addr if non-NIL
 /// TODO(misuse): use `Route`?
-pub fn addr_adl(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn addr_adl(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -223,7 +223,7 @@ pub fn addr_adl(input: &[u8]) -> IMAPResult<&[u8], NString> {
 /// if non-NIL and addr-host is NIL, holds [RFC-2822] group name.
 /// Otherwise, holds [RFC-2822] local-part after removing [RFC-2822] quoting
 /// TODO(misuse): use `GroupName` or `LocalPart`?
-pub fn addr_mailbox(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn addr_mailbox(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -233,7 +233,7 @@ pub fn addr_mailbox(input: &[u8]) -> IMAPResult<&[u8], NString> {
 /// NIL indicates [RFC-2822] group syntax.
 /// Otherwise, holds [RFC-2822] domain name
 /// TODO(misuse): use `DomainName`?
-pub fn addr_host(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn addr_host(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 

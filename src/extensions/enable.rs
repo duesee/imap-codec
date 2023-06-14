@@ -36,7 +36,7 @@ use crate::{
 ///
 /// command-any =/ enable
 /// ```
-pub fn enable(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn enable(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("ENABLE"),
         many1(preceded(sp, capability_enable)),
@@ -52,12 +52,12 @@ pub fn enable(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     ))
 }
 
-pub fn capability_enable(input: &[u8]) -> IMAPResult<&[u8], CapabilityEnable> {
+pub(crate) fn capability_enable(input: &[u8]) -> IMAPResult<&[u8], CapabilityEnable> {
     map(atom, CapabilityEnable::from)(input)
 }
 
 /// `enable-data = "ENABLED" *(SP capability)`
-pub fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case(b"ENABLED"),
         many0(preceded(sp, capability_enable)),

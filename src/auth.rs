@@ -19,7 +19,7 @@ use crate::{
 /// `auth-type = atom`
 ///
 /// Note: Defined by \[SASL\]
-pub fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
+pub(crate) fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
     let (rem, atom) = atom(input)?;
 
     Ok((rem, AuthMechanism::from(atom)))
@@ -35,7 +35,7 @@ pub fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 ///                CRLF is additionally parsed in this parser.
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
-pub fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
+pub(crate) fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
     map(terminated(base64, crlf), |data| {
         AuthenticateData(Secret::new(data))
     })(input) // FIXME: many0 deleted

@@ -22,14 +22,14 @@ use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
 /// ```abnf
 /// date = date-text / DQUOTE date-text DQUOTE
 /// ```
-pub fn date(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
+pub(crate) fn date(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
     alt((date_text, delimited(dquote, date_text, dquote)))(input)
 }
 
 /// ```abnf
 /// date-text = date-day "-" date-month "-" date-year
 /// ```
-pub fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
+pub(crate) fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
     let mut parser = tuple((date_day, tag(b"-"), date_month, tag(b"-"), date_year));
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
@@ -45,7 +45,7 @@ pub fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
 /// ```abnf
 /// date-day = 1*2DIGIT
 /// ```
-pub fn date_day(input: &[u8]) -> IMAPResult<&[u8], u8> {
+pub(crate) fn date_day(input: &[u8]) -> IMAPResult<&[u8], u8> {
     digit_1_2(input)
 }
 
@@ -54,7 +54,7 @@ pub fn date_day(input: &[u8]) -> IMAPResult<&[u8], u8> {
 ///              "May" / "Jun" / "Jul" / "Aug" /
 ///              "Sep" / "Oct" / "Nov" / "Dec"
 /// ```
-pub fn date_month(input: &[u8]) -> IMAPResult<&[u8], u8> {
+pub(crate) fn date_month(input: &[u8]) -> IMAPResult<&[u8], u8> {
     alt((
         value(1, tag_no_case(b"Jan")),
         value(2, tag_no_case(b"Feb")),
@@ -74,7 +74,7 @@ pub fn date_month(input: &[u8]) -> IMAPResult<&[u8], u8> {
 /// ```abnf
 /// date-year = 4DIGIT
 /// ```
-pub fn date_year(input: &[u8]) -> IMAPResult<&[u8], u16> {
+pub(crate) fn date_year(input: &[u8]) -> IMAPResult<&[u8], u16> {
     digit_4(input)
 }
 
@@ -83,7 +83,7 @@ pub fn date_year(input: &[u8]) -> IMAPResult<&[u8], u16> {
 /// ```abnf
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 /// ```
-pub fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
+pub(crate) fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
     let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
@@ -101,7 +101,7 @@ pub fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
 ///              zone
 ///             DQUOTE
 /// ```
-pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
+pub(crate) fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
     let mut parser = delimited(
         dquote,
         tuple((
@@ -147,7 +147,7 @@ pub fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
 /// ```abnf
 /// date-day-fixed = (SP DIGIT) / 2DIGIT
 /// ```
-pub fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
+pub(crate) fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
     alt((
         map(
             preceded(sp, take_while_m_n(1, 1, is_digit)),
@@ -166,7 +166,7 @@ pub fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
 /// ```abnf
 /// zone = ("+" / "-") 4DIGIT
 /// ```
-pub fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
+pub(crate) fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;

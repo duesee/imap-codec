@@ -31,7 +31,7 @@ use crate::{
 ///              "UID" /
 ///              "BODY" section ["<" number "." nz-number ">"] /
 ///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
-pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
+pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
         value(MessageDataItemName::Envelope, tag_no_case(b"ENVELOPE")),
         value(MessageDataItemName::Flags, tag_no_case(b"FLAGS")),
@@ -90,7 +90,7 @@ pub fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
 /// `msg-att = "("
 ///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///            ")"`
-pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> {
+pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> {
     delimited(
         tag(b"("),
         map(
@@ -104,7 +104,7 @@ pub fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> 
 /// `msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"`
 ///
 /// Note: MAY change for a message
-pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
+pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     let mut parser = tuple((
         tag_no_case(b"FLAGS"),
         sp,
@@ -125,7 +125,7 @@ pub fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
 ///                   "UID" SP uniqueid`
 ///
 /// Note: MUST NOT change for a message
-pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
+pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     alt((
         map(
             tuple((tag_no_case(b"ENVELOPE"), sp, envelope)),
@@ -183,7 +183,7 @@ pub fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
 /// `uniqueid = nz-number`
 ///
 /// Note: Strictly ascending
-pub fn uniqueid(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
+pub(crate) fn uniqueid(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     nz_number(input)
 }
 

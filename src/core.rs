@@ -30,7 +30,7 @@ use crate::{
 /// `number = 1*DIGIT`
 ///
 /// Unsigned 32-bit integer (0 <= n < 4,294,967,296)
-pub fn number(input: &[u8]) -> IMAPResult<&[u8], u32> {
+pub(crate) fn number(input: &[u8]) -> IMAPResult<&[u8], u32> {
     map_res(
         // # Safety
         //
@@ -49,7 +49,7 @@ pub fn number(input: &[u8]) -> IMAPResult<&[u8], u32> {
 /// Defined in RFC 9051
 #[cfg(feature = "ext_quota")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
-pub fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
+pub(crate) fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
     map_res(
         // # Safety
         //
@@ -62,7 +62,7 @@ pub fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
 /// `nz-number = digit-nz *DIGIT`
 ///
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
-pub fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
+pub(crate) fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     map_res(number, NonZeroU32::try_from)(input)
 }
 
@@ -76,7 +76,7 @@ pub fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
 // ----- string -----
 
 /// `string = quoted / literal`
-pub fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
+pub(crate) fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
     alt((map(quoted, IString::Quoted), map(literal, IString::Literal)))(input)
 }
 
@@ -84,7 +84,7 @@ pub fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
 ///
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
-pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
+pub(crate) fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
     let mut parser = tuple((
         dquote,
         map(
@@ -107,7 +107,7 @@ pub fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
-pub fn quoted_char(input: &[u8]) -> IMAPResult<&[u8], QuotedChar> {
+pub(crate) fn quoted_char(input: &[u8]) -> IMAPResult<&[u8], QuotedChar> {
     map(
         alt((
             map(
@@ -134,7 +134,7 @@ pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
 }
 
 /// `quoted-specials = DQUOTE / "\"`
-pub fn is_quoted_specials(byte: u8) -> bool {
+pub(crate) fn is_quoted_specials(byte: u8) -> bool {
     byte == b'"' || byte == b'\\'
 }
 
@@ -153,7 +153,7 @@ pub fn is_quoted_specials(byte: u8) -> bool {
 /// literal8 = <defined in RFC 4466>
 /// ```
 /// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
-pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
+pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     #[cfg(not(feature = "ext_literal"))]
     let (remaining, length) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
 
@@ -214,7 +214,7 @@ pub fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
 // ----- astring ----- atom (roughly) or string
 
 /// `astring = 1*ASTRING-CHAR / string`
-pub fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
+pub(crate) fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
     alt((
         map(take_while1(is_astring_char), |bytes: &[u8]| {
             // # Safety
@@ -231,17 +231,17 @@ pub fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
 }
 
 /// `ASTRING-CHAR = ATOM-CHAR / resp-specials`
-pub fn is_astring_char(i: u8) -> bool {
+pub(crate) fn is_astring_char(i: u8) -> bool {
     is_atom_char(i) || is_resp_specials(i)
 }
 
 /// `ATOM-CHAR = <any CHAR except atom-specials>`
-pub fn is_atom_char(b: u8) -> bool {
+pub(crate) fn is_atom_char(b: u8) -> bool {
     is_char(b) && !is_atom_specials(b)
 }
 
 /// `atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials`
-pub fn is_atom_specials(i: u8) -> bool {
+pub(crate) fn is_atom_specials(i: u8) -> bool {
     match i {
         b'(' | b')' | b'{' | b' ' => true,
         c if is_ctl(c) => true,
@@ -254,12 +254,12 @@ pub fn is_atom_specials(i: u8) -> bool {
 
 #[inline]
 /// `resp-specials = "]"`
-pub fn is_resp_specials(i: u8) -> bool {
+pub(crate) fn is_resp_specials(i: u8) -> bool {
     i == b']'
 }
 
 /// `atom = 1*ATOM-CHAR`
-pub fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
+pub(crate) fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
     let parser = take_while1(is_atom_char);
 
     let (remaining, parsed_atom) = parser(input)?;
@@ -278,7 +278,7 @@ pub fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
 // ----- nstring ----- nil or string
 
 /// `nstring = string / nil`
-pub fn nstring(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn nstring(input: &[u8]) -> IMAPResult<&[u8], NString> {
     alt((
         map(string, |item| NString(Some(item))),
         map(nil, |_| NString(None)),
@@ -287,14 +287,14 @@ pub fn nstring(input: &[u8]) -> IMAPResult<&[u8], NString> {
 
 #[inline]
 /// `nil = "NIL"`
-pub fn nil(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
+pub(crate) fn nil(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
     tag_no_case(b"NIL")(input)
 }
 
 // ----- text -----
 
 /// `text = 1*TEXT-CHAR`
-pub fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
+pub(crate) fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
     map(take_while1(is_text_char), |bytes|
         // # Safety
         // 
@@ -308,14 +308,14 @@ pub fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
 /// Note: This was `<any CHAR except CR and LF>` before.
 ///
 /// Note: We also exclude `[` and `]` due to the possibility to misuse this as a `Code`.
-pub fn is_text_char(c: u8) -> bool {
+pub(crate) fn is_text_char(c: u8) -> bool {
     matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x5a | 0x5c | 0x5e..=0x7f)
 }
 
 // ----- base64 -----
 
 /// `base64 = *(4base64-char) [base64-terminal]`
-pub fn base64(input: &[u8]) -> IMAPResult<&[u8], Vec<u8>> {
+pub(crate) fn base64(input: &[u8]) -> IMAPResult<&[u8], Vec<u8>> {
     map_res(
         recognize(tuple((
             take_while(is_base64_char),
@@ -326,7 +326,7 @@ pub fn base64(input: &[u8]) -> IMAPResult<&[u8], Vec<u8>> {
 }
 
 /// `base64-char = ALPHA / DIGIT / "+" / "/" ; Case-sensitive`
-pub fn is_base64_char(i: u8) -> bool {
+pub(crate) fn is_base64_char(i: u8) -> bool {
     is_alpha(i) || is_digit(i) || i == b'+' || i == b'/'
 }
 
@@ -337,14 +337,14 @@ pub fn is_base64_char(i: u8) -> bool {
 /// `charset = atom / quoted`
 ///
 /// Note: see errata id: 261
-pub fn charset(input: &[u8]) -> IMAPResult<&[u8], Charset> {
+pub(crate) fn charset(input: &[u8]) -> IMAPResult<&[u8], Charset> {
     alt((map(atom, Charset::Atom), map(quoted, Charset::Quoted)))(input)
 }
 
 // ----- tag -----
 
 /// `tag = 1*<any ASTRING-CHAR except "+">`
-pub fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
+pub(crate) fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
     map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
         // # Safety
         //

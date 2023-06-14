@@ -24,7 +24,7 @@ use crate::{
 /// quota-root-name = astring
 /// ```
 #[inline]
-pub fn quota_root_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
+pub(crate) fn quota_root_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
     astring(input)
 }
 
@@ -32,7 +32,7 @@ pub fn quota_root_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
 /// getquota = "GETQUOTA" SP quota-root-name
 /// ```
 #[inline]
-pub fn getquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn getquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case("GETQUOTA "), quota_root_name));
 
     let (remaining, (_, root)) = parser(input)?;
@@ -43,7 +43,7 @@ pub fn getquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// ```abnf
 /// getquotaroot = "GETQUOTAROOT" SP mailbox
 /// ```
-pub fn getquotaroot(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn getquotaroot(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case("GETQUOTAROOT "), mailbox));
 
     let (remaining, (_, mailbox)) = parser(input)?;
@@ -60,7 +60,7 @@ pub fn getquotaroot(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///
 /// resource-limit = number64
 /// ```
-pub fn quota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaGet> {
+pub(crate) fn quota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaGet> {
     let mut parser = tuple((resource_name, sp, number64, sp, number64));
 
     let (remaining, (resource, _, usage, _, limit)) = parser(input)?;
@@ -84,7 +84,7 @@ pub fn quota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaGet> {
 ///
 /// resource-name-ext = atom
 /// ```
-pub fn resource_name(input: &[u8]) -> IMAPResult<&[u8], Resource> {
+pub(crate) fn resource_name(input: &[u8]) -> IMAPResult<&[u8], Resource> {
     map(atom, Resource::from)(input)
 }
 
@@ -93,7 +93,7 @@ pub fn resource_name(input: &[u8]) -> IMAPResult<&[u8], Resource> {
 ///
 /// quota-list = "(" quota-resource *(SP quota-resource) ")"
 /// ```
-pub fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case("QUOTA "),
         quota_root_name,
@@ -116,7 +116,7 @@ pub fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
 /// ```abnf
 /// quotaroot-response = "QUOTAROOT" SP mailbox *(SP quota-root-name)
 /// ```
-pub fn quotaroot_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn quotaroot_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case("QUOTAROOT "),
         mailbox,
@@ -133,7 +133,7 @@ pub fn quotaroot_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
 ///
 /// setquota-list = "(" [setquota-resource *(SP setquota-resource)] ")"
 /// ```
-pub fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("SETQUOTA "),
         quota_root_name,
@@ -149,7 +149,7 @@ pub fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// ```abnf
 /// setquota-resource = resource-name SP resource-limit
 /// ```
-pub fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
+pub(crate) fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
     let mut parser = tuple((resource_name, sp, number64));
 
     let (remaining, (resource, _, limit)) = parser(input)?;
@@ -169,7 +169,7 @@ pub fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 // /// ```abnf
 // /// capability-quota = "QUOTASET" / capa-quota-res / "QUOTA"
 // /// ```
-// pub fn capability_quota(input: &[u8]) -> IMAPResult<&[u8], Capability> {
+// pub(crate) fn capability_quota(input: &[u8]) -> IMAPResult<&[u8], Capability> {
 //     alt((
 //         value(Capability::QuotaSet, tag_no_case("QUOTASET")),
 //         capa_quota_res,
@@ -180,7 +180,7 @@ pub fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 // /// ```abnf
 // /// capa-quota-res = "QUOTA=RES-" resource-name
 // /// ```
-// pub fn capa_quota_res(input: &[u8]) -> IMAPResult<&[u8], Capability> {
+// pub(crate) fn capa_quota_res(input: &[u8]) -> IMAPResult<&[u8], Capability> {
 //     let mut parser = preceded(tag_no_case("QUOTA=RES-"), resource_name);
 //
 //     let (remaining, resource) = parser(input)?;

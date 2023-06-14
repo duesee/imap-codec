@@ -21,7 +21,9 @@ use crate::{
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-pub fn body(remaining_recursions: usize) -> impl Fn(&[u8]) -> IMAPResult<&[u8], BodyStructure> {
+pub(crate) fn body(
+    remaining_recursions: usize,
+) -> impl Fn(&[u8]) -> IMAPResult<&[u8], BodyStructure> {
     move |input: &[u8]| body_limited(input, remaining_recursions)
 }
 
@@ -91,7 +93,7 @@ fn body_type_1part_limited<'a>(
 /// `body-type-basic = media-basic SP body-fields`
 ///
 /// MESSAGE subtype MUST NOT be "RFC822"
-pub fn body_type_basic(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
+pub(crate) fn body_type_basic(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
     let mut parser = tuple((media_basic, sp, body_fields));
 
     let (remaining, ((type_, subtype), _, basic)) = parser(input)?;
@@ -160,7 +162,7 @@ fn body_type_msg_limited<'a>(
 /// `body-type-text = media-text SP
 ///                   body-fields SP
 ///                   body-fld-lines`
-pub fn body_type_text(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
+pub(crate) fn body_type_text(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
     let mut parser = tuple((media_text, sp, body_fields, sp, body_fld_lines));
 
     let (remaining, (subtype, _, basic, _, number_of_lines)) = parser(input)?;
@@ -182,7 +184,7 @@ pub fn body_type_text(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, SpecificF
 ///                body-fld-desc SP
 ///                body-fld-enc SP
 ///                body-fld-octets`
-pub fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
+pub(crate) fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
     let mut parser = tuple((
         body_fld_param,
         sp,
@@ -214,7 +216,7 @@ pub fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
 ///                   string SP
 ///                   string *(SP string SP string)
 ///                   ")" / nil`
-pub fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>> {
+pub(crate) fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>> {
     let mut parser = alt((
         delimited(
             tag(b"("),
@@ -234,13 +236,13 @@ pub fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>
 
 #[inline]
 /// `body-fld-id = nstring`
-pub fn body_fld_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn body_fld_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
 #[inline]
 /// `body-fld-desc = nstring`
-pub fn body_fld_desc(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn body_fld_desc(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -260,19 +262,19 @@ pub fn body_fld_desc(input: &[u8]) -> IMAPResult<&[u8], NString> {
 /// `body-fld-enc = string`
 ///
 /// TODO: why the special case?
-pub fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
+pub(crate) fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
     string(input)
 }
 
 #[inline]
 /// `body-fld-octets = number`
-pub fn body_fld_octets(input: &[u8]) -> IMAPResult<&[u8], u32> {
+pub(crate) fn body_fld_octets(input: &[u8]) -> IMAPResult<&[u8], u32> {
     number(input)
 }
 
 #[inline]
 /// `body-fld-lines = number`
-pub fn body_fld_lines(input: &[u8]) -> IMAPResult<&[u8], u32> {
+pub(crate) fn body_fld_lines(input: &[u8]) -> IMAPResult<&[u8], u32> {
     number(input)
 }
 
@@ -286,7 +288,7 @@ pub fn body_fld_lines(input: &[u8]) -> IMAPResult<&[u8], u32> {
 /// ```
 ///
 /// Note: MUST NOT be returned on non-extensible "BODY" fetch.
-pub fn body_ext_1part(input: &[u8]) -> IMAPResult<&[u8], SinglePartExtensionData> {
+pub(crate) fn body_ext_1part(input: &[u8]) -> IMAPResult<&[u8], SinglePartExtensionData> {
     map(
         tuple((
             body_fld_md5,
@@ -319,13 +321,15 @@ pub fn body_ext_1part(input: &[u8]) -> IMAPResult<&[u8], SinglePartExtensionData
 
 #[inline]
 /// `body-fld-md5 = nstring`
-pub fn body_fld_md5(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn body_fld_md5(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
 /// `body-fld-dsp = "(" string SP body-fld-param ")" / nil`
 #[allow(clippy::type_complexity)]
-pub fn body_fld_dsp(input: &[u8]) -> IMAPResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
+pub(crate) fn body_fld_dsp(
+    input: &[u8],
+) -> IMAPResult<&[u8], Option<(IString, Vec<(IString, IString)>)>> {
     alt((
         delimited(
             tag(b"("),
@@ -340,7 +344,7 @@ pub fn body_fld_dsp(input: &[u8]) -> IMAPResult<&[u8], Option<(IString, Vec<(ISt
 }
 
 /// `body-fld-lang = nstring / "(" string *(SP string) ")"`
-pub fn body_fld_lang(input: &[u8]) -> IMAPResult<&[u8], Vec<IString>> {
+pub(crate) fn body_fld_lang(input: &[u8]) -> IMAPResult<&[u8], Vec<IString>> {
     alt((
         map(nstring, |nstring| match nstring.0 {
             Some(item) => vec![item],
@@ -352,7 +356,7 @@ pub fn body_fld_lang(input: &[u8]) -> IMAPResult<&[u8], Vec<IString>> {
 
 #[inline]
 /// `body-fld-loc = nstring`
-pub fn body_fld_loc(input: &[u8]) -> IMAPResult<&[u8], NString> {
+pub(crate) fn body_fld_loc(input: &[u8]) -> IMAPResult<&[u8], NString> {
     nstring(input)
 }
 
@@ -370,7 +374,7 @@ pub fn body_fld_loc(input: &[u8]) -> IMAPResult<&[u8], NString> {
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-pub fn body_extension(
+pub(crate) fn body_extension(
     remaining_recursions: usize,
 ) -> impl Fn(&[u8]) -> IMAPResult<&[u8], BodyExtension> {
     move |input: &[u8]| body_extension_limited(input, remaining_recursions)
@@ -447,7 +451,7 @@ fn body_type_mpart_limited(
 /// ```
 ///
 /// Note: MUST NOT be returned on non-extensible "BODY" fetch.
-pub fn body_ext_mpart(input: &[u8]) -> IMAPResult<&[u8], MultiPartExtensionData> {
+pub(crate) fn body_ext_mpart(input: &[u8]) -> IMAPResult<&[u8], MultiPartExtensionData> {
     map(
         tuple((
             body_fld_param,
@@ -502,7 +506,7 @@ pub fn body_ext_mpart(input: &[u8]) -> IMAPResult<&[u8], MultiPartExtensionData>
 /// TODO: Why the special case?
 ///
 /// Defined in [MIME-IMT]
-pub fn media_basic(input: &[u8]) -> IMAPResult<&[u8], (IString, IString)> {
+pub(crate) fn media_basic(input: &[u8]) -> IMAPResult<&[u8], (IString, IString)> {
     let mut parser = tuple((string, sp, media_subtype));
 
     let (remaining, (type_, _, subtype)) = parser(input)?;
@@ -514,7 +518,7 @@ pub fn media_basic(input: &[u8]) -> IMAPResult<&[u8], (IString, IString)> {
 /// `media-subtype = string`
 ///
 /// Defined in [MIME-IMT]
-pub fn media_subtype(input: &[u8]) -> IMAPResult<&[u8], IString> {
+pub(crate) fn media_subtype(input: &[u8]) -> IMAPResult<&[u8], IString> {
     string(input)
 }
 
@@ -529,7 +533,7 @@ pub fn media_subtype(input: &[u8]) -> IMAPResult<&[u8], IString> {
 /// Defined in [MIME-IMT]
 ///
 /// "message" "rfc822" basic specific-for-message-rfc822 extension
-pub fn media_message(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
+pub(crate) fn media_message(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
     tag_no_case(b"\"MESSAGE\" \"RFC822\"")(input)
 }
 
@@ -538,7 +542,7 @@ pub fn media_message(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
 /// Defined in [MIME-IMT]
 ///
 /// "text" "?????" basic specific-for-text extension
-pub fn media_text(input: &[u8]) -> IMAPResult<&[u8], IString> {
+pub(crate) fn media_text(input: &[u8]) -> IMAPResult<&[u8], IString> {
     let mut parser = preceded(tag_no_case(b"\"TEXT\" "), media_subtype);
 
     let (remaining, media_subtype) = parser(input)?;

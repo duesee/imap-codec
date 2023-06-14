@@ -50,7 +50,7 @@ use crate::{
 ///                     command-nonauth /
 ///                     command-select
 ///                   ) CRLF`
-pub fn command(input: &[u8]) -> IMAPResult<&[u8], Command> {
+pub(crate) fn command(input: &[u8]) -> IMAPResult<&[u8], Command> {
     let mut parser = tuple((
         tag_imap,
         sp,
@@ -68,7 +68,7 @@ pub fn command(input: &[u8]) -> IMAPResult<&[u8], Command> {
 /// `command-any = "CAPABILITY" / "LOGOUT" / "NOOP" / x-command`
 ///
 /// Note: Valid in all states
-pub fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Capability, tag_no_case(b"CAPABILITY")),
         value(CommandBody::Logout, tag_no_case(b"LOGOUT")),
@@ -95,7 +95,7 @@ pub fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                 compress ; RFC 4978`
 ///
 /// Note: Valid only in Authenticated or Selected state
-pub fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     alt((
         append,
         create,
@@ -124,7 +124,7 @@ pub fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `append = "APPEND" SP mailbox [SP flag-list] [SP date-time] SP literal`
-pub fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"APPEND"),
         sp,
@@ -151,7 +151,7 @@ pub fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `create = "CREATE" SP mailbox`
 ///
 /// Note: Use of INBOX gives a NO error
-pub fn create(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn create(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"CREATE"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -162,7 +162,7 @@ pub fn create(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `delete = "DELETE" SP mailbox`
 ///
 /// Note: Use of INBOX gives a NO error
-pub fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"DELETE"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -171,7 +171,7 @@ pub fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `examine = "EXAMINE" SP mailbox`
-pub fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"EXAMINE"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -180,7 +180,7 @@ pub fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
-pub fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
@@ -195,7 +195,7 @@ pub fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `lsub = "LSUB" SP mailbox SP list-mailbox`
-pub fn lsub(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn lsub(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LSUB"), sp, mailbox, sp, list_mailbox));
 
     let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
@@ -212,7 +212,7 @@ pub fn lsub(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `rename = "RENAME" SP mailbox SP mailbox`
 ///
 /// Note: Use of INBOX as a destination gives a NO error
-pub fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"RENAME"), sp, mailbox, sp, mailbox));
 
     let (remaining, (_, _, mailbox, _, new_mailbox)) = parser(input)?;
@@ -227,7 +227,7 @@ pub fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `select = "SELECT" SP mailbox`
-pub fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"SELECT"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -236,7 +236,7 @@ pub fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
-pub fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"STATUS"),
         sp,
@@ -257,7 +257,7 @@ pub fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `subscribe = "SUBSCRIBE" SP mailbox`
-pub fn subscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn subscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"SUBSCRIBE"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -266,7 +266,7 @@ pub fn subscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `unsubscribe = "UNSUBSCRIBE" SP mailbox`
-pub fn unsubscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn unsubscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"UNSUBSCRIBE"), sp, mailbox));
 
     let (remaining, (_, _, mailbox)) = parser(input)?;
@@ -279,7 +279,7 @@ pub fn unsubscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `command-nonauth = login / authenticate / "STARTTLS"`
 ///
 /// Note: Valid only when in Not Authenticated state
-pub fn command_nonauth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn command_nonauth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
         #[cfg(not(feature = "ext_sasl_ir"))]
@@ -303,7 +303,7 @@ pub fn command_nonauth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `login = "LOGIN" SP userid SP password`
-pub fn login(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn login(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"LOGIN"), sp, userid, sp, password));
 
     let (remaining, (_, _, username, _, password)) = parser(input)?;
@@ -319,13 +319,13 @@ pub fn login(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 #[inline]
 /// `userid = astring`
-pub fn userid(input: &[u8]) -> IMAPResult<&[u8], AString> {
+pub(crate) fn userid(input: &[u8]) -> IMAPResult<&[u8], AString> {
     astring(input)
 }
 
 #[inline]
 /// `password = astring`
-pub fn password(input: &[u8]) -> IMAPResult<&[u8], AString> {
+pub(crate) fn password(input: &[u8]) -> IMAPResult<&[u8], AString> {
     astring(input)
 }
 
@@ -339,7 +339,7 @@ pub fn password(input: &[u8]) -> IMAPResult<&[u8], AString> {
 ///                CRLF is parsed by upper command parser.
 /// ```
 #[cfg(not(feature = "ext_sasl_ir"))]
-pub fn authenticate(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
+pub(crate) fn authenticate(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
     let mut parser = preceded(tag_no_case(b"AUTHENTICATE "), auth_type);
 
     let (remaining, auth_type) = parser(input)?;
@@ -364,7 +364,7 @@ pub fn authenticate(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 #[cfg(feature = "ext_sasl_ir")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
 #[allow(clippy::type_complexity)]
-pub fn authenticate_sasl_ir(
+pub(crate) fn authenticate_sasl_ir(
     input: &[u8],
 ) -> IMAPResult<&[u8], (AuthMechanism, Option<Secret<Cow<[u8]>>>)> {
     let mut parser = tuple((
@@ -398,7 +398,7 @@ pub fn authenticate_sasl_ir(
 ///                   search`
 ///
 /// Note: Valid only when in Selected state
-pub fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
@@ -416,7 +416,7 @@ pub fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `copy = "COPY" SP sequence-set SP mailbox`
-pub fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"COPY"), sp, sequence_set, sp, mailbox));
 
     let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
@@ -435,7 +435,7 @@ pub fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                                      "FULL" /
 ///                                      "FAST" /
 ///                                      fetch-att / "(" fetch-att *(SP fetch-att) ")")`
-pub fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"FETCH"),
         sp,
@@ -477,7 +477,7 @@ pub fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `store = "STORE" SP sequence-set SP store-att-flags`
-pub fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, store_att_flags));
 
     let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
@@ -495,7 +495,9 @@ pub fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 /// `store-att-flags = (["+" / "-"] "FLAGS" [".SILENT"]) SP (flag-list / (flag *(SP flag)))`
-pub fn store_att_flags(input: &[u8]) -> IMAPResult<&[u8], (StoreType, StoreResponse, Vec<Flag>)> {
+pub(crate) fn store_att_flags(
+    input: &[u8],
+) -> IMAPResult<&[u8], (StoreType, StoreResponse, Vec<Flag>)> {
     let mut parser = tuple((
         tuple((
             map(
@@ -526,7 +528,7 @@ pub fn store_att_flags(input: &[u8]) -> IMAPResult<&[u8], (StoreType, StoreRespo
 /// `uid = "UID" SP (copy / fetch / search / store)`
 ///
 /// Note: Unique identifiers used instead of message sequence numbers
-pub fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"UID"),
         sp,

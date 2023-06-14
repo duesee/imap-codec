@@ -19,12 +19,12 @@ use crate::{
 };
 
 /// `section = "[" [section-spec] "]"`
-pub fn section(input: &[u8]) -> IMAPResult<&[u8], Option<Section>> {
+pub(crate) fn section(input: &[u8]) -> IMAPResult<&[u8], Option<Section>> {
     delimited(tag(b"["), opt(section_spec), tag(b"]"))(input)
 }
 
 /// `section-spec = section-msgtext / (section-part ["." section-text])`
-pub fn section_spec(input: &[u8]) -> IMAPResult<&[u8], Section> {
+pub(crate) fn section_spec(input: &[u8]) -> IMAPResult<&[u8], Section> {
     alt((
         map(section_msgtext, |part_specifier| match part_specifier {
             PartSpecifier::PartNumber(_) => unreachable!(),
@@ -61,7 +61,7 @@ pub fn section_spec(input: &[u8]) -> IMAPResult<&[u8], Section> {
 /// `section-msgtext = "HEADER" / "HEADER.FIELDS" [".NOT"] SP header-list / "TEXT"`
 ///
 /// Top-level or MESSAGE/RFC822 part
-pub fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
+pub(crate) fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
     alt((
         map(
             tuple((tag_no_case(b"HEADER.FIELDS.NOT"), sp, header_list)),
@@ -80,7 +80,7 @@ pub fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 /// `section-part = nz-number *("." nz-number)`
 ///
 /// Body part nesting
-pub fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> {
+pub(crate) fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> {
     map(
         separated_list1(tag(b"."), nz_number),
         NonEmptyVec::unvalidated,
@@ -90,7 +90,7 @@ pub fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> 
 /// `section-text = section-msgtext / "MIME"`
 ///
 /// Text other than actual body part (headers, etc.)
-pub fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
+pub(crate) fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
     alt((
         section_msgtext,
         value(PartSpecifier::Mime, tag_no_case(b"MIME")),
@@ -98,7 +98,7 @@ pub fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 }
 
 /// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
-pub fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
+pub(crate) fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
     map(
         delimited(tag(b"("), separated_list1(sp, header_fld_name), tag(b")")),
         NonEmptyVec::unvalidated,
@@ -107,7 +107,7 @@ pub fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
 
 #[inline]
 /// `header-fld-name = astring`
-pub fn header_fld_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
+pub(crate) fn header_fld_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
     astring(input)
 }
 

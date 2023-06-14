@@ -10,7 +10,7 @@ use crate::{codec::IMAPResult, command::CommandBody, mailbox::mailbox, sequence:
 /// ```abnf
 /// move = "MOVE" SP sequence-set SP mailbox
 /// ```
-pub fn r#move(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn r#move(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((tag_no_case(b"MOVE"), sp, sequence_set, sp, mailbox));
 
     let (remaining, (_, _, sequence_set, _, mailbox)) = parser(input)?;
