@@ -159,7 +159,7 @@ mod tests {
     use crate::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
-        fetch::FetchAttributeValue,
+        fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
     };
@@ -372,7 +372,7 @@ mod tests {
                     b"".as_ref(),
                     Response::Data(Data::Fetch {
                         seq: NonZeroU32::new(1).unwrap(),
-                        attributes: NonEmptyVec::from(FetchAttributeValue::Rfc822(NString(Some(
+                        items: NonEmptyVec::from(MessageDataItem::Rfc822(NString(Some(
                             IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
                         )))),
                     }),

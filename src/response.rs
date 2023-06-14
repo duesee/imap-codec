@@ -376,7 +376,7 @@ pub fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
         map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq)),
         map(
             tuple((tag_no_case(b"FETCH"), sp, msg_att)),
-            move |(_, _, attributes)| Data::Fetch { seq, attributes },
+            move |(_, _, items)| Data::Fetch { seq, items },
         ),
     ))(remaining)
 }

@@ -6,7 +6,7 @@ use imap_codec::{
     core::{AString, IString, Literal, NString, Quoted, Tag},
     datetime::DateTime,
     envelope::{Address, Envelope},
-    fetch::{FetchAttribute, FetchAttributeValue, Macro},
+    fetch::{Macro, MessageDataItem, MessageDataItemName},
     flag::{Flag, FlagFetch, FlagPerm, StoreResponse, StoreType},
     response::{Capability, Code, Data, Greeting, Response, Status},
     secret::Secret,
@@ -257,7 +257,7 @@ fn test_from_noop() {
                 Message::Response(Response::Data(
                     Data::fetch(
                         14,
-                        vec![FetchAttributeValue::Flags(vec![
+                        vec![MessageDataItem::Flags(vec![
                             FlagFetch::Flag(Flag::Seen),
                             FlagFetch::Flag(Flag::Deleted),
                         ])],
@@ -955,13 +955,13 @@ fn test_transcript_from_rfc() {
                     Data::fetch(
                         12,
                         vec![
-                            FetchAttributeValue::Flags(vec![FlagFetch::Flag(Flag::Seen)]),
-                            FetchAttributeValue::InternalDate(DateTime::try_from(
+                            MessageDataItem::Flags(vec![FlagFetch::Flag(Flag::Seen)]),
+                            MessageDataItem::InternalDate(DateTime::try_from(
                                 chrono::DateTime::parse_from_rfc3339("1996-07-17T02:44:25-07:00")
                                     .unwrap(),
                             ).unwrap()),
-                            FetchAttributeValue::Rfc822Size(4286),
-                            FetchAttributeValue::Envelope(Envelope {
+                            MessageDataItem::Rfc822Size(4286),
+                            MessageDataItem::Envelope(Envelope {
                                 date: NString::from(
                                     Quoted::try_from("Wed, 17 Jul 1996 02:23:25 -0700 (PDT)")
                                         .unwrap(),
@@ -1031,7 +1031,7 @@ fn test_transcript_from_rfc() {
                                         .unwrap(),
                                 ),
                             }),
-                            FetchAttributeValue::Body(BodyStructure::Single {
+                            MessageDataItem::Body(BodyStructure::Single {
                                 body: Body {
                                     basic: BasicFields {
                                         parameter_list: vec![(
@@ -1075,7 +1075,7 @@ fn test_transcript_from_rfc() {
                         "a004",
                         CommandBody::fetch(
                             "12",
-                            vec![FetchAttribute::BodyExt {
+                            vec![MessageDataItemName::BodyExt {
                                 section: Some(Section::Header(None)),
                                 peek: false,
                                 partial: None,
@@ -1102,7 +1102,7 @@ Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
                 Message::Response(Response::Data(
                     Data::fetch(
                         12,
-                        vec![FetchAttributeValue::BodyExt {
+                        vec![MessageDataItem::BodyExt {
                             section: Some(Section::Header(None)),
                             origin: None,
                             data: NString::from(
@@ -1159,7 +1159,7 @@ Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
                 Message::Response(Response::Data(
                     Data::fetch(
                         12,
-                        vec![FetchAttributeValue::Flags(vec![
+                        vec![MessageDataItem::Flags(vec![
                             FlagFetch::Flag(Flag::Seen),
                             FlagFetch::Flag(Flag::Deleted),
                         ])],

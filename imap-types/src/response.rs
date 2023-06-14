@@ -23,10 +23,10 @@ use crate::extensions::literal::LiteralCapability;
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text, TextError},
-    fetch::FetchAttributeValue,
+    fetch::MessageDataItem,
     flag::{Flag, FlagNameAttribute, FlagPerm},
     mailbox::Mailbox,
-    status::StatusAttributeValue,
+    status::StatusDataItem,
 };
 #[cfg(feature = "ext_quota")]
 use crate::{
@@ -408,7 +408,7 @@ pub enum Data<'a> {
         /// Name
         mailbox: Mailbox<'a>,
         /// Status parenthesized list
-        attributes: Cow<'a, [StatusAttributeValue]>,
+        items: Cow<'a, [StatusDataItem]>,
     },
 
     /// ### 7.2.5. SEARCH Response
@@ -529,7 +529,7 @@ pub enum Data<'a> {
         /// Sequence number.
         seq: NonZeroU32,
         /// Message data items.
-        attributes: NonEmptyVec<FetchAttributeValue<'a>>,
+        items: NonEmptyVec<MessageDataItem<'a>>,
     },
 
     #[cfg(feature = "ext_enable")]
@@ -594,24 +594,24 @@ impl<'a> Data<'a> {
         Ok(Self::Expunge(NonZeroU32::try_from(seq)?))
     }
 
-    pub fn fetch<I, A>(seq: I, attributes: A) -> Result<Self, FetchError<I::Error, A::Error>>
+    pub fn fetch<S, I>(seq: S, items: I) -> Result<Self, FetchError<S::Error, I::Error>>
     where
-        I: TryInto<NonZeroU32>,
-        A: TryInto<NonEmptyVec<FetchAttributeValue<'a>>>,
+        S: TryInto<NonZeroU32>,
+        I: TryInto<NonEmptyVec<MessageDataItem<'a>>>,
     {
-        Ok(Self::Fetch {
-            seq: seq.try_into().map_err(FetchError::SeqOrUid)?,
-            attributes: attributes.try_into().map_err(FetchError::Attributes)?,
-        })
+        let seq = seq.try_into().map_err(FetchError::SeqOrUid)?;
+        let items = items.try_into().map_err(FetchError::InvalidItems)?;
+
+        Ok(Self::Fetch { seq, items })
     }
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum FetchError<I, A> {
+pub enum FetchError<S, I> {
     #[error("Invalid sequence or UID: {0:?}")]
-    SeqOrUid(I),
-    #[error("Invalid attributes: {0:?}")]
-    Attributes(A),
+    SeqOrUid(S),
+    #[error("Invalid items: {0:?}")]
+    InvalidItems(I),
 }
 
 /// ## 7.5. Server Responses - Command Continuation Request
@@ -1084,7 +1084,7 @@ mod tests {
     #[test]
     fn test_conversion_data() {
         let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
-        let _ = Data::fetch(1, vec![FetchAttributeValue::Rfc822Size(123)]).unwrap();
+        let _ = Data::fetch(1, vec![MessageDataItem::Rfc822Size(123)]).unwrap();
     }
 
     #[test]

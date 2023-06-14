@@ -23,23 +23,23 @@ use crate::{
 ///               "UIDNEXT" /
 ///               "UIDVALIDITY" /
 ///               "UNSEEN"`
-pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusAttribute> {
+pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> {
     alt((
-        value(StatusAttribute::Messages, tag_no_case(b"MESSAGES")),
-        value(StatusAttribute::Recent, tag_no_case(b"RECENT")),
-        value(StatusAttribute::UidNext, tag_no_case(b"UIDNEXT")),
-        value(StatusAttribute::UidValidity, tag_no_case(b"UIDVALIDITY")),
-        value(StatusAttribute::Unseen, tag_no_case(b"UNSEEN")),
+        value(StatusDataItemName::Messages, tag_no_case(b"MESSAGES")),
+        value(StatusDataItemName::Recent, tag_no_case(b"RECENT")),
+        value(StatusDataItemName::UidNext, tag_no_case(b"UIDNEXT")),
+        value(StatusDataItemName::UidValidity, tag_no_case(b"UIDVALIDITY")),
+        value(StatusDataItemName::Unseen, tag_no_case(b"UNSEEN")),
         #[cfg(feature = "ext_quota")]
         value(
-            StatusAttribute::DeletedStorage,
+            StatusDataItemName::DeletedStorage,
             tag_no_case(b"DELETED-STORAGE"),
         ),
         #[cfg(feature = "ext_quota")]
-        value(StatusAttribute::Deleted, tag_no_case(b"DELETED")),
+        value(StatusDataItemName::Deleted, tag_no_case(b"DELETED")),
         #[cfg(feature = "ext_condstore_qresync")]
         value(
-            StatusAttribute::HighestModSeq,
+            StatusDataItemName::HighestModSeq,
             tag_no_case(b"HIGHESTMODSEQ"),
         ),
     ))(input)
@@ -48,7 +48,7 @@ pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusAttribute> {
 /// `status-att-list = status-att-val *(SP status-att-val)`
 ///
 /// Note: See errata id: 261
-pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusAttributeValue>> {
+pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusDataItem>> {
     separated_list1(sp, status_att_val)(input)
 }
 
@@ -59,37 +59,37 @@ pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusAttributeVal
 ///                    ("UNSEEN" SP number)`
 ///
 /// Note: See errata id: 261
-fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusAttributeValue> {
+fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
     alt((
         map(
             tuple((tag_no_case(b"MESSAGES"), sp, number)),
-            |(_, _, num)| StatusAttributeValue::Messages(num),
+            |(_, _, num)| StatusDataItem::Messages(num),
         ),
         map(
             tuple((tag_no_case(b"RECENT"), sp, number)),
-            |(_, _, num)| StatusAttributeValue::Recent(num),
+            |(_, _, num)| StatusDataItem::Recent(num),
         ),
         map(
             tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
-            |(_, _, next)| StatusAttributeValue::UidNext(next),
+            |(_, _, next)| StatusDataItem::UidNext(next),
         ),
         map(
             tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
-            |(_, _, val)| StatusAttributeValue::UidValidity(val),
+            |(_, _, val)| StatusDataItem::UidValidity(val),
         ),
         map(
             tuple((tag_no_case(b"UNSEEN"), sp, number)),
-            |(_, _, num)| StatusAttributeValue::Unseen(num),
+            |(_, _, num)| StatusDataItem::Unseen(num),
         ),
         #[cfg(feature = "ext_quota")]
         map(
             tuple((tag_no_case(b"DELETED-STORAGE"), sp, number64)),
-            |(_, _, num)| StatusAttributeValue::DeletedStorage(num),
+            |(_, _, num)| StatusDataItem::DeletedStorage(num),
         ),
         #[cfg(feature = "ext_quota")]
         map(
             tuple((tag_no_case(b"DELETED"), sp, number)),
-            |(_, _, num)| StatusAttributeValue::Deleted(num),
+            |(_, _, num)| StatusDataItem::Deleted(num),
         ),
     ))(input)
 }
@@ -102,17 +102,17 @@ mod tests {
     use crate::testing::known_answer_test_encode;
 
     #[test]
-    fn test_encode_status_attribute() {
+    fn test_encode_status_data_item_name() {
         let tests = [
-            (StatusAttribute::Messages, b"MESSAGES".as_ref()),
-            (StatusAttribute::Recent, b"RECENT"),
-            (StatusAttribute::UidNext, b"UIDNEXT"),
-            (StatusAttribute::UidValidity, b"UIDVALIDITY"),
-            (StatusAttribute::Unseen, b"UNSEEN"),
+            (StatusDataItemName::Messages, b"MESSAGES".as_ref()),
+            (StatusDataItemName::Recent, b"RECENT"),
+            (StatusDataItemName::UidNext, b"UIDNEXT"),
+            (StatusDataItemName::UidValidity, b"UIDVALIDITY"),
+            (StatusDataItemName::Unseen, b"UNSEEN"),
             #[cfg(feature = "ext_quota")]
-            (StatusAttribute::Deleted, b"DELETED"),
+            (StatusDataItemName::Deleted, b"DELETED"),
             #[cfg(feature = "ext_quota")]
-            (StatusAttribute::DeletedStorage, b"DELETED-STORAGE"),
+            (StatusDataItemName::DeletedStorage, b"DELETED-STORAGE"),
         ];
 
         for test in tests {
@@ -121,24 +121,24 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_status_attribute_value() {
+    fn test_encode_status_data_item() {
         let tests = [
-            (StatusAttributeValue::Messages(0), b"MESSAGES 0".as_ref()),
-            (StatusAttributeValue::Recent(u32::MAX), b"RECENT 4294967295"),
+            (StatusDataItem::Messages(0), b"MESSAGES 0".as_ref()),
+            (StatusDataItem::Recent(u32::MAX), b"RECENT 4294967295"),
             (
-                StatusAttributeValue::UidNext(NonZeroU32::new(1).unwrap()),
+                StatusDataItem::UidNext(NonZeroU32::new(1).unwrap()),
                 b"UIDNEXT 1",
             ),
             (
-                StatusAttributeValue::UidValidity(NonZeroU32::new(u32::MAX).unwrap()),
+                StatusDataItem::UidValidity(NonZeroU32::new(u32::MAX).unwrap()),
                 b"UIDVALIDITY 4294967295",
             ),
-            (StatusAttributeValue::Unseen(0), b"UNSEEN 0"),
+            (StatusDataItem::Unseen(0), b"UNSEEN 0"),
             #[cfg(feature = "ext_quota")]
-            (StatusAttributeValue::Deleted(1), b"DELETED 1"),
+            (StatusDataItem::Deleted(1), b"DELETED 1"),
             #[cfg(feature = "ext_quota")]
             (
-                StatusAttributeValue::DeletedStorage(u64::MAX),
+                StatusDataItem::DeletedStorage(u64::MAX),
                 b"DELETED-STORAGE 18446744073709551615",
             ),
         ];

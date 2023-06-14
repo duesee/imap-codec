@@ -27,8 +27,8 @@ pub enum Macro {
 }
 
 impl Macro {
-    pub fn expand(&self) -> Vec<FetchAttribute> {
-        use FetchAttribute::*;
+    pub fn expand(&self) -> Vec<MessageDataItemName> {
+        use MessageDataItemName::*;
 
         match self {
             Self::All => vec![Flags, InternalDate, Rfc822Size, Envelope],
@@ -45,20 +45,20 @@ impl Macro {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MacroOrFetchAttributes<'a> {
+pub enum MacroOrMessageDataItemNames<'a> {
     Macro(Macro),
-    FetchAttributes(Vec<FetchAttribute<'a>>),
+    MessageDataItemNames(Vec<MessageDataItemName<'a>>),
 }
 
-impl<'a> From<Macro> for MacroOrFetchAttributes<'a> {
+impl<'a> From<Macro> for MacroOrMessageDataItemNames<'a> {
     fn from(m: Macro) -> Self {
-        MacroOrFetchAttributes::Macro(m)
+        MacroOrMessageDataItemNames::Macro(m)
     }
 }
 
-impl<'a> From<Vec<FetchAttribute<'a>>> for MacroOrFetchAttributes<'a> {
-    fn from(attributes: Vec<FetchAttribute<'a>>) -> Self {
-        MacroOrFetchAttributes::FetchAttributes(attributes)
+impl<'a> From<Vec<MessageDataItemName<'a>>> for MacroOrMessageDataItemNames<'a> {
+    fn from(item_names: Vec<MessageDataItemName<'a>>) -> Self {
+        MacroOrMessageDataItemNames::MessageDataItemNames(item_names)
     }
 }
 
@@ -67,7 +67,8 @@ impl<'a> From<Vec<FetchAttribute<'a>>> for MacroOrFetchAttributes<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FetchAttribute<'a> {
+#[doc(alias = "FetchAttribute")]
+pub enum MessageDataItemName<'a> {
     /// Non-extensible form of `BODYSTRUCTURE`.
     ///
     /// ```imap
@@ -216,7 +217,8 @@ pub enum FetchAttribute<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FetchAttributeValue<'a> {
+#[doc(alias = "FetchAttributeValue")]
+pub enum MessageDataItem<'a> {
     /// A form of `BODYSTRUCTURE` without extension data.
     ///
     /// ```imap

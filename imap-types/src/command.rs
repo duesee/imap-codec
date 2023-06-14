@@ -20,13 +20,13 @@ use crate::{
     auth::AuthMechanism,
     core::{AString, Charset, Literal, Tag},
     datetime::DateTime,
-    fetch::MacroOrFetchAttributes,
+    fetch::MacroOrMessageDataItemNames,
     flag::{Flag, StoreResponse, StoreType},
     mailbox::{ListMailbox, Mailbox},
     search::SearchKey,
     secret::Secret,
     sequence::SequenceSet,
-    status::StatusAttribute,
+    status::StatusDataItemName,
 };
 #[cfg(feature = "ext_enable")]
 use crate::{core::NonEmptyVec, extensions::enable::CapabilityEnable};
@@ -779,7 +779,7 @@ pub enum CommandBody<'a> {
     ///   reasonable performance.
     Status {
         mailbox: Mailbox<'a>,
-        attributes: Cow<'a, [StatusAttribute]>,
+        item_names: Cow<'a, [StatusDataItemName]>,
     },
 
     /// 6.3.11. APPEND Command
@@ -997,7 +997,7 @@ pub enum CommandBody<'a> {
     ///   safely ignore the newly transmitted envelope.
     Fetch {
         sequence_set: SequenceSet,
-        attributes: MacroOrFetchAttributes<'a>,
+        macro_or_item_names: MacroOrMessageDataItemNames<'a>,
         uid: bool,
     },
 
@@ -1451,14 +1451,16 @@ impl<'a> CommandBody<'a> {
         })
     }
 
-    pub fn status<M, A>(mailbox: M, attributes: A) -> Result<Self, M::Error>
+    pub fn status<M, I>(mailbox: M, item_names: I) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
-        A: Into<Cow<'a, [StatusAttribute]>>,
+        I: Into<Cow<'a, [StatusDataItemName]>>,
     {
+        let mailbox = mailbox.try_into()?;
+
         Ok(CommandBody::Status {
-            mailbox: mailbox.try_into()?,
-            attributes: attributes.into(),
+            mailbox,
+            item_names: item_names.into(),
         })
     }
 
@@ -1488,16 +1490,16 @@ impl<'a> CommandBody<'a> {
         }
     }
 
-    pub fn fetch<S, I>(sequence_set: S, attributes: I, uid: bool) -> Result<Self, S::Error>
+    pub fn fetch<S, I>(sequence_set: S, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
     where
         S: TryInto<SequenceSet>,
-        I: Into<MacroOrFetchAttributes<'a>>,
+        I: Into<MacroOrMessageDataItemNames<'a>>,
     {
         let sequence_set = sequence_set.try_into()?;
 
         Ok(CommandBody::Fetch {
             sequence_set,
-            attributes: attributes.into(),
+            macro_or_item_names: macro_or_item_names.into(),
             uid,
         })
     }
@@ -1637,14 +1639,14 @@ mod tests {
         auth::AuthMechanism,
         core::{AString, Charset, IString, Literal},
         datetime::DateTime,
-        fetch::{FetchAttribute, Macro, MacroOrFetchAttributes},
+        fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName},
         flag::{Flag, StoreType},
         mailbox::{ListMailbox, Mailbox},
         search::SearchKey,
         secret::Secret,
         section::{Part, Section},
         sequence::{SeqOrUid, Sequence, SequenceSet},
-        status::StatusAttribute,
+        status::StatusDataItemName,
     };
     #[cfg(feature = "ext_enable")]
     use crate::{
@@ -1704,7 +1706,7 @@ mod tests {
                 ListMailbox::String(IString::Quoted("\x7f".try_into().unwrap())),
             )
             .unwrap(),
-            CommandBody::status("inbox", vec![StatusAttribute::Messages]).unwrap(),
+            CommandBody::status("inbox", vec![StatusDataItemName::Messages]).unwrap(),
             CommandBody::append(
                 "inbox",
                 vec![],
@@ -1779,7 +1781,7 @@ mod tests {
             ),
             CommandBody::fetch(
                 "1",
-                vec![FetchAttribute::BodyExt {
+                vec![MessageDataItemName::BodyExt {
                     partial: None,
                     section: Some(Section::Part(Part(
                         vec![1.try_into().unwrap(), 1.try_into().unwrap()]
@@ -1904,7 +1906,7 @@ mod tests {
             (
                 CommandBody::Status {
                     mailbox: Mailbox::Inbox,
-                    attributes: vec![].into(),
+                    item_names: vec![].into(),
                 },
                 "STATUS",
             ),
@@ -1931,7 +1933,7 @@ mod tests {
             (
                 CommandBody::Fetch {
                     sequence_set: SequenceSet::try_from(1u32).unwrap(),
-                    attributes: MacroOrFetchAttributes::Macro(Macro::Full),
+                    macro_or_item_names: MacroOrMessageDataItemNames::Macro(Macro::Full),
                     uid: true,
                 },
                 "FETCH",
