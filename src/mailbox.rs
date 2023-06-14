@@ -26,7 +26,7 @@ use crate::{
 };
 
 /// `list-mailbox = 1*list-char / string`
-pub fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
+pub(crate) fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
     alt((
         map(take_while1(is_list_char), |bytes: &[u8]| {
             // # Safety
@@ -43,7 +43,7 @@ pub fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
 }
 
 /// `list-char = ATOM-CHAR / list-wildcards / resp-specials`
-pub fn is_list_char(i: u8) -> bool {
+pub(crate) fn is_list_char(i: u8) -> bool {
     is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
@@ -56,7 +56,7 @@ pub fn is_list_char(i: u8) -> bool {
 /// "I" "N" "B" "O" "X" is considered to be INBOX and not an astring.
 ///
 /// Refer to section 5.1 for further semantic details of mailbox names.
-pub fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
+pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
     map(astring, Mailbox::from)(input)
 }
 
@@ -67,7 +67,7 @@ pub fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
 ///                 "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                 number SP "EXISTS" /
 ///                 number SP "RECENT"`
-pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
         map(
             tuple((tag_no_case(b"FLAGS"), sp, flag_list)),
@@ -125,7 +125,7 @@ pub fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 ///                 (DQUOTE QUOTED-CHAR DQUOTE / nil) SP
 ///                 mailbox`
 #[allow(clippy::type_complexity)]
-pub fn mailbox_list(
+pub(crate) fn mailbox_list(
     input: &[u8],
 ) -> IMAPResult<&[u8], (Option<Vec<FlagNameAttribute>>, Option<QuotedChar>, Mailbox)> {
     let mut parser = tuple((

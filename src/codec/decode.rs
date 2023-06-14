@@ -12,18 +12,19 @@ use crate::{
 };
 
 /// An extended version of [`nom::IResult`].
-pub type IMAPResult<I, O> = Result<(I, O), nom::Err<IMAPParseError<I>>>;
+pub(crate) type IMAPResult<I, O> = Result<(I, O), nom::Err<IMAPParseError<I>>>;
 
 /// An extended version of [`nom::error::Error`].
 #[derive(Debug)]
-pub struct IMAPParseError<I> {
+pub(crate) struct IMAPParseError<I> {
+    #[allow(unused)]
     pub input: I,
     pub kind: IMAPErrorKind,
 }
 
 /// An extended version of [`nom::error::ErrorKind`].
 #[derive(Debug)]
-pub enum IMAPErrorKind {
+pub(crate) enum IMAPErrorKind {
     Literal {
         length: u32,
         #[cfg(feature = "ext_literal")]

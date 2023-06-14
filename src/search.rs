@@ -2,7 +2,7 @@
 
 use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
-pub use imap_types::search::*;
+pub(crate) use imap_types::search::*;
 use nom::{
     branch::alt,
     bytes::{complete::tag, streaming::tag_no_case},
@@ -25,7 +25,7 @@ use crate::{
 /// Note: CHARSET argument MUST be registered with IANA
 ///
 /// errata id: 261
-pub fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"SEARCH"),
         opt(map(
@@ -94,7 +94,9 @@ pub fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///
 /// This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-pub fn search_key(remaining_recursions: usize) -> impl Fn(&[u8]) -> IMAPResult<&[u8], SearchKey> {
+pub(crate) fn search_key(
+    remaining_recursions: usize,
+) -> impl Fn(&[u8]) -> IMAPResult<&[u8], SearchKey> {
     move |input: &[u8]| search_key_limited(input, remaining_recursions)
 }
 

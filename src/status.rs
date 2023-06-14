@@ -23,7 +23,7 @@ use crate::{
 ///               "UIDNEXT" /
 ///               "UIDVALIDITY" /
 ///               "UNSEEN"`
-pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> {
+pub(crate) fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> {
     alt((
         value(StatusDataItemName::Messages, tag_no_case(b"MESSAGES")),
         value(StatusDataItemName::Recent, tag_no_case(b"RECENT")),
@@ -48,7 +48,7 @@ pub fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> {
 /// `status-att-list = status-att-val *(SP status-att-val)`
 ///
 /// Note: See errata id: 261
-pub fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusDataItem>> {
+pub(crate) fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusDataItem>> {
     separated_list1(sp, status_att_val)(input)
 }
 

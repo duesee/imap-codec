@@ -22,12 +22,12 @@ use crate::{
 };
 
 /// `algorithm = "DEFLATE"`
-pub fn algorithm(input: &[u8]) -> IMAPResult<&[u8], CompressionAlgorithm> {
+pub(crate) fn algorithm(input: &[u8]) -> IMAPResult<&[u8], CompressionAlgorithm> {
     value(CompressionAlgorithm::Deflate, tag_no_case("DEFLATE"))(input)
 }
 
 /// `compress = "COMPRESS" SP algorithm`
-pub fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+pub(crate) fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     map(preceded(tag_no_case("COMPRESS "), algorithm), |algorithm| {
         CommandBody::Compress { algorithm }
     })(input)

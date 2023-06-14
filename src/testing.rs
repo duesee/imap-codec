@@ -7,7 +7,9 @@ use crate::{
     utils::escape_byte_string,
 };
 
-pub fn known_answer_test_encode((test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>)) {
+pub(crate) fn known_answer_test_encode(
+    (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
+) {
     let expected_bytes = expected_bytes.as_ref();
     let got_bytes = test_object.encode().dump();
     let got_bytes = got_bytes.as_slice();
@@ -24,7 +26,7 @@ pub fn known_answer_test_encode((test_object, expected_bytes): (impl Encode, imp
     }
 }
 
-pub fn known_answer_test_parse<'a, O, P>(
+pub(crate) fn known_answer_test_parse<'a, O, P>(
     (test, expected_remainder, expected_object): (&'a [u8], &[u8], O),
     parser: P,
 ) where
@@ -40,7 +42,7 @@ pub fn known_answer_test_parse<'a, O, P>(
 // we tried it and failed to provide a cleaner solution. Thus, it's a macro for now.
 macro_rules! impl_kat_inverse {
     ($fn_name:ident, $object:ty) => {
-        pub fn $fn_name(tests: &[(&[u8], &[u8], $object)]) {
+        pub(crate) fn $fn_name(tests: &[(&[u8], &[u8], $object)]) {
             for (no, (test_input, expected_remainder, expected_object)) in tests.iter().enumerate()
             {
                 println!("# {no}");

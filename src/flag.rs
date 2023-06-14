@@ -25,7 +25,7 @@ use crate::{codec::IMAPResult, core::atom};
 /// ```
 ///
 /// Note: Does not include "\Recent"
-pub fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
+pub(crate) fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
     alt((
         map(preceded(char('\\'), atom), Flag::system_or_extension),
         map(atom, Flag::Keyword),
@@ -35,7 +35,7 @@ pub fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
 // Note(duesee): This was inlined into [`flag`].
 // #[inline]
 // /// `flag-keyword = atom`
-// pub fn flag_keyword(input: &[u8]) -> IMAPResult<&[u8], Flag> {
+// pub(crate) fn flag_keyword(input: &[u8]) -> IMAPResult<&[u8], Flag> {
 //     map(atom, Flag::Keyword)(input)
 // }
 
@@ -49,17 +49,17 @@ pub fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
 // /// Client implementations MUST accept flag-extension flags.
 // /// Server implementations MUST NOT generate flag-extension flags
 // /// except as defined by future standard or standards-track revisions of this specification.
-// pub fn flag_extension(input: &[u8]) -> IMAPResult<&[u8], Atom> {
+// pub(crate) fn flag_extension(input: &[u8]) -> IMAPResult<&[u8], Atom> {
 //     preceded(tag(b"\\"), atom)(input)
 // }
 
 /// `flag-list = "(" [flag *(SP flag)] ")"`
-pub fn flag_list(input: &[u8]) -> IMAPResult<&[u8], Vec<Flag>> {
+pub(crate) fn flag_list(input: &[u8]) -> IMAPResult<&[u8], Vec<Flag>> {
     delimited(tag(b"("), separated_list0(sp, flag), tag(b")"))(input)
 }
 
 /// `flag-fetch = flag / "\Recent"`
-pub fn flag_fetch(input: &[u8]) -> IMAPResult<&[u8], FlagFetch> {
+pub(crate) fn flag_fetch(input: &[u8]) -> IMAPResult<&[u8], FlagFetch> {
     if let Ok((rem, peek)) = recognize(tuple((char('\\'), atom)))(input) {
         if peek.to_ascii_lowercase() == b"\\recent" {
             return Ok((rem, FlagFetch::Recent));
@@ -70,7 +70,7 @@ pub fn flag_fetch(input: &[u8]) -> IMAPResult<&[u8], FlagFetch> {
 }
 
 /// `flag-perm = flag / "\*"`
-pub fn flag_perm(input: &[u8]) -> IMAPResult<&[u8], FlagPerm> {
+pub(crate) fn flag_perm(input: &[u8]) -> IMAPResult<&[u8], FlagPerm> {
     alt((
         value(FlagPerm::AllowNewKeywords, tag("\\*")),
         map(flag, FlagPerm::Flag),
@@ -84,7 +84,7 @@ pub fn flag_perm(input: &[u8]) -> IMAPResult<&[u8], FlagPerm> {
 ///
 /// TODO(#155): ABNF enforces that sflag is not used more than once.
 ///             We could parse any flag and check for multiple occurrences of sflag later.
-pub fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttribute>> {
+pub(crate) fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttribute>> {
     let (remaining, flags) =
         separated_list1(sp, map(preceded(char('\\'), atom), FlagNameAttribute::from))(input)?;
 
@@ -110,7 +110,7 @@ pub fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttribute>>
 // /// ```
 // ///
 // /// Other flags; multiple possible per LIST response
-// pub fn mbx_list_oflag(input: &[u8]) -> IMAPResult<&[u8], FlagNameAttribute> {
+// pub(crate) fn mbx_list_oflag(input: &[u8]) -> IMAPResult<&[u8], FlagNameAttribute> {
 //     alt((
 //         value(
 //             FlagNameAttribute::Noinferiors,
@@ -126,7 +126,7 @@ pub fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttribute>>
 // /// ```
 // ///
 // /// Selectability flags; only one per LIST response
-// pub fn mbx_list_sflag(input: &[u8]) -> IMAPResult<&[u8], FlagNameAttribute> {
+// pub(crate) fn mbx_list_sflag(input: &[u8]) -> IMAPResult<&[u8], FlagNameAttribute> {
 //     alt((
 //         value(FlagNameAttribute::Noselect, tag_no_case(b"\\Noselect")),
 //         value(FlagNameAttribute::Marked, tag_no_case(b"\\Marked")),

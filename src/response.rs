@@ -31,7 +31,7 @@ use crate::{
 // ----- greeting -----
 
 /// `greeting = "*" SP (resp-cond-auth / resp-cond-bye) CRLF`
-pub fn greeting(input: &[u8]) -> IMAPResult<&[u8], Greeting> {
+pub(crate) fn greeting(input: &[u8]) -> IMAPResult<&[u8], Greeting> {
     let mut parser = tuple((
         tag(b"*"),
         sp,
@@ -51,7 +51,9 @@ pub fn greeting(input: &[u8]) -> IMAPResult<&[u8], Greeting> {
 ///
 /// Authentication condition
 #[allow(clippy::type_complexity)]
-pub fn resp_cond_auth(input: &[u8]) -> IMAPResult<&[u8], (GreetingKind, (Option<Code>, Text))> {
+pub(crate) fn resp_cond_auth(
+    input: &[u8],
+) -> IMAPResult<&[u8], (GreetingKind, (Option<Code>, Text))> {
     let mut parser = tuple((
         alt((
             value(GreetingKind::Ok, tag_no_case(b"OK")),
@@ -67,7 +69,7 @@ pub fn resp_cond_auth(input: &[u8]) -> IMAPResult<&[u8], (GreetingKind, (Option<
 }
 
 /// `resp-text = ["[" resp-text-code "]" SP] text`
-pub fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
+pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
     tuple((
         opt(terminated(
             preceded(
@@ -101,7 +103,7 @@ pub fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
 ///                   atom [SP 1*<any TEXT-CHAR except "]">]`
 ///
 /// Note: See errata id: 261
-pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
+pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
     alt((
         value(Code::Alert, tag_no_case(b"ALERT")),
         map(
@@ -160,7 +162,7 @@ pub fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 ///
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
-pub fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability>> {
+pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
         sp,
@@ -175,12 +177,12 @@ pub fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability
 /// `capability = ("AUTH=" auth-type) /
 ///               "COMPRESS=" algorithm / ; RFC 4978
 ///               atom`
-pub fn capability(input: &[u8]) -> IMAPResult<&[u8], Capability> {
+pub(crate) fn capability(input: &[u8]) -> IMAPResult<&[u8], Capability> {
     map(atom, Capability::from)(input)
 }
 
 /// `resp-cond-bye = "BYE" SP resp-text`
-pub fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
+pub(crate) fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
     let mut parser = tuple((tag_no_case(b"BYE"), sp, resp_text));
 
     let (remaining, (_, _, resp_text)) = parser(input)?;
@@ -191,7 +193,7 @@ pub fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
 // ----- response -----
 
 /// `response = *(continue-req / response-data) response-done`
-pub fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
+pub(crate) fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
     // Divert from standard here for better usability.
     // response_data already contains the bye response, thus
     // response_done could also be response_tagged.
@@ -205,7 +207,7 @@ pub fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
 }
 
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
-pub fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
+pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
     // We can't map the output of `resp_text` directly to `Continue::basic()` because we might end
     // up with a subset of `Text` that is valid base64 and will panic on `unwrap()`. Thus, we first
     // let the parsing finish and only later map to `Continue`.
@@ -257,7 +259,7 @@ pub fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
 ///                    message-data /
 ///                    capability-data
 ///                  ) CRLF`
-pub fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
+pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
     let mut parser = tuple((
         tag(b"*"),
         sp,
@@ -306,7 +308,7 @@ pub fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
 /// `resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text`
 ///
 /// Status condition
-pub fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (&str, Option<Code>, Text)> {
+pub(crate) fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (&str, Option<Code>, Text)> {
     let mut parser = tuple((
         alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
         sp,
@@ -325,12 +327,12 @@ pub fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (&str, Option<Code>, T
 }
 
 /// `response-done = response-tagged / response-fatal`
-pub fn response_done(input: &[u8]) -> IMAPResult<&[u8], Status> {
+pub(crate) fn response_done(input: &[u8]) -> IMAPResult<&[u8], Status> {
     alt((response_tagged, response_fatal))(input)
 }
 
 /// `response-tagged = tag SP resp-cond-state CRLF`
-pub fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
+pub(crate) fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
     let mut parser = tuple((tag_imap, sp, resp_cond_state, crlf));
 
     let (remaining, (tag, _, (raw_status, code, text), _)) = parser(input)?;
@@ -360,7 +362,7 @@ pub fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
 /// `response-fatal = "*" SP resp-cond-bye CRLF`
 ///
 /// Server closes connection immediately
-pub fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
+pub(crate) fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
     let mut parser = tuple((tag(b"*"), sp, resp_cond_bye, crlf));
 
     let (remaining, (_, _, (code, text), _)) = parser(input)?;
@@ -369,7 +371,7 @@ pub fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
 }
 
 /// `message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))`
-pub fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let (remaining, seq) = terminated(nz_number, sp)(input)?;
 
     alt((
