@@ -64,6 +64,12 @@ test = false
 doc = false
 
 [[bin]]
+name = "authenticate_data"
+path = "fuzz_targets/authenticate_data.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "greeting_to_bytes_and_back"
 path = "fuzz_targets/greeting_to_bytes_and_back.rs"
 test = false
@@ -78,5 +84,11 @@ doc = false
 [[bin]]
 name = "response_to_bytes_and_back"
 path = "fuzz_targets/response_to_bytes_and_back.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "authenticate_data_to_bytes_and_back"
+path = "fuzz_targets/authenticate_data_to_bytes_and_back.rs"
 test = false
 doc = false
