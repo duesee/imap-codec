@@ -56,8 +56,7 @@ $ cargo run --example=parse_command
 You can also start the [demo server] with ...
 
 ```sh
-$ cd assets/demos/tokio_server
-$ cargo run <host>:<port>
+$ cargo run -p tokio-server -- <host>:<port>
 ```
 
 ... and connect to it with ...
@@ -204,6 +203,6 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 [extensions]: https://docs.rs/imap-codec/latest/imap_codec/#features
 [documentation]: https://docs.rs/imap-codec/latest/imap_codec/
 [cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
-[demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
-[demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
+[demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
+[demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
 [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs

@@ -141,8 +141,8 @@
 //! The "tokio_util_compat" feature unlocks an implementation of [tokio_util::codec](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
 //! See the [tokio client] and [tokio server] demos.
 //!
-//! [tokio client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_client
-//! [tokio server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio_server
+//! [tokio client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
+//! [tokio server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
 //! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html
 //! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
 //! [RFC 2088]: https://datatracker.ietf.org/doc/html/rfc2088
