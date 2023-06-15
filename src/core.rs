@@ -6,7 +6,7 @@ use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
-use abnf_core::{is_alpha, is_char, is_ctl, is_digit, streaming::dquote};
+use abnf_core::{is_alpha, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::core::*;
@@ -22,7 +22,10 @@ use nom::{
 
 use crate::{
     codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
-    utils::{indicators::is_list_wildcards, unescape_quoted},
+    utils::{
+        indicators::{is_astring_char, is_atom_char, is_quoted_specials, is_text_char},
+        unescape_quoted,
+    },
 };
 
 // ----- number -----
@@ -65,13 +68,6 @@ pub(crate) fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
 pub(crate) fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     map_res(number, NonZeroU32::try_from)(input)
 }
-
-// 1-9
-//
-// digit-nz = %x31-39
-// fn is_digit_nz(byte: u8) -> bool {
-//     matches!(byte, b'1'..=b'9')
-// }
 
 // ----- string -----
 
@@ -131,11 +127,6 @@ pub(crate) fn quoted_char(input: &[u8]) -> IMAPResult<&[u8], QuotedChar> {
 
 pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
     is_text_char(byte) && !is_quoted_specials(byte)
-}
-
-/// `quoted-specials = DQUOTE / "\"`
-pub(crate) fn is_quoted_specials(byte: u8) -> bool {
-    byte == b'"' || byte == b'\\'
 }
 
 /// `literal = "{" number "}" CRLF *CHAR8`
@@ -203,14 +194,6 @@ pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     }
 }
 
-#[inline]
-/// `CHAR8 = %x01-ff`
-///
-/// Any OCTET except NUL, %x00
-// pub fn is_char8(i: u8) -> bool {
-//     i != 0
-// }
-
 // ----- astring ----- atom (roughly) or string
 
 /// `astring = 1*ASTRING-CHAR / string`
@@ -228,34 +211,6 @@ pub(crate) fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
         }),
         map(string, AString::String),
     ))(input)
-}
-
-/// `ASTRING-CHAR = ATOM-CHAR / resp-specials`
-pub(crate) fn is_astring_char(i: u8) -> bool {
-    is_atom_char(i) || is_resp_specials(i)
-}
-
-/// `ATOM-CHAR = <any CHAR except atom-specials>`
-pub(crate) fn is_atom_char(b: u8) -> bool {
-    is_char(b) && !is_atom_specials(b)
-}
-
-/// `atom-specials = "(" / ")" / "{" / SP / CTL / list-wildcards / quoted-specials / resp-specials`
-pub(crate) fn is_atom_specials(i: u8) -> bool {
-    match i {
-        b'(' | b')' | b'{' | b' ' => true,
-        c if is_ctl(c) => true,
-        c if is_list_wildcards(c) => true,
-        c if is_quoted_specials(c) => true,
-        c if is_resp_specials(c) => true,
-        _ => false,
-    }
-}
-
-#[inline]
-/// `resp-specials = "]"`
-pub(crate) fn is_resp_specials(i: u8) -> bool {
-    i == b']'
 }
 
 /// `atom = 1*ATOM-CHAR`
@@ -301,15 +256,6 @@ pub(crate) fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
         // `is_text_char` makes sure that the sequence of bytes
         // is always valid ASCII. Thus, it is also valid UTF-8.
         Text::unvalidated(from_utf8(bytes).unwrap()))(input)
-}
-
-/// `TEXT-CHAR = %x01-09 / %x0B-0C / %x0E-7F`
-///
-/// Note: This was `<any CHAR except CR and LF>` before.
-///
-/// Note: We also exclude `[` and `]` due to the possibility to misuse this as a `Code`.
-pub(crate) fn is_text_char(c: u8) -> bool {
-    matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x5a | 0x5c | 0x5e..=0x7f)
 }
 
 // ----- base64 -----
