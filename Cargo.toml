@@ -10,11 +10,10 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [features]
-default = []
+# <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
 serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
-tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 
 # IMAP
 starttls = ["imap-types/starttls"]
@@ -31,9 +30,13 @@ ext_move = ["imap-types/ext_move"]
 ext_quota = ["imap-types/ext_quota"]
 ext_sasl_ir = ["imap-types/ext_sasl_ir"]
 ext_unselect = ["imap-types/ext_unselect"]
+# </Forward to imap-types>
 
 # IMAP quirks
 quirk_crlf_relaxed = []
+
+# Tokio support
+tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
 
 [dependencies]
 abnf-core = "0.6.0"
@@ -41,8 +44,6 @@ base64 = "0.21"
 bytes = { version = "1", optional = true }
 bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-# The `unvalidated` feature unlocks several `unvalidated` methods that allow to bypass syntax checks when
-# creating types. This may allow to skip duplicate checks when all preconditions are known to be true.
 imap-types = { path = "imap-types", default-features = false, features = ["unvalidated"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
