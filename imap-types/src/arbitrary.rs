@@ -1,6 +1,8 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
+#[cfg(feature = "ext_literal")]
+use crate::core::LiteralMode;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnableOther;
 #[cfg(feature = "ext_quota")]
@@ -12,8 +14,8 @@ use crate::{
         SinglePartExtensionData, SpecificFields,
     },
     core::{
-        AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, NonEmptyVec, Quoted,
-        QuotedChar, Tag, Text,
+        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted, QuotedChar, Tag,
+        Text,
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,

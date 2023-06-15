@@ -2,6 +2,7 @@ use std::{io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
+#[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
 use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 

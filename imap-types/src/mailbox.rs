@@ -270,7 +270,9 @@ mod tests {
     use std::borrow::Cow;
 
     use super::*;
-    use crate::core::{AString, IString, Literal, LiteralMode};
+    #[cfg(feature = "ext_literal")]
+    use crate::core::LiteralMode;
+    use crate::core::{AString, IString, Literal};
 
     #[test]
     fn test_conversion_mailbox() {
