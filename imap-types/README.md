@@ -95,7 +95,7 @@ alice password
 
 ... even though "alice" could be encoded more simply with an atom or quoted string.
 
-Also, you can use Rust literals and resort to `unchecked` constructors when you are certain that your input is correct:
+Also, you can use Rust literals and resort to `unvalidated` constructors when you are certain that your input is correct:
 
 ```rust
 // This could be provided by the email application.
@@ -104,9 +104,9 @@ let tag = TagGenerator::random();
 Command {
     tag,
     body: CommandBody::Login {
-        // Note that the "unchecked" feature must be activated.
-        username: AString::from(Atom::unchecked("alice")),
-        password: Secret::new(AString::from(Atom::unchecked("password"))),
+        // Note that the "unvalidated" feature must be activated.
+        username: AString::from(Atom::unvalidated("alice")),
+        password: Secret::new(AString::from(Atom::unvalidated("password"))),
     },
 };
 ```
