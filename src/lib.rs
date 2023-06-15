@@ -55,11 +55,12 @@
 //! ### Example
 //!
 //! ```rust
+//! #[cfg(feature = "ext_literal")]
+//! use imap_codec::core::LiteralMode;
 //! use imap_codec::{
 //!     codec::{Decode, Encode, Fragment},
-//!     command::Command,
+//!     command::{Command, CommandBody},
 //! };
-//! use imap_types::{command::CommandBody, core::LiteralMode};
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
 //!

@@ -1,5 +1,6 @@
 use std::num::{ParseIntError, TryFromIntError};
 
+#[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 

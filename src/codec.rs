@@ -45,9 +45,9 @@ mod encode;
 mod tests {
     use std::num::NonZeroU32;
 
-    use imap_types::core::LiteralMode;
-
     use super::*;
+    #[cfg(feature = "ext_literal")]
+    use crate::core::LiteralMode;
     use crate::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
