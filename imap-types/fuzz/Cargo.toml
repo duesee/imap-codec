@@ -8,11 +8,12 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
-# Forward features according to ...
-#    https://rust-fuzz.github.io/book/cargo-fuzz/guide.html#cargo-features
 [features]
-debug = []
+# <Forward to imap-codec>
+# IMAP
 starttls = ["imap-types/starttls"]
+
+# IMAP Extensions
 ext_compress = ["imap-types/ext_compress"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
 ext_enable = ["imap-types/ext_enable"]
@@ -24,6 +25,8 @@ ext_move = ["imap-types/ext_move"]
 ext_quota = ["imap-types/ext_quota"]
 ext_sasl_ir = ["imap-types/ext_sasl_ir"]
 ext_unselect = ["imap-types/ext_unselect"]
+# </Forward to imap-codec>
+
 # Use (most) IMAP extensions.
 ext = [
     "starttls",
@@ -39,6 +42,8 @@ ext = [
     "ext_sasl_ir",
     "ext_unselect",
 ]
+# Enable `Debug`-printing during parsing. This is useful to analyze crashes.
+debug = []
 
 [dependencies]
 bounded-static = "0.5.0"
