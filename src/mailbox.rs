@@ -15,14 +15,11 @@ use nom::{
 use crate::extensions::quota::{quota_response, quotaroot_response};
 use crate::{
     codec::IMAPResult,
-    core::{
-        astring, is_atom_char, is_resp_specials, nil, number, nz_number, quoted_char, string,
-        QuotedChar,
-    },
+    core::{astring, nil, number, nz_number, quoted_char, string, QuotedChar},
     flag::{flag_list, mbx_list_flags, FlagNameAttribute},
     response::Data,
     status::status_att_list,
-    utils::indicators::is_list_wildcards,
+    utils::indicators::is_list_char,
 };
 
 /// `list-mailbox = 1*list-char / string`
@@ -40,11 +37,6 @@ pub(crate) fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
         }),
         map(string, ListMailbox::String),
     ))(input)
-}
-
-/// `list-char = ATOM-CHAR / list-wildcards / resp-specials`
-pub(crate) fn is_list_char(i: u8) -> bool {
-    is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
 }
 
 /// `mailbox = "INBOX" / astring`
