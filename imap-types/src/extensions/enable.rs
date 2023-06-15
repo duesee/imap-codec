@@ -79,6 +79,8 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
     fn try_from(value: Atom<'a>) -> Result<Self, Self::Error> {
         match value.as_ref().to_ascii_lowercase().as_ref() {
             "utf8=accept" | "utf8=only" => Err(CapabilityEnableOtherError::Reserved),
+            #[cfg(feature = "ext_condstore_qresync")]
+            "condstore" => Err(CapabilityEnableOtherError::Reserved),
             _ => Ok(Self(value)),
         }
     }
