@@ -18,7 +18,7 @@ const RESET: &str = "\x1b[0m";
 async fn main() -> Result<(), Error> {
     let addr = std::env::args()
         .nth(1)
-        .context("USAGE: tokio_client <host>:<port>")?;
+        .context("USAGE: tokio-client <host>:<port>")?;
 
     let mut framed = {
         let stream = TcpStream::connect(&addr)
