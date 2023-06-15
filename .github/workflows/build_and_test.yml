@@ -20,6 +20,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
+
+      - name: Check
+        # TODO: We exclude the tokio demos for now to bypass a "none of the selected packages contains these features: ext_compress, ..." error.
+        run: |
+          cargo hack check \
+          --workspace \
+          --exclude tokio-client --exclude tokio-server \
+          --feature-powerset \
+          --group-features starttls,ext_compress,ext_condstore_qresync,ext_enable,ext_idle,ext_literal,ext_login_referrals,ext_mailbox_referrals,ext_move,ext_quota,ext_sasl_ir,ext_unselect \
+          --exclude-features ext
+
   test:
     strategy:
       matrix:
@@ -44,9 +65,6 @@ jobs:
         id: cache
         with:
           cache-all-crates: true
-
-      - name: Debug
-        run: echo ${{ steps.cache.outputs.cache-hit }}
 
       - name: Test | Everything w/o fuzzing (macOS, Ubuntu)
         if: matrix.os != 'windows-latest'
