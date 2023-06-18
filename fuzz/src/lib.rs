@@ -4,7 +4,7 @@ macro_rules! impl_decode_target {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: &[u8]| {
-            use imap_codec::codec::{Decode, Encode};
+            use imap_codec::codec::{Decode, DecodeError, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::utils::escape_byte_string;
 
@@ -29,6 +29,39 @@ macro_rules! impl_decode_target {
                 assert!(rem.is_empty());
 
                 assert_eq!(parsed1, parsed2);
+
+                #[cfg(feature = "split")]
+                {
+                    // Check splits ...
+                    #[cfg(feature = "debug")]
+                    println!("[!] Full: {}", escape_byte_string(&output));
+                    #[cfg(feature = "debug")]
+                    println!("[!] Full: {parsed2:?}");
+
+                    for index in 0..=output.len() {
+                        let partial = &output[..index];
+                        #[cfg(feature = "debug")]
+                        println!("[!] Split (..{index:>3}): {}", escape_byte_string(partial));
+                        match <$object>::decode(partial) {
+                            Ok((rem, out)) => {
+                                assert!(rem.is_empty());
+                                assert_eq!(index, output.len());
+                                print!("\r{index}");
+                            }
+                            Err(error) => match error {
+                                DecodeError::Incomplete => {
+                                    assert!(index < output.len());
+                                }
+                                DecodeError::LiteralFound { .. } => {
+                                    assert!(index < output.len());
+                                }
+                                DecodeError::Failed => {
+                                    panic!("Expected `Ok` or `Incomplete`, got `Failed`");
+                                }
+                            },
+                        }
+                    }
+                }
             } else {
                 #[cfg(feature = "debug")]
                 println!("[!] <invalid>");
