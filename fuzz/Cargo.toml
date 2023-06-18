@@ -47,6 +47,8 @@ ext = [
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []
+# Enable testing of incomplete fragments.
+split = []
 
 [dependencies]
 libfuzzer-sys = "0.4"

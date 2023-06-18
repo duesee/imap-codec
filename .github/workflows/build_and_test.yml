@@ -39,7 +39,7 @@ jobs:
           --exclude tokio-client --exclude tokio-server \
           --feature-powerset \
           --group-features starttls,ext_compress,ext_condstore_qresync,ext_enable,ext_idle,ext_literal,ext_login_referrals,ext_mailbox_referrals,ext_move,ext_quota,ext_sasl_ir,ext_unselect \
-          --exclude-features ext
+          --exclude-features ext,split
 
   test:
     strategy:
