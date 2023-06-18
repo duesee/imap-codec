@@ -6,7 +6,7 @@ use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
 use imap_types::extensions::quota::*;
 use nom::{
-    bytes::{complete::tag, streaming::tag_no_case},
+    bytes::streaming::{tag, tag_no_case},
     combinator::map,
     multi::{many0, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
