@@ -5,7 +5,7 @@ use abnf_core::streaming::sp;
 pub(crate) use imap_types::search::*;
 use nom::{
     branch::alt,
-    bytes::{complete::tag, streaming::tag_no_case},
+    bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, opt, value},
     multi::{many1, separated_list1},
     sequence::{delimited, preceded, tuple},
