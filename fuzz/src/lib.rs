@@ -9,13 +9,13 @@ macro_rules! impl_decode_target {
             use imap_codec::utils::escape_byte_string;
 
             #[cfg(feature = "debug")]
-            println!("[!] Input: {}", escape_byte_string(input));
+            println!("[!] Input:      {}", escape_byte_string(input));
 
             if let Ok((_rem, parsed1)) = <$object>::decode(input) {
                 #[cfg(feature = "debug")]
                 {
                     let input = &input[..input.len() - _rem.len()];
-                    println!("[!] Consumed: {}", escape_byte_string(input));
+                    println!("[!] Consumed:   {}", escape_byte_string(input));
                     println!("[!] Parsed1: {parsed1:?}");
                 }
 
@@ -35,7 +35,7 @@ macro_rules! impl_decode_target {
             }
 
             #[cfg(feature = "debug")]
-            println!("\n\n\n");
+            println!("{}", str::repeat("-", 120));
         });
     };
 }
@@ -51,7 +51,7 @@ macro_rules! impl_to_bytes_and_back {
             use imap_codec::utils::escape_byte_string;
 
             #[cfg(feature = "debug")]
-            println!("[!] Input: {:?}", input);
+            println!("[!] Input:  {:?}", input);
 
             let buffer = input.encode().dump();
 
