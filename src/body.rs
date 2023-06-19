@@ -268,8 +268,26 @@ pub(crate) fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
 
 #[inline]
 /// `body-fld-octets = number`
+///
+/// # Quirks
+///
+/// The following erroneous messages were observed:
+///
+/// * A negative number, specifically `-1`, in Dovecot.
 pub(crate) fn body_fld_octets(input: &[u8]) -> IMAPResult<&[u8], u32> {
-    number(input)
+    #[cfg(not(feature = "quirk_rectify_numbers"))]
+    return number(input);
+
+    #[cfg(feature = "quirk_rectify_numbers")]
+    {
+        return alt((
+            number,
+            map(tuple((tag("-"), number)), |(_, _)| {
+                log::warn!("Rectified negative number to 0");
+                0
+            }),
+        ))(input);
+    }
 }
 
 #[inline]
@@ -734,6 +752,26 @@ mod tests {
 
         for test in tests {
             known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_number_quirk() {
+        assert_eq!(body_fld_octets(b"0)").unwrap().1, 0);
+        assert_eq!(body_fld_octets(b"1)").unwrap().1, 1);
+
+        #[cfg(not(feature = "quirk_rectify_numbers"))]
+        {
+            assert!(dbg!(body_fld_octets(b"-0)")).is_err());
+            assert!(body_fld_octets(b"-1)").is_err());
+            assert!(body_fld_octets(b"-999999)").is_err());
+        }
+
+        #[cfg(feature = "quirk_rectify_numbers")]
+        {
+            assert_eq!(body_fld_octets(b"-0)").unwrap().1, 0);
+            assert_eq!(body_fld_octets(b"-1)").unwrap().1, 0);
+            assert_eq!(body_fld_octets(b"-999999)").unwrap().1, 0);
         }
     }
 }

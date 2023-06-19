@@ -10,6 +10,8 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [features]
+default = ["quirk_rectify_numbers"]
+
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
@@ -33,7 +35,12 @@ ext_unselect = ["imap-types/ext_unselect"]
 # </Forward to imap-types>
 
 # IMAP quirks
+# Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
+# Rectify (invalid) numbers.
+#
+# This bypasses interoperability issues to allow safe processing of *almost* correct message.
+quirk_rectify_numbers = []
 
 # Tokio support
 tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
@@ -49,6 +56,7 @@ nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.29"
 tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
+log = "0.4.19"
 
 [dev-dependencies]
 ansi_term = "0.12"
