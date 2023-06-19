@@ -1,5 +1,7 @@
 use std::num::{ParseIntError, TryFromIntError};
 
+#[cfg(feature = "bounded-static")]
+use bounded_static::IntoBoundedStatic;
 #[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
 use nom::error::{ErrorKind, FromExternalError, ParseError};
@@ -146,6 +148,58 @@ impl_decode_for_object!(IdleDone, idle_done);
 impl_decode_for_object!(Response<'a>, response);
 impl_decode_for_object!(Continue<'a>, continue_req);
 
+#[cfg(feature = "bounded-static")]
+pub trait DecodeStatic: Sized {
+    fn decode(input: &[u8]) -> Result<(&[u8], Self), DecodeError>;
+}
+
+#[cfg(feature = "bounded-static")]
+macro_rules! impl_decode_static_for_object {
+    ($object:ty, $object_static:ty, $parser:ident) => {
+        impl<'a> DecodeStatic for $object_static {
+            fn decode(input: &[u8]) -> Result<(&[u8], Self), DecodeError> {
+                match $parser(input) {
+                    Ok((rem, out)) => Ok((rem, out.into_static())),
+                    Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
+                    Err(nom::Err::Failure(error)) => match error {
+                        IMAPParseError {
+                            kind:
+                                IMAPErrorKind::Literal {
+                                    length,
+                                    #[cfg(feature = "ext_literal")]
+                                    mode,
+                                },
+                            ..
+                        } => Err(DecodeError::LiteralFound {
+                            length,
+                            #[cfg(feature = "ext_literal")]
+                            mode,
+                        }),
+                        _ => Err(DecodeError::Failed),
+                    },
+                    Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
+                }
+            }
+        }
+    };
+}
+
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(Greeting<'a>, Greeting<'static>, greeting);
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(Command<'a>, Command<'static>, command);
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(AuthenticateData, AuthenticateData, authenticate_data);
+#[cfg(feature = "bounded-static")]
+#[cfg(feature = "ext_idle")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(IdleDone, IdleDone, idle_done);
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(Response<'a>, Response<'static>, response);
+#[cfg(feature = "bounded-static")]
+impl_decode_static_for_object!(Continue<'a>, Continue<'static>, continue_req);
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU32;
@@ -200,11 +254,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Greeting::decode(test);
-
+            let got = <Greeting as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Greeting as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -278,11 +336,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Command::decode(test);
-
+            let got = <Command as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Command as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -324,11 +386,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = IdleDone::decode(test);
-
+            let got = <IdleDone as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <IdleDone as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -390,11 +456,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Response::decode(test);
-
+            let got = <Response as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Response as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 }
