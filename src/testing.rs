@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
+    auth::AuthenticateData,
     codec::{Decode, Encode, IMAPResult},
     command::Command,
     response::{Continue, Greeting, Response},
@@ -67,6 +68,7 @@ impl_kat_inverse! {kat_inverse_greeting, Greeting}
 impl_kat_inverse! {kat_inverse_command, Command}
 impl_kat_inverse! {kat_inverse_response, Response}
 impl_kat_inverse! {kat_inverse_continue, Continue}
+impl_kat_inverse! {kat_inverse_authenticate_data, AuthenticateData}
 
 #[cfg(test)]
 mod tests {

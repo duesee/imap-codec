@@ -47,6 +47,8 @@ mod encode;
 mod tests {
     use std::num::NonZeroU32;
 
+    use imap_types::{auth::AuthenticateData, secret::Secret};
+
     use super::*;
     #[cfg(feature = "ext_literal")]
     use crate::core::LiteralMode;
@@ -56,7 +58,10 @@ mod tests {
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
-        testing::{kat_inverse_command, kat_inverse_greeting, kat_inverse_response},
+        testing::{
+            kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
+            kat_inverse_response,
+        },
     };
 
     #[test]
@@ -142,6 +147,15 @@ mod tests {
                 }),
             ),
         ]);
+    }
+
+    #[test]
+    fn test_kat_inverse_authenticate_data() {
+        kat_inverse_authenticate_data(&[(
+            b"VGVzdA==\r\n".as_ref(),
+            b"".as_ref(),
+            AuthenticateData(Secret::new(b"Test".to_vec())),
+        )]);
     }
 
     #[test]
@@ -266,25 +280,4 @@ mod tests {
             }
         }
     }
-
-    // #[test]
-    // fn test_decode_authenticate_data() {
-    //     let tests = [
-    //         // Ok
-    //         // Incomplete
-    //         // Failed
-    //     ];
-    //
-    //     for (test, expected) in tests {
-    //         let got = <AuthenticateData as Decode>::decode(test);
-    //         dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-    //         assert_eq!(expected, got);
-    //
-    //         #[cfg(feature = "bounded-static")]
-    //         {
-    //             let got = <AuthenticateData as DecodeStatic>::decode(test);
-    //             assert_eq!(expected, got);
-    //         }
-    //     }
-    // }
 }
