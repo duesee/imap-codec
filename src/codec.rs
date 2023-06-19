@@ -26,6 +26,8 @@
 //! println!("{}", std::str::from_utf8(&out).unwrap());
 //! ```
 
+#[cfg(feature = "bounded-static")]
+pub use decode::DecodeStatic;
 pub use decode::{Decode, DecodeError};
 pub(crate) use decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 #[cfg(any(
@@ -159,11 +161,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Greeting::decode(test);
-
+            let got = <Greeting as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Greeting as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -206,11 +212,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Command::decode(test);
-
+            let got = <Command as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Command as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -245,11 +255,15 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = Response::decode(test);
-
+            let got = <Response as Decode>::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-
             assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <Response as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
         }
     }
 
@@ -262,11 +276,15 @@ mod tests {
     //     ];
     //
     //     for (test, expected) in tests {
-    //         let got = AuthenticateData::decode(test);
-    //
+    //         let got = <AuthenticateData as Decode>::decode(test);
     //         dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-    //
     //         assert_eq!(expected, got);
+    //
+    //         #[cfg(feature = "bounded-static")]
+    //         {
+    //             let got = <AuthenticateData as DecodeStatic>::decode(test);
+    //             assert_eq!(expected, got);
+    //         }
     //     }
     // }
 }
