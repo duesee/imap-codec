@@ -204,6 +204,8 @@ impl_decode_static_for_object!(Continue<'a>, Continue<'static>, continue_req);
 mod tests {
     use std::num::NonZeroU32;
 
+    use imap_types::secret::Secret;
+
     use super::*;
     #[cfg(feature = "ext_idle")]
     use crate::extensions::idle::IdleDone;
@@ -348,22 +350,60 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_decode_authenticate_data() {
-    //     let tests = [
-    //         // Ok
-    //         // Incomplete
-    //         // Failed
-    //     ];
-    //
-    //     for (test, expected) in tests {
-    //         let got = AuthenticateData::decode(test);
-    //
-    //         dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
-    //
-    //         assert_eq!(expected, got);
-    //     }
-    // }
+    #[test]
+    fn test_decode_authenticate_data() {
+        let tests = [
+            // Ok
+            (
+                b"VGVzdA==\r\n".as_ref(),
+                Ok((
+                    b"".as_ref(),
+                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                )),
+            ),
+            (
+                b"VGVzdA==\r\nx".as_ref(),
+                Ok((
+                    b"x".as_ref(),
+                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                )),
+            ),
+            // Incomplete
+            (b"V".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VG".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGV".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVz".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVzd".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVzdA".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVzdA=".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVzdA==".as_ref(), Err(DecodeError::Incomplete)),
+            (b"VGVzdA==\r".as_ref(), Err(DecodeError::Incomplete)),
+            (
+                b"VGVzdA==\r\n".as_ref(),
+                Ok((
+                    b"".as_ref(),
+                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                )),
+            ),
+            // Failed
+            (b"VGVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" VGVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" V GVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b" V GVzdA= \r\n".as_ref(), Err(DecodeError::Failed)),
+        ];
+
+        for (test, expected) in tests {
+            let got = <AuthenticateData as Decode>::decode(test);
+            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            assert_eq!(expected, got);
+
+            #[cfg(feature = "bounded-static")]
+            {
+                let got = <AuthenticateData as DecodeStatic>::decode(test);
+                assert_eq!(expected, got);
+            }
+        }
+    }
 
     #[cfg(feature = "ext_idle")]
     #[test]
