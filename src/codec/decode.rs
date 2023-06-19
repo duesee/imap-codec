@@ -82,7 +82,7 @@ impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<I> {
     }
 }
 
-pub trait Decode<'a>: Sized + 'a {
+pub trait Decode<'a>: Sized {
     fn decode(input: &'a [u8]) -> Result<(&'a [u8], Self), DecodeError>;
 }
 
@@ -138,17 +138,12 @@ macro_rules! impl_decode_for_object {
 }
 
 impl_decode_for_object!(Greeting<'a>, greeting);
-
 impl_decode_for_object!(Command<'a>, command);
-
 impl_decode_for_object!(AuthenticateData, authenticate_data);
-
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 impl_decode_for_object!(IdleDone, idle_done);
-
 impl_decode_for_object!(Response<'a>, response);
-
 impl_decode_for_object!(Continue<'a>, continue_req);
 
 #[cfg(test)]
