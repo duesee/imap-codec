@@ -213,8 +213,8 @@ pub(crate) fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
 }
 
 /// `body-fld-param = "("
-///                   string SP
-///                   string *(SP string SP string)
+///                     string SP string
+///                     *(SP string SP string)
 ///                   ")" / nil`
 pub(crate) fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>> {
     let mut parser = alt((
