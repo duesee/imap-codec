@@ -79,6 +79,22 @@ impl TryFrom<Vec<Sequence>> for SequenceSet {
     }
 }
 
+impl TryFrom<Vec<NonZeroU32>> for SequenceSet {
+    type Error = SequenceSetError;
+
+    fn try_from(sequences: Vec<NonZeroU32>) -> Result<Self, Self::Error> {
+        Ok(Self(
+            NonEmptyVec::try_from(
+                sequences
+                    .into_iter()
+                    .map(Sequence::from)
+                    .collect::<Vec<_>>(),
+            )
+            .map_err(|_| SequenceSetError::Empty)?,
+        ))
+    }
+}
+
 impl TryFrom<&str> for SequenceSet {
     type Error = SequenceSetError;
 
