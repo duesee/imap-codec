@@ -125,8 +125,8 @@ jobs:
       - name: Check
         run: |
           cargo +nightly update -Z minimal-versions
-          cargo +1.60 check --workspace --all-targets --all-features --exclude tokio-server
-          cargo +1.60 test --workspace --all-targets --all-features --exclude tokio-server --exclude imap-codec-fuzz --exclude imap-types-fuzz
+          cargo +1.60 check --workspace --all-targets --all-features --exclude client --exclude tokio-client --exclude tokio-server
+          cargo +1.60 test  --workspace --all-targets --all-features --exclude client --exclude tokio-client --exclude tokio-server --exclude imap-codec-fuzz --exclude imap-types-fuzz
         env:
           RUSTFLAGS: -Dwarnings
 

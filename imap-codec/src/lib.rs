@@ -103,12 +103,13 @@
 //!
 //! In addition, imap-codec defines the following features:
 //!
-//! | Feature               | Description                    | Enabled by default |
-//! |-----------------------|--------------------------------|--------------------|
-//! | quirk_crlf_relaxed    | Make `\r` in `\r\n` optional.  | No                 |
-//! | quirk_rectify_numbers | Rectify (invalid) numbers.     | No                 |
-//! | quirk_missing_text    | Rectify missing `text` element.| No                 |
-//! | tokio                 | Tokio support.                 | No                 |
+//! | Feature               | Description                    | Enabled by default | Status   |
+//! |-----------------------|--------------------------------|--------------------|----------|
+//! | quirk_crlf_relaxed    | Make `\r` in `\r\n` optional.  | No                 |          |
+//! | quirk_rectify_numbers | Rectify (invalid) numbers.     | No                 |          |
+//! | quirk_missing_text    | Rectify missing `text` element.| No                 |          |
+//! | stream                | Stream support.                | No                 | unstable |
+//! | tokio                 | Tokio support.                 | No                 | unstable |
 //!
 //! ## Quirks
 //!
@@ -119,10 +120,23 @@
 //! imap-codec can't otherwise access their emails, we may add a `quirk_` feature to quickly resolve the problem.
 //! Of course, imap-codec should never violate the IMAP standard itself. So, we need to do this carefully.
 //!
+//! ## Stream support
+//!
+//! The `stream` feature unlocks (client and server) implementations that ease handling of messages.
+//! We wrap a stream (`Read` + `Write`), e.g., a TLS stream, to `send(T)` and `recv::<T>()` messages
+//! not caring too much about buffering and IO. The stream is minimal by design and can be used as a
+//! lower layer for a more abstract client or server implementation.
+//!
+//! This feature unlocks a sync version. If you want an async version, use the `tokio` feature.
+//!
+//! Warning: This is currently unstable as we haven't figured out a good abstraction yet.
+//!
 //! ## Tokio support
 //!
 //! The `tokio` feature unlocks an implementation of [tokio_util::codec].
 //! See the [tokio client] and [tokio server] demos.
+//!
+//! Warning: This is currently unstable as we haven't figured out a good abstraction yet.
 //!
 //! [imap-types]: imap_types
 //! [imap-types features]: ../imap_types/index.html#features
@@ -163,9 +177,9 @@ pub mod search;
 pub mod section;
 pub mod sequence;
 pub mod status;
+#[cfg(feature = "stream")]
+#[cfg_attr(docsrs, doc(cfg(feature = "stream")))]
+pub mod stream;
 #[cfg(test)]
 mod testing;
-#[cfg(feature = "tokio")]
-#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-pub mod tokio;
 pub use imap_types::{secret, state, utils};

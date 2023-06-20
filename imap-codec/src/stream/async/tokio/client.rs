@@ -5,12 +5,12 @@ use bytes::{Buf, BufMut, BytesMut};
 use thiserror::Error;
 use tokio_util::codec::{Decoder, Encoder};
 
-use super::{find_crlf_inclusive, FramingError, FramingState};
 use crate::{
     codec::{Decode, DecodeError, Encode},
     command::Command,
     response::{Greeting, Response},
     state::State as ImapState,
+    stream::{find_crlf_inclusive, FramingError, FramingState},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

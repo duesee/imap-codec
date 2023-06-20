@@ -1,21 +1,24 @@
-//! Support for tokio and (tokio_util::codec).
+pub mod r#async;
+pub mod sync;
 
 use thiserror::Error;
 
-pub mod client;
-pub mod server;
-
-/// All interactions transmitted by client and server are in the form of
-/// lines, that is, strings that end with a CRLF.
+/// All interactions transmitted by client and server are in the form of lines,
+/// that is, strings that end with a CRLF.
 ///
 /// The protocol receiver of an IMAP4rev1 client or server is either ...
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum FramingState {
     /// ... reading a line, or ...
     ReadLine { to_consume_acc: usize },
-    /// ... is reading a sequence of octets
-    /// with a known count followed by a line.
+    /// ... is reading a sequence of octets with a known count followed by a line.
     ReadLiteral { to_consume_acc: usize, length: u32 },
+}
+
+impl Default for FramingState {
+    fn default() -> Self {
+        FramingState::ReadLine { to_consume_acc: 0 }
+    }
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]

@@ -1,0 +1,16 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.71"
+bytes = "1.4.0"
+imap-codec = { path = "../../../imap-codec", features = ["stream", "ext_literal"] }
+native-tls = "0.2.11"
+rpassword = "7.2.0"
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"

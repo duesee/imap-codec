@@ -50,8 +50,11 @@ quirk_rectify_numbers = []
 # * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
 quirk_missing_text = []
 
+# Stream support
+stream = ["dep:bytes", "bounded-static"]
+
 # Tokio support
-tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
+tokio = ["stream", "dep:tokio-util"]
 
 [dependencies]
 abnf-core = "0.6.0"

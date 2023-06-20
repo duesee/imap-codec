@@ -4,7 +4,7 @@ use imap_codec::{
     command::{Command, CommandBody},
     core::Tag,
     response::{Response, Status},
-    tokio::client::{Event, ImapClientCodec},
+    stream::r#async::tokio::client::{Event, ImapClientCodec},
 };
 use tokio::{self, net::TcpStream};
 use tokio_util::codec::Decoder;
