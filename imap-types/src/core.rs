@@ -34,7 +34,12 @@
 //!             └───────┘ └──────┘
 //! ```
 
-use std::{borrow::Cow, str::from_utf8, vec::IntoIter};
+use std::{
+    borrow::Cow,
+    fmt::{Debug, Formatter},
+    str::from_utf8,
+    vec::IntoIter,
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1311,7 +1316,7 @@ pub enum QuotedCharError {
 /// ;                                           `Charset`
 //                     ; CHARSET argument to MUST be registered with IANA
 /// ```
-/// 
+///
 /// So, it seems that it should be an `AString`. However the IMAP standard also points to ...
 /// ```abnf
 /// mime-charset       = 1*mime-charset-chars
@@ -1406,10 +1411,22 @@ impl<'a> AsRef<str> for Charset<'a> {
 ///
 /// Some messages in IMAP require a list of at least one element. We encoded these situations in a
 /// non-empty vector type to not produce invalid messages.
+///
+/// The `Debug` implementation equals `Vec` with an attached `+` at the end.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+
+impl<T> Debug for NonEmptyVec<T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        self.0.fmt(f)?;
+        write!(f, "+")
+    }
+}
 
 impl<T> NonEmptyVec<T> {
     pub fn validate(value: &[T]) -> Result<(), NonEmptyVecError> {
