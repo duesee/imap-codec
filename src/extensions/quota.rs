@@ -207,16 +207,16 @@ impl<'a> Encoder for ResourceOther<'a> {
 }
 
 impl<'a> Encoder for QuotaGet<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.resource.encode_ctx(writer)?;
-        write!(writer, " {} {}", self.usage, self.limit)
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.encode_ctx(ctx)?;
+        write!(ctx, " {} {}", self.usage, self.limit)
     }
 }
 
 impl<'a> Encoder for QuotaSet<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.resource.encode_ctx(writer)?;
-        write!(writer, " {}", self.limit)
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        self.resource.encode_ctx(ctx)?;
+        write!(ctx, " {}", self.limit)
     }
 }
 

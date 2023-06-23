@@ -34,9 +34,9 @@ pub(crate) fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 impl Encoder for CompressionAlgorithm {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            CompressionAlgorithm::Deflate => writer.write_all(b"DEFLATE"),
+            CompressionAlgorithm::Deflate => ctx.write_all(b"DEFLATE"),
         }
     }
 }

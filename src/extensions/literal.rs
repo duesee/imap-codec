@@ -6,10 +6,10 @@ pub use imap_types::extensions::literal::*;
 use crate::codec::{EncodeContext, Encoder};
 
 impl Encoder for LiteralCapability {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            Self::Plus => writer.write_all(b"LITERAL+"),
-            Self::Minus => writer.write_all(b"LITERAL-"),
+            Self::Plus => ctx.write_all(b"LITERAL+"),
+            Self::Minus => ctx.write_all(b"LITERAL-"),
         }
     }
 }

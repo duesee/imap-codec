@@ -69,20 +69,20 @@ pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 }
 
 impl<'a> Encoder for CapabilityEnable<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            Self::Utf8(Utf8Kind::Accept) => writer.write_all(b"UTF8=ACCEPT"),
-            Self::Utf8(Utf8Kind::Only) => writer.write_all(b"UTF8=ONLY"),
+            Self::Utf8(Utf8Kind::Accept) => ctx.write_all(b"UTF8=ACCEPT"),
+            Self::Utf8(Utf8Kind::Only) => ctx.write_all(b"UTF8=ONLY"),
             #[cfg(feature = "ext_condstore_qresync")]
-            Self::CondStore => writer.write_all(b"CONDSTORE"),
-            Self::Other(other) => other.encode_ctx(writer),
+            Self::CondStore => ctx.write_all(b"CONDSTORE"),
+            Self::Other(other) => other.encode_ctx(ctx),
         }
     }
 }
 
 impl<'a> Encoder for CapabilityEnableOther<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().encode_ctx(writer)
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        self.inner().encode_ctx(ctx)
     }
 }
 
