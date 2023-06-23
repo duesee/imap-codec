@@ -834,13 +834,22 @@ impl<'a> NString<'a> {
     }
 }
 
-impl<'a> TryFrom<&'a str> for NString<'a> {
-    type Error = LiteralError;
+macro_rules! impl_try_from_nstring {
+    ($from:ty) => {
+        impl<'a> TryFrom<$from> for NString<'a> {
+            type Error = LiteralError;
 
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Ok(Self(Some(IString::try_from(value)?)))
-    }
+            fn try_from(value: $from) -> Result<Self, Self::Error> {
+                Ok(Self(Some(IString::try_from(value)?)))
+            }
+        }
+    };
 }
+
+impl_try_from_nstring!(&'a [u8]);
+impl_try_from_nstring!(Vec<u8>);
+impl_try_from_nstring!(&'a str);
+impl_try_from_nstring!(String);
 
 impl<'a> From<Literal<'a>> for NString<'a> {
     fn from(value: Literal<'a>) -> Self {
@@ -1204,6 +1213,12 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
+impl<'a> AsRef<str> for Text<'a> {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 /// Error during creation of a human-readable text.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TextError {
@@ -1296,7 +1311,7 @@ pub enum QuotedCharError {
 /// ;                                           `Charset`
 //                     ; CHARSET argument to MUST be registered with IANA
 /// ```
-/// 
+///
 /// So, it seems that it should be an `AString`. However the IMAP standard also points to ...
 /// ```abnf
 /// mime-charset       = 1*mime-charset-chars
