@@ -2,28 +2,80 @@ use std::fmt::{Debug, Display};
 
 use imap_types::{
     command::{Command, CommandBody, LoginError},
-    core::{Atom, AtomExt},
+    core::{AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, Tag, Text},
+    mailbox::{Mailbox, MailboxOther},
     response::Data,
     sequence::{SeqOrUid, Sequence, SequenceSet, MAX, MIN},
 };
 
+macro_rules! test_conversions {
+    // Unvalidated
+    (y, $try_from:tt, $from:tt, $as_ref:tt, $object:ty, $sample:expr) => {{
+        #[cfg(feature = "unvalidated")]
+        {
+            let object = <$object>::unvalidated($sample);
+            let _ = object.as_ref();
+        }
+
+        test_conversions!($try_from, $from, $as_ref, $object, $sample);
+    }};
+    (n, $try_from:tt, $from:tt, $as_ref:tt, $object:ty, $sample:expr) => {{
+        test_conversions!($try_from, $from, $as_ref, $object, $sample);
+    }};
+
+    // TryFrom
+    (y, $from:tt, $as_ref:tt, $object:ty, $sample:expr) => {{
+        let _ = <$object>::try_from($sample).unwrap();
+        let _ = <$object>::try_from($sample.to_owned()).unwrap();
+        let _ = <$object>::try_from($sample.as_bytes()).unwrap();
+        let _ = <$object>::try_from($sample.as_bytes().to_vec()).unwrap();
+
+        test_conversions!($from, $as_ref, $object, $sample);
+    }};
+    (n, $from:tt, $as_ref:tt, $object:ty, $sample:expr) => {{
+        test_conversions!($from, $as_ref, $object, $sample);
+    }};
+
+    // From
+    (y, $as_ref:tt, $object:ty, $sample:expr) => {{
+        let _ = <$object>::from($sample);
+
+        test_conversions!($as_ref, $object, $sample);
+    }};
+    (n, $as_ref:tt, $object:ty, $sample:expr) => {{
+        test_conversions!($as_ref, $object, $sample);
+    }};
+
+    // AsRef
+    (y, $object:ty, $sample:expr) => {{
+        let object = <$object>::try_from($sample).unwrap();
+        let _ = object.as_ref();
+
+        // ...
+    }};
+    (n, $object:ty, $sample:expr) => {{
+        // ...
+    }};
+}
+
 #[test]
-fn test_construction_of_atom() {
-    // `inner` is a private field
-    // let atm = Atom {
-    //     inner: Cow::Borrowed(" x "),
-    // };
-
-    // let mut atm = Atom::try_from("valid").unwrap();
-
-    // `inner` is a private field
-    // atm.inner = Cow::Borrowed(" x x x ");
-
-    // Panics
-    // let mut atm = Atom::try_from(" x ").unwrap();
-
-    // #[cfg(feature = "unvalidated")]
-    // let atm = Atom::unvalidated(" x ");
+fn test_constructions() {
+    // Unvalidated | TryFrom | From | AsRef | Type | Sample
+    test_conversions!(y, y, n, y, Tag, "tag");
+    test_conversions!(y, y, n, y, Text, "text");
+    // --------------------------------------------
+    test_conversions!(n, y, n, y, AString, "astring");
+    test_conversions!(y, y, n, y, Atom, "atom");
+    test_conversions!(y, y, n, y, AtomExt, "atomext");
+    test_conversions!(n, y, n, y, IString, "istring");
+    test_conversions!(y, y, n, y, Quoted, "quoted");
+    test_conversions!(n, y, n, y, Literal, "literal");
+    test_conversions!(n, y, n, n, NString, "nstring");
+    // --------------------------------------------
+    test_conversions!(n, y, n, n, Mailbox, "mailbox");
+    test_conversions!(n, y, n, y, MailboxOther, "mailbox");
+    // --------------------------------------------
+    test_conversions!(n, y, n, y, Charset, "charset");
 }
 
 #[test]
