@@ -189,20 +189,8 @@ pub(crate) fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 // }
 
 impl<'a> Encoder for Resource<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Resource::Storage => writer.write_all(b"STORAGE"),
-            Resource::Message => writer.write_all(b"MESSAGE"),
-            Resource::Mailbox => writer.write_all(b"MAILBOX"),
-            Resource::AnnotationStorage => writer.write_all(b"ANNOTATION-STORAGE"),
-            Resource::Other(atom) => atom.encode_ctx(writer),
-        }
-    }
-}
-
-impl<'a> Encoder for ResourceOther<'a> {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().encode_ctx(writer)
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        ctx.write_all(self.to_string().as_bytes())
     }
 }
 
@@ -235,17 +223,20 @@ mod tests {
     #[test]
     fn test_parse_resource_name() {
         let tests = [
-            (b"stOragE ".as_ref(), Resource::Storage),
-            (b"mesSaGe ".as_ref(), Resource::Message),
-            (b"maIlbOx ".as_ref(), Resource::Mailbox),
-            (b"anNotatIon-stoRage ".as_ref(), Resource::AnnotationStorage),
+            (b"stOragE ".as_ref(), Resource::STORAGE),
+            (b"mesSaGe ".as_ref(), Resource::MESSAGE),
+            (b"maIlbOx ".as_ref(), Resource::MAILBOX),
+            (
+                b"anNotatIon-stoRage ".as_ref(),
+                Resource::ANNOTATION_STORAGE,
+            ),
             (
                 b"anNotatIon-stoRageX ".as_ref(),
-                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRageX".as_ref()).unwrap()),
+                Resource::try_from(b"anNotatIon-stoRageX".as_ref()).unwrap(),
             ),
             (
                 b"anNotatIon-stoRagee ".as_ref(),
-                Resource::Other(ResourceOther::try_from(b"anNotatIon-stoRagee".as_ref()).unwrap()),
+                Resource::try_from(b"anNotatIon-stoRagee".as_ref()).unwrap(),
             ),
         ];
 
@@ -336,7 +327,7 @@ mod tests {
                 Command::new("A", CommandBody::set_quota(
                     "INBOX",
                     vec![QuotaSet {
-                        resource: Resource::Storage,
+                        resource: Resource::STORAGE,
                         limit: 256,
                     }],
                 )
@@ -349,23 +340,23 @@ mod tests {
                     "INBOX",
                     vec![
                         QuotaSet {
-                            resource: Resource::Storage,
+                            resource: Resource::STORAGE,
                             limit: 0,
                         },
                         QuotaSet {
-                            resource: Resource::Message,
+                            resource: Resource::MESSAGE,
                             limit: 512,
                         },
                         QuotaSet {
-                            resource: Resource::Mailbox,
+                            resource: Resource::MAILBOX,
                             limit: 512,
                         },
                         QuotaSet {
-                            resource: Resource::AnnotationStorage,
+                            resource: Resource::ANNOTATION_STORAGE,
                             limit: 123,
                         },
                         QuotaSet {
-                            resource: Resource::Other(ResourceOther::try_from("Foo").unwrap()),
+                            resource: Resource::try_from("Foo").unwrap(),
                             limit: u64::MAX,
                         },
                     ],
@@ -377,7 +368,7 @@ mod tests {
                 b"",
                 CommandBody::set_quota(
                     AString::String(IString::try_from("#user/alice").unwrap()),
-                    vec![QuotaSet::new(Resource::Storage, 510)],
+                    vec![QuotaSet::new(Resource::STORAGE, 510)],
                 )
                     .unwrap()
                     .tag("S0001")
@@ -388,7 +379,7 @@ mod tests {
                 b"",
                 CommandBody::set_quota(
                     AString::String(IString::try_from("!partition/sda4").unwrap()),
-                    vec![QuotaSet::new(Resource::Storage, 99999999)],
+                    vec![QuotaSet::new(Resource::STORAGE, 99999999)],
                 )
                     .unwrap()
                     .tag("S0002")
@@ -397,7 +388,7 @@ mod tests {
             (
                 b"A001 SETQUOTA \"\" (STORAGE 512)\r\n",
                 b"",
-                CommandBody::set_quota("", vec![QuotaSet::new(Resource::Storage, 512)])
+                CommandBody::set_quota("", vec![QuotaSet::new(Resource::STORAGE, 512)])
                     .unwrap()
                     .tag("A001")
                     .unwrap(),
@@ -434,7 +425,7 @@ mod tests {
                     Data::quota(
                         "INBOX",
                         vec![QuotaGet {
-                            resource: Resource::Message,
+                            resource: Resource::MESSAGE,
                             usage: 1024,
                             limit: 2048,
                         }],
@@ -464,7 +455,7 @@ mod tests {
                 Response::Data(
                     Data::capability(vec![
                         Capability::Quota,
-                        Capability::QuotaRes(Resource::Storage),
+                        Capability::QuotaRes(Resource::STORAGE),
                     ])
                     .unwrap(),
                 ),
@@ -475,8 +466,8 @@ mod tests {
                 Response::Data(
                     Data::capability(vec![
                         Capability::Quota,
-                        Capability::QuotaRes(Resource::Storage),
-                        Capability::QuotaRes(Resource::Message),
+                        Capability::QuotaRes(Resource::STORAGE),
+                        Capability::QuotaRes(Resource::MESSAGE),
                     ])
                     .unwrap(),
                 ),
@@ -488,8 +479,8 @@ mod tests {
                     Data::capability(vec![
                         Capability::Quota,
                         Capability::QuotaSet,
-                        Capability::QuotaRes(Resource::Storage),
-                        Capability::QuotaRes(Resource::Message),
+                        Capability::QuotaRes(Resource::STORAGE),
+                        Capability::QuotaRes(Resource::MESSAGE),
                     ])
                     .unwrap(),
                 ),
@@ -500,7 +491,7 @@ mod tests {
                 Response::Data(
                     Data::quota(
                         AString::String(IString::try_from("!partition/sda4").unwrap()),
-                        vec![QuotaGet::new(Resource::Storage, 104, 10923847)],
+                        vec![QuotaGet::new(Resource::STORAGE, 104, 10923847)],
                     )
                     .unwrap(),
                 ),
@@ -510,7 +501,7 @@ mod tests {
                 b"",
                 Response::Data(Data::Quota {
                     root: "".try_into().unwrap(),
-                    quotas: vec![QuotaGet::new(Resource::Storage, 10, 512)]
+                    quotas: vec![QuotaGet::new(Resource::STORAGE, 10, 512)]
                         .try_into()
                         .unwrap(),
                 }),
@@ -520,7 +511,7 @@ mod tests {
                 b"",
                 Response::Data(Data::Quota {
                     root: AString::String(IString::try_from("#user/alice").unwrap()),
-                    quotas: vec![QuotaGet::new(Resource::Message, 42, 1000)]
+                    quotas: vec![QuotaGet::new(Resource::MESSAGE, 42, 1000)]
                         .try_into()
                         .unwrap(),
                 }),
@@ -532,8 +523,8 @@ mod tests {
                     Data::quota(
                         AString::String(IString::try_from("#user/alice").unwrap()),
                         vec![
-                            QuotaGet::new(Resource::Storage, 54, 111),
-                            QuotaGet::new(Resource::Message, 42, 1000),
+                            QuotaGet::new(Resource::STORAGE, 54, 111),
+                            QuotaGet::new(Resource::MESSAGE, 42, 1000),
                         ],
                     )
                     .unwrap(),
@@ -545,7 +536,7 @@ mod tests {
                 Response::Data(
                     Data::quota(
                         AString::String(IString::try_from("#user/alice").unwrap()),
-                        vec![QuotaGet::new(Resource::Storage, 58, 512)],
+                        vec![QuotaGet::new(Resource::STORAGE, 58, 512)],
                     )
                     .unwrap(),
                 ),

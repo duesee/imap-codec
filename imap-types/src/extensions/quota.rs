@@ -33,7 +33,10 @@
 //!     - [`StatusDataItem::Deleted`](crate::status::StatusDataItem::Deleted)
 //!     - [`StatusDataItem::DeletedStorage`](crate::status::StatusDataItem::DeletedStorage)
 
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter},
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -45,7 +48,7 @@ use thiserror::Error;
 
 use crate::{
     command::CommandBody,
-    core::{impl_try_from, AString, Atom, AtomError, NonEmptyVec},
+    core::{impl_try_from, AString, Atom, NonEmptyVec},
     mailbox::Mailbox,
     response::Data,
 };
@@ -108,14 +111,15 @@ impl<'a> Data<'a> {
     }
 }
 
-/// A resource type for use in IMAP's QUOTA extension.
-///
-/// Supported resource names MUST be advertised as a capability by prepending the resource name with "QUOTA=RES-".
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Resource<'a> {
+pub struct Resource<'a>(Inner<'a>);
+
+/// A resource type for use in IMAP's QUOTA extension.
+///
+/// Supported resource names MUST be advertised as a capability by prepending the resource name with "QUOTA=RES-".
+impl Resource<'static> {
     /// The physical space estimate, in units of 1024 octets, of the mailboxes governed by the quota
     /// root.
     ///
@@ -135,7 +139,8 @@ pub enum Resource<'a> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-STORAGE" capability.
-    Storage,
+    pub const STORAGE: Self = Resource(Inner::Storage);
+
     /// The number of messages stored within the mailboxes governed by the quota root.
     ///
     /// This MUST be an exact number; however, clients MUST NOT assume that a change in the usage
@@ -147,7 +152,8 @@ pub enum Resource<'a> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-MESSAGE" capability.
-    Message,
+    pub const MESSAGE: Self = Resource(Inner::Message);
+
     /// The number of mailboxes governed by the quota root.
     ///
     /// This MUST be an exact number; however, clients MUST NOT assume that a change in the usage
@@ -156,17 +162,25 @@ pub enum Resource<'a> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-MAILBOX" capability.
-    Mailbox,
+    pub const MAILBOX: Self = Resource(Inner::Mailbox);
+
     /// The maximum size of all annotations \[RFC5257\], in units of 1024 octets, associated with all
     /// messages in the mailboxes governed by the quota root.
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-ANNOTATION-STORAGE" capability.
+    pub const ANNOTATION_STORAGE: Self = Resource(Inner::AnnotationStorage);
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum Inner<'a> {
+    Storage,
+    Message,
+    Mailbox,
     AnnotationStorage,
-    /// Other.
-    ///
-    /// Note: The value must be semantically different from the supported variants.
-    Other(ResourceOther<'a>),
+    Other(Atom<'a>),
 }
 
 impl_try_from!(Atom<'a>, 'a, &'a [u8], Resource<'a>);
@@ -176,95 +190,27 @@ impl_try_from!(Atom<'a>, 'a, String, Resource<'a>);
 impl_try_from!(Atom<'a>, 'a, Cow<'a, str>, Resource<'a>);
 
 impl<'a> From<Atom<'a>> for Resource<'a> {
-    fn from(value: Atom<'a>) -> Self {
-        match value.inner().to_ascii_lowercase().as_ref() {
-            "storage" => Resource::Storage,
-            "message" => Resource::Message,
-            "mailbox" => Resource::Mailbox,
-            "annotation-storage" => Resource::AnnotationStorage,
-            _ => Resource::Other(ResourceOther(value)),
+    fn from(atom: Atom<'a>) -> Self {
+        match atom.inner().to_ascii_uppercase().as_ref() {
+            "STORAGE" => Resource::STORAGE,
+            "MESSAGE" => Resource::MESSAGE,
+            "MAILBOX" => Resource::MAILBOX,
+            "ANNOTATION-STORAGE" => Resource::ANNOTATION_STORAGE,
+            _ => Resource(Inner::Other(atom)),
         }
     }
 }
 
-/// A resource type (name) for use in IMAP's QUOTA extension that is not supported by imap-types.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ResourceOther<'a>(Atom<'a>);
-
-impl<'a> ResourceOther<'a> {
-    pub fn inner(&self) -> &Atom<'a> {
-        &self.0
+impl<'a> Display for Resource<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match &self.0 {
+            Inner::Storage => "STORAGE",
+            Inner::Message => "MESSAGE",
+            Inner::Mailbox => "MAILBOX",
+            Inner::AnnotationStorage => "ANNOTATION-STORAGE",
+            Inner::Other(atom) => atom.as_ref(),
+        })
     }
-}
-
-impl<'a> ResourceOther<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ResourceOtherError> {
-        if matches!(
-            value.as_ref().to_ascii_lowercase().as_slice(),
-            b"storage" | b"message" | b"mailbox" | b"annotation-storage",
-        ) {
-            return Err(ResourceOtherError::Reserved);
-        }
-
-        Ok(())
-    }
-
-    /// Constructs an unsupported resource without validation.
-    ///
-    /// # Warning: IMAP conformance
-    ///
-    /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
-    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
-    /// Do not call this constructor with untrusted data.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
-    pub fn unvalidated<C>(value: C) -> Self
-    where
-        C: Into<Cow<'a, str>>,
-    {
-        Self(Atom::unvalidated(value))
-    }
-}
-
-macro_rules! impl_try_from {
-    ($from:ty) => {
-        impl<'a> TryFrom<$from> for ResourceOther<'a> {
-            type Error = ResourceOtherError;
-
-            fn try_from(value: $from) -> Result<Self, Self::Error> {
-                let atom = Atom::try_from(value)?;
-
-                Self::validate(atom.as_ref())?;
-
-                Ok(Self(atom))
-            }
-        }
-    };
-}
-
-impl_try_from!(&'a [u8]);
-impl_try_from!(Vec<u8>);
-impl_try_from!(&'a str);
-impl_try_from!(String);
-
-impl<'a> TryFrom<Atom<'a>> for ResourceOther<'a> {
-    type Error = ResourceOtherError;
-
-    fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
-        Self::validate(atom.as_ref())?;
-
-        Ok(Self(atom))
-    }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum ResourceOtherError {
-    #[error(transparent)]
-    Atom(#[from] AtomError),
-    #[error("Reserved: Please use one of the typed variants")]
-    Reserved,
 }
 
 /// A type that holds a resource name, usage, and limit.

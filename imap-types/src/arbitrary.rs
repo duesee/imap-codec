@@ -6,7 +6,7 @@ use crate::core::LiteralMode;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnableOther;
 #[cfg(feature = "ext_quota")]
-use crate::extensions::quota::ResourceOther;
+use crate::extensions::quota::Resource;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -69,7 +69,7 @@ implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_enable")]
 implement_tryfrom! { CapabilityEnableOther<'a>, Atom<'a> }
 #[cfg(feature = "ext_quota")]
-implement_tryfrom! { ResourceOther<'a>, Atom<'a> }
+implement_tryfrom! { Resource<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanism<'a>, Atom<'a> }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
