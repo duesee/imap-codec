@@ -49,16 +49,10 @@ mod tests {
     #[test]
     fn test_encode_auth_mechanism() {
         let tests = [
-            (AuthMechanism::Plain, b"PLAIN".as_ref()),
-            (AuthMechanism::Login, b"LOGIN"),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("PLAINX").unwrap()),
-                b"PLAINX",
-            ),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("LOGINX").unwrap()),
-                b"LOGINX",
-            ),
+            (AuthMechanism::PLAIN, b"PLAIN".as_ref()),
+            (AuthMechanism::LOGIN, b"LOGIN"),
+            (AuthMechanism::try_from("PLAINX").unwrap(), b"PLAINX"),
+            (AuthMechanism::try_from("LOGINX").unwrap(), b"LOGINX"),
         ];
 
         for test in tests {
@@ -69,21 +63,21 @@ mod tests {
     #[test]
     fn test_parse_auth_type() {
         let tests = [
-            (b"plain ".as_ref(), b" ".as_ref(), AuthMechanism::Plain),
-            (b"pLaiN ", b" ", AuthMechanism::Plain),
-            (b"lOgiN ", b" ", AuthMechanism::Login),
-            (b"login ", b" ", AuthMechanism::Login),
+            (b"plain ".as_ref(), b" ".as_ref(), AuthMechanism::PLAIN),
+            (b"pLaiN ", b" ", AuthMechanism::PLAIN),
+            (b"lOgiN ", b" ", AuthMechanism::LOGIN),
+            (b"login ", b" ", AuthMechanism::LOGIN),
             (b"loginX ", b" ", AuthMechanism::try_from("loginX").unwrap()),
             (
                 b"loginX ",
                 b" ",
-                AuthMechanism::Other(AuthMechanismOther::try_from(b"loginX".as_ref()).unwrap()),
+                AuthMechanism::try_from(b"loginX".as_ref()).unwrap(),
             ),
             (b"Xplain ", b" ", AuthMechanism::try_from("Xplain").unwrap()),
             (
                 b"Xplain ",
                 b" ",
-                AuthMechanism::Other(AuthMechanismOther::try_from(b"Xplain".as_ref()).unwrap()),
+                AuthMechanism::try_from(b"Xplain".as_ref()).unwrap(),
             ),
         ];
 

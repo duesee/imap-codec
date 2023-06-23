@@ -9,7 +9,7 @@ use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 #[cfg(feature = "ext_compress")]
 use crate::extensions::compress::CompressionAlgorithm;
 use crate::{
-    auth::{AuthMechanism, AuthMechanismOther, AuthenticateData},
+    auth::{AuthMechanism, AuthenticateData},
     body::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
         MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
@@ -502,17 +502,7 @@ impl<'a> Encoder for CommandBody<'a> {
 
 impl<'a> Encoder for AuthMechanism<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match &self {
-            AuthMechanism::Plain => ctx.write_all(b"PLAIN"),
-            AuthMechanism::Login => ctx.write_all(b"LOGIN"),
-            AuthMechanism::Other(other) => other.encode_ctx(ctx),
-        }
-    }
-}
-
-impl<'a> Encoder for AuthMechanismOther<'a> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().encode_ctx(ctx)
+        ctx.write_all(self.to_string().as_bytes())
     }
 }
 
@@ -957,14 +947,10 @@ impl<'a> Encoder for Capability<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Imap4Rev1 => ctx.write_all(b"IMAP4REV1"),
-            Self::Auth(mechanism) => match mechanism {
-                AuthMechanism::Plain => ctx.write_all(b"AUTH=PLAIN"),
-                AuthMechanism::Login => ctx.write_all(b"AUTH=LOGIN"),
-                AuthMechanism::Other(other) => {
-                    ctx.write_all(b"AUTH=")?;
-                    other.encode_ctx(ctx)
-                }
-            },
+            Self::Auth(mechanism) => {
+                ctx.write_all(b"AUTH=")?;
+                mechanism.encode_ctx(ctx)
+            }
             #[cfg(feature = "starttls")]
             Self::LoginDisabled => ctx.write_all(b"LOGINDISABLED"),
             #[cfg(feature = "starttls")]
@@ -1807,7 +1793,7 @@ mod tests {
                 .as_ref(),
             ),
             (
-                Command::new("A", CommandBody::authenticate(AuthMechanism::Login)).unwrap(),
+                Command::new("A", CommandBody::authenticate(AuthMechanism::LOGIN)).unwrap(),
                 [Fragment::Line {
                     data: b"A AUTHENTICATE LOGIN\r\n".to_vec(),
                 }]
@@ -1817,7 +1803,7 @@ mod tests {
             (
                 Command::new(
                     "A",
-                    CommandBody::authenticate_with_ir(AuthMechanism::Login, b"alice".as_ref()),
+                    CommandBody::authenticate_with_ir(AuthMechanism::LOGIN, b"alice".as_ref()),
                 )
                 .unwrap(),
                 [Fragment::Line {
@@ -1826,7 +1812,7 @@ mod tests {
                 .as_ref(),
             ),
             (
-                Command::new("A", CommandBody::authenticate(AuthMechanism::Plain)).unwrap(),
+                Command::new("A", CommandBody::authenticate(AuthMechanism::PLAIN)).unwrap(),
                 [Fragment::Line {
                     data: b"A AUTHENTICATE PLAIN\r\n".to_vec(),
                 }]
@@ -1837,7 +1823,7 @@ mod tests {
                 Command::new(
                     "A",
                     CommandBody::authenticate_with_ir(
-                        AuthMechanism::Plain,
+                        AuthMechanism::PLAIN,
                         b"\x00alice\x00pass".as_ref(),
                     ),
                 )

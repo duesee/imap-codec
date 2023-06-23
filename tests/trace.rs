@@ -196,7 +196,7 @@ fn test_from_capability() {
                     Data::capability(vec![
                         Capability::Imap4Rev1,
                         Capability::Auth(AuthMechanism::try_from("GSSAPI").unwrap()),
-                        Capability::Auth(AuthMechanism::Plain),
+                        Capability::Auth(AuthMechanism::PLAIN),
                     ])
                     .unwrap(),
                 )),
