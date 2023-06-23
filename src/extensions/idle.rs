@@ -56,8 +56,8 @@ pub(crate) fn idle_done(input: &[u8]) -> IMAPResult<&[u8], IdleDone> {
 }
 
 impl Encoder for IdleDone {
-    fn encode_ctx(&self, writer: &mut EncodeContext) -> std::io::Result<()> {
-        writer.write_all(b"DONE\r\n")
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        ctx.write_all(b"DONE\r\n")
     }
 }
 
