@@ -83,7 +83,7 @@ mod tests {
                 .tag("A")
                 .unwrap(),
             #[cfg(feature = "ext_sasl_ir")]
-            CommandBody::authenticate_with_ir(AuthMechanism::Plain, b"xyz123".as_ref())
+            CommandBody::authenticate_with_ir(AuthMechanism::PLAIN, b"xyz123".as_ref())
                 .tag("A")
                 .unwrap(),
         ];
