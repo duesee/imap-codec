@@ -80,6 +80,21 @@ impl<'a> AuthMechanism<'a> {
     ///
     /// + draft-murchison-sasl-login-00: The LOGIN SASL Mechanism
     pub const LOGIN: AuthMechanism<'static> = AuthMechanism(Inner::Login);
+
+    /// Google's OAuth 2.0 mechanism.
+    ///
+    /// ```imap
+    /// AUTH=XOAUTH2
+    /// ```
+    ///
+    /// ```text
+    /// base64(b"user=<user>\x01auth=Bearer <token>\x01\x01")
+    /// ```
+    ///
+    /// # Reference(s):
+    ///
+    /// * <https://developers.google.com/gmail/imap/xoauth2-protocol>
+    pub const XOAUTH2: AuthMechanism<'static> = AuthMechanism(Inner::XOAuth2);
 }
 
 impl_try_from!(Atom<'a>, 'a, &'a [u8], AuthMechanism<'a>);
@@ -93,6 +108,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
         match atom.as_ref().to_ascii_uppercase().as_str() {
             "PLAIN" => Self::PLAIN,
             "LOGIN" => Self::LOGIN,
+            "XOAUTH2" => Self::XOAUTH2,
             _ => Self(Inner::Other(atom)),
         }
     }
@@ -103,6 +119,7 @@ impl<'a> Display for AuthMechanism<'a> {
         f.write_str(match &self.0 {
             Inner::Plain => "PLAIN",
             Inner::Login => "LOGIN",
+            Inner::XOAuth2 => "XOAUTH2",
             Inner::Other(other) => other.as_ref(),
         })
     }
@@ -114,6 +131,7 @@ impl<'a> Display for AuthMechanism<'a> {
 enum Inner<'a> {
     Plain,
     Login,
+    XOAuth2,
     Other(Atom<'a>),
 }
 
