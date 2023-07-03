@@ -42,7 +42,7 @@ jobs:
             --source-dir . \
             --binary-path target/debug \
             --branch \
-            --keep-only '{src/**,imap-types/src/**}' \
+            --keep-only '{imap-codec/src/**,imap-types/src/**}' \
             --output-types "lcov" \
             --llvm > coveralls.lcov
 
