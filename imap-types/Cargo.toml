@@ -42,7 +42,7 @@ serde = { version = "1.0.103", features = ["derive"], optional = true }
 thiserror = "1.0.29"
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5.1"
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
 
 [package.metadata.docs.rs]

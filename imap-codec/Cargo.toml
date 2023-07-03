@@ -59,7 +59,7 @@ tokio-util = { version = "0.7.1", default-features = false, features = ["codec"]
 log = "0.4"
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5.1"
 # Make `cargo +nightly -Z minimal-versions update` work.
 regex = "1.5.3"
 
