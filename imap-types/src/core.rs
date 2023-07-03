@@ -1316,7 +1316,7 @@ pub enum QuotedCharError {
 /// ;                                           `Charset`
 //                     ; CHARSET argument to MUST be registered with IANA
 /// ```
-///
+/// 
 /// So, it seems that it should be an `AString`. However the IMAP standard also points to ...
 /// ```abnf
 /// mime-charset       = 1*mime-charset-chars
