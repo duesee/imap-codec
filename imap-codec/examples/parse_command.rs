@@ -1,10 +1,13 @@
 use std::io::Write;
 
-use ansi_term::Colour::{Blue as ColorServer, Red as ColorClient};
 use imap_codec::{
     codec::{Decode, DecodeError},
     command::Command,
 };
+
+const COLOR_SERVER: &str = "\x1b[34m";
+const COLOR_CLIENT: &str = "\x1b[31m";
+const RESET: &str = "\x1b[0m";
 
 fn main() {
     welcome();
@@ -35,7 +38,7 @@ fn main() {
             // This step is crucial for real clients. Otherwise a client won't send any more data.
             Err(DecodeError::LiteralFound { .. }) => {
                 // Simulate literal acknowledgement ...
-                println!("S: {}", ColorServer.paint("+ "));
+                println!("S: {COLOR_SERVER}+ {RESET}");
 
                 // ... and read more data.
                 read_more(&mut buffer);
@@ -83,13 +86,13 @@ fn read_more(buffer: &mut Vec<u8>) {
 }
 
 pub fn read_line(prompt: &str) -> String {
-    print!("{}{}", prompt, ColorClient.prefix());
+    print!("{}{COLOR_CLIENT}", prompt);
     std::io::stdout().flush().unwrap();
 
     let mut line = String::new();
     std::io::stdin().read_line(&mut line).unwrap();
 
-    print!("{}", ColorClient.suffix());
+    print!("{RESET}");
 
     line.replace('\n', "\r\n")
 }
