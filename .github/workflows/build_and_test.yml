@@ -96,6 +96,7 @@ jobs:
       - name: Test | Limited fuzzing (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
+          cd imap-codec
           for fuzz_target in $(cargo +nightly fuzz list);
           do
           echo "# Fuzzing ${fuzz_target}";
