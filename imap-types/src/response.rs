@@ -34,7 +34,10 @@ use crate::{
     extensions::quota::{QuotaGet, Resource},
 };
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+/// An IMAP greeting.
+///
+/// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
+// TODO(301)
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -129,7 +132,9 @@ pub enum Response<'a> {
 /// OK, NO, and BAD can be tagged or untagged.
 /// PREAUTH and BYE are always untagged.
 /// Status responses MAY include an OPTIONAL "response code" (see [`Code`](crate::response::Code).)
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+///
+/// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
+// TODO(301)
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

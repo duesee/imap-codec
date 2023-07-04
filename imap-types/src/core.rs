@@ -51,7 +51,6 @@ use thiserror::Error;
 
 use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
-    is_text_char_restricted,
 };
 
 macro_rules! impl_try_from {
@@ -1136,7 +1135,7 @@ impl<'a> Text<'a> {
             return Err(TextError::Empty);
         }
 
-        if let Some(position) = value.iter().position(|b| !is_text_char_restricted(*b)) {
+        if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
             return Err(TextError::ByteNotAllowed {
                 found: value[position],
                 position,

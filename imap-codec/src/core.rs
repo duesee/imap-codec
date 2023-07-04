@@ -10,7 +10,6 @@ use abnf_core::{is_alpha, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::core::*;
-use imap_types::utils::indicators::is_text_char_restricted;
 #[cfg(feature = "ext_literal")]
 use nom::character::streaming::char;
 use nom::{
@@ -251,7 +250,7 @@ pub(crate) fn nil(input: &[u8]) -> IMAPResult<&[u8], &[u8]> {
 
 /// `text = 1*TEXT-CHAR`
 pub(crate) fn text(input: &[u8]) -> IMAPResult<&[u8], Text> {
-    map(take_while1(is_text_char_restricted), |bytes|
+    map(take_while1(is_text_char), |bytes|
         // # Safety
         // 
         // `is_text_char` makes sure that the sequence of bytes
