@@ -10,6 +10,8 @@ use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 /// Re-export everything from imap-types.
 pub use imap_types::response::*;
+#[cfg(feature = "quirk_missing_text")]
+use nom::combinator::peek;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_until, take_while},
@@ -89,7 +91,20 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
                     Some,
                 ),
             ),
+            #[cfg(not(feature = "quirk_missing_text"))]
             preceded(sp, text),
+            #[cfg(feature = "quirk_missing_text")]
+            alt((
+                preceded(sp, text),
+                value(
+                    {
+                        log::warn!("Rectified missing `text` to \"...\"");
+
+                        Text::unvalidated("...")
+                    },
+                    peek(crlf),
+                ),
+            )),
         ))(input)
     } else {
         map(text, |text| (None, text))(input)
@@ -694,6 +709,24 @@ mod tests {
 
         for test in tests {
             assert!(response(test).is_err());
+        }
+    }
+
+    #[test]
+    fn test_parse_resp_text_quirk() {
+        #[cfg(not(feature = "quirk_missing_text"))]
+        {
+            assert!(resp_text(b"[IMAP4rev1]\r\n").is_err());
+            assert!(resp_text(b"[IMAP4rev1]\r\n").is_err());
+            assert!(resp_text(b"[IMAP4rev1] \r\n").is_err());
+            assert!(resp_text(b"[IMAP4rev1]  \r\n").is_ok());
+        }
+
+        #[cfg(feature = "quirk_missing_text")]
+        {
+            assert!(resp_text(b"[IMAP4rev1]\r\n").is_ok());
+            assert!(resp_text(b"[IMAP4rev1] \r\n").is_err());
+            assert!(resp_text(b"[IMAP4rev1]  \r\n").is_ok());
         }
     }
 }
