@@ -35,12 +35,20 @@ ext_unselect = ["imap-types/ext_unselect"]
 # </Forward to imap-types>
 
 # IMAP quirks
+#
+# These features bypass interoperability issues to allow safe processing of *almost* correct message.
+# 
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
+# 
 # Rectify (invalid) numbers.
-#
-# This bypasses interoperability issues to allow safe processing of *almost* correct message.
+# Observed in ...
+# * Dovecot (`-1`)
 quirk_rectify_numbers = []
+# Add missing `text` by adding [" "] "<missing text>".
+# Observed in ...
+# * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
+quirk_missing_text = []
 
 # Tokio support
 tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
