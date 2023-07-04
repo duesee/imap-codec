@@ -21,7 +21,7 @@ use crate::{
     envelope::Envelope,
     flag::FlagExtension,
     mailbox::{ListCharString, Mailbox, MailboxOther},
-    response::{Capability, Code, CodeOther, ContinueBasic},
+    response::{Capability, Code, CodeOther, ContinueBasic, Greeting, GreetingKind, Status},
     search::SearchKey,
     sequence::SequenceSet,
 };
@@ -77,6 +77,63 @@ impl<'a> Arbitrary<'a> for ContinueBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         ContinueBasic::new(Option::<Code>::arbitrary(u)?, Text::arbitrary(u)?)
             .map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
+
+// TODO(#301): This is due to the `Code`/`Text` ambiguity.
+impl<'a> Arbitrary<'a> for Greeting<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Greeting {
+            kind: GreetingKind::arbitrary(u)?,
+            code: Option::<Code>::arbitrary(u)?,
+            text: {
+                let text = Text::arbitrary(u)?;
+
+                if text.as_ref().starts_with("[") {
+                    Text::unvalidated("...")
+                } else {
+                    text
+                }
+            },
+        })
+    }
+}
+
+// TODO(#301): This is due to the `Code`/`Text` ambiguity.
+impl<'a> Arbitrary<'a> for Status<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let code = Option::<Code>::arbitrary(u)?;
+        let text = if code.is_some() {
+            Arbitrary::arbitrary(u)?
+        } else {
+            let text = Text::arbitrary(u)?;
+
+            if text.as_ref().starts_with("[") {
+                Text::unvalidated("...")
+            } else {
+                text
+            }
+        };
+
+        Ok(match u.int_in_range(0u8..=3)? {
+            0 => Status::Ok {
+                tag: Arbitrary::arbitrary(u)?,
+                code,
+                text,
+            },
+            1 => Status::No {
+                tag: Arbitrary::arbitrary(u)?,
+                code,
+                text,
+            },
+            2 => Status::Bad {
+                tag: Arbitrary::arbitrary(u)?,
+                code,
+                text,
+            },
+            3 => Status::Bye { code, text },
+            _ => unreachable!(),
+        })
     }
 }
 

@@ -103,11 +103,6 @@ pub mod indicators {
         matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x7f)
     }
 
-    /// Note: We exclude `[` and `]` here due to the possibility to misuse this as a `Code`.
-    pub fn is_text_char_restricted(c: u8) -> bool {
-        matches!(c, 0x01..=0x09 | 0x0b..=0x0c | 0x0e..=0x5a | 0x5c | 0x5e..=0x7f)
-    }
-
     /// `list-char = ATOM-CHAR / list-wildcards / resp-specials`
     pub fn is_list_char(i: u8) -> bool {
         is_atom_char(i) || is_list_wildcards(i) || is_resp_specials(i)
