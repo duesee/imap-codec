@@ -2,7 +2,7 @@
 
 use abnf_core::streaming::sp;
 /// Re-export everything from imap-types.
-pub(crate) use imap_types::search::*;
+pub use imap_types::search::*;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
