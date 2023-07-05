@@ -165,7 +165,7 @@ pub mod sequence;
 pub mod status;
 #[cfg(test)]
 mod testing;
-#[cfg(any(feature = "tokio"))]
+#[cfg(feature = "tokio")]
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 pub mod tokio;
 pub use imap_types::{secret, state, utils};

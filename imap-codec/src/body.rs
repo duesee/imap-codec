@@ -274,6 +274,7 @@ pub(crate) fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
 /// The following erroneous messages were observed:
 ///
 /// * A negative number, specifically `-1`, in Dovecot.
+#[allow(clippy::needless_return)]
 pub(crate) fn body_fld_octets(input: &[u8]) -> IMAPResult<&[u8], u32> {
     #[cfg(not(feature = "quirk_rectify_numbers"))]
     return number(input);

@@ -3,7 +3,6 @@ use imap_types::{
     core::{Tag, Text},
     response::{Response, Status},
 };
-use serde_json;
 
 fn main() {
     let cmd = Command::new("A1", CommandBody::login("Alice", "Pa²²word").unwrap()).unwrap();
