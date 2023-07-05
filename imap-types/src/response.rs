@@ -641,6 +641,9 @@ pub enum FetchError<S, I> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[doc(alias = "Continuation")]
+#[doc(alias = "ContinuationRequest")]
+#[doc(alias = "CommandContinuationRequest")]
 pub enum Continue<'a> {
     Basic(ContinueBasic<'a>),
     Base64(Cow<'a, [u8]>),
