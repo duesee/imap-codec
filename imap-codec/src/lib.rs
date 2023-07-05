@@ -1,6 +1,6 @@
-//! # IMAP Protocol Library
+//! # IMAP protocol library
 //!
-//! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1](https://tools.ietf.org/html/rfc3501) commands and responses.
+//! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1] commands and responses.
 //! It is based on [imap-types] and extends it with parsing support using [nom].
 //!
 //! ## Example
@@ -49,8 +49,7 @@
 //! ## Encoding
 //!
 //! The [`Encode::encode(...)`](codec::Encode::encode) method will return an instance of [`Encoded`](codec::Encoded)
-//! that facilitates handling of literals (and other protocol flows). The idea is that the encoder not only "dumps"
-//! the final serialization of a message but can be iterated over.
+//! that facilitates handling of literals. The idea is that the encoder not only "dumps" the final serialization of a message but can be iterated over.
 //!
 //! ### Example
 //!
@@ -100,64 +99,38 @@
 //!
 //! # Features
 //!
-//! This crate uses the following features to enable IMAP extensions:
+//! imap-codec forwards many features to imap-types. See [imap-types features] for a comprehensive list.
 //!
-//! |Feature              |Description                                                 |Enabled by default |
-//! |---------------------|------------------------------------------------------------|-------------------|
-//! |ext_compress         |The IMAP COMPRESS Extension ([RFC 4978])                    |No (but may change)|
-//! |ext_enable           |The IMAP ENABLE Extension ([RFC 5161])                      |No (but may change)|
-//! |ext_idle             |IMAP4 IDLE command ([RFC 2177])                             |No (but may change)|
-//! |ext_literal          |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])   |No (but may change)|
-//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                          |No (but may change)|
-//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                        |No (but may change)|
-//! |ext_move             |IMAP MOVE Extension ([RFC 6851])                            |No (but may change)|
-//! |ext_quota            |IMAP QUOTA Extension ([RFC 9208])                           |No (but may change)|
-//! |ext_sasl_ir          |IMAP Extension for SASL Initial Client Response ([RFC 4959])|No (but may change)|
-//! |ext_unselect         |IMAP UNSELECT command ([RFC 3691])                          |No (but may change)|
-//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                       |No                 |
+//! In addition, imap-codec defines the following features:
 //!
-//! Experimental (or unfinished) features:
+//! | Feature               | Description                    | Enabled by default |
+//! |-----------------------|--------------------------------|--------------------|
+//! | quirk_crlf_relaxed    | Make `\r` in `\r\n` optional.  | No                 |
+//! | quirk_rectify_numbers | Rectify (invalid) numbers.     | No                 |
+//! | quirk_missing_text    | Rectify missing `text` element.| No                 |
+//! | tokio                 | Tokio support.                 | No                 |
 //!
-//! |Feature              |Description                                                                          |Enabled by default |
-//! |---------------------|-------------------------------------------------------------------------------------|-------------------|
-//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|No (but may change)|
+//! ## Quirks
 //!
-//! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
-//! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
-//! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
+//! Features starting with `quirk_` are used to cope with existing interoperability issues.
+//! Unfortunately, we already observed some standard violations, such as, negative numbers, and missing syntax elements.
+//! Our policy is as follows: If we see an interoperability issue, we file an issue in the corresponding implementation.
+//! If, for any reason, the issue cannot be fixed, *and* the implementation is "important enough", e.g.,  because a user of
+//! imap-codec can't otherwise access their emails, we may add a `quirk_` feature to quickly resolve the problem.
+//! Of course, imap-codec should never violate the IMAP standard itself. So, we need to do this carefully.
 //!
-//! Furthermore, imap-codec uses the following features to facilitate interoperability:
+//! ## Tokio support
 //!
-//! | Feature          | Description                                                    | Enabled by default |
-//! |------------------|----------------------------------------------------------------|--------------------|
-//! | arbitrary        | Derive `Arbitrary` implementations.                            | No                 |
-//! | serde            | Derive `serdes` `Serialize` and `Deserialize` implementations. | No                 |
-//! | tokio            | Provide `tokio` support.                                       | No                 |
-//!
-//! When using "arbitrary", all types defined in imap-codec implement the [Arbitrary](https://docs.rs/arbitrary/1.1.0/arbitrary/trait.Arbitrary.html)
-//! trait to ease testing.
-//! When the "serde" feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
-//! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits.
-//! The "tokio_util_compat" feature unlocks an implementation of [tokio_util::codec](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
+//! The `tokio` feature unlocks an implementation of [tokio_util::codec].
 //! See the [tokio client] and [tokio server] demos.
 //!
+//! [imap-types]: imap_types
+//! [imap-types features]: ../imap_types/index.html#features
+//! [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
+//! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
+//! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html
 //! [tokio client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
 //! [tokio server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
-//! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html
-//! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
-//! [RFC 2088]: https://datatracker.ietf.org/doc/html/rfc2088
-//! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
-//! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
-//! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
-//! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
-//! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
-//! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
-//! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
-//! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
-//! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
-//! [RFC 7162]: https://datatracker.ietf.org/doc/html/rfc7162
-//! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
-//! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]

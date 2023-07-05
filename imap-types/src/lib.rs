@@ -24,7 +24,6 @@
 //! Note: When you are *sure* that the thing you want to create is valid, you can unlock various `unvalidated(...)` functions through the `unvalidated` feature.
 //! This allows us to bypass certain checks in release builds.
 //!
-//!
 //! ### Example
 //!
 //! ```
@@ -97,6 +96,62 @@
 //!     Response::Data(data)
 //! };
 //! ```
+//!
+//! # Features
+//!
+//! This crate uses the following features to enable IMAP extensions:
+//!
+//! |Feature              |Description                                                                          |Status    |Enabled by default |
+//! |---------------------|-------------------------------------------------------------------------------------|----------|-------------------|
+//! |ext_compress         |The IMAP COMPRESS Extension ([RFC 4978])                                             |          |No                 |
+//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|No                 |
+//! |ext_enable           |The IMAP ENABLE Extension ([RFC 5161])                                               |          |No                 |
+//! |ext_idle             |IMAP4 IDLE command ([RFC 2177])                                                      |          |No                 |
+//! |ext_literal          |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])                            |          |No                 |
+//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|No                 |
+//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|No                 |
+//! |ext_move             |IMAP MOVE Extension ([RFC 6851])                                                     |          |No                 |
+//! |ext_quota            |IMAP QUOTA Extension ([RFC 9208])                                                    |          |No                 |
+//! |ext_sasl_ir          |IMAP Extension for SASL Initial Client Response ([RFC 4959])                         |          |No                 |
+//! |ext_unselect         |IMAP UNSELECT command ([RFC 3691])                                                   |          |No                 |
+//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                |          |No                 |
+//!
+//! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
+//! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
+//! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
+//!
+//! Furthermore, imap-types uses the following features to facilitate interoperability:
+//!
+//! | Feature          | Description                                                    | Enabled by default |
+//! |------------------|----------------------------------------------------------------|--------------------|
+//! | arbitrary        | Derive `Arbitrary` implementations.                            | No                 |
+//! | bounded-static   | Derive `ToStatic/IntoStatic` implementations.                  | No                 |
+//! | serde            | Derive `serde`s `Serialize` and `Deserialize` implementations. | No                 |
+//! | unvalidated      | Unlock `unvalidated` constructors.                             | No                 |
+//!
+//! When using `arbitrary`, all types defined in imap-types implement the [Arbitrary] trait to ease testing.
+//! This is used, for example, to generate instances during fuzz-testing.
+//! (See, e.g., `imap-types/fuzz/fuzz_targets/to_static.rs`)
+//! When using `bounded-static`, all types provide a `to_static` and `into_static` method that converts a type into its "owned" variant.
+//! This is useful when you want to pass objects around, e.g., into other threads, a vector, etc.
+//! When the `serde` feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
+//! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits. (Try running `cargo run --example serde_json`.)
+//!
+//! [Arbitrary]: https://docs.rs/arbitrary/1.0.1/arbitrary/trait.Arbitrary.html
+//! [parse_command]: https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs
+//! [RFC 2088]: https://datatracker.ietf.org/doc/html/rfc2088
+//! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
+//! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
+//! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
+//! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
+//! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
+//! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
+//! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
+//! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
+//! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
+//! [RFC 7162]: https://datatracker.ietf.org/doc/html/rfc7162
+//! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
+//! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
