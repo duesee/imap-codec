@@ -674,15 +674,24 @@ pub struct ContinueBasic<'a> {
 }
 
 impl<'a> ContinueBasic<'a> {
+    /// Create a basic continuation request.
+    ///
+    /// Note: To avoid ambiguities in the IMAP standard, this constructor ensures that:
+    /// * iff `code` is `None`, `text` must not start with `[`.
+    /// * iff `code` is `None`, `text` must *not* be valid according to base64.
+    /// Otherwise, we could send a `Continue::Basic` that is interpreted as `Continue::Base64`.
     pub fn new<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ContinueError<T::Error>>
     where
         T: TryInto<Text<'a>>,
     {
         let text = text.try_into().map_err(ContinueError::Text)?;
 
-        // We need to work around an ambiguity in IMAP:
-        // When there is no `Code`, the `Text` must *not* be valid according to base64.
-        // Otherwise, we could send a `Continue::Basic` that is interpreted as `Continue::Base64`.
+        // Ambiguity #1
+        if code.is_none() && text.as_ref().starts_with('[') {
+            return Err(ContinueError::Ambiguity);
+        }
+
+        // Ambiguity #2
         if code.is_none() && _base64.decode(text.inner()).is_ok() {
             return Err(ContinueError::Ambiguity);
         }
@@ -703,7 +712,7 @@ impl<'a> ContinueBasic<'a> {
 pub enum ContinueError<T> {
     #[error("invalid text")]
     Text(T),
-    #[error("using no code and valid base64 may result in ambiguities")]
+    #[error("ambiguity detected")]
     Ambiguity,
 }
 
