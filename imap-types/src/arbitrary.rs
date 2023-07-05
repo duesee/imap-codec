@@ -89,7 +89,7 @@ impl<'a> Arbitrary<'a> for Greeting<'a> {
             text: {
                 let text = Text::arbitrary(u)?;
 
-                if text.as_ref().starts_with("[") {
+                if text.as_ref().starts_with('[') {
                     Text::unvalidated("...")
                 } else {
                     text
@@ -108,7 +108,7 @@ impl<'a> Arbitrary<'a> for Status<'a> {
         } else {
             let text = Text::arbitrary(u)?;
 
-            if text.as_ref().starts_with("[") {
+            if text.as_ref().starts_with('[') {
                 Text::unvalidated("...")
             } else {
                 text
