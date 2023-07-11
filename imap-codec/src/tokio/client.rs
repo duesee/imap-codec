@@ -37,7 +37,7 @@ pub enum ImapClientCodecError {
     #[error(transparent)]
     Framing(#[from] FramingError),
     #[error("Parsing failed")]
-    ParsingFailed,
+    ParsingFailed(BytesMut),
 }
 
 impl PartialEq for ImapClientCodecError {
@@ -45,7 +45,7 @@ impl PartialEq for ImapClientCodecError {
         match (self, other) {
             (Self::Io(error1), Self::Io(error2)) => error1.kind() == error2.kind(),
             (Self::Framing(kind2), Self::Framing(kind1)) => kind1 == kind2,
-            (Self::ParsingFailed, Self::ParsingFailed) => true,
+            (Self::ParsingFailed(x), Self::ParsingFailed(y)) => x == y,
             _ => false,
         }
     }
@@ -137,11 +137,13 @@ impl Decoder for ImapClientCodec {
                                             }
                                         }
                                         DecodeError::Failed => {
-                                            src.advance(*to_consume_acc);
+                                            let consumed = src.split_to(*to_consume_acc);
                                             self.state =
                                                 FramingState::ReadLine { to_consume_acc: 0 };
 
-                                            return Err(ImapClientCodecError::ParsingFailed);
+                                            return Err(ImapClientCodecError::ParsingFailed(
+                                                consumed,
+                                            ));
                                         }
                                     },
                                 }
@@ -224,7 +226,12 @@ mod tests {
             ),
             (b"", Ok(None)),
             (b"xxxx", Ok(None)),
-            (b"\r\n", Err(ImapClientCodecError::ParsingFailed)),
+            (
+                b"\r\n",
+                Err(ImapClientCodecError::ParsingFailed(BytesMut::from(
+                    b"xxxx\r\n".as_ref(),
+                ))),
+            ),
         ];
 
         let mut src = BytesMut::new();
@@ -296,7 +303,9 @@ mod tests {
             ),
             (
                 b"xxx\r\n".as_ref(),
-                Err(ImapClientCodecError::ParsingFailed),
+                Err(ImapClientCodecError::ParsingFailed(BytesMut::from(
+                    b"xxx\r\n".as_ref(),
+                ))),
             ),
             (
                 b"* search 1\n",
