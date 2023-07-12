@@ -6,9 +6,10 @@
 # imap-codec
 
 This library provides parsing, serialization, and general support for [IMAP4rev1] implementations.
-It is based on [imap-types] and aims to become a rock-solid building block for IMAP client and server implementations in Rust.
+It is based on [imap-types] and aims to become a rock-solid and [well-documented] building block for IMAP client and server implementations in Rust.
 The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
-Please see the [documentation] for more information.
+
+Let's talk on [Matrix]!
 
 ## Features
 
@@ -197,11 +198,12 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262235-0db02da9-7c6c-498e-a3d2-7ea7901637bf.png"/>
 </div>
 
+[Matrix]: https://matrix.to/#/#imap-codec:matrix.org
 [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
 [imap-types]: https://github.com/duesee/imap-codec/imap-types
 [formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
 [extensions]: https://docs.rs/imap-codec/latest/imap_codec/#features
-[documentation]: https://docs.rs/imap-codec/latest/imap_codec/
+[well-documented]: https://docs.rs/imap-codec/latest/imap_codec/
 [cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
 [demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
 [demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
