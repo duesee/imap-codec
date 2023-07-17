@@ -1,3 +1,5 @@
+//! Body(structure)-related types.
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -10,6 +12,7 @@ use crate::{
     envelope::Envelope,
 };
 
+/// Inner part of [`BodyStructure`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -21,7 +24,7 @@ pub struct Body<'a> {
     pub specific: SpecificFields<'a>,
 }
 
-/// The basic fields of a non-multipart body part.
+/// Basic fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -46,6 +49,7 @@ pub struct BasicFields<'a> {
     pub size: u32,
 }
 
+/// Specific fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -156,15 +160,15 @@ pub enum SpecificFields<'a> {
     ///     | md5
     /// )
     /// ```
-    ///
-    /// A body type of type TEXT contains, immediately after the basic fields,
     Text {
+        /// Subtype.
         subtype: IString<'a>,
-        /// the size of the body in text lines.
+        /// Size of the body in text lines.
         number_of_lines: u32,
     },
 }
 
+/// The BODY(STRUCTURE).
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -176,6 +180,7 @@ pub enum BodyStructure<'a> {
     /// ("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 2279 48)
     /// ```
     Single {
+        /// Inner body.
         body: Body<'a>,
         /// Extension data
         ///
@@ -237,8 +242,11 @@ pub enum BodyStructure<'a> {
     /// )
     /// ```
     Multi {
+        /// Inner bodies.
         bodies: NonEmptyVec<BodyStructure<'a>>,
+        /// Subtype.
         subtype: IString<'a>,
+        /// Extension data.
         extension_data: Option<MultiPartExtensionData<'a>>,
     },
 }
@@ -284,6 +292,7 @@ pub struct MultiPartExtensionData<'a> {
     pub tail: Option<Disposition<'a>>,
 }
 
+/// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -298,6 +307,7 @@ pub struct Disposition<'a> {
     pub tail: Option<Language<'a>>,
 }
 
+/// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -311,6 +321,7 @@ pub struct Language<'a> {
     pub tail: Option<Location<'a>>,
 }
 
+/// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -323,11 +334,15 @@ pub struct Location<'a> {
     pub extensions: Vec<BodyExtension<'a>>,
 }
 
+/// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BodyExtension<'a> {
+    /// NString.
     NString(NString<'a>),
+    /// Number.
     Number(u32),
+    /// List.
     List(NonEmptyVec<BodyExtension<'a>>),
 }

@@ -1,3 +1,5 @@
+//! Date and time-related types.
+
 use std::fmt::{Debug, Formatter};
 
 #[cfg(feature = "bounded-static")]

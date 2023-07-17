@@ -124,8 +124,8 @@
 //! The `tokio` feature unlocks an implementation of [tokio_util::codec].
 //! See the [tokio client] and [tokio server] demos.
 //!
-//! [imap-types]: imap_types
-//! [imap-types features]: ../imap_types/index.html#features
+//! [imap-types]: https://docs.rs/imap-types/latest/imap_types
+//! [imap-types features]: https://docs.rs/imap-types/latest/imap_types/#features
 //! [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
 //! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
 //! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html

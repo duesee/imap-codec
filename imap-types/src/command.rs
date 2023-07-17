@@ -31,16 +31,20 @@ use crate::{
 #[cfg(feature = "ext_enable")]
 use crate::{core::NonEmptyVec, extensions::enable::CapabilityEnable};
 
+/// Command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Command<'a> {
+    /// Tag.
     pub tag: Tag<'a>,
+    /// Body, e.g., CAPABILITY, LOGIN, SELECT, etc.
     pub body: CommandBody<'a>,
 }
 
 impl<'a> Command<'a> {
+    /// Create a new command.
     pub fn new<T>(tag: T, body: CommandBody<'a>) -> Result<Self, T::Error>
     where
         T: TryInto<Tag<'a>>,
@@ -51,11 +55,15 @@ impl<'a> Command<'a> {
         })
     }
 
+    /// Get the command name.
     pub fn name(&self) -> &'static str {
         self.body.name()
     }
 }
 
+/// Command body.
+///
+/// This enum is used to encode all the different commands.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -249,8 +257,13 @@ pub enum CommandBody<'a> {
     /// during the authentication exchange is interpreted by the server as
     /// the user name whose privileges the client is requesting.
     Authenticate {
+        /// Authentication mechanism.
         mechanism: AuthMechanism<'a>,
-        /// Already base64-decoded
+        /// Initial response (if any).
+        ///
+        /// This type holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
+        ///
+        /// Note: Use this only when the server advertised the `SASL-IR` capability.
         #[cfg(feature = "ext_sasl_ir")]
         #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
         initial_response: Option<Secret<Cow<'a, [u8]>>>,
@@ -295,7 +308,9 @@ pub enum CommandBody<'a> {
     ///   implementation MUST NOT send a LOGIN command if the
     ///   LOGINDISABLED capability is advertised.
     Login {
+        /// Username.
         username: AString<'a>,
+        /// Password.
         password: Secret<AString<'a>>,
     },
 
@@ -373,8 +388,14 @@ pub enum CommandBody<'a> {
     /// per-user (as opposed to global) basis.  Netnews messages marked in
     /// a server-based .newsrc file are an example of such per-user
     /// permanent state that can be modified with read-only mailboxes.
-    Select { mailbox: Mailbox<'a> },
+    Select {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
+    /// Unselect a mailbox.
+    ///
+    /// This should bring the client back to the AUTHENTICATED state.
     #[cfg(feature = "ext_unselect")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_unselect")))]
     Unselect,
@@ -398,7 +419,10 @@ pub enum CommandBody<'a> {
     ///
     /// The text of the tagged OK response to the EXAMINE command MUST
     /// begin with the "[READ-ONLY]" response code.
-    Examine { mailbox: Mailbox<'a> },
+    Examine {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
     /// ### 6.3.3.  CREATE Command
     ///
@@ -443,7 +467,10 @@ pub enum CommandBody<'a> {
     ///   named "owatagusiam" with a member called "blurdybloop" is
     ///   created.  Otherwise, two mailboxes at the same hierarchy
     ///   level are created.
-    Create { mailbox: Mailbox<'a> },
+    Create {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
     /// 6.3.4.  DELETE Command
     ///
@@ -477,7 +504,10 @@ pub enum CommandBody<'a> {
     /// incarnation, UNLESS the new incarnation has a different unique
     /// identifier validity value.  See the description of the UID command
     /// for more detail.
-    Delete { mailbox: Mailbox<'a> },
+    Delete {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
     /// 6.3.5.  RENAME Command
     ///
@@ -519,7 +549,12 @@ pub enum CommandBody<'a> {
     /// leaving INBOX empty.  If the server implementation supports
     /// inferior hierarchical names of INBOX, these are unaffected by a
     /// rename of INBOX.
-    Rename { from: Mailbox<'a>, to: Mailbox<'a> },
+    Rename {
+        /// Current name.
+        from: Mailbox<'a>,
+        /// New name.
+        to: Mailbox<'a>,
+    },
 
     /// ### 6.3.6.  SUBSCRIBE Command
     ///
@@ -545,7 +580,10 @@ pub enum CommandBody<'a> {
     ///   name (e.g., "system-alerts") after its contents expire,
     ///   with the intention of recreating it when new contents
     ///   are appropriate.
-    Subscribe { mailbox: Mailbox<'a> },
+    Subscribe {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
     /// 6.3.7.  UNSUBSCRIBE Command
     ///
@@ -559,7 +597,10 @@ pub enum CommandBody<'a> {
     /// the server's set of "active" or "subscribed" mailboxes as returned
     /// by the LSUB command.  This command returns a tagged OK response
     /// only if the unsubscription is successful.
-    Unsubscribe { mailbox: Mailbox<'a> },
+    Unsubscribe {
+        /// Mailbox.
+        mailbox: Mailbox<'a>,
+    },
 
     /// ### 6.3.8.  LIST Command
     ///
@@ -693,7 +734,9 @@ pub enum CommandBody<'a> {
     /// failure; it is not relevant whether the user's real INBOX resides
     /// on this or some other server.
     List {
+        /// Reference.
         reference: Mailbox<'a>,
+        /// Mailbox (wildcard).
         mailbox_wildcard: ListMailbox<'a>,
     },
 
@@ -727,7 +770,9 @@ pub enum CommandBody<'a> {
     /// from the subscription list even if a mailbox by that name no
     /// longer exists.
     Lsub {
+        /// Reference.
         reference: Mailbox<'a>,
+        /// Mailbox (wildcard).
         mailbox_wildcard: ListMailbox<'a>,
     },
 
@@ -778,7 +823,9 @@ pub enum CommandBody<'a> {
     ///   issue many consecutive STATUS commands and obtain
     ///   reasonable performance.
     Status {
+        /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Status data items.
         item_names: Cow<'a, [StatusDataItemName]>,
     },
 
@@ -839,9 +886,13 @@ pub enum CommandBody<'a> {
     ///   because it does not provide a mechanism to transfer \[SMTP\]
     ///   envelope information.
     Append {
+        /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Flags.
         flags: Vec<Flag<'a>>,
+        /// Datetime.
         date: Option<DateTime>,
+        /// Message to append.
         message: Literal<'a>,
     },
 
@@ -966,8 +1017,11 @@ pub enum CommandBody<'a> {
     /// "XXXXXX" is a placeholder for what would be 6 octets of
     /// 8-bit data in an actual transaction.
     Search {
+        /// Charset.
         charset: Option<Charset<'a>>,
+        /// Criteria.
         criteria: SearchKey<'a>,
+        /// Use UID variant.
         uid: bool,
     },
 
@@ -996,8 +1050,11 @@ pub enum CommandBody<'a> {
     ///   message when it already knows the envelope, it can
     ///   safely ignore the newly transmitted envelope.
     Fetch {
+        /// Set of messages.
         sequence_set: SequenceSet,
+        /// Message data items (or a macro).
         macro_or_item_names: MacroOrMessageDataItemNames<'a>,
+        /// Use UID variant.
         uid: bool,
     },
 
@@ -1052,10 +1109,15 @@ pub enum CommandBody<'a> {
     /// -FLAGS.SILENT \<flag list\>
     ///    Equivalent to -FLAGS, but without returning a new value.
     Store {
+        /// Set of messages.
         sequence_set: SequenceSet,
+        /// Kind of storage, i.e., replace, add, or remove.
         kind: StoreType,
+        /// Kind of response, i.e., answer or silent.
         response: StoreResponse,
+        /// Flags.
         flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
+        /// Use UID variant.
         uid: bool,
     },
 
@@ -1086,8 +1148,11 @@ pub enum CommandBody<'a> {
     /// implementations MUST restore the destination mailbox to its state
     /// before the COPY attempt.
     Copy {
+        /// Set of messages.
         sequence_set: SequenceSet,
+        /// Destination mailbox.
         mailbox: Mailbox<'a>,
+        /// Use UID variant.
         uid: bool,
     },
 
@@ -1177,19 +1242,26 @@ pub enum CommandBody<'a> {
     // send any such untagged responses, unless the client requested it
     // by issuing the associated experimental command.
     //X,
+    /// IDLE command.
     #[cfg(feature = "ext_idle")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     Idle,
 
+    /// ENABLE command.
     #[cfg(feature = "ext_enable")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enable {
+        /// Capabilities to enable.
         capabilities: NonEmptyVec<CapabilityEnable<'a>>,
     },
 
+    /// COMPRESS command.
     #[cfg(feature = "ext_compress")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
-    Compress { algorithm: CompressionAlgorithm },
+    Compress {
+        /// Compression algorithm.
+        algorithm: CompressionAlgorithm,
+    },
 
     /// Takes the name of a quota root and returns the quota root's resource usage and limits in an untagged QUOTA response.
     ///
@@ -1302,16 +1374,21 @@ pub enum CommandBody<'a> {
         quotas: Vec<QuotaSet<'a>>,
     },
 
+    /// MOVE command.
     #[cfg(feature = "ext_move")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move {
+        /// Set of messages.
         sequence_set: SequenceSet,
+        /// Destination mailbox.
         mailbox: Mailbox<'a>,
+        /// Use UID variant.
         uid: bool,
     },
 }
 
 impl<'a> CommandBody<'a> {
+    /// Prepend a tag to finalize the command body to a command.
     pub fn tag<T>(self, tag: T) -> Result<Command<'a>, T::Error>
     where
         T: TryInto<Tag<'a>>,
@@ -1324,6 +1401,7 @@ impl<'a> CommandBody<'a> {
 
     // ----- Constructors -----
 
+    /// Construct an AUTHENTICATE command.
     pub fn authenticate(mechanism: AuthMechanism<'a>) -> Self {
         #[cfg(feature = "ext_sasl_ir")]
         return CommandBody::Authenticate {
@@ -1335,6 +1413,9 @@ impl<'a> CommandBody<'a> {
         return CommandBody::Authenticate { mechanism };
     }
 
+    /// Construct an AUTHENTICATE command (with an initial response, SASL-IR).
+    ///
+    /// Note: Use this only when the server advertised the `SASL-IR` capability.
     #[cfg(feature = "ext_sasl_ir")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     pub fn authenticate_with_ir<I>(mechanism: AuthMechanism<'a>, initial_response: I) -> Self
@@ -1347,6 +1428,7 @@ impl<'a> CommandBody<'a> {
         }
     }
 
+    /// Construct a LOGIN command.
     pub fn login<U, P>(username: U, password: P) -> Result<Self, LoginError<U::Error, P::Error>>
     where
         U: TryInto<AString<'a>>,
@@ -1358,6 +1440,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a SELECT command.
     pub fn select<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1367,6 +1450,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct an EXAMINE command.
     pub fn examine<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1376,6 +1460,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a CREATE command.
     pub fn create<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1385,6 +1470,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a DELETE command.
     pub fn delete<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1394,6 +1480,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a RENAME command.
     pub fn rename<F, T>(mailbox: F, new_mailbox: T) -> Result<Self, RenameError<F::Error, T::Error>>
     where
         F: TryInto<Mailbox<'a>>,
@@ -1405,6 +1492,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a SUBSCRIBE command.
     pub fn subscribe<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1414,6 +1502,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct an UNSUBSCRIBE command.
     pub fn unsubscribe<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1423,6 +1512,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a LIST command.
     pub fn list<A, B>(
         reference: A,
         mailbox_wildcard: B,
@@ -1437,6 +1527,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a LSUB command.
     pub fn lsub<A, B>(
         reference: A,
         mailbox_wildcard: B,
@@ -1451,6 +1542,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a STATUS command.
     pub fn status<M, I>(mailbox: M, item_names: I) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -1464,6 +1556,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct an APPEND command.
     pub fn append<M, D>(
         mailbox: M,
         flags: Vec<Flag<'a>>,
@@ -1482,6 +1575,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a SEARCH command.
     pub fn search(charset: Option<Charset<'a>>, criteria: SearchKey<'a>, uid: bool) -> Self {
         CommandBody::Search {
             charset,
@@ -1490,6 +1584,7 @@ impl<'a> CommandBody<'a> {
         }
     }
 
+    /// Construct a FETCH command.
     pub fn fetch<S, I>(sequence_set: S, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
     where
         S: TryInto<SequenceSet>,
@@ -1504,6 +1599,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a STORE command.
     pub fn store<S>(
         sequence_set: S,
         kind: StoreType,
@@ -1525,6 +1621,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Construct a COPY command.
     pub fn copy<S, M>(
         sequence_set: S,
         mailbox: M,
@@ -1541,6 +1638,7 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// Get the name of the command.
     pub fn name(&self) -> &'static str {
         match self {
             Self::Capability => "CAPABILITY",

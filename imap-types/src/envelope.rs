@@ -1,3 +1,5 @@
+//! Envelope-related types.
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]

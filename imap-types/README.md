@@ -1,6 +1,6 @@
-# Misuse-resistant IMAP types
+# imap-types
 
-This crate provides a complete set of well-designed types for the [IMAP4rev1] protocol and various [extensions].
+This crate provides a complete set of well-designed, misuse-resistant types for the [IMAP4rev1] protocol and various [extensions].
 Notably, it does *not* provide parsers, nor serializers, but tries to become the "standard library" for IMAP in Rust that is
 useful for a broad range of crates.
 
@@ -121,6 +121,7 @@ This crate is dual-licensed under Apache 2.0 and MIT terms.
 
 [IMAP4rev1]: https://datatracker.ietf.org/doc/html/rfc3501
 [extensions]: https://docs.rs/imap-codec/latest/imap_codec/#features
-[imap-codec]: https://github.com/duesee/imap-codec
+[imap-codec]: https://docs.rs/imap-types/latest/imap_codec/
 [cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
 [core]: https://docs.rs/imap-types/latest/imap_types/core/index.html
+

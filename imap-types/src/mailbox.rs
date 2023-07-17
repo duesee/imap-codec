@@ -1,3 +1,5 @@
+//! Mailbox-related types.
+
 use std::{borrow::Cow, str::from_utf8};
 
 #[cfg(feature = "arbitrary")]

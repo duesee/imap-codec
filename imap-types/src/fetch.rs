@@ -1,3 +1,5 @@
+//! Fetch-related types.
+
 use std::num::NonZeroU32;
 
 #[cfg(feature = "arbitrary")]

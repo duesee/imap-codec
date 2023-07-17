@@ -1,4 +1,4 @@
-// ### 2.3.2. Flags Message Attribute
+//! Flag-related types.
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
