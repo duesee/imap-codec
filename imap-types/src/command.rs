@@ -1639,12 +1639,11 @@ mod tests {
         auth::AuthMechanism,
         core::{AString, Charset, IString, Literal},
         datetime::DateTime,
-        fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName},
+        fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName, Part, Section},
         flag::{Flag, StoreType},
         mailbox::{ListMailbox, Mailbox},
         search::SearchKey,
         secret::Secret,
-        section::{Part, Section},
         sequence::{SeqOrUid, Sequence, SequenceSet},
         status::StatusDataItemName,
     };

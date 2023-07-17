@@ -160,7 +160,6 @@ pub mod flag;
 pub mod mailbox;
 pub mod response;
 pub mod search;
-pub mod section;
 pub mod sequence;
 pub mod status;
 #[cfg(test)]

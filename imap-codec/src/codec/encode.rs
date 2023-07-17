@@ -20,14 +20,15 @@ use crate::{
     },
     datetime::{DateTime, NaiveDate},
     envelope::{Address, Envelope},
-    fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItem, MessageDataItemName},
+    fetch::{
+        Macro, MacroOrMessageDataItemNames, MessageDataItem, MessageDataItemName, Part, Section,
+    },
     flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
         Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
     },
     search::SearchKey,
-    section::{Part, Section},
     sequence::{SeqOrUid, Sequence, SequenceSet},
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,

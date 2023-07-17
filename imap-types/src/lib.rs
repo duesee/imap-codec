@@ -182,7 +182,6 @@ pub mod mailbox;
 pub mod response;
 pub mod search;
 pub mod secret;
-pub mod section;
 pub mod sequence;
 pub mod state;
 pub mod status;
