@@ -566,7 +566,7 @@ mod tests {
     use crate::codec::Encode;
     #[cfg(feature = "ext_sasl_ir")]
     use crate::core::Tag;
-    use crate::{fetch::MessageDataItemName, section::Section};
+    use crate::fetch::{MessageDataItemName, Section};
 
     #[test]
     fn test_parse_fetch() {

@@ -6,11 +6,10 @@ use imap_codec::{
     core::{AString, IString, Literal, NString, Quoted, Tag},
     datetime::DateTime,
     envelope::{Address, Envelope},
-    fetch::{Macro, MessageDataItem, MessageDataItemName},
+    fetch::{Macro, MessageDataItem, MessageDataItemName, Section},
     flag::{Flag, FlagFetch, FlagPerm, StoreResponse, StoreType},
     response::{Capability, Code, Data, Greeting, Response, Status},
     secret::Secret,
-    section::Section,
 };
 
 enum Who {

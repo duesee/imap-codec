@@ -16,7 +16,7 @@ use crate::{
     command::CommandBody,
     core::{astring, atom, charset, number, NonEmptyVec},
     datetime::date,
-    section::header_fld_name,
+    fetch::header_fld_name,
     sequence::sequence_set,
 };
 

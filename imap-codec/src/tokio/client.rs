@@ -207,9 +207,8 @@ mod tests {
     use super::*;
     use crate::{
         core::{Literal, NString},
-        fetch::MessageDataItem,
+        fetch::{MessageDataItem, Section},
         response::{Data, GreetingKind},
-        section::Section,
     };
 
     #[test]
