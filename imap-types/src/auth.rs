@@ -1,3 +1,5 @@
+//! Authentication-related types.
+
 use std::{
     borrow::Cow,
     fmt::{Display, Formatter},
@@ -135,6 +137,9 @@ enum Inner<'a> {
     Other(Atom<'a>),
 }
 
+/// Data line used, e.g., during AUTHENTICATE.
+///
+/// Holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

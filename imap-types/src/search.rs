@@ -1,3 +1,5 @@
+//! Search-related types.
+
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]

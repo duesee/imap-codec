@@ -3,16 +3,18 @@
 [![Coverage](https://coveralls.io/repos/github/duesee/imap-codec/badge.svg?branch=main)](https://coveralls.io/github/duesee/imap-codec?branch=main)
 [![Documentation](https://docs.rs/imap-codec/badge.svg)](https://docs.rs/imap-codec)
 
-# imap-codec
+# imap-{codec,types}
 
-This library provides parsing, serialization, and general support for [IMAP4rev1] implementations.
-It is based on [imap-types] and aims to become a rock-solid and [well-documented] building block for IMAP client and server implementations in Rust.
-The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
+This workspace contains [imap-codec] and [imap-types], two [rock-solid] and [well-documented] crates to build [IMAP4rev1] clients and servers.
+imap-codec provides parsing and serialization, and is based on imap-types.
+imap-types provides misuse-resistant types, constructors, and general support for IMAP implementations.
+The crates live here together, but imap-types is a perfectly fine standalone crate.
 
 Let's talk on [Matrix]!
 
 ## Features
 
+* Complete [formal syntax] of IMAP4rev1 is implemented. Furthermore, several IMAP [extensions] are supported.
 * Correctness and misuse-resistance are enforced on the type level. It's not possible to construct a message that violates the IMAP specification.
 * Messages automatically use the most efficient representation. For example, atoms are preferred over quoted strings, and quoted strings are preferred over literals. It's equally easy to manually choose a representation.
 * Parsing works in streaming mode. `Incomplete` is returned when there is insufficient data to make a final decision. No message will be truncated.
@@ -198,12 +200,14 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
     <img height="100px" src="https://user-images.githubusercontent.com/8997731/215262235-0db02da9-7c6c-498e-a3d2-7ea7901637bf.png"/>
 </div>
 
+[rock-solid]: https://github.com/duesee/imap-codec/tree/main/imap-codec/fuzz
+[well-documented]: https://docs.rs/imap-codec/latest/imap_codec/
+[imap-codec]: imap-codec
+[imap-types]: imap-types
 [Matrix]: https://matrix.to/#/#imap-codec:matrix.org
 [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
-[imap-types]: https://github.com/duesee/imap-codec/imap-types
 [formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
 [extensions]: https://docs.rs/imap-codec/latest/imap_codec/#features
-[well-documented]: https://docs.rs/imap-codec/latest/imap_codec/
 [cargo fuzz]: https://github.com/rust-fuzz/cargo-fuzz
 [demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
 [demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
