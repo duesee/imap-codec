@@ -1,8 +1,5 @@
-//! Please refer to [`imap_types::flag`].
-
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::flag::*;
+use imap_types::flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -136,8 +133,12 @@ pub(crate) fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttr
 
 #[cfg(test)]
 mod tests {
+    use imap_types::{
+        core::Atom,
+        flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
+    };
+
     use super::*;
-    use crate::core::Atom;
 
     #[test]
     fn test_parse_flag_fetch() {

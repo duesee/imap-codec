@@ -1,15 +1,17 @@
 use imap_codec::{
-    auth::AuthMechanism,
-    body::{BasicFields, Body, BodyStructure, SpecificFields},
     codec::{Decode, Encode},
-    command::{Command, CommandBody},
-    core::{AString, IString, Literal, NString, Quoted, Tag},
-    datetime::DateTime,
-    envelope::{Address, Envelope},
-    fetch::{Macro, MessageDataItem, MessageDataItemName, Section},
-    flag::{Flag, FlagFetch, FlagPerm, StoreResponse, StoreType},
-    response::{Capability, Code, Data, Greeting, Response, Status},
-    secret::Secret,
+    imap_types::{
+        auth::AuthMechanism,
+        body::{BasicFields, Body, BodyStructure, SpecificFields},
+        command::{Command, CommandBody},
+        core::{AString, IString, Literal, NString, Quoted, Tag},
+        datetime::DateTime,
+        envelope::{Address, Envelope},
+        fetch::{Macro, MessageDataItem, MessageDataItemName, Section},
+        flag::{Flag, FlagFetch, FlagPerm, StoreResponse, StoreType},
+        response::{Capability, Code, Data, Greeting, Response, Status},
+        secret::Secret,
+    },
 };
 
 enum Who {

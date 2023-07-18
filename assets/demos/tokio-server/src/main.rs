@@ -2,9 +2,11 @@ use anyhow::{Context, Error};
 use argon2::Argon2;
 use futures::{SinkExt, StreamExt};
 use imap_codec::{
-    command::CommandBody,
-    core::{NonEmptyVec, Text},
-    response::{Capability, Continue, Data, Greeting, Response, Status},
+    imap_types::{
+        command::CommandBody,
+        core::{NonEmptyVec, Text},
+        response::{Capability, Continue, Data, Greeting, Response, Status},
+    },
     tokio::server::{Action, Event, ImapServerCodec},
 };
 use tokio::{self, net::TcpListener};

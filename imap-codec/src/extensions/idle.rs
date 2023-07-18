@@ -13,14 +13,10 @@ use std::io::Write;
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
-/// Re-export everything from imap-types.
-pub use imap_types::extensions::idle::*;
+use imap_types::{command::CommandBody, extensions::idle::IdleDone};
 use nom::{bytes::streaming::tag_no_case, combinator::value, sequence::tuple};
 
-use crate::{
-    codec::{EncodeContext, Encoder, IMAPResult},
-    command::CommandBody,
-};
+use crate::codec::{EncodeContext, Encoder, IMAPResult};
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -63,10 +59,11 @@ impl Encoder for IdleDone {
 
 #[cfg(test)]
 mod tests {
+    use imap_types::command::{Command, CommandBody};
+
     use super::*;
     use crate::{
         codec::{Decode, DecodeError},
-        command::{Command, CommandBody},
         testing::kat_inverse_command,
     };
 

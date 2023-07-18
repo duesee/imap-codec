@@ -1,8 +1,11 @@
-//! Please refer to [`imap_types::body`].
-
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::body::*;
+use imap_types::{
+    body::{
+        BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
+        MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
+    },
+    core::{IString, NString, NonEmptyVec},
+};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -13,7 +16,7 @@ use nom::{
 
 use crate::{
     codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
-    core::{nil, nstring, number, string, IString, NString, NonEmptyVec},
+    core::{nil, nstring, number, string},
     envelope::envelope,
 };
 
@@ -573,13 +576,14 @@ pub(crate) fn media_text(input: &[u8]) -> IMAPResult<&[u8], IString> {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::*;
-    use crate::{
+    use imap_types::{
         core::{Literal, Quoted},
         fetch::MessageDataItem,
         response::{Data, Response},
-        testing::{kat_inverse_response, known_answer_test_encode},
     };
+
+    use super::*;
+    use crate::testing::{kat_inverse_response, known_answer_test_encode};
 
     #[test]
     fn test_parse_media_basic() {

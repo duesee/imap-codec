@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
     codec::Encode,
-    response::{Code, Response, Status},
+    imap_types::response::{Code, Response, Status},
 };
 
 fn criterion_benchmark(c: &mut Criterion) {

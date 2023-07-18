@@ -12,7 +12,7 @@
 //! ```
 //! use imap_codec::{
 //!     codec::Encode,
-//!     command::{Command, CommandBody},
+//!     imap_types::command::{Command, CommandBody},
 //! };
 //!
 //! // Create some command.
@@ -47,21 +47,22 @@ mod encode;
 mod tests {
     use std::num::NonZeroU32;
 
-    use imap_types::{auth::AuthenticateData, secret::Secret};
-
-    use super::*;
     #[cfg(feature = "ext_literal")]
-    use crate::core::LiteralMode;
-    use crate::{
+    use imap_types::core::LiteralMode;
+    use imap_types::{
+        auth::AuthenticateData,
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
-        testing::{
-            kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
-            kat_inverse_response,
-        },
+        secret::Secret,
+    };
+
+    use super::*;
+    use crate::testing::{
+        kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
+        kat_inverse_response,
     };
 
     #[test]

@@ -1,6 +1,6 @@
 use imap_codec::{
     codec::{Decode, Encode},
-    command::Command,
+    imap_types::command::Command,
 };
 
 #[test]

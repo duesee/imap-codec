@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use imap_codec::{codec::Decode, response::Greeting};
+use imap_codec::{codec::Decode, imap_types::response::Greeting};
 
 fn main() -> std::io::Result<()> {
     loop {

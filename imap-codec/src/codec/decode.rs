@@ -4,14 +4,21 @@ use std::num::{ParseIntError, TryFromIntError};
 use bounded_static::IntoBoundedStatic;
 #[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
+#[cfg(feature = "ext_idle")]
+use imap_types::extensions::idle::IdleDone;
+use imap_types::{
+    auth::AuthenticateData,
+    command::Command,
+    response::{Continue, Greeting, Response},
+};
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
 #[cfg(feature = "ext_idle")]
-use crate::extensions::idle::{idle_done, IdleDone};
+use crate::extensions::idle::idle_done;
 use crate::{
-    auth::{authenticate_data, AuthenticateData},
-    command::{command, Command},
-    response::{continue_req, greeting, response, Continue, Greeting, Response},
+    auth::authenticate_data,
+    command::command,
+    response::{continue_req, greeting, response},
 };
 
 /// An extended version of [`nom::IResult`].
@@ -204,18 +211,18 @@ impl_decode_static_for_object!(Continue<'a>, Continue<'static>, continue_req);
 mod tests {
     use std::num::NonZeroU32;
 
-    use imap_types::secret::Secret;
-
-    use super::*;
     #[cfg(feature = "ext_idle")]
-    use crate::extensions::idle::IdleDone;
-    use crate::{
+    use imap_types::extensions::idle::IdleDone;
+    use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
+        secret::Secret,
     };
+
+    use super::*;
 
     #[test]
     fn test_decode_greeting() {

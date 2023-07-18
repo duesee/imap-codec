@@ -1,11 +1,10 @@
 //! IMAP - MOVE Extension
 
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::extensions::r#move::*;
+use imap_types::command::CommandBody;
 use nom::{bytes::streaming::tag_no_case, sequence::tuple};
 
-use crate::{codec::IMAPResult, command::CommandBody, mailbox::mailbox, sequence::sequence_set};
+use crate::{codec::IMAPResult, mailbox::mailbox, sequence::sequence_set};
 
 /// ```abnf
 /// move = "MOVE" SP sequence-set SP mailbox
@@ -27,10 +26,9 @@ pub(crate) fn r#move(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        command::{Command, CommandBody},
-        testing::kat_inverse_command,
-    };
+    use imap_types::command::{Command, CommandBody};
+
+    use crate::testing::kat_inverse_command;
 
     #[test]
     fn test_kat_inverse_command_move() {

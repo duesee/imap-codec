@@ -1,5 +1,3 @@
-//! Please refer to [`imap_types::core`].
-
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
@@ -8,8 +6,16 @@ use abnf_core::streaming::crlf;
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::{is_alpha, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-/// Re-export everything from imap-types.
-pub use imap_types::core::*;
+use imap_types::{
+    core::{
+        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
+        QuotedChar, Tag, Text,
+    },
+    utils::{
+        indicators::{is_astring_char, is_atom_char, is_quoted_specials, is_text_char},
+        unescape_quoted,
+    },
+};
 #[cfg(feature = "ext_literal")]
 use nom::character::streaming::char;
 use nom::{
@@ -20,13 +26,7 @@ use nom::{
     sequence::{delimited, terminated, tuple},
 };
 
-use crate::{
-    codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
-    utils::{
-        indicators::{is_astring_char, is_atom_char, is_quoted_specials, is_text_char},
-        unescape_quoted,
-    },
-};
+use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
 
 // ----- number -----
 

@@ -1,12 +1,13 @@
 use std::fmt::Debug;
 
-use crate::{
+use imap_types::{
     auth::AuthenticateData,
-    codec::{Decode, Encode, IMAPResult},
     command::Command,
     response::{Continue, Greeting, Response},
     utils::escape_byte_string,
 };
+
+use crate::codec::{Decode, Encode, IMAPResult};
 
 pub(crate) fn known_answer_test_encode(
     (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
@@ -72,8 +73,9 @@ impl_kat_inverse! {kat_inverse_authenticate_data, AuthenticateData}
 
 #[cfg(test)]
 mod tests {
+    use imap_types::command::{Command, CommandBody};
+
     use super::*;
-    use crate::command::{Command, CommandBody};
 
     #[test]
     #[should_panic]

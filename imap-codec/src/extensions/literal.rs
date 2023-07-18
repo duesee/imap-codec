@@ -1,7 +1,6 @@
 use std::io::Write;
 
-/// Re-export everything from imap-types.
-pub use imap_types::extensions::literal::*;
+use imap_types::extensions::literal::LiteralCapability;
 
 use crate::codec::{EncodeContext, Encoder};
 
@@ -16,13 +15,14 @@ impl Encoder for LiteralCapability {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
+    use imap_types::{
         command::{Command, CommandBody},
         core::{Literal, NonEmptyVec},
         response::{Capability, Code, Greeting},
-        testing::{kat_inverse_command, kat_inverse_greeting},
     };
+
+    use super::*;
+    use crate::testing::{kat_inverse_command, kat_inverse_greeting};
 
     #[test]
     fn test_kat_inverse_command_login_literal_plus() {

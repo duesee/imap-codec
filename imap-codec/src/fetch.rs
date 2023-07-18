@@ -1,10 +1,10 @@
-//! Please refer to [`imap_types::fetch`].
-
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::fetch::*;
+use imap_types::{
+    core::{AString, NonEmptyVec},
+    fetch::{MessageDataItem, MessageDataItemName, Part, PartSpecifier, Section},
+};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -16,7 +16,7 @@ use nom::{
 use crate::{
     body::body,
     codec::IMAPResult,
-    core::{astring, nstring, number, nz_number, AString, NonEmptyVec},
+    core::{astring, nstring, number, nz_number},
     datetime::date_time,
     envelope::envelope,
     flag::flag_fetch,
@@ -281,14 +281,15 @@ pub(crate) fn header_fld_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
+    use imap_types::{
         body::{BasicFields, Body, BodyStructure, SpecificFields},
         core::{IString, NString},
         datetime::DateTime,
         envelope::Envelope,
-        testing::known_answer_test_encode,
     };
+
+    use super::*;
+    use crate::testing::known_answer_test_encode;
 
     #[test]
     fn test_encode_message_data_item_name() {

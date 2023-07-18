@@ -1,8 +1,8 @@
-//! Please refer to [`imap_types::envelope`].
-
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::envelope::*;
+use imap_types::{
+    core::NString,
+    envelope::{Address, Envelope},
+};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -13,7 +13,7 @@ use nom::{
 
 use crate::{
     codec::IMAPResult,
-    core::{nil, nstring, NString},
+    core::{nil, nstring},
 };
 
 /// ```abnf
@@ -239,8 +239,9 @@ pub(crate) fn addr_host(input: &[u8]) -> IMAPResult<&[u8], NString> {
 
 #[cfg(test)]
 mod tests {
+    use imap_types::core::{IString, NString};
+
     use super::*;
-    use crate::core::{IString, NString};
 
     #[test]
     fn test_parse_address() {

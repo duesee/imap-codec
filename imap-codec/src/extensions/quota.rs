@@ -3,8 +3,12 @@
 use std::io::Write;
 
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-use imap_types::extensions::quota::*;
+use imap_types::{
+    command::CommandBody,
+    core::{AString, NonEmptyVec},
+    extensions::quota::{QuotaGet, QuotaSet, Resource},
+    response::Data,
+};
 use nom::{
     bytes::streaming::{tag, tag_no_case},
     combinator::map,
@@ -14,10 +18,8 @@ use nom::{
 
 use crate::{
     codec::{EncodeContext, Encoder, IMAPResult},
-    command::CommandBody,
-    core::{astring, atom, number64, AString, NonEmptyVec},
+    core::{astring, atom, number64},
     mailbox::mailbox,
-    response::Data,
 };
 
 /// ```abnf
@@ -210,15 +212,17 @@ impl<'a> Encoder for QuotaSet<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
+    use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Tag},
+        extensions::quota::{QuotaGet, QuotaSet, Resource},
         mailbox::Mailbox,
         response::{Capability, Code, Response, Status},
         status::{StatusDataItem, StatusDataItemName},
-        testing::{kat_inverse_command, kat_inverse_response},
     };
+
+    use super::*;
+    use crate::testing::{kat_inverse_command, kat_inverse_response};
 
     #[test]
     fn test_parse_resource_name() {
