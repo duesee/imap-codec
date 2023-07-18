@@ -1,14 +1,12 @@
 use anyhow::{Context, Error};
 use futures::{SinkExt, StreamExt};
-use imap_codec::{
-    imap_types::{
-        command::{Command, CommandBody},
-        core::Tag,
-        response::{Response, Status},
-    },
-    tokio::client::{Event, ImapClientCodec},
+use imap_codec::imap_types::{
+    command::{Command, CommandBody},
+    core::Tag,
+    response::{Response, Status},
 };
 use tokio::{self, net::TcpStream};
+use tokio_support::client::{Event, ImapClientCodec};
 use tokio_util::codec::Decoder;
 
 // Poor human's terminal color support.

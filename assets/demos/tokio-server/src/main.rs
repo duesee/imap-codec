@@ -1,15 +1,13 @@
 use anyhow::{Context, Error};
 use argon2::Argon2;
 use futures::{SinkExt, StreamExt};
-use imap_codec::{
-    imap_types::{
-        command::CommandBody,
-        core::{NonEmptyVec, Text},
-        response::{Capability, Continue, Data, Greeting, Response, Status},
-    },
-    tokio::server::{Action, Event, ImapServerCodec},
+use imap_codec::imap_types::{
+    command::CommandBody,
+    core::{NonEmptyVec, Text},
+    response::{Capability, Continue, Data, Greeting, Response, Status},
 };
 use tokio::{self, net::TcpListener};
+use tokio_support::server::{Action, Event, ImapServerCodec};
 use tokio_util::codec::Decoder;
 
 // Poor human's terminal color support.

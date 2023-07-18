@@ -108,7 +108,6 @@
 //! | quirk_crlf_relaxed    | Make `\r` in `\r\n` optional.  | No                 |
 //! | quirk_rectify_numbers | Rectify (invalid) numbers.     | No                 |
 //! | quirk_missing_text    | Rectify missing `text` element.| No                 |
-//! | tokio                 | Tokio support.                 | No                 |
 //!
 //! ## Quirks
 //!
@@ -119,18 +118,10 @@
 //! imap-codec can't otherwise access their emails, we may add a `quirk_` feature to quickly resolve the problem.
 //! Of course, imap-codec should never violate the IMAP standard itself. So, we need to do this carefully.
 //!
-//! ## Tokio support
-//!
-//! The `tokio` feature unlocks an implementation of [tokio_util::codec].
-//! See the [tokio client] and [tokio server] demos.
-//!
 //! [imap-types]: https://docs.rs/imap-types/latest/imap_types
 //! [imap-types features]: https://docs.rs/imap-types/latest/imap_types/#features
 //! [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
 //! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
-//! [tokio_util::codec]: https://docs.rs/tokio-util/latest/tokio_util/codec/index.html
-//! [tokio client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
-//! [tokio server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
@@ -163,9 +154,6 @@ mod sequence;
 mod status;
 #[cfg(test)]
 mod testing;
-#[cfg(feature = "tokio")]
-#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-pub mod tokio;
 
 pub mod codec;
 
