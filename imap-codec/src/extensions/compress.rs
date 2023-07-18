@@ -8,18 +8,14 @@
 
 use std::io::Write;
 
-/// Re-export everything from imap-types.
-pub use imap_types::extensions::compress::*;
+use imap_types::{command::CommandBody, extensions::compress::CompressionAlgorithm};
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},
     sequence::preceded,
 };
 
-use crate::{
-    codec::{EncodeContext, Encoder, IMAPResult},
-    command::CommandBody,
-};
+use crate::codec::{EncodeContext, Encoder, IMAPResult};
 
 /// `algorithm = "DEFLATE"`
 pub(crate) fn algorithm(input: &[u8]) -> IMAPResult<&[u8], CompressionAlgorithm> {
@@ -43,11 +39,10 @@ impl Encoder for CompressionAlgorithm {
 
 #[cfg(test)]
 mod tests {
+    use imap_types::command::{Command, CommandBody};
+
     use super::*;
-    use crate::{
-        command::{Command, CommandBody},
-        testing::kat_inverse_command,
-    };
+    use crate::testing::kat_inverse_command;
 
     #[test]
     fn test_parse_compress() {

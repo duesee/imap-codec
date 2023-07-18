@@ -1,8 +1,5 @@
-//! Please refer to [`imap_types::status`].
-
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::status::*;
+use imap_types::status::{StatusDataItem, StatusDataItemName};
 use nom::{
     branch::alt,
     bytes::streaming::tag_no_case,

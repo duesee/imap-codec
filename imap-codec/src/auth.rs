@@ -1,17 +1,16 @@
-//! Please refer to [`imap_types::auth`].
-
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
-/// Re-export everything from imap-types.
-pub use imap_types::auth::*;
+use imap_types::{
+    auth::{AuthMechanism, AuthenticateData},
+    secret::Secret,
+};
 use nom::{combinator::map, sequence::terminated};
 
 use crate::{
     codec::IMAPResult,
     core::{atom, base64},
-    secret::Secret,
 };
 
 // ----- Unsorted IMAP parsers -----

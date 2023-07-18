@@ -1,8 +1,11 @@
-//! Please refer to [`imap_types::mailbox`].
-
 use abnf_core::streaming::{dquote, sp};
-/// Re-export everything from imap-types.
-pub use imap_types::mailbox::*;
+use imap_types::{
+    core::QuotedChar,
+    flag::FlagNameAttribute,
+    mailbox::{ListCharString, ListMailbox, Mailbox},
+    response::Data,
+    utils::indicators::is_list_char,
+};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
@@ -15,11 +18,9 @@ use nom::{
 use crate::extensions::quota::{quota_response, quotaroot_response};
 use crate::{
     codec::IMAPResult,
-    core::{astring, nil, number, nz_number, quoted_char, string, QuotedChar},
-    flag::{flag_list, mbx_list_flags, FlagNameAttribute},
-    response::Data,
+    core::{astring, nil, number, nz_number, quoted_char, string},
+    flag::{flag_list, mbx_list_flags},
     status::status_att_list,
-    utils::indicators::is_list_char,
 };
 
 /// `list-mailbox = 1*list-char / string`

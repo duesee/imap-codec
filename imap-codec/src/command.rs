@@ -1,5 +1,3 @@
-//! Please refer to [`imap_types::command`].
-
 #[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
@@ -8,8 +6,14 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::command::*;
+use imap_types::{
+    auth::AuthMechanism,
+    command::{Command, CommandBody},
+    core::AString,
+    fetch::{Macro, MacroOrMessageDataItemNames},
+    flag::{Flag, StoreResponse, StoreType},
+    secret::Secret,
+};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -31,15 +35,14 @@ use crate::extensions::quota::{getquota, getquotaroot, setquota};
 #[cfg(feature = "ext_move")]
 use crate::extensions::r#move::r#move;
 use crate::{
-    auth::{auth_type, AuthMechanism},
+    auth::auth_type,
     codec::IMAPResult,
-    core::{astring, literal, tag_imap, AString},
+    core::{astring, literal, tag_imap},
     datetime::date_time,
-    fetch::{fetch_att, Macro, MacroOrMessageDataItemNames},
-    flag::{flag, flag_list, Flag, StoreResponse, StoreType},
+    fetch::fetch_att,
+    flag::{flag, flag_list},
     mailbox::{list_mailbox, mailbox},
     search::search,
-    secret::Secret,
     sequence::sequence_set,
     status::status_att,
 };
@@ -561,12 +564,13 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 mod tests {
     use std::num::NonZeroU32;
 
+    #[cfg(feature = "ext_sasl_ir")]
+    use imap_types::core::Tag;
+    use imap_types::fetch::{MessageDataItemName, Section};
+
     use super::*;
     #[cfg(feature = "ext_sasl_ir")]
     use crate::codec::Encode;
-    #[cfg(feature = "ext_sasl_ir")]
-    use crate::core::Tag;
-    use crate::fetch::{MessageDataItemName, Section};
 
     #[test]
     fn test_parse_fetch() {

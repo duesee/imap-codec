@@ -2,7 +2,7 @@ use std::io::Write;
 
 use imap_codec::{
     codec::{Decode, DecodeError},
-    command::Command,
+    imap_types::command::Command,
 };
 
 const COLOR_SERVER: &str = "\x1b[34m";

@@ -9,8 +9,11 @@
 use std::io::Write;
 
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::extensions::enable::*;
+use imap_types::{
+    command::CommandBody,
+    extensions::enable::{CapabilityEnable, CapabilityEnableOther, Utf8Kind},
+    response::Data,
+};
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::map,
@@ -20,9 +23,7 @@ use nom::{
 
 use crate::{
     codec::{EncodeContext, Encoder, IMAPResult},
-    command::CommandBody,
     core::atom,
-    response::Data,
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
@@ -88,8 +89,14 @@ impl<'a> Encoder for CapabilityEnableOther<'a> {
 
 #[cfg(test)]
 mod tests {
+    use imap_types::{
+        command::Command,
+        core::Atom,
+        extensions::enable::{CapabilityEnable, Utf8Kind},
+    };
+
     use super::*;
-    use crate::{command::Command, core::Atom, testing::kat_inverse_command};
+    use crate::testing::kat_inverse_command;
 
     #[test]
     fn test_parse_enable() {

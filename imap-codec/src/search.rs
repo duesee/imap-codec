@@ -1,8 +1,5 @@
-//! Please refer to [`imap_types::search`].
-
 use abnf_core::streaming::sp;
-/// Re-export everything from imap-types.
-pub use imap_types::search::*;
+use imap_types::{command::CommandBody, core::NonEmptyVec, search::SearchKey};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -13,8 +10,7 @@ use nom::{
 
 use crate::{
     codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
-    command::CommandBody,
-    core::{astring, atom, charset, number, NonEmptyVec},
+    core::{astring, atom, charset, number},
     datetime::date,
     fetch::header_fld_name,
     sequence::sequence_set,
@@ -227,17 +223,18 @@ fn search_key_limited<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
+    use imap_types::{
         core::{AString, Atom},
         datetime::NaiveDate,
         sequence::{Sequence, SequenceSet},
-        testing::known_answer_test_encode,
     };
+
+    use super::*;
+    use crate::testing::known_answer_test_encode;
 
     #[test]
     fn test_parse_search() {
-        use crate::{
+        use imap_types::{
             search::SearchKey::*,
             sequence::{SeqOrUid::Value, Sequence::*, SequenceSet as SequenceSetData},
         };

@@ -23,10 +23,15 @@ Let's talk on [Matrix]!
 
 ## Usage
 
+```toml
+[dependencies]
+imap-codec = "0.10.0"
+```
+
 ```rust
 use imap_codec::{
     codec::{Decode, Encode},
-    command::Command,
+    imap_types::command::Command,
 };
 
 fn main() {

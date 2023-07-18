@@ -1,5 +1,3 @@
-//! Please refer to [`imap_types::extensions`].
-
 #[cfg(feature = "ext_compress")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
 pub mod compress;

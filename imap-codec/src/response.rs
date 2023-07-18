@@ -1,5 +1,3 @@
-//! Please refer to [`imap_types::response`].
-
 use std::str::from_utf8;
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
@@ -8,8 +6,12 @@ use abnf_core::streaming::crlf;
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-/// Re-export everything from imap-types.
-pub use imap_types::response::*;
+use imap_types::{
+    core::{NonEmptyVec, Text},
+    response::{
+        Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
+    },
+};
 #[cfg(feature = "quirk_missing_text")]
 use nom::combinator::peek;
 use nom::{
@@ -24,7 +26,7 @@ use nom::{
 use crate::extensions::enable::enable_data;
 use crate::{
     codec::IMAPResult,
-    core::{atom, charset, nz_number, tag_imap, text, NonEmptyVec, Text},
+    core::{atom, charset, nz_number, tag_imap, text},
     fetch::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
@@ -410,18 +412,18 @@ pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::*;
-    use crate::{
+    use imap_types::{
         body::{
             BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
             SinglePartExtensionData, SpecificFields,
         },
         core::{IString, NString, QuotedChar, Tag},
         flag::FlagNameAttribute,
-        testing::{
-            kat_inverse_continue, kat_inverse_greeting, kat_inverse_response,
-            known_answer_test_encode,
-        },
+    };
+
+    use super::*;
+    use crate::testing::{
+        kat_inverse_continue, kat_inverse_greeting, kat_inverse_response, known_answer_test_encode,
     };
 
     #[test]

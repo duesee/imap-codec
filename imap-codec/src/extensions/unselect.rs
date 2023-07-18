@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::{
-        command::{Command, CommandBody},
-        testing::kat_inverse_command,
-    };
+    use imap_types::command::{Command, CommandBody};
+
+    use crate::testing::kat_inverse_command;
 
     #[test]
     fn test_kat_inverse_command_unselect() {

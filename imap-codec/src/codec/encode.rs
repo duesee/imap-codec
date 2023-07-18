@@ -4,11 +4,9 @@ use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
 #[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
-use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
-
 #[cfg(feature = "ext_compress")]
-use crate::extensions::compress::CompressionAlgorithm;
-use crate::{
+use imap_types::extensions::compress::CompressionAlgorithm;
+use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     body::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
@@ -33,6 +31,7 @@ use crate::{
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
 };
+use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
 pub trait Encode {
     /// Create an [`Encoded`] for this message.
@@ -51,7 +50,7 @@ pub trait Encode {
 /// ```rust
 /// use imap_codec::{
 ///     codec::{Encode, Fragment},
-///     command::{Command, CommandBody},
+///     imap_types::command::{Command, CommandBody},
 /// };
 ///
 /// let cmd = Command::new("A", CommandBody::login("alice", "pass").unwrap()).unwrap();
@@ -1698,8 +1697,7 @@ mod utils {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::*;
-    use crate::{
+    use imap_types::{
         auth::AuthMechanism,
         command::{Command, CommandBody},
         core::{AString, Literal, NString, NonEmptyVec},
@@ -1707,6 +1705,8 @@ mod tests {
         response::{Data, Response},
         utils::escape_byte_string,
     };
+
+    use super::*;
 
     #[test]
     fn test_api_encoder_usage() {

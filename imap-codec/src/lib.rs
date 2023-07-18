@@ -8,7 +8,7 @@
 //! ```rust
 //! use imap_codec::{
 //!     codec::{Decode, Encode},
-//!     command::Command,
+//!     imap_types::command::Command,
 //! };
 //!
 //! // We assume here that the message is already complete.
@@ -31,9 +31,9 @@
 //!
 //! Parsing is implemented through the [`Decode`](crate::codec::Decode) trait.
 //! The main entry points for parsing are
-//! [`Greeting::decode(...)`](response::Greeting#method.decode) (to parse the first message from a server),
-//! [`Command::decode(...)`](command::Command#method.decode) (to parse commands from a client), and
-//! [`Response::decode(...)`](response::Response#method.decode) (to parse responses or results from a server).
+//! [`Greeting::decode(...)`](imap_types::response::Greeting#method.decode) (to parse the first message from a server),
+//! [`Command::decode(...)`](imap_types::command::Command#method.decode) (to parse commands from a client), and
+//! [`Response::decode(...)`](imap_types::response::Response#method.decode) (to parse responses or results from a server).
 //! Note, however, that certain message flows require other parsers as well.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
@@ -55,10 +55,10 @@
 //!
 //! ```rust
 //! #[cfg(feature = "ext_literal")]
-//! use imap_codec::core::LiteralMode;
+//! use imap_codec::imap_types::core::LiteralMode;
 //! use imap_codec::{
 //!     codec::{Decode, Encode, Fragment},
-//!     command::{Command, CommandBody},
+//!     imap_types::command::{Command, CommandBody},
 //! };
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
@@ -136,13 +136,12 @@
 #![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub mod auth;
-pub mod body;
-pub mod codec;
-pub mod command;
-pub mod core;
-pub mod datetime;
-pub mod envelope;
+mod auth;
+mod body;
+mod command;
+mod core;
+mod datetime;
+mod envelope;
 #[cfg(any(
     feature = "ext_compress",
     feature = "ext_condstore_qresync",
@@ -154,17 +153,21 @@ pub mod envelope;
     feature = "ext_unselect",
 ))]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
-pub mod extensions;
-pub mod fetch;
-pub mod flag;
-pub mod mailbox;
-pub mod response;
-pub mod search;
-pub mod sequence;
-pub mod status;
+mod extensions;
+mod fetch;
+mod flag;
+mod mailbox;
+mod response;
+mod search;
+mod sequence;
+mod status;
 #[cfg(test)]
 mod testing;
 #[cfg(feature = "tokio")]
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 pub mod tokio;
-pub use imap_types::{secret, state, utils};
+
+pub mod codec;
+
+// Re-export.
+pub use imap_types;

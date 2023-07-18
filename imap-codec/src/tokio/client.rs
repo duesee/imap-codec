@@ -2,16 +2,16 @@ use std::io::{Error as IoError, Write};
 
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
-use thiserror::Error;
-use tokio_util::codec::{Decoder, Encoder};
-
-use super::{find_crlf_inclusive, FramingError, FramingState};
-use crate::{
-    codec::{Decode, DecodeError, Encode},
+use imap_types::{
     command::Command,
     response::{Greeting, Response},
     state::State as ImapState,
 };
+use thiserror::Error;
+use tokio_util::codec::{Decoder, Encoder};
+
+use super::{find_crlf_inclusive, FramingError, FramingState};
+use crate::codec::{Decode, DecodeError, Encode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImapClientCodec {
@@ -202,14 +202,14 @@ mod tests {
     use std::num::NonZeroU32;
 
     use bytes::BytesMut;
-    use tokio_util::codec::Decoder;
-
-    use super::*;
-    use crate::{
+    use imap_types::{
         core::{Literal, NString},
         fetch::{MessageDataItem, Section},
         response::{Data, GreetingKind},
     };
+    use tokio_util::codec::Decoder;
+
+    use super::*;
 
     #[test]
     fn test_decoder_line() {
