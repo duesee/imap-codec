@@ -50,20 +50,15 @@ quirk_rectify_numbers = []
 # * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
 quirk_missing_text = []
 
-# Tokio support
-tokio = ["dep:bytes", "dep:tokio-util", "bounded-static"]
-
 [dependencies]
 abnf-core = "0.6.0"
 base64 = "0.21"
-bytes = { version = "1", optional = true }
 bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-imap-types = { version = "0.10.0", default-features = false, features = ["unvalidated"] }
+imap-types = { path = "../imap-types", default-features = false, features = ["unvalidated"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.29"
-tokio-util = { version = "0.7.1", default-features = false, features = ["codec"], optional = true }
 log = "0.4"
 
 [dev-dependencies]

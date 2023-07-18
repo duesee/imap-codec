@@ -188,3 +188,7 @@ pub mod sequence;
 pub mod state;
 pub mod status;
 pub mod utils;
+
+#[cfg(feature = "bounded-static")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
+pub use bounded_static;

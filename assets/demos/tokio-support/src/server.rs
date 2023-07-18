@@ -2,15 +2,17 @@ use std::io::{Error as IoError, Write};
 
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
-use imap_types::{
-    command::Command,
-    response::{Greeting, Response},
+use imap_codec::{
+    codec::{Decode, DecodeError, Encode},
+    imap_types::{
+        command::Command,
+        response::{Greeting, Response},
+    },
 };
 use thiserror::Error;
 use tokio_util::codec::{Decoder, Encoder};
 
 use super::{find_crlf_inclusive, FramingError, FramingState};
-use crate::codec::{Decode, DecodeError, Encode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImapServerCodec {
@@ -193,13 +195,13 @@ impl Encoder<&Response<'_>> for ImapServerCodec {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    #[cfg(feature = "quirk_crlf_relaxed")]
-    use imap_types::core::Tag;
-    use imap_types::{
+    use imap_codec::imap_types::{
         command::{Command, CommandBody},
         core::{AString, AtomExt, IString, Literal},
         secret::Secret,
     };
+    #[cfg(feature = "quirk_crlf_relaxed")]
+    use imap_types::core::Tag;
     use tokio_util::codec::Decoder;
 
     use super::*;

@@ -9,6 +9,8 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 anyhow = "1.0.71"
 futures = "0.3"
-imap-codec = { path = "../../../imap-codec", features = ["tokio", "ext_sasl_ir", "ext_literal", "ext_idle", "ext_enable"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["codec"] }
+
+imap-codec = { path = "../../../imap-codec", features = ["ext_sasl_ir", "ext_literal", "ext_idle", "ext_enable"] }
+tokio-support = { path = "../tokio-support" }

@@ -6,10 +6,11 @@ use abnf_core::streaming::crlf;
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::{is_alpha, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+#[cfg(feature = "ext_literal")]
+use imap_types::core::LiteralMode;
 use imap_types::{
     core::{
-        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
-        QuotedChar, Tag, Text,
+        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
     },
     utils::{
         indicators::{is_astring_char, is_atom_char, is_quoted_specials, is_text_char},

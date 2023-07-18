@@ -36,4 +36,6 @@ jobs:
           cargo semver-checks check-release
 
       - name: Check for SemVer violations | imap-codec
-        run: cargo semver-checks check-release
+        run: |
+          cd imap-codec
+          cargo semver-checks check-release
