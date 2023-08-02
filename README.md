@@ -198,21 +198,20 @@ the split into `imap-codec` and `imap-types`,
 misuse resistance (affecting API design),
 and (real-world) test coverage.
 
-No matter if implementing a client- or a server, you need the full spectrum of IMAP type definitions.
+No matter if implementing a client- or a server, you need the full set of IMAP type definitions.
 When you send a command with a specific [`Tag`], you expect a command completion response with the same [`Tag`].
 Thus, commands and responses must work well together (and are best provided by a single crate).
 As far as I know, `imap-proto` doesn't provide types that would be reusable in a generic server implementation.
-`imap-types` provides this complete set of IMAP type definitions for client and server implementations.
+`imap-types` provides type definitions for client- and server implementations.
 
-Parsing and serialization are different:
 As a client developer, you will never parse commands or serialize responses.
 As a server developer, you will never serialize commands or parse responses.
-Thus, you only need "half of" the spectrum of parsers and serializers.
-This functionality can be provided by separate crates (as long as both use the same types).
-`imap-proto` provides the "client half".
+Thus, you only need "half of" the set of parsers and serializers.
+As far as I know, `imap-proto` provides the "client half" only.
 `imap-codec` provides both the "client half" and the "server half".
 
-Note that the maintenance cost of two crates, `imap-types` and `imap-codec`, could be higher than for `imap-proto`.
+Separating types and codecs increases cohesion and (hopefully) paves the way for IMAP crates that operate at higher levels.
+However, the maintenance cost of two crates, `imap-types` and `imap-codec`, could be higher than for `imap-proto`.
 
 Generally, `imap-codec` has a more extensive API surface than `imap-proto` and could be [more challenging to use](construction).
 In return, it guarantees that you always construct valid messages and aims to make IMAP usable even for people with less IMAP experience.
@@ -272,6 +271,7 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 [`Command`]: https://docs.rs/imap-types/latest/imap_types/command/struct.Command.html
 [`Response`]: https://docs.rs/imap-types/latest/imap_types/response/enum.Response.html
 [`Tag`]: https://docs.rs/imap-types/latest/imap_types/core/struct.Tag.html
+[`BodyStructure`]: https://docs.rs/imap-types/latest/imap_types/body/enum.BodyStructure.html
 [construction]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
 [build-in support for IMAP literals]: https://docs.rs/imap-codec/latest/imap_codec/codec/struct.Encoded.html
 [IMAP servers with imap-codec]: https://github.com/Email-Analysis-Toolkit/fake-mail-server
