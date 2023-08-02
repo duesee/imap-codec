@@ -31,13 +31,6 @@ impl<'a> CommandBody<'a> {
     }
 }
 
-impl<'a> Data<'a> {
-    // TODO
-    // pub fn enable() -> Self {
-    //     unimplemented!()
-    // }
-}
-
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
