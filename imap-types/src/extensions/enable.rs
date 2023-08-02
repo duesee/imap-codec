@@ -68,6 +68,9 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
     }
 }
 
+/// An (unknown) capability.
+///
+/// It's guaranteed that this type can't represent any capability from [`CapabilityEnable`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

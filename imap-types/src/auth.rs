@@ -103,6 +103,9 @@ impl<'a> Display for AuthMechanism<'a> {
     }
 }
 
+/// An (unknown) authentication mechanism.
+///
+/// It's guaranteed that this type can't represent any mechanism from [`AuthMechanism`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -162,10 +165,13 @@ impl<'a> AsRef<str> for AuthMechanismOther<'a> {
     }
 }
 
+/// Error during creation of an unknown authentication mechanism.
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
 pub enum AuthMechanismOtherError {
+    /// Value is not a valid atom.
     #[error(transparent)]
     Atom(#[from] AtomError),
+    /// Value would collide with [`AuthMechanism`].
     #[error("Reserved: Please use one of the typed variants")]
     Reserved,
 }
