@@ -882,6 +882,9 @@ impl<'a> Code<'a> {
     }
 }
 
+/// An (unknown) code.
+///
+/// It's guaranteed that this type can't represent any code from [`Code`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1107,6 +1110,9 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
     }
 }
 
+/// An (unknown) capability.
+///
+/// It's guaranteed that this type can't represent any capability from [`Capability`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
