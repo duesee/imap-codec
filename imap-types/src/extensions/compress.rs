@@ -10,6 +10,8 @@
 //! * the [`Command`](crate::command::Command) enum with a new variant [`Command::Compress`](crate::command::Command#variant.Compress), and
 //! * the [`Code`](crate::response::Code) enum with a new variant [`Code::CompressionActive`](crate::response::Code#variant.CompressionActive).
 
+use std::fmt::{Display, Formatter};
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -30,8 +32,17 @@ impl<'a> CommandBody<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CompressionAlgorithm {
     Deflate,
+}
+
+impl Display for CompressionAlgorithm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Deflate => "DEFLATE",
+        })
+    }
 }
 
 impl<'a> TryFrom<&'a str> for CompressionAlgorithm {
@@ -76,8 +87,9 @@ impl AsRef<str> for CompressionAlgorithm {
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+#[non_exhaustive]
 pub enum CompressionAlgorithmError {
-    #[error("Invalid compression algorithm. Allowed value: `DEFLATE`.")]
+    #[error("Invalid compression algorithm.")]
     Invalid,
 }
 

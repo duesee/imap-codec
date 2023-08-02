@@ -36,7 +36,7 @@
 
 use std::{
     borrow::Cow,
-    fmt::{Debug, Formatter},
+    fmt::{Debug, Display, Formatter},
     str::from_utf8,
     vec::IntoIter,
 };
@@ -204,6 +204,12 @@ impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
 impl<'a> AsRef<str> for Atom<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+impl<'a> Display for Atom<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

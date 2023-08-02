@@ -9,9 +9,6 @@ pub mod enable;
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 pub mod idle;
-#[cfg(feature = "ext_literal")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
-pub mod literal;
 #[cfg(feature = "ext_move")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
 pub mod r#move;

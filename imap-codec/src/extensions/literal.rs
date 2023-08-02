@@ -1,18 +1,3 @@
-use std::io::Write;
-
-use imap_types::extensions::literal::LiteralCapability;
-
-use crate::codec::{EncodeContext, Encoder};
-
-impl Encoder for LiteralCapability {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Self::Plus => ctx.write_all(b"LITERAL+"),
-            Self::Minus => ctx.write_all(b"LITERAL-"),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use imap_types::{
@@ -21,7 +6,6 @@ mod tests {
         response::{Capability, Code, Greeting},
     };
 
-    use super::*;
     use crate::testing::{kat_inverse_command, kat_inverse_greeting};
 
     #[test]
@@ -89,9 +73,7 @@ mod tests {
                 b"* OK [CAPABILITY LITERAL+] ...\r\n".as_ref(),
                 b"".as_ref(),
                 Greeting::ok(
-                    Some(Code::Capability(NonEmptyVec::from(Capability::Literal(
-                        LiteralCapability::Plus,
-                    )))),
+                    Some(Code::Capability(NonEmptyVec::from(Capability::LiteralPlus))),
                     "...",
                 )
                 .unwrap(),
@@ -100,9 +82,9 @@ mod tests {
                 b"* OK [CAPABILITY LITERAL-] ...\r\n?",
                 b"?",
                 Greeting::ok(
-                    Some(Code::Capability(NonEmptyVec::from(Capability::Literal(
-                        LiteralCapability::Minus,
-                    )))),
+                    Some(Code::Capability(NonEmptyVec::from(
+                        Capability::LiteralMinus,
+                    ))),
                     "...",
                 )
                 .unwrap(),

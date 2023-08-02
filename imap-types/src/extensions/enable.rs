@@ -6,6 +6,8 @@
 //! * the [CommandBody](crate::command::CommandBody) enum with a new variant [CommandBody::Enable](crate::command::CommandBody#variant.Enable), and
 //! * the [Data](crate::response::Data) enum with a new variant [Data::Enabled](crate::response::Data#variant.Enabled).
 
+use std::fmt::{Display, Formatter};
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
@@ -17,7 +19,6 @@ use thiserror::Error;
 use crate::{
     command::CommandBody,
     core::{Atom, NonEmptyVec},
-    response::Data,
 };
 
 impl<'a> CommandBody<'a> {
@@ -35,12 +36,24 @@ impl<'a> CommandBody<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CapabilityEnable<'a> {
     Utf8(Utf8Kind),
     #[cfg(feature = "ext_condstore_qresync")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     CondStore,
     Other(CapabilityEnableOther<'a>),
+}
+
+impl<'a> Display for CapabilityEnable<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Utf8(kind) => write!(f, "UTF8={}", kind),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::CondStore => write!(f, "CONDSTORE"),
+            Self::Other(other) => write!(f, "{}", other),
+        }
+    }
 }
 
 impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
@@ -66,6 +79,12 @@ impl<'a> CapabilityEnableOther<'a> {
     }
 }
 
+impl<'a> Display for CapabilityEnableOther<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
     type Error = CapabilityEnableOtherError;
 
@@ -80,6 +99,7 @@ impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
 }
 
 #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+#[non_exhaustive]
 pub enum CapabilityEnableOtherError {
     #[error("Reserved: Please use one of the typed variants")]
     Reserved,
@@ -89,9 +109,19 @@ pub enum CapabilityEnableOtherError {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Utf8Kind {
     Accept,
     Only,
+}
+
+impl Display for Utf8Kind {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Accept => "ACCEPT",
+            Self::Only => "ONLY",
+        })
+    }
 }
 
 #[cfg(test)]

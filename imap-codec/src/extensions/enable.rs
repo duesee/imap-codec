@@ -11,7 +11,7 @@ use std::io::Write;
 use abnf_core::streaming::sp;
 use imap_types::{
     command::CommandBody,
-    extensions::enable::{CapabilityEnable, CapabilityEnableOther, Utf8Kind},
+    extensions::enable::{CapabilityEnable, CapabilityEnableOther},
     response::Data,
 };
 use nom::{
@@ -71,13 +71,7 @@ pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 
 impl<'a> Encoder for CapabilityEnable<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Self::Utf8(Utf8Kind::Accept) => ctx.write_all(b"UTF8=ACCEPT"),
-            Self::Utf8(Utf8Kind::Only) => ctx.write_all(b"UTF8=ONLY"),
-            #[cfg(feature = "ext_condstore_qresync")]
-            Self::CondStore => ctx.write_all(b"CONDSTORE"),
-            Self::Other(other) => other.encode_ctx(ctx),
-        }
+        write!(ctx, "{}", self)
     }
 }
 

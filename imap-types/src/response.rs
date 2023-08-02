@@ -2,6 +2,7 @@
 
 use std::{
     borrow::Cow,
+    fmt::{Display, Formatter},
     num::{NonZeroU32, TryFromIntError},
 };
 
@@ -18,8 +19,6 @@ use thiserror::Error;
 use crate::extensions::compress::CompressionAlgorithm;
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::CapabilityEnable;
-#[cfg(feature = "ext_literal")]
-use crate::extensions::literal::LiteralCapability;
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text, TextError},
@@ -913,7 +912,7 @@ impl<'a> CodeOther<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// TODO: Mark this enum as non-exhaustive?
+#[non_exhaustive]
 pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
@@ -962,13 +961,54 @@ pub enum Capability<'a> {
     /// See RFC 7888.
     #[cfg(feature = "ext_literal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
-    Literal(LiteralCapability),
+    LiteralPlus,
+    #[cfg(feature = "ext_literal")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
+    LiteralMinus,
     /// See RFC 6851.
     #[cfg(feature = "ext_move")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
+}
+
+impl<'a> Display for Capability<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Imap4Rev1 => write!(f, "IMAP4REV1"),
+            Self::Auth(mechanism) => write!(f, "AUTH={}", mechanism),
+            #[cfg(feature = "starttls")]
+            Self::LoginDisabled => write!(f, "LOGINDISABLED"),
+            #[cfg(feature = "starttls")]
+            Self::StartTls => write!(f, "STARTTLS"),
+            #[cfg(feature = "ext_mailbox_referrals")]
+            Self::MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
+            #[cfg(feature = "ext_login_referrals")]
+            Self::LoginReferrals => write!(f, "LOGIN-REFERRALS"),
+            #[cfg(feature = "ext_sasl_ir")]
+            Self::SaslIr => write!(f, "SASL-IR"),
+            #[cfg(feature = "ext_idle")]
+            Self::Idle => write!(f, "IDLE"),
+            #[cfg(feature = "ext_enable")]
+            Self::Enable => write!(f, "ENABLE"),
+            #[cfg(feature = "ext_compress")]
+            Self::Compress { algorithm } => write!(f, "COMPRESS={}", algorithm),
+            #[cfg(feature = "ext_quota")]
+            Self::Quota => write!(f, "QUOTA"),
+            #[cfg(feature = "ext_quota")]
+            Self::QuotaRes(resource) => write!(f, "QUOTA=RES-{}", resource),
+            #[cfg(feature = "ext_quota")]
+            Self::QuotaSet => write!(f, "QUOTASET"),
+            #[cfg(feature = "ext_literal")]
+            Self::LiteralPlus => write!(f, "LITERAL+"),
+            #[cfg(feature = "ext_literal")]
+            Self::LiteralMinus => write!(f, "LITERAL-"),
+            #[cfg(feature = "ext_move")]
+            Self::Move => write!(f, "MOVE"),
+            Self::Other(other) => write!(f, "{}", other),
+        }
+    }
 }
 
 impl_try_from!(Atom<'a>, 'a, &'a [u8], Capability<'a>);
@@ -1024,9 +1064,9 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             #[cfg(feature = "ext_quota")]
             "quotaset" => Self::QuotaSet,
             #[cfg(feature = "ext_literal")]
-            "literal+" => Self::Literal(LiteralCapability::Plus),
+            "literal+" => Self::LiteralPlus,
             #[cfg(feature = "ext_literal")]
-            "literal-" => Self::Literal(LiteralCapability::Minus),
+            "literal-" => Self::LiteralMinus,
             #[cfg(feature = "ext_move")]
             "move" => Self::Move,
             _ => {
@@ -1071,6 +1111,12 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
+
+impl<'a> Display for CapabilityOther<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl<'a> CapabilityOther<'a> {
     /// Constructs an unsupported capability without validation.

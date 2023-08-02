@@ -8,7 +8,7 @@ use crate::extensions::enable::CapabilityEnableOther;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::Resource;
 use crate::{
-    auth::AuthMechanism,
+    auth::AuthMechanismOther,
     body::{
         BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
         SinglePartExtensionData, SpecificFields,
@@ -70,7 +70,7 @@ implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 implement_tryfrom! { CapabilityEnableOther<'a>, Atom<'a> }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { Resource<'a>, Atom<'a> }
-implement_tryfrom! { AuthMechanism<'a>, Atom<'a> }
+implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for ContinueBasic<'a> {

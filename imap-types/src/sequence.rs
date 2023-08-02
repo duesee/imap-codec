@@ -457,6 +457,7 @@ impl SeqOrUid {
 // -------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Strategy {
     Naive { largest: NonZeroU32 },
 }
