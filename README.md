@@ -5,10 +5,10 @@
 
 # imap-{codec,types}
 
-This workspace contains [imap-codec] and [imap-types], two [rock-solid] and [well-documented] crates to build [IMAP4rev1] clients and servers.
-imap-codec provides parsing and serialization, and is based on imap-types.
-imap-types provides misuse-resistant types, constructors, and general support for IMAP implementations.
-The crates live here together, but imap-types is a perfectly fine standalone crate.
+This workspace contains [`imap-codec`] and [`imap-types`], two [rock-solid] and [well-documented] crates to build [IMAP4rev1] clients and servers.
+`imap-codec` provides parsing and serialization, and is based on `imap-types`.
+`imap-types` provides misuse-resistant types, constructors, and general support for IMAP implementations.
+The crates live here together, but `imap-types` is a perfectly fine standalone crate.
 
 Let's talk on [Matrix]!
 
@@ -70,7 +70,7 @@ $ netcat -C <host> <port>
 
 There is also a [demo client] available.
 
-**Note:** All demos are a work-in-progress. Feel free to propose API changes to imap-codec (or imap-types) to simplify them.
+**Note:** All demos are a work-in-progress. Feel free to propose API changes to `imap-codec` (or `imap-types`) to simplify them.
 
 ### Parsed and serialized IMAP4rev1 connection
 
@@ -186,6 +186,56 @@ Status(Ok { tag: Some(Tag("a006")), code: None, text: Text("LOGOUT completed") }
 // a006 OK LOGOUT completed
 ```
 
+# FAQ
+
+<details>
+<summary>How does <code>imap-codec</code> compare to <code>imap-proto</code>?</summary>
+
+`imap-codec` provides low-level parsing and serialization support for IMAP4rev1, similar to [`imap-proto`].
+The most significant differences are
+server support,
+the split into `imap-codec` and `imap-types`,
+misuse resistance (affecting API design),
+and (real-world) test coverage.
+
+No matter if implementing a client- or a server, you need the full spectrum of IMAP type definitions.
+When you send a command with a specific [`Tag`], you expect a command completion response with the same [`Tag`].
+Thus, commands and responses must work well together (and are best provided by a single crate).
+As far as I know, `imap-proto` doesn't provide types that would be reusable in a generic server implementation.
+`imap-types` provides this complete set of IMAP type definitions for client and server implementations.
+
+Parsing and serialization are different:
+As a client developer, you will never parse commands or serialize responses.
+As a server developer, you will never serialize commands or parse responses.
+Thus, you only need "half of" the spectrum of parsers and serializers.
+This functionality can be provided by separate crates (as long as both use the same types).
+`imap-proto` provides the "client half".
+`imap-codec` provides both the "client half" and the "server half".
+
+Note that the maintenance cost of two crates, `imap-types` and `imap-codec`, could be higher than for `imap-proto`.
+
+Generally, `imap-codec` has a more extensive API surface than `imap-proto` and could be [more challenging to use](construction).
+In return, it guarantees that you always construct valid messages and aims to make IMAP usable even for people with less IMAP experience.
+For example, `imap-codec` has [build-in support for IMAP literals] and ensures to always use [a correct representation for strings](construction).
+
+`imap-codec` has a high test coverage and is fuzz-tested to ensure properties such as invertibility, misuse-resistance, etc.
+You should be unable to crash the library or generate messages that can't be parsed.
+However, "interoperability can not be tested in a vacuum" [^1].
+`imap-proto` already succeeded in production as it is (transitively) used in [`imap`], [`async-imap`], and [Delta Chat].
+It could solve more real-world quirks, provide more IMAP extensions that matter in practice, or generally have a more mature interoperability story.
+</details>
+
+<details>
+<summary>Have you considered contributing to <code>imap-proto</code>?</summary>
+
+I created `imap-codec` because I needed [server-side support](https://github.com/Email-Analysis-Toolkit/fake-mail-server).
+The intention was to eventually merge `imap-codec` into `imap-proto` as soon as it's "ready".
+I even did a bit of [preparation work](https://github.com/djc/tokio-imap/graphs/contributors).
+However, the different types (and philosophy, maybe), made merging non-trivial.
+Both projects can learn from each other and align on their goals.
+Still, joining forces would require a fair amount of work from everyone, and I wonder if we are willing (and have the resources) to start such an endeavor.
+</details>
+
 # License
 
 This crate is dual-licensed under Apache 2.0 and MIT terms.
@@ -202,8 +252,6 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 
 [rock-solid]: https://github.com/duesee/imap-codec/tree/main/imap-codec/fuzz
 [well-documented]: https://docs.rs/imap-codec/latest/imap_codec/
-[imap-codec]: imap-codec
-[imap-types]: imap-types
 [Matrix]: https://matrix.to/#/#imap-codec:matrix.org
 [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
 [formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
@@ -212,3 +260,19 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 [demo client]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-client
 [demo server]: https://github.com/duesee/imap-codec/tree/main/assets/demos/tokio-server
 [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
+
+[`imap-codec`]: imap-codec
+[`imap-types`]: imap-types
+[`imap`]: https://github.com/jonhoo/rust-imap
+[`imap-proto`]: https://crates.io/crates/imap-proto
+[`async-imap`]: https://github.com/async-email/async-imap
+[Delta Chat]: https://delta.chat
+
+[core types]: https://docs.rs/imap-types/latest/imap_types/core/index.html
+[`Command`]: https://docs.rs/imap-types/latest/imap_types/command/struct.Command.html
+[`Response`]: https://docs.rs/imap-types/latest/imap_types/response/enum.Response.html
+[`Tag`]: https://docs.rs/imap-types/latest/imap_types/core/struct.Tag.html
+[construction]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
+[build-in support for IMAP literals]: https://docs.rs/imap-codec/latest/imap_codec/codec/struct.Encoded.html
+[IMAP servers with imap-codec]: https://github.com/Email-Analysis-Toolkit/fake-mail-server
+[^1]: https://datatracker.ietf.org/doc/html/rfc2683
