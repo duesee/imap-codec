@@ -640,7 +640,7 @@ mod tests {
         let command = Command::new(
             Tag::try_from("A").unwrap(),
             CommandBody::Authenticate {
-                mechanism: AuthMechanism::PLAIN,
+                mechanism: AuthMechanism::Plain,
                 initial_response: Some(Secret::new(Cow::Borrowed(&b""[..]))),
             },
         )

@@ -1759,12 +1759,12 @@ mod tests {
             CommandBody::Logout,
             #[cfg(feature = "starttls")]
             CommandBody::StartTLS,
-            CommandBody::authenticate(AuthMechanism::PLAIN),
-            CommandBody::authenticate(AuthMechanism::LOGIN),
+            CommandBody::authenticate(AuthMechanism::Plain),
+            CommandBody::authenticate(AuthMechanism::Login),
             #[cfg(feature = "ext_sasl_ir")]
-            CommandBody::authenticate_with_ir(AuthMechanism::PLAIN, b"XXXXXXXX".as_ref()),
+            CommandBody::authenticate_with_ir(AuthMechanism::Plain, b"XXXXXXXX".as_ref()),
             #[cfg(feature = "ext_sasl_ir")]
-            CommandBody::authenticate_with_ir(AuthMechanism::LOGIN, b"YYYYYYYY".as_ref()),
+            CommandBody::authenticate_with_ir(AuthMechanism::Login, b"YYYYYYYY".as_ref()),
             CommandBody::login("alice", "I_am_an_atom").unwrap(),
             CommandBody::login("alice", "I am \\ \"quoted\"").unwrap(),
             CommandBody::login("alice", "I am a literal²").unwrap(),
@@ -1928,7 +1928,7 @@ mod tests {
             (CommandBody::StartTLS, "STARTTLS"),
             (
                 CommandBody::Authenticate {
-                    mechanism: AuthMechanism::PLAIN,
+                    mechanism: AuthMechanism::Plain,
                     #[cfg(feature = "ext_sasl_ir")]
                     initial_response: None,
                 },

@@ -1,6 +1,9 @@
 //! Fetch-related types.
 
-use std::num::NonZeroU32;
+use std::{
+    fmt::{Display, Formatter},
+    num::NonZeroU32,
+};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -22,6 +25,7 @@ use crate::{
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Macro {
     /// Shorthand for `(FLAGS INTERNALDATE RFC822.SIZE)`.
     Fast,
@@ -40,6 +44,16 @@ impl Macro {
             Self::Fast => vec![Flags, InternalDate, Rfc822Size],
             Self::Full => vec![Flags, InternalDate, Rfc822Size, Envelope, Body],
         }
+    }
+}
+
+impl Display for Macro {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Macro::All => "ALL",
+            Macro::Fast => "FAST",
+            Macro::Full => "FULL",
+        })
     }
 }
 
