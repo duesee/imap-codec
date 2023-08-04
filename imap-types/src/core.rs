@@ -95,8 +95,15 @@ pub(crate) use impl_try_from;
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
+
+// We want a slightly more dense `Debug` implementation.
+impl<'a> Debug for Atom<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Atom({:?})", self.0)
+    }
+}
 
 impl<'a> Atom<'a> {
     /// Validates if value conforms to atom's ABNF definition.
@@ -247,8 +254,15 @@ pub enum AtomError {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
+
+// We want a slightly more dense `Debug` implementation.
+impl<'a> Debug for AtomExt<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "AtomExt({:?})", self.0)
+    }
+}
 
 impl<'a> AtomExt<'a> {
     /// Validates if value conforms to extended atom's ABNF definition.
@@ -497,7 +511,7 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
     pub(crate) data: Cow<'a, [u8]>,
     /// Specifies whether this is a synchronizing or non-synchronizing literal.
@@ -510,6 +524,36 @@ pub struct Literal<'a> {
     #[cfg(feature = "ext_literal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     pub(crate) mode: LiteralMode,
+}
+
+// We want a more readable `Debug` implementation.
+impl<'a> Debug for Literal<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        struct BStr<'a>(&'a Cow<'a, [u8]>);
+
+        impl<'a> Debug for BStr<'a> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                write!(
+                    f,
+                    "b\"{}\"",
+                    crate::utils::escape_byte_string(self.0.as_ref())
+                )
+            }
+        }
+
+        #[cfg(not(feature = "ext_literal"))]
+        return f
+            .debug_struct("Literal")
+            .field("data", &BStr(&self.data))
+            .finish();
+
+        #[cfg(feature = "ext_literal")]
+        return f
+            .debug_struct("Literal")
+            .field("data", &BStr(&self.data))
+            .field("mode", &self.mode)
+            .finish();
+    }
 }
 
 impl<'a> Literal<'a> {
@@ -712,8 +756,14 @@ pub enum LiteralError {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
+
+impl<'a> Debug for Quoted<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Quoted({:?})", self.0)
+    }
+}
 
 impl<'a> Quoted<'a> {
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), QuotedError> {
@@ -1001,8 +1051,15 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
+
+// We want a slightly more dense `Debug` implementation.
+impl<'a> Debug for Tag<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Tag({:?})", self.0)
+    }
+}
 
 impl<'a> Tag<'a> {
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TagError> {
@@ -1130,8 +1187,15 @@ pub enum TagError {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
+
+// We want a slightly more dense `Debug` implementation.
+impl<'a> Debug for Text<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Text({:?})", self.0)
+    }
+}
 
 impl<'a> Text<'a> {
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TextError> {
