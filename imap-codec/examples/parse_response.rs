@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use imap_codec::{codec::Decode, imap_types::response::Response};
+use imap_codec::codec::{Decoder, ResponseCodec};
 
 fn main() -> std::io::Result<()> {
     loop {
@@ -17,7 +17,7 @@ fn main() -> std::io::Result<()> {
             break;
         }
 
-        match Response::decode(line.as_bytes()) {
+        match ResponseCodec::decode(line.as_bytes()) {
             Ok((remaining, response)) => {
                 println!("{:#?}", response);
 

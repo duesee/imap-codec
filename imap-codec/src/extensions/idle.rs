@@ -63,7 +63,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        codec::{Decode, DecodeError},
+        codec::{DecodeError, Decoder, IdleDoneCodec},
         testing::kat_inverse_command,
     };
 
@@ -103,7 +103,7 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = IdleDone::decode(test);
+            let got = IdleDoneCodec::decode(test);
 
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
 

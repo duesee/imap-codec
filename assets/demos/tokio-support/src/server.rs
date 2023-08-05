@@ -3,14 +3,14 @@ use std::io::{Error as IoError, Write};
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
-    codec::{Decode, DecodeError, Encode},
+    codec::{CommandCodec, DecodeError, Decoder, Encode},
     imap_types::{
         command::Command,
         response::{Greeting, Response},
     },
 };
 use thiserror::Error;
-use tokio_util::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder as TokioDecoder, Encoder as TokioEncoder};
 
 use super::{find_crlf_inclusive, FramingError, FramingState};
 
@@ -63,7 +63,7 @@ pub enum Action {
     SendLiteralReject(u32),
 }
 
-impl Decoder for ImapServerCodec {
+impl TokioDecoder for ImapServerCodec {
     type Item = Event;
     type Error = ImapServerCodecError;
 
@@ -81,7 +81,7 @@ impl Decoder for ImapServerCodec {
                             let line = &src[..*to_consume_acc];
 
                             // TODO: Choose the required parser.
-                            match Command::decode(line) {
+                            match CommandCodec::decode(line) {
                                 // We got a complete message.
                                 Ok((rem, cmd)) => {
                                     assert!(rem.is_empty());
@@ -166,7 +166,7 @@ impl Decoder for ImapServerCodec {
     }
 }
 
-impl Encoder<&Greeting<'_>> for ImapServerCodec {
+impl TokioEncoder<&Greeting<'_>> for ImapServerCodec {
     type Error = IoError;
 
     fn encode(&mut self, item: &Greeting, dst: &mut BytesMut) -> Result<(), Self::Error> {
@@ -179,7 +179,7 @@ impl Encoder<&Greeting<'_>> for ImapServerCodec {
     }
 }
 
-impl Encoder<&Response<'_>> for ImapServerCodec {
+impl TokioEncoder<&Response<'_>> for ImapServerCodec {
     type Error = IoError;
 
     fn encode(&mut self, item: &Response, dst: &mut BytesMut) -> Result<(), Self::Error> {

@@ -3,7 +3,7 @@ use std::io::{Error as IoError, Write};
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
-    codec::{Decode, DecodeError, Encode},
+    codec::{DecodeError, Decoder, Encode, GreetingCodec, ResponseCodec},
     imap_types::{
         command::Command,
         response::{Greeting, Response},
@@ -11,7 +11,7 @@ use imap_codec::{
     },
 };
 use thiserror::Error;
-use tokio_util::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder as TokioDecoder, Encoder as TokioEncoder};
 
 use super::{find_crlf_inclusive, FramingError, FramingState};
 
@@ -59,7 +59,7 @@ pub enum Event {
     Response(Response<'static>),
 }
 
-impl Decoder for ImapClientCodec {
+impl TokioDecoder for ImapClientCodec {
     type Item = Event;
     type Error = ImapClientCodecError;
 
@@ -80,12 +80,12 @@ impl Decoder for ImapClientCodec {
                                 // TODO: Choose the required parser.
                                 let parser = match self.imap_state {
                                     ImapState::Greeting => |input| {
-                                        Greeting::decode(input).map(|(rem, grt)| {
+                                        GreetingCodec::decode(input).map(|(rem, grt)| {
                                             (rem, Event::Greeting(grt.into_static()))
                                         })
                                     },
                                     _ => |input| {
-                                        Response::decode(input).map(|(rem, rsp)| {
+                                        ResponseCodec::decode(input).map(|(rem, rsp)| {
                                             (rem, Event::Response(rsp.into_static()))
                                         })
                                     },
@@ -185,7 +185,7 @@ impl Decoder for ImapClientCodec {
     }
 }
 
-impl<'a> Encoder<&Command<'a>> for ImapClientCodec {
+impl<'a> TokioEncoder<&Command<'a>> for ImapClientCodec {
     type Error = IoError;
 
     fn encode(&mut self, item: &Command, dst: &mut BytesMut) -> Result<(), Self::Error> {

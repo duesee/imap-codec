@@ -1,17 +1,17 @@
 #[macro_export]
 macro_rules! impl_decode_target {
-    ($object:ty) => {
+    ($decoder:ident) => {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: &[u8]| {
-            use imap_codec::codec::{Decode, DecodeError, Encode};
+            use imap_codec::codec::{DecodeError, Decoder, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
 
             #[cfg(feature = "debug")]
             println!("[!] Input:      {}", escape_byte_string(input));
 
-            if let Ok((_rem, parsed1)) = <$object>::decode(input) {
+            if let Ok((_rem, parsed1)) = $decoder::decode(input) {
                 #[cfg(feature = "debug")]
                 {
                     let input = &input[..input.len() - _rem.len()];
@@ -23,7 +23,7 @@ macro_rules! impl_decode_target {
                 #[cfg(feature = "debug")]
                 println!("[!] Serialized: {}", escape_byte_string(&output));
 
-                let (rem, parsed2) = <$object>::decode(&output).unwrap();
+                let (rem, parsed2) = $decoder::decode(&output).unwrap();
                 #[cfg(feature = "debug")]
                 println!("[!] Parsed2: {parsed2:?}");
                 assert!(rem.is_empty());
@@ -42,7 +42,7 @@ macro_rules! impl_decode_target {
                         let partial = &output[..index];
                         #[cfg(feature = "debug")]
                         println!("[!] Split (..{index:>3}): {}", escape_byte_string(partial));
-                        match <$object>::decode(partial) {
+                        match <$decoder>::decode(partial) {
                             Ok((rem, out)) => {
                                 assert!(rem.is_empty());
                                 assert_eq!(index, output.len());
@@ -75,11 +75,11 @@ macro_rules! impl_decode_target {
 
 #[macro_export]
 macro_rules! impl_to_bytes_and_back {
-    ($object:tt) => {
+    ($decoder:tt, $object:tt) => {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: $object| {
-            use imap_codec::codec::{Decode, Encode};
+            use imap_codec::codec::{Decoder, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
 
@@ -91,7 +91,7 @@ macro_rules! impl_to_bytes_and_back {
             #[cfg(feature = "debug")]
             println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
-            let (rem, parsed) = <$object>::decode(&buffer).unwrap();
+            let (rem, parsed) = <$decoder>::decode(&buffer).unwrap();
             assert!(rem.is_empty());
 
             #[cfg(feature = "debug")]

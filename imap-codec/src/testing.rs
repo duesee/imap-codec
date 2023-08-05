@@ -7,7 +7,10 @@ use imap_types::{
     utils::escape_byte_string,
 };
 
-use crate::codec::{Decode, Encode, IMAPResult};
+use crate::codec::{
+    AuthenticateDataCodec, CommandCodec, ContinueCodec, Decoder, Encode, GreetingCodec, IMAPResult,
+    ResponseCodec,
+};
 
 pub(crate) fn known_answer_test_encode(
     (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
@@ -43,13 +46,13 @@ pub(crate) fn known_answer_test_parse<'a, O, P>(
 // Note: Maybe there is a cleaner way to write this using generic bounds. However,
 // we tried it and failed to provide a cleaner solution. Thus, it's a macro for now.
 macro_rules! impl_kat_inverse {
-    ($fn_name:ident, $object:ty) => {
-        pub(crate) fn $fn_name(tests: &[(&[u8], &[u8], $object)]) {
+    ($fn_name:ident, $decoder:ident, $item:ty) => {
+        pub(crate) fn $fn_name(tests: &[(&[u8], &[u8], $item)]) {
             for (no, (test_input, expected_remainder, expected_object)) in tests.iter().enumerate()
             {
                 println!("# {no}");
 
-                let (got_remainder, got_object) = <$object>::decode(test_input).unwrap();
+                let (got_remainder, got_object) = $decoder::decode(test_input).unwrap();
                 assert_eq!(*expected_object, got_object);
                 assert_eq!(*expected_remainder, got_remainder);
 
@@ -57,7 +60,7 @@ macro_rules! impl_kat_inverse {
 
                 // This second `decode` makes using generic bonuds more complicated due to the
                 // different lifetime.
-                let (got_remainder, got_object_again) = <$object>::decode(&got_output).unwrap();
+                let (got_remainder, got_object_again) = $decoder::decode(&got_output).unwrap();
                 assert_eq!(got_object, got_object_again);
                 assert!(got_remainder.is_empty());
             }
@@ -65,11 +68,11 @@ macro_rules! impl_kat_inverse {
     };
 }
 
-impl_kat_inverse! {kat_inverse_greeting, Greeting}
-impl_kat_inverse! {kat_inverse_command, Command}
-impl_kat_inverse! {kat_inverse_response, Response}
-impl_kat_inverse! {kat_inverse_continue, Continue}
-impl_kat_inverse! {kat_inverse_authenticate_data, AuthenticateData}
+impl_kat_inverse! {kat_inverse_greeting, GreetingCodec, Greeting}
+impl_kat_inverse! {kat_inverse_command, CommandCodec, Command}
+impl_kat_inverse! {kat_inverse_response, ResponseCodec, Response}
+impl_kat_inverse! {kat_inverse_continue, ContinueCodec, Continue}
+impl_kat_inverse! {kat_inverse_authenticate_data, AuthenticateDataCodec, AuthenticateData}
 
 #[cfg(test)]
 mod tests {
