@@ -6,15 +6,12 @@
 //! ## Example
 //!
 //! ```rust
-//! use imap_codec::{
-//!     codec::{Decode, Encode},
-//!     imap_types::command::Command,
-//! };
+//! use imap_codec::codec::{CommandCodec, Decoder, Encode};
 //!
 //! // We assume here that the message is already complete.
 //! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
 //!
-//! let (_remainder, parsed) = Command::decode(input).unwrap();
+//! let (_remainder, parsed) = CommandCodec::decode(input).unwrap();
 //! println!("// Parsed:");
 //! println!("{parsed:#?}");
 //!
@@ -57,7 +54,7 @@
 //! #[cfg(feature = "ext_literal")]
 //! use imap_codec::imap_types::core::LiteralMode;
 //! use imap_codec::{
-//!     codec::{Decode, Encode, Fragment},
+//!     codec::{Encode, Fragment},
 //!     imap_types::command::{Command, CommandBody},
 //! };
 //!

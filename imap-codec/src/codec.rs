@@ -26,9 +26,7 @@
 //! println!("{}", std::str::from_utf8(&out).unwrap());
 //! ```
 
-#[cfg(feature = "bounded-static")]
-pub use decode::DecodeStatic;
-pub use decode::{Decode, DecodeError};
+pub use decode::{DecodeError, Decoder};
 pub(crate) use decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 #[cfg(any(
     feature = "ext_compress",
@@ -42,6 +40,26 @@ pub use encode::{Encode, EncodeContext, Encoded, Fragment};
 
 mod decode;
 mod encode;
+
+#[derive(Debug)]
+pub struct GreetingCodec;
+
+#[derive(Debug)]
+pub struct CommandCodec;
+
+#[derive(Debug)]
+pub struct AuthenticateDataCodec;
+
+#[cfg(feature = "ext_idle")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
+#[derive(Debug)]
+pub struct IdleDoneCodec;
+
+#[derive(Debug)]
+pub struct ResponseCodec;
+
+#[derive(Debug)]
+pub struct ContinueCodec;
 
 #[cfg(test)]
 mod tests {
@@ -176,13 +194,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = <Greeting as Decode>::decode(test);
+            let got = GreetingCodec::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = <Greeting as DecodeStatic>::decode(test);
+                let got = GreetingCodec::decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -227,13 +245,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = <Command as Decode>::decode(test);
+            let got = CommandCodec::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = <Command as DecodeStatic>::decode(test);
+                let got = CommandCodec::decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -270,13 +288,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = <Response as Decode>::decode(test);
+            let got = ResponseCodec::decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = <Response as DecodeStatic>::decode(test);
+                let got = ResponseCodec::decode_static(test);
                 assert_eq!(expected, got);
             }
         }

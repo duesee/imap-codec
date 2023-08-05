@@ -1,9 +1,6 @@
 use std::io::Write;
 
-use imap_codec::{
-    codec::{Decode, DecodeError},
-    imap_types::command::Command,
-};
+use imap_codec::codec::{CommandCodec, DecodeError, Decoder};
 
 const COLOR_SERVER: &str = "\x1b[34m";
 const COLOR_CLIENT: &str = "\x1b[31m";
@@ -16,7 +13,7 @@ fn main() {
 
     loop {
         // Try to parse the first command in `buffer`.
-        match Command::decode(&buffer) {
+        match CommandCodec::decode(&buffer) {
             // Parser succeeded.
             Ok((remaining, command)) => {
                 // Do something with the command ...

@@ -1,8 +1,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use imap_codec::{codec::Decode, imap_types::response::Response};
+use imap_codec::{
+    codec::{Decoder, ResponseCodec},
+    imap_types::response::Response,
+};
 
 fn parse_response(input: &[u8]) -> Response {
-    let (_remaining, rsp) = Response::decode(input).unwrap();
+    let (_remaining, rsp) = ResponseCodec::decode(input).unwrap();
 
     rsp
 }

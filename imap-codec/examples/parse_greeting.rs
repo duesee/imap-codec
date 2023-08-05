@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use imap_codec::{codec::Decode, imap_types::response::Greeting};
+use imap_codec::codec::{Decoder, GreetingCodec};
 
 fn main() -> std::io::Result<()> {
     loop {
@@ -17,7 +17,7 @@ fn main() -> std::io::Result<()> {
             break;
         }
 
-        match Greeting::decode(line.as_bytes()) {
+        match GreetingCodec::decode(line.as_bytes()) {
             Ok((remaining, greeting)) => {
                 println!("{:#?}", greeting);
 
