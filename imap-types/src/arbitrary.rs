@@ -4,7 +4,7 @@ use chrono::{FixedOffset, TimeZone};
 #[cfg(feature = "ext_literal")]
 use crate::core::LiteralMode;
 #[cfg(feature = "ext_enable")]
-use crate::extensions::enable::CapabilityEnableOther;
+use crate::extensions::enable::CapabilityEnable;
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::Resource;
 use crate::{
@@ -67,7 +67,7 @@ implement_tryfrom! { Capability<'a>, Atom<'a> }
 implement_tryfrom! { FlagExtension<'a>, Atom<'a> }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_enable")]
-implement_tryfrom! { CapabilityEnableOther<'a>, Atom<'a> }
+implement_tryfrom! { CapabilityEnable<'a>, &str }
 #[cfg(feature = "ext_quota")]
 implement_tryfrom! { Resource<'a>, Atom<'a> }
 implement_tryfrom! { AuthMechanismOther<'a>, Atom<'a> }

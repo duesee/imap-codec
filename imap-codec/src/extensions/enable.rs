@@ -9,11 +9,7 @@
 use std::io::Write;
 
 use abnf_core::streaming::sp;
-use imap_types::{
-    command::CommandBody,
-    extensions::enable::{CapabilityEnable, CapabilityEnableOther},
-    response::Data,
-};
+use imap_types::{command::CommandBody, extensions::enable::CapabilityEnable, response::Data};
 use nom::{
     bytes::streaming::tag_no_case,
     combinator::map,
@@ -75,12 +71,6 @@ impl<'a> Encoder for CapabilityEnable<'a> {
     }
 }
 
-impl<'a> Encoder for CapabilityEnableOther<'a> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        self.inner().encode_ctx(ctx)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use imap_types::{
@@ -127,8 +117,8 @@ mod tests {
                 b"??",
                 Command::new(
                     "A",
-                    CommandBody::enable(vec![CapabilityEnable::Other(
-                        CapabilityEnableOther::try_from(Atom::try_from("FOO").unwrap()).unwrap(),
+                    CommandBody::enable(vec![CapabilityEnable::from(
+                        Atom::try_from("FOO").unwrap(),
                     )])
                     .unwrap(),
                 )

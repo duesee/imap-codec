@@ -14,11 +14,10 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{
     command::CommandBody,
-    core::{Atom, NonEmptyVec},
+    core::{Atom, AtomError, NonEmptyVec},
 };
 
 impl<'a> CommandBody<'a> {
@@ -32,7 +31,6 @@ impl<'a> CommandBody<'a> {
     }
 }
 
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -45,14 +43,11 @@ pub enum CapabilityEnable<'a> {
     Other(CapabilityEnableOther<'a>),
 }
 
-impl<'a> Display for CapabilityEnable<'a> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match self {
-            Self::Utf8(kind) => write!(f, "UTF8={}", kind),
-            #[cfg(feature = "ext_condstore_qresync")]
-            Self::CondStore => write!(f, "CONDSTORE"),
-            Self::Other(other) => write!(f, "{}", other),
-        }
+impl<'a> TryFrom<&'a str> for CapabilityEnable<'a> {
+    type Error = AtomError;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Ok(Self::from(Atom::try_from(value)?))
     }
 }
 
@@ -68,6 +63,17 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
     }
 }
 
+impl<'a> Display for CapabilityEnable<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Utf8(kind) => write!(f, "UTF8={}", kind),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::CondStore => write!(f, "CONDSTORE"),
+            Self::Other(other) => write!(f, "{}", other.0),
+        }
+    }
+}
+
 /// An (unknown) capability.
 ///
 /// It's guaranteed that this type can't represent any capability from [`CapabilityEnable`].
@@ -75,38 +81,6 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityEnableOther<'a>(Atom<'a>);
-
-impl<'a> CapabilityEnableOther<'a> {
-    pub fn inner(&self) -> &Atom<'a> {
-        &self.0
-    }
-}
-
-impl<'a> Display for CapabilityEnableOther<'a> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl<'a> TryFrom<Atom<'a>> for CapabilityEnableOther<'a> {
-    type Error = CapabilityEnableOtherError;
-
-    fn try_from(value: Atom<'a>) -> Result<Self, Self::Error> {
-        match value.as_ref().to_ascii_lowercase().as_ref() {
-            "utf8=accept" | "utf8=only" => Err(CapabilityEnableOtherError::Reserved),
-            #[cfg(feature = "ext_condstore_qresync")]
-            "condstore" => Err(CapabilityEnableOtherError::Reserved),
-            _ => Ok(Self(value)),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub enum CapabilityEnableOtherError {
-    #[error("Reserved: Please use one of the typed variants")]
-    Reserved,
-}
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -132,7 +106,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_conversion_capability_enable_other() {
+    fn test_conversion_capability_enable() {
         assert_eq!(
             CapabilityEnable::from(Atom::try_from("utf8=only").unwrap()),
             CapabilityEnable::Utf8(Utf8Kind::Only)
@@ -142,12 +116,12 @@ mod tests {
             CapabilityEnable::Utf8(Utf8Kind::Accept)
         );
         assert_eq!(
-            CapabilityEnableOther::try_from(Atom::try_from("utf8=only").unwrap()),
-            Err(CapabilityEnableOtherError::Reserved)
+            CapabilityEnable::try_from("utf").unwrap(),
+            CapabilityEnable::Other(CapabilityEnableOther(Atom::unvalidated("utf")))
         );
         assert_eq!(
-            CapabilityEnableOther::try_from(Atom::try_from("utf8=accept").unwrap()),
-            Err(CapabilityEnableOtherError::Reserved)
+            CapabilityEnable::try_from("xxxxx").unwrap(),
+            CapabilityEnable::Other(CapabilityEnableOther(Atom::unvalidated("xxxxx")))
         );
     }
 }
