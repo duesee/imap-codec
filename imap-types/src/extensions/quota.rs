@@ -111,15 +111,13 @@ impl<'a> Data<'a> {
     }
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Resource<'a>(Inner<'a>);
-
 /// A resource type for use in IMAP's QUOTA extension.
 ///
 /// Supported resource names MUST be advertised as a capability by prepending the resource name with "QUOTA=RES-".
-impl Resource<'static> {
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Resource<'a> {
     /// The physical space estimate, in units of 1024 octets, of the mailboxes governed by the quota
     /// root.
     ///
@@ -139,7 +137,7 @@ impl Resource<'static> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-STORAGE" capability.
-    pub const STORAGE: Self = Resource(Inner::Storage);
+    Storage,
 
     /// The number of messages stored within the mailboxes governed by the quota root.
     ///
@@ -152,7 +150,7 @@ impl Resource<'static> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-MESSAGE" capability.
-    pub const MESSAGE: Self = Resource(Inner::Message);
+    Message,
 
     /// The number of mailboxes governed by the quota root.
     ///
@@ -162,26 +160,26 @@ impl Resource<'static> {
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-MAILBOX" capability.
-    pub const MAILBOX: Self = Resource(Inner::Mailbox);
+    Mailbox,
 
     /// The maximum size of all annotations \[RFC5257\], in units of 1024 octets, associated with all
     /// messages in the mailboxes governed by the quota root.
     ///
     /// Support for this resource MUST be indicated by the server by advertising the
     /// "QUOTA=RES-ANNOTATION-STORAGE" capability.
-    pub const ANNOTATION_STORAGE: Self = Resource(Inner::AnnotationStorage);
+    AnnotationStorage,
+
+    /// An (unknown) resource.
+    Other(ResourceOther<'a>),
 }
 
+/// An (unknown) resource.
+///
+/// It's guaranteed that this type can't represent any resource from [`Resource`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Inner<'a> {
-    Storage,
-    Message,
-    Mailbox,
-    AnnotationStorage,
-    Other(Atom<'a>),
-}
+pub struct ResourceOther<'a>(Atom<'a>);
 
 impl_try_from!(Atom<'a>, 'a, &'a [u8], Resource<'a>);
 impl_try_from!(Atom<'a>, 'a, Vec<u8>, Resource<'a>);
@@ -192,23 +190,23 @@ impl_try_from!(Atom<'a>, 'a, Cow<'a, str>, Resource<'a>);
 impl<'a> From<Atom<'a>> for Resource<'a> {
     fn from(atom: Atom<'a>) -> Self {
         match atom.inner().to_ascii_uppercase().as_ref() {
-            "STORAGE" => Resource::STORAGE,
-            "MESSAGE" => Resource::MESSAGE,
-            "MAILBOX" => Resource::MAILBOX,
-            "ANNOTATION-STORAGE" => Resource::ANNOTATION_STORAGE,
-            _ => Resource(Inner::Other(atom)),
+            "STORAGE" => Resource::Storage,
+            "MESSAGE" => Resource::Message,
+            "MAILBOX" => Resource::Mailbox,
+            "ANNOTATION-STORAGE" => Resource::AnnotationStorage,
+            _ => Resource::Other(ResourceOther(atom)),
         }
     }
 }
 
 impl<'a> Display for Resource<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match &self.0 {
-            Inner::Storage => "STORAGE",
-            Inner::Message => "MESSAGE",
-            Inner::Mailbox => "MAILBOX",
-            Inner::AnnotationStorage => "ANNOTATION-STORAGE",
-            Inner::Other(atom) => atom.as_ref(),
+        f.write_str(match self {
+            Self::Storage => "STORAGE",
+            Self::Message => "MESSAGE",
+            Self::Mailbox => "MAILBOX",
+            Self::AnnotationStorage => "ANNOTATION-STORAGE",
+            Self::Other(other) => other.0.as_ref(),
         })
     }
 }
