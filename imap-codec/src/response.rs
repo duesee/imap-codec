@@ -9,7 +9,8 @@ use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
     core::{NonEmptyVec, Text},
     response::{
-        Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
+        Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
+        Response, Status,
     },
 };
 #[cfg(feature = "quirk_missing_text")]
@@ -228,14 +229,14 @@ pub(crate) fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
     //
     // However, I will keep it as it is for now.
     alt((
-        map(continue_req, Response::Continue),
+        map(continue_req, Response::CommandContinuationRequest),
         response_data,
         map(response_done, Response::Status),
     ))(input)
 }
 
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
-pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
+pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuationRequest> {
     // We can't map the output of `resp_text` directly to `Continue::basic()` because we might end
     // up with a subset of `Text` that is valid base64 and will panic on `unwrap()`. Thus, we first
     // let the parsing finish and only later map to `Continue`.
@@ -273,8 +274,8 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], Continue> {
     let (remaining, (_, either, _)) = parser(input)?;
 
     let continue_request = match either {
-        Either::Base64(data) => Continue::base64(data),
-        Either::Basic((code, text)) => Continue::basic(code, text).unwrap(),
+        Either::Base64(data) => CommandContinuationRequest::base64(data),
+        Either::Basic((code, text)) => CommandContinuationRequest::basic(code, text).unwrap(),
     };
 
     Ok((remaining, continue_request))

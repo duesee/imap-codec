@@ -21,7 +21,10 @@ use crate::{
     envelope::Envelope,
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
-    response::{Capability, Code, CodeOther, ContinueBasic, Greeting, GreetingKind, Status},
+    response::{
+        Capability, Code, CodeOther, CommandContinuationRequestBasic, Greeting, GreetingKind,
+        Status,
+    },
     search::SearchKey,
     sequence::SequenceSet,
 };
@@ -74,9 +77,9 @@ implement_tryfrom! { Resource<'a>, &str }
 implement_tryfrom! { AuthMechanism<'a>, &str }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
-impl<'a> Arbitrary<'a> for ContinueBasic<'a> {
+impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        ContinueBasic::new(Option::<Code>::arbitrary(u)?, Text::arbitrary(u)?)
+        Self::new(Option::<Code>::arbitrary(u)?, Text::arbitrary(u)?)
             .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }

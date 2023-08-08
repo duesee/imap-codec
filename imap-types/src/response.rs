@@ -109,20 +109,20 @@ pub enum GreetingKind {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Response<'a> {
-    /// Status responses can be tagged or untagged.  Tagged status responses
-    /// indicate the completion result (OK, NO, or BAD status) of a client
-    /// command, and have a tag matching the command.
-    Status(Status<'a>),
+    /// Command continuation request responses use the token "+" instead of a
+    /// tag.  These responses are sent by the server to indicate acceptance
+    /// of an incomplete client command and readiness for the remainder of
+    /// the command.
+    CommandContinuationRequest(CommandContinuationRequest<'a>),
     /// All server data is untagged. An untagged response is indicated by the
     /// token "*" instead of a tag. Untagged status responses indicate server
     /// greeting, or server status that does not indicate the completion of a
     /// command (for example, an impending system shutdown alert).
     Data(Data<'a>),
-    /// Command continuation request responses use the token "+" instead of a
-    /// tag.  These responses are sent by the server to indicate acceptance
-    /// of an incomplete client command and readiness for the remainder of
-    /// the command.
-    Continue(Continue<'a>),
+    /// Status responses can be tagged or untagged.  Tagged status responses
+    /// indicate the completion result (OK, NO, or BAD status) of a client
+    /// command, and have a tag matching the command.
+    Status(Status<'a>),
 }
 
 /// ## 7.1. Server Responses - Status Responses
@@ -640,39 +640,41 @@ pub enum FetchError<S, I> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[doc(alias = "Continue")]
 #[doc(alias = "Continuation")]
 #[doc(alias = "ContinuationRequest")]
-#[doc(alias = "CommandContinuationRequest")]
-pub enum Continue<'a> {
-    Basic(ContinueBasic<'a>),
+pub enum CommandContinuationRequest<'a> {
+    Basic(CommandContinuationRequestBasic<'a>),
     Base64(Cow<'a, [u8]>),
 }
 
-impl<'a> Continue<'a> {
+impl<'a> CommandContinuationRequest<'a> {
     pub fn basic<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ContinueError<T::Error>>
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Continue::Basic(ContinueBasic::new(code, text)?))
+        Ok(Self::Basic(CommandContinuationRequestBasic::new(
+            code, text,
+        )?))
     }
 
     pub fn base64<'data: 'a, D>(data: D) -> Self
     where
         D: Into<Cow<'data, [u8]>>,
     {
-        Continue::Base64(data.into())
+        Self::Base64(data.into())
     }
 }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ContinueBasic<'a> {
+pub struct CommandContinuationRequestBasic<'a> {
     code: Option<Code<'a>>,
     text: Text<'a>,
 }
 
-impl<'a> ContinueBasic<'a> {
+impl<'a> CommandContinuationRequestBasic<'a> {
     /// Create a basic continuation request.
     ///
     /// Note: To avoid ambiguities in the IMAP standard, this constructor ensures that:
@@ -1150,8 +1152,8 @@ mod tests {
     #[test]
     fn test_conversion_continue_failing() {
         let tests = [
-            Continue::basic(None, ""),
-            Continue::basic(Some(Code::ReadWrite), ""),
+            CommandContinuationRequest::basic(None, ""),
+            CommandContinuationRequest::basic(Some(Code::ReadWrite), ""),
         ];
 
         for test in tests {
