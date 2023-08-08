@@ -69,7 +69,7 @@ pub(crate) fn flag_fetch(input: &[u8]) -> IMAPResult<&[u8], FlagFetch> {
 /// `flag-perm = flag / "\*"`
 pub(crate) fn flag_perm(input: &[u8]) -> IMAPResult<&[u8], FlagPerm> {
     alt((
-        value(FlagPerm::AllowNewKeywords, tag("\\*")),
+        value(FlagPerm::Asterisk, tag("\\*")),
         map(flag, FlagPerm::Flag),
     ))(input)
 }
@@ -165,7 +165,7 @@ mod tests {
                 )),
             ),
             ("\\Seen ", FlagPerm::Flag(Flag::Seen)),
-            ("\\*)", FlagPerm::AllowNewKeywords),
+            ("\\*)", FlagPerm::Asterisk),
         ];
 
         for (test, expected) in tests {
