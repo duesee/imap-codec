@@ -69,7 +69,7 @@ implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_enable")]
 implement_tryfrom! { CapabilityEnable<'a>, &str }
 #[cfg(feature = "ext_quota")]
-implement_tryfrom! { Resource<'a>, Atom<'a> }
+implement_tryfrom! { Resource<'a>, &str }
 implement_tryfrom! { AuthMechanism<'a>, &str }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
