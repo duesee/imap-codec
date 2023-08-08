@@ -42,8 +42,6 @@ pub(crate) fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateD
 
 #[cfg(test)]
 mod tests {
-    use imap_types::auth::AuthMechanismOther;
-
     use super::*;
     use crate::testing::{known_answer_test_encode, known_answer_test_parse};
 
@@ -52,18 +50,9 @@ mod tests {
         let tests = [
             (AuthMechanism::Plain, b"PLAIN".as_ref()),
             (AuthMechanism::Login, b"LOGIN"),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("PLAINX").unwrap()),
-                b"PLAINX",
-            ),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("LOGINX").unwrap()),
-                b"LOGINX",
-            ),
-            (
-                AuthMechanism::Other(AuthMechanismOther::try_from("XOAUTH2X").unwrap()),
-                b"XOAUTH2X",
-            ),
+            (AuthMechanism::try_from("PLAINX").unwrap(), b"PLAINX"),
+            (AuthMechanism::try_from("LOGINX").unwrap(), b"LOGINX"),
+            (AuthMechanism::try_from("XOAUTH2X").unwrap(), b"XOAUTH2X"),
         ];
 
         for test in tests {
@@ -82,13 +71,13 @@ mod tests {
             (
                 b"loginX ",
                 b" ",
-                AuthMechanism::Other(AuthMechanismOther::try_from(b"loginX".as_ref()).unwrap()),
+                AuthMechanism::try_from(b"loginX".as_ref()).unwrap(),
             ),
             (b"Xplain ", b" ", AuthMechanism::try_from("Xplain").unwrap()),
             (
                 b"Xplain ",
                 b" ",
-                AuthMechanism::Other(AuthMechanismOther::try_from(b"Xplain".as_ref()).unwrap()),
+                AuthMechanism::try_from(b"Xplain".as_ref()).unwrap(),
             ),
             (b"xoauth2 ".as_ref(), b" ".as_ref(), AuthMechanism::XOAuth2),
             (b"xOauTh2 ", b" ", AuthMechanism::XOAuth2),
