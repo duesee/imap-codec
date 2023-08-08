@@ -476,7 +476,7 @@ fn test_from_select() {
                         Some(Code::PermanentFlags(vec![
                             FlagPerm::Flag(Flag::Deleted),
                             FlagPerm::Flag(Flag::Seen),
-                            FlagPerm::AllowNewKeywords,
+                            FlagPerm::Asterisk,
                         ])),
                         "Limited",
                     )

@@ -19,7 +19,7 @@ use crate::core::{Atom, AtomError};
 ///
 /// A keyword is defined by the server implementation.
 /// Keywords do not begin with "\" and servers may permit the client to define new ones
-/// in the mailbox by sending the "\*" flag ([`FlagPerm::AllowNewKeywords`]) in the PERMANENTFLAGS response..
+/// in the mailbox by sending the "\*" flag ([`FlagPerm::Asterisk`]) in the PERMANENTFLAGS response..
 ///
 /// Note that a flag of either type can be permanent or session-only.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -111,7 +111,7 @@ pub enum FlagPerm<'a> {
 
     /// Indicates that it is possible to create new keywords by
     /// attempting to store those flags in the mailbox (`\*`).
-    AllowNewKeywords,
+    Asterisk,
 }
 
 /// Client implementations MUST accept flag-extension flags.

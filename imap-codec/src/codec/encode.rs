@@ -647,7 +647,7 @@ impl<'a> Encoder for FlagPerm<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Flag(flag) => flag.encode_ctx(ctx),
-            Self::AllowNewKeywords => ctx.write_all(b"\\*"),
+            Self::Asterisk => ctx.write_all(b"\\*"),
         }
     }
 }
