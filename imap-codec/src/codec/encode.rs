@@ -22,7 +22,8 @@ use imap_types::{
     flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
-        Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
+        Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
+        Response, Status,
     },
     search::SearchKey,
     sequence::{SeqOrUid, Sequence, SequenceSet},
@@ -935,7 +936,9 @@ impl<'a> Encoder for Response<'a> {
         match self {
             Response::Status(status) => status.encode_ctx(ctx),
             Response::Data(data) => data.encode_ctx(ctx),
-            Response::Continue(continue_request) => continue_request.encode_ctx(ctx),
+            Response::CommandContinuationRequest(continue_request) => {
+                continue_request.encode_ctx(ctx)
+            }
         }
     }
 }
@@ -1521,10 +1524,10 @@ impl Encoder for ChronoDateTime<FixedOffset> {
     }
 }
 
-impl<'a> Encoder for Continue<'a> {
+impl<'a> Encoder for CommandContinuationRequest<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
-            Continue::Basic(continue_basic) => match continue_basic.code() {
+            Self::Basic(continue_basic) => match continue_basic.code() {
                 Some(code) => {
                     ctx.write_all(b"+ [")?;
                     code.encode_ctx(ctx)?;
@@ -1538,8 +1541,7 @@ impl<'a> Encoder for Continue<'a> {
                     ctx.write_all(b"\r\n")
                 }
             },
-            // TODO: Is this correct when data is empty?
-            Continue::Base64(data) => {
+            Self::Base64(data) => {
                 ctx.write_all(b"+ ")?;
                 ctx.write_all(base64.encode(data).as_bytes())?;
                 ctx.write_all(b"\r\n")

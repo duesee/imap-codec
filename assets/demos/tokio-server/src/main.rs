@@ -4,7 +4,7 @@ use futures::{SinkExt, StreamExt};
 use imap_codec::imap_types::{
     command::CommandBody,
     core::{NonEmptyVec, Text},
-    response::{Capability, Continue, Data, Greeting, Response, Status},
+    response::{Capability, CommandContinuationRequest, Data, Greeting, Response, Status},
 };
 use tokio::{self, net::TcpListener};
 use tokio_support::server::{Action, Event, ImapServerCodec};
@@ -146,8 +146,9 @@ async fn main() -> Result<(), Error> {
             }
             Event::ActionRequired(Action::SendLiteralAck(_)) => {
                 println!("[!] Send continuation request.");
-                let rsp = Response::Continue(
-                    Continue::basic(None, "...").context("Could not create `Continue`")?,
+                let rsp = Response::CommandContinuationRequest(
+                    CommandContinuationRequest::basic(None, "...")
+                        .context("Could not create `Continue`")?,
                 );
                 framed.send(&rsp).await.context("Could not send response")?;
                 println!("S: {BLUE}{rsp:#?}{RESET}");
