@@ -24,7 +24,7 @@ use crate::{codec::IMAPResult, core::atom};
 /// Note: Does not include "\Recent"
 pub(crate) fn flag(input: &[u8]) -> IMAPResult<&[u8], Flag> {
     alt((
-        map(preceded(char('\\'), atom), Flag::system_or_extension),
+        map(preceded(char('\\'), atom), Flag::system),
         map(atom, Flag::Keyword),
     ))(input)
 }
@@ -135,7 +135,7 @@ pub(crate) fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttr
 mod tests {
     use imap_types::{
         core::Atom,
-        flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm},
+        flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm},
     };
 
     use super::*;
@@ -160,9 +160,7 @@ mod tests {
             ("\\Deleted)", FlagPerm::Flag(Flag::Deleted)),
             (
                 "\\Deletedx)",
-                FlagPerm::Flag(Flag::Extension(
-                    FlagExtension::try_from(Atom::try_from("Deletedx").unwrap()).unwrap(),
-                )),
+                FlagPerm::Flag(Flag::system(Atom::try_from("Deletedx").unwrap())),
             ),
             ("\\Seen ", FlagPerm::Flag(Flag::Seen)),
             ("\\*)", FlagPerm::Asterisk),

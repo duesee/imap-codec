@@ -19,7 +19,7 @@ use imap_types::{
     fetch::{
         Macro, MacroOrMessageDataItemNames, MessageDataItem, MessageDataItemName, Part, Section,
     },
-    flag::{Flag, FlagExtension, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
+    flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
         Capability, Code, CodeOther, Continue, Data, Greeting, GreetingKind, Response, Status,
@@ -622,15 +622,7 @@ impl Encoder for StatusDataItemName {
 
 impl<'a> Encoder for Flag<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Flag::Seen => ctx.write_all(b"\\Seen"),
-            Flag::Answered => ctx.write_all(b"\\Answered"),
-            Flag::Flagged => ctx.write_all(b"\\Flagged"),
-            Flag::Deleted => ctx.write_all(b"\\Deleted"),
-            Flag::Draft => ctx.write_all(b"\\Draft"),
-            Flag::Extension(other) => other.encode_ctx(ctx),
-            Flag::Keyword(atom) => atom.encode_ctx(ctx),
-        }
+        write!(ctx, "{}", self)
     }
 }
 
@@ -649,13 +641,6 @@ impl<'a> Encoder for FlagPerm<'a> {
             Self::Flag(flag) => flag.encode_ctx(ctx),
             Self::Asterisk => ctx.write_all(b"\\*"),
         }
-    }
-}
-
-impl<'a> Encoder for FlagExtension<'a> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        ctx.write_all(b"\\")?;
-        ctx.write_all(self.as_ref().as_bytes())
     }
 }
 

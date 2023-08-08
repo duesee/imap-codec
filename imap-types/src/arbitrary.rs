@@ -19,7 +19,7 @@ use crate::{
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,
-    flag::FlagExtension,
+    flag::Flag,
     mailbox::{ListCharString, Mailbox, MailboxOther},
     response::{Capability, Code, CodeOther, ContinueBasic, Greeting, GreetingKind, Status},
     search::SearchKey,
@@ -64,7 +64,7 @@ implement_tryfrom! { ListCharString<'a>, &str }
 implement_tryfrom! { QuotedChar, char }
 implement_tryfrom! { Mailbox<'a>, &str }
 implement_tryfrom! { Capability<'a>, Atom<'a> }
-implement_tryfrom! { FlagExtension<'a>, Atom<'a> }
+implement_tryfrom! { Flag<'a>, &str }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 #[cfg(feature = "ext_enable")]
 implement_tryfrom! { CapabilityEnable<'a>, &str }
