@@ -1,6 +1,6 @@
-//! Client Commands
+//! Client Commands.
 //!
-//! see <https://tools.ietf.org/html/rfc3501#section-6>
+//! See <https://tools.ietf.org/html/rfc3501#section-6>.
 
 use std::borrow::Cow;
 

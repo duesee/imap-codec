@@ -19,7 +19,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt, value},
     multi::{separated_list0, separated_list1},
-    sequence::{delimited, preceded, tuple},
+    sequence::{delimited, preceded, terminated, tuple},
 };
 
 #[cfg(feature = "ext_sasl_ir")]
@@ -36,7 +36,7 @@ use crate::extensions::quota::{getquota, getquotaroot, setquota};
 use crate::extensions::r#move::r#move;
 use crate::{
     auth::auth_type,
-    codec::IMAPResult,
+    codec::{IMAPErrorKind, IMAPResult},
     core::{astring, literal, tag_imap},
     datetime::date_time,
     fetch::fetch_att,
@@ -54,16 +54,33 @@ use crate::{
 ///                     command-select
 ///                   ) CRLF`
 pub(crate) fn command(input: &[u8]) -> IMAPResult<&[u8], Command> {
-    let mut parser = tuple((
-        tag_imap,
-        sp,
+    let mut parser_tag = terminated(tag_imap, sp);
+    let mut parser_body = terminated(
         alt((command_any, command_auth, command_nonauth, command_select)),
         crlf,
-    ));
+    );
 
-    let (remaining, (tag, _, body, _)) = parser(input)?;
+    let (remaining, obtained_tag) = parser_tag(input)?;
 
-    Ok((remaining, Command { tag, body }))
+    match parser_body(remaining) {
+        Ok((remaining, body)) => Ok((
+            remaining,
+            Command {
+                tag: obtained_tag,
+                body,
+            },
+        )),
+        Err(mut error) => {
+            // If we got an `IMAPErrorKind::Literal`, we fill in the missing `tag`.
+            if let nom::Err::Error(ref mut err) | nom::Err::Failure(ref mut err) = error {
+                if let IMAPErrorKind::Literal { ref mut tag, .. } = err.kind {
+                    *tag = Some(obtained_tag);
+                }
+            }
+
+            Err(error)
+        }
+    }
 }
 
 // # Command Any

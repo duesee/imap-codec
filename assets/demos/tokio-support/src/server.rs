@@ -3,7 +3,7 @@ use std::io::{Error as IoError, Write};
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
-    codec::{CommandCodec, DecodeError, Decoder, Encode},
+    codec::{CommandCodec, CommandDecodeError, Decoder, Encode},
     imap_types::{
         command::Command,
         response::{Greeting, Response},
@@ -97,11 +97,11 @@ impl TokioDecoder for ImapServerCodec {
                                     //
                                     // This should not happen because a line that doesn't end
                                     // with a literal is always "complete" in IMAP.
-                                    DecodeError::Incomplete => {
+                                    CommandDecodeError::Incomplete => {
                                         unreachable!();
                                     }
                                     // We found a literal.
-                                    DecodeError::LiteralFound { length, .. } => {
+                                    CommandDecodeError::LiteralFound { length, .. } => {
                                         if length as usize <= self.max_literal_size {
                                             src.reserve(length as usize);
 
@@ -124,7 +124,7 @@ impl TokioDecoder for ImapServerCodec {
                                             )));
                                         }
                                     }
-                                    DecodeError::Failed => {
+                                    CommandDecodeError::Failed => {
                                         let consumed = src.split_to(*to_consume_acc);
                                         self.state = FramingState::ReadLine { to_consume_acc: 0 };
 

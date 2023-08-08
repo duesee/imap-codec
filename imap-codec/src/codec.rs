@@ -26,7 +26,12 @@
 //! println!("{}", std::str::from_utf8(&out).unwrap());
 //! ```
 
-pub use decode::{DecodeError, Decoder};
+#[cfg(feature = "ext_idle")]
+pub use decode::IdleDoneDecodeError;
+pub use decode::{
+    AuthenticateDataDecodeError, CommandDecodeError, Decoder, GreetingDecodeError,
+    ResponseDecodeError,
+};
 pub(crate) use decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 #[cfg(any(
     feature = "ext_compress",
@@ -70,7 +75,7 @@ mod tests {
     use imap_types::{
         auth::AuthenticateData,
         command::{Command, CommandBody},
-        core::{IString, Literal, NString, NonEmptyVec},
+        core::{IString, Literal, NString, NonEmptyVec, Tag},
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
@@ -181,16 +186,16 @@ mod tests {
     fn test_greeting_incomplete_failed() {
         let tests = [
             // Incomplete
-            (b"*".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* O".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK .".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK .\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"*".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* O".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK ".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK .".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK .\r".as_ref(), Err(GreetingDecodeError::Incomplete)),
             // Failed
-            (b"**".as_ref(), Err(DecodeError::Failed)),
-            (b"* NO x\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"**".as_ref(), Err(GreetingDecodeError::Failed)),
+            (b"* NO x\r\n".as_ref(), Err(GreetingDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -210,17 +215,18 @@ mod tests {
     fn test_command_incomplete_failed() {
         let tests = [
             // Incomplete
-            (b"a".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a n".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a no".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noo".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a ".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a n".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a no".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noo".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noop".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noop\r".as_ref(), Err(CommandDecodeError::Incomplete)),
             // LiteralAckRequired
             (
                 b"a select {5}\r\n".as_ref(),
-                Err(DecodeError::LiteralFound {
+                Err(CommandDecodeError::LiteralFound {
+                    tag: Tag::try_from("a").unwrap(),
                     length: 5,
                     #[cfg(feature = "ext_literal")]
                     mode: LiteralMode::Sync,
@@ -229,7 +235,8 @@ mod tests {
             #[cfg(feature = "ext_literal")]
             (
                 b"a select {5+}\r\n".as_ref(),
-                Err(DecodeError::LiteralFound {
+                Err(CommandDecodeError::LiteralFound {
+                    tag: Tag::try_from("a").unwrap(),
                     length: 5,
                     mode: LiteralMode::NonSync,
                 }),
@@ -237,11 +244,11 @@ mod tests {
             // Incomplete (after literal)
             (
                 b"a select {5}\r\nxxx".as_ref(),
-                Err(DecodeError::Incomplete),
+                Err(CommandDecodeError::Incomplete),
             ),
             // Failed
-            (b"* noop\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b"A  noop\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"* noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
+            (b"A  noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -261,30 +268,32 @@ mod tests {
     fn test_response_incomplete_failed() {
         let tests = [
             // Incomplete
-            (b"".as_ref(), Err(DecodeError::Incomplete)),
-            (b"*".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* S".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SE".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEA".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEAR".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARC".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH 1".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH 1\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"*".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* S".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SE".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEA".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEAR".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARC".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH ".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH 1".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (
+                b"* SEARCH 1\r".as_ref(),
+                Err(ResponseDecodeError::Incomplete),
+            ),
             // LiteralAck treated as Incomplete
             (
                 b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
-                Err(DecodeError::LiteralFound {
-                    length: 5,
-                    #[cfg(feature = "ext_literal")]
-                    mode: LiteralMode::Sync,
-                }),
+                Err(ResponseDecodeError::LiteralFound { length: 5 }),
             ),
             // Failed
-            (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b"A search\r\n".as_ref(), Err(DecodeError::Failed)),
+            (
+                b"*  search 1 2 3\r\n".as_ref(),
+                Err(ResponseDecodeError::Failed),
+            ),
+            (b"A search\r\n".as_ref(), Err(ResponseDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {

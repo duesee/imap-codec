@@ -1,13 +1,27 @@
-use std::io::Write;
+use imap_codec::codec::{CommandCodec, CommandDecodeError, Decoder};
 
-use imap_codec::codec::{CommandCodec, DecodeError, Decoder};
+#[path = "common/common.rs"]
+mod common;
 
-const COLOR_SERVER: &str = "\x1b[34m";
-const COLOR_CLIENT: &str = "\x1b[31m";
-const RESET: &str = "\x1b[0m";
+use common::{read_more, COLOR_SERVER, RESET};
+
+use crate::common::Role;
+
+const WELCOME: &str = r#"# Parsing of IMAP commands
+
+"C:" denotes the client,
+"S:" denotes the server, and
+".." denotes the continuation of an (incomplete) command, e.g., due to the use of an IMAP literal.
+
+Note: "\n" will be automatically replaced by "\r\n".
+
+--------------------------------------------------------------------------------------------------
+
+Enter IMAP command (or "exit").
+"#;
 
 fn main() {
-    welcome();
+    println!("{}", WELCOME);
 
     let mut buffer = Vec::new();
 
@@ -21,27 +35,22 @@ fn main() {
 
                 // ... and proceed with the remaining data.
                 buffer = remaining.to_vec();
-
-                // Note: The `command` object is currently bounded to the `buffer`, i.e., we have
-                // something like a `Command<'buffer>` here. We can use the `bounded-static` feature
-                // and call `command.into_static()` to convert it into a more flexible `Command<'static>`.
             }
             // Parser needs more data.
-            Err(DecodeError::Incomplete) => {
+            Err(CommandDecodeError::Incomplete) => {
                 // Read more data.
-                read_more(&mut buffer);
+                read_more(&mut buffer, Role::Client);
             }
-            // Parser needs more data, and a literal acknowledgement action is required.
-            // This step is crucial for real clients. Otherwise a client won't send any more data.
-            Err(DecodeError::LiteralFound { .. }) => {
+            // Parser needs more data, and a command continuation request is expected.
+            Err(CommandDecodeError::LiteralFound { .. }) => {
                 // Simulate literal acknowledgement ...
                 println!("S: {COLOR_SERVER}+ {RESET}");
 
                 // ... and read more data.
-                read_more(&mut buffer);
+                read_more(&mut buffer, Role::Client);
             }
             // Parser failed.
-            Err(DecodeError::Failed) => {
+            Err(CommandDecodeError::Failed) => {
                 println!("Error parsing command.");
                 println!("Clearing buffer.");
 
@@ -50,46 +59,4 @@ fn main() {
             }
         }
     }
-}
-
-fn welcome() {
-    let welcome = r#"# Parsing of IMAP commands
-
-"C:" denotes the client,
-"S:" denotes the server, and
-".." denotes the continuation of an (incomplete) command, e.g., due to the use of an IMAP literal.
-
-Note: "\n" will be automatically replaced by "\r\n".
-
---------------------------------------------------------------------------------------------------
-
-Enter IMAP command (or "exit").
-"#;
-
-    println!("{}", welcome);
-}
-
-fn read_more(buffer: &mut Vec<u8>) {
-    let prompt = if buffer.is_empty() { "C: " } else { ".. " };
-
-    let line = read_line(prompt);
-
-    if line.trim() == "exit" {
-        println!("Exiting.");
-        std::process::exit(0);
-    }
-
-    buffer.extend_from_slice(line.as_bytes());
-}
-
-pub fn read_line(prompt: &str) -> String {
-    print!("{}{COLOR_CLIENT}", prompt);
-    std::io::stdout().flush().unwrap();
-
-    let mut line = String::new();
-    std::io::stdin().read_line(&mut line).unwrap();
-
-    print!("{RESET}");
-
-    line.replace('\n', "\r\n")
 }

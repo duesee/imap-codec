@@ -170,6 +170,8 @@ pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
             kind: IMAPErrorKind::Literal {
+                // We don't know the tag here and rely on an upper parser, e.g., `command` to fill this in.
+                tag: None,
                 length,
                 #[cfg(feature = "ext_literal")]
                 mode,

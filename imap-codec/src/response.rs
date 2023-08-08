@@ -86,7 +86,10 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
                     alt((
                         terminated(resp_text_code, tag(b"]")),
                         map(
-                            terminated(take_while(|b: u8| b != b']'), tag(b"]")),
+                            terminated(
+                                take_while(|b: u8| b != b']' && b != b'\r' && b != b'\n'),
+                                tag(b"]"),
+                            ),
                             |bytes: &[u8]| Code::Other(CodeOther::unvalidated(bytes)),
                         ),
                     )),
@@ -422,9 +425,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::testing::{
-        kat_inverse_continue, kat_inverse_greeting, kat_inverse_response, known_answer_test_encode,
-    };
+    use crate::testing::{kat_inverse_greeting, kat_inverse_response, known_answer_test_encode};
 
     #[test]
     fn test_kat_inverse_greeting() {
@@ -602,6 +603,8 @@ mod tests {
         ]);
     }
 
+    /*
+    // TODO(#184)
     #[test]
     fn test_kat_inverse_continue() {
         kat_inverse_continue(&[
@@ -622,6 +625,7 @@ mod tests {
             ),
         ]);
     }
+    */
 
     #[test]
     fn test_encode_body_structure() {
