@@ -1,7 +1,7 @@
 use std::num::{ParseIntError, TryFromIntError};
 
 #[cfg(feature = "bounded-static")]
-use bounded_static::IntoBoundedStatic;
+use bounded_static::{IntoBoundedStatic, ToStatic};
 #[cfg(feature = "ext_literal")]
 use imap_types::core::LiteralMode;
 #[cfg(feature = "ext_idle")]
@@ -9,7 +9,8 @@ use imap_types::extensions::idle::IdleDone;
 use imap_types::{
     auth::AuthenticateData,
     command::Command,
-    response::{Continue, Greeting, Response},
+    core::Tag,
+    response::{Greeting, Response},
 };
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
@@ -19,26 +20,27 @@ use crate::codec::IdleDoneCodec;
 use crate::extensions::idle::idle_done;
 use crate::{
     auth::authenticate_data,
-    codec::{AuthenticateDataCodec, CommandCodec, ContinueCodec, GreetingCodec, ResponseCodec},
+    codec::{AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec},
     command::command,
-    response::{continue_req, greeting, response},
+    response::{greeting, response},
 };
 
 /// An extended version of [`nom::IResult`].
-pub(crate) type IMAPResult<I, O> = Result<(I, O), nom::Err<IMAPParseError<I>>>;
+pub(crate) type IMAPResult<'a, I, O> = Result<(I, O), nom::Err<IMAPParseError<'a, I>>>;
 
 /// An extended version of [`nom::error::Error`].
 #[derive(Debug)]
-pub(crate) struct IMAPParseError<I> {
+pub(crate) struct IMAPParseError<'a, I> {
     #[allow(unused)]
     pub input: I,
-    pub kind: IMAPErrorKind,
+    pub kind: IMAPErrorKind<'a>,
 }
 
 /// An extended version of [`nom::error::ErrorKind`].
 #[derive(Debug)]
-pub(crate) enum IMAPErrorKind {
+pub(crate) enum IMAPErrorKind<'a> {
     Literal {
+        tag: Option<Tag<'a>>,
         length: u32,
         #[cfg(feature = "ext_literal")]
         mode: LiteralMode,
@@ -51,7 +53,7 @@ pub(crate) enum IMAPErrorKind {
     Nom(ErrorKind),
 }
 
-impl<I> ParseError<I> for IMAPParseError<I> {
+impl<'a, I> ParseError<I> for IMAPParseError<'a, I> {
     fn from_error_kind(input: I, kind: ErrorKind) -> Self {
         Self {
             input,
@@ -67,7 +69,7 @@ impl<I> ParseError<I> for IMAPParseError<I> {
     }
 }
 
-impl<I> FromExternalError<I, ParseIntError> for IMAPParseError<I> {
+impl<'a, I> FromExternalError<I, ParseIntError> for IMAPParseError<'a, I> {
     fn from_external_error(input: I, _: ErrorKind, _: ParseIntError) -> Self {
         Self {
             input,
@@ -76,7 +78,7 @@ impl<I> FromExternalError<I, ParseIntError> for IMAPParseError<I> {
     }
 }
 
-impl<I> FromExternalError<I, TryFromIntError> for IMAPParseError<I> {
+impl<'a, I> FromExternalError<I, TryFromIntError> for IMAPParseError<'a, I> {
     fn from_external_error(input: I, _: ErrorKind, _: TryFromIntError) -> Self {
         Self {
             input,
@@ -85,7 +87,7 @@ impl<I> FromExternalError<I, TryFromIntError> for IMAPParseError<I> {
     }
 }
 
-impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<I> {
+impl<'a, I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'a, I> {
     fn from_external_error(input: I, _: ErrorKind, _: base64::DecodeError) -> Self {
         Self {
             input,
@@ -96,11 +98,14 @@ impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<I> {
 
 pub trait Decoder {
     type Item<'a>: Sized;
+    type Error<'a>;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), DecodeError>;
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'_>>;
 
     #[cfg(feature = "bounded-static")]
-    fn decode_static<'a>(input: &'a [u8]) -> Result<(&'a [u8], Self::Item<'static>), DecodeError>
+    fn decode_static<'a>(
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Item<'static>), Self::Error<'_>>
     where
         Self::Item<'a>: IntoBoundedStatic<Static = Self::Item<'static>>,
     {
@@ -109,67 +114,216 @@ pub trait Decoder {
     }
 }
 
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DecodeError {
+pub enum GreetingDecodeError {
+    /// More data is needed.
+    Incomplete,
+
+    /// Decoding failed.
+    Failed,
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CommandDecodeError<'a> {
     /// More data is needed.
     Incomplete,
 
     /// More data is needed (and further action may be necessary).
     ///
-    /// The decoder stopped at the beginning of literal data. When in the role of a server, sending
-    /// a continuation request may be necessary to agree to the receival of the remaining data.
+    /// The decoder stopped at the beginning of literal data. Typically, a server MUST send a
+    /// command continuation request to agree to the receival of the remaining data. This behaviour
+    /// is different when the `ext_literal` feature is used.
+    ///
+    /// # With `ext_literal` feature
+    ///
+    /// When the `mode` is sync, everything is the same as above.
+    ///
+    /// When the `mode` is non-sync, *and* the server advertised the LITERAL+ capability,
+    /// it MUST NOT send a command continuation request and accept the data right away.
+    ///
+    /// When the `mode` is non-sync, *and* the server advertised the LITERAL- capability,
+    /// *and* the literal length is smaller or equal than 4096,
+    /// it MUST NOT send a command continuation request and accept the data right away.
+    ///
+    /// When the `mode` is non-sync, *and* the server advertised the LITERAL- capability,
+    /// *and* the literal length is greater than 4096,
+    /// it MUST be handled as sync.
+    ///
+    /// ```rust,ignore
+    /// match mode {
+    ///     LiteralMode::Sync => /* Same as sync. */
+    ///     LiteralMode::Sync => match advertised {
+    ///         Capability::LiteralPlus => /* Accept data right away. */
+    ///         Capability::LiteralMinus => {
+    ///             if literal_length <= 4096 {
+    ///                 /* Accept data right away. */
+    ///             } else {
+    ///                 /* Same as sync. */
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
     LiteralFound {
+        /// The corresponding command (tag) to which this literal is bound.
+        ///
+        /// This is required to reject literals, e.g., when their size exceeds a limit.
+        tag: Tag<'a>,
+
+        /// Literal length.
         length: u32,
+
+        /// Literal mode, i.e., sync or non-sync.
         #[cfg(feature = "ext_literal")]
         mode: LiteralMode,
     },
 
-    // Decoding failed.
+    /// Decoding failed.
+    Failed,
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ResponseDecodeError {
+    /// More data is needed.
+    Incomplete,
+
+    /// The decoder stopped at the beginning of literal data.
+    ///
+    /// The client *MUST* accept the literal and has no option to reject it.
+    /// However, when the client ultimately does not want to handle the literal, it can do something
+    /// similar to <https://datatracker.ietf.org/doc/html/rfc7888#section-4>.
+    ///
+    /// It can implement a discarding mechanism, basically, consuming the whole literal but not
+    /// saving the bytes in memory. Or, it can close the connection.
+    LiteralFound {
+        /// Literal length.
+        length: u32,
+    },
+
+    /// Decoding failed.
+    Failed,
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AuthenticateDataDecodeError {
+    /// More data is needed.
+    Incomplete,
+
+    /// Decoding failed.
+    Failed,
+}
+
+#[cfg(feature = "ext_idle")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum IdleDoneDecodeError {
+    /// More data is needed.
+    Incomplete,
+
+    /// Decoding failed.
     Failed,
 }
 
 // -------------------------------------------------------------------------------------------------
 
-macro_rules! impl_decode_for_object {
-    ($decoder:ident, $item:ty, $parser:ident) => {
-        impl Decoder for $decoder {
-            type Item<'a> = $item;
+impl Decoder for GreetingCodec {
+    type Item<'a> = Greeting<'a>;
+    type Error<'a> = GreetingDecodeError;
 
-            fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), DecodeError> {
-                match $parser(input) {
-                    Ok((rem, grt)) => Ok((rem, grt)),
-                    Err(nom::Err::Incomplete(_)) => Err(DecodeError::Incomplete),
-                    Err(nom::Err::Failure(error)) => match error {
-                        IMAPParseError {
-                            kind:
-                                IMAPErrorKind::Literal {
-                                    length,
-                                    #[cfg(feature = "ext_literal")]
-                                    mode,
-                                },
-                            ..
-                        } => Err(DecodeError::LiteralFound {
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+        match greeting(input) {
+            Ok((rem, grt)) => Ok((rem, grt)),
+            Err(nom::Err::Incomplete(_)) => Err(GreetingDecodeError::Incomplete),
+            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => Err(GreetingDecodeError::Failed),
+        }
+    }
+}
+
+impl Decoder for CommandCodec {
+    type Item<'a> = Command<'a>;
+    type Error<'a> = CommandDecodeError<'a>;
+
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'_>> {
+        match command(input) {
+            Ok((rem, cmd)) => Ok((rem, cmd)),
+            Err(nom::Err::Incomplete(_)) => Err(CommandDecodeError::Incomplete),
+            Err(nom::Err::Failure(error)) => match error {
+                IMAPParseError {
+                    input: _,
+                    kind:
+                        IMAPErrorKind::Literal {
+                            tag,
                             length,
                             #[cfg(feature = "ext_literal")]
                             mode,
-                        }),
-                        _ => Err(DecodeError::Failed),
-                    },
-                    Err(nom::Err::Error(_)) => Err(DecodeError::Failed),
-                }
-            }
+                        },
+                } => Err(CommandDecodeError::LiteralFound {
+                    // Unwrap: We *must* receive a `tag` during command parsing.
+                    tag: tag.expect("Expected `Some(tag)` in `IMAPErrorKind::Literal`, got `None`"),
+                    length,
+                    #[cfg(feature = "ext_literal")]
+                    mode,
+                }),
+                _ => Err(CommandDecodeError::Failed),
+            },
+            Err(nom::Err::Error(_)) => Err(CommandDecodeError::Failed),
         }
-    };
+    }
 }
 
-impl_decode_for_object!(GreetingCodec, Greeting<'a>, greeting);
-impl_decode_for_object!(CommandCodec, Command<'a>, command);
-impl_decode_for_object!(AuthenticateDataCodec, AuthenticateData, authenticate_data);
+impl Decoder for ResponseCodec {
+    type Item<'a> = Response<'a>;
+    type Error<'a> = ResponseDecodeError;
+
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+        match response(input) {
+            Ok((rem, rsp)) => Ok((rem, rsp)),
+            Err(nom::Err::Incomplete(_)) => Err(ResponseDecodeError::Incomplete),
+            Err(nom::Err::Error(error) | nom::Err::Failure(error)) => match error {
+                IMAPParseError {
+                    kind: IMAPErrorKind::Literal { length, .. },
+                    ..
+                } => Err(ResponseDecodeError::LiteralFound { length }),
+                _ => Err(ResponseDecodeError::Failed),
+            },
+        }
+    }
+}
+
+impl Decoder for AuthenticateDataCodec {
+    type Item<'a> = AuthenticateData;
+    type Error<'a> = AuthenticateDataDecodeError;
+
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+        match authenticate_data(input) {
+            Ok((rem, rsp)) => Ok((rem, rsp)),
+            Err(nom::Err::Incomplete(_)) => Err(AuthenticateDataDecodeError::Incomplete),
+            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => {
+                Err(AuthenticateDataDecodeError::Failed)
+            }
+        }
+    }
+}
+
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
-impl_decode_for_object!(IdleDoneCodec, IdleDone, idle_done);
-impl_decode_for_object!(ResponseCodec, Response<'a>, response);
-impl_decode_for_object!(ContinueCodec, Continue<'a>, continue_req);
+impl Decoder for IdleDoneCodec {
+    type Item<'a> = IdleDone;
+    type Error<'a> = IdleDoneDecodeError;
+
+    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+        match idle_done(input) {
+            Ok((rem, rsp)) => Ok((rem, rsp)),
+            Err(nom::Err::Incomplete(_)) => Err(IdleDoneDecodeError::Incomplete),
+            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => Err(IdleDoneDecodeError::Failed),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -214,16 +368,16 @@ mod tests {
                 )),
             ),
             // Incomplete
-            (b"*".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* O".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK .".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* OK .\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"*".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* O".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK ".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK .".as_ref(), Err(GreetingDecodeError::Incomplete)),
+            (b"* OK .\r".as_ref(), Err(GreetingDecodeError::Incomplete)),
             // Failed
-            (b"**".as_ref(), Err(DecodeError::Failed)),
-            (b"* NO x\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"**".as_ref(), Err(GreetingDecodeError::Failed)),
+            (b"* NO x\r\n".as_ref(), Err(GreetingDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -281,19 +435,19 @@ mod tests {
                 )),
             ),
             // Incomplete
-            (b"a".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a n".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a no".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noo".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noop".as_ref(), Err(DecodeError::Incomplete)),
-            (b"a noop\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"a".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a ".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a n".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a no".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noo".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noop".as_ref(), Err(CommandDecodeError::Incomplete)),
+            (b"a noop\r".as_ref(), Err(CommandDecodeError::Incomplete)),
             // LiteralAckRequired
             (
                 b"a select {5}\r\n".as_ref(),
-                Err(DecodeError::LiteralFound {
+                Err(CommandDecodeError::LiteralFound {
+                    tag: Tag::try_from("a").unwrap(),
                     length: 5,
-
                     #[cfg(feature = "ext_literal")]
                     mode: LiteralMode::Sync,
                 }),
@@ -301,11 +455,11 @@ mod tests {
             // Incomplete (after literal)
             (
                 b"a select {5}\r\nxxx".as_ref(),
-                Err(DecodeError::Incomplete),
+                Err(CommandDecodeError::Incomplete),
             ),
             // Failed
-            (b"* noop\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b"A  noop\r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"* noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
+            (b"A  noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -340,15 +494,36 @@ mod tests {
                 )),
             ),
             // Incomplete
-            (b"V".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VG".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGV".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVz".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVzd".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVzdA".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVzdA=".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVzdA==".as_ref(), Err(DecodeError::Incomplete)),
-            (b"VGVzdA==\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"V".as_ref(), Err(AuthenticateDataDecodeError::Incomplete)),
+            (b"VG".as_ref(), Err(AuthenticateDataDecodeError::Incomplete)),
+            (
+                b"VGV".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVz".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVzd".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVzdA".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVzdA=".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVzdA==".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
+            (
+                b"VGVzdA==\r".as_ref(),
+                Err(AuthenticateDataDecodeError::Incomplete),
+            ),
             (
                 b"VGVzdA==\r\n".as_ref(),
                 Ok((
@@ -357,10 +532,22 @@ mod tests {
                 )),
             ),
             // Failed
-            (b"VGVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
-            (b" VGVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
-            (b" V GVzdA== \r\n".as_ref(), Err(DecodeError::Failed)),
-            (b" V GVzdA= \r\n".as_ref(), Err(DecodeError::Failed)),
+            (
+                b"VGVzdA== \r\n".as_ref(),
+                Err(AuthenticateDataDecodeError::Failed),
+            ),
+            (
+                b" VGVzdA== \r\n".as_ref(),
+                Err(AuthenticateDataDecodeError::Failed),
+            ),
+            (
+                b" V GVzdA== \r\n".as_ref(),
+                Err(AuthenticateDataDecodeError::Failed),
+            ),
+            (
+                b" V GVzdA= \r\n".as_ref(),
+                Err(AuthenticateDataDecodeError::Failed),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -384,16 +571,16 @@ mod tests {
             (b"done\r\n".as_ref(), Ok((b"".as_ref(), IdleDone))),
             (b"done\r\n?".as_ref(), Ok((b"?".as_ref(), IdleDone))),
             // Incomplete
-            (b"d".as_ref(), Err(DecodeError::Incomplete)),
-            (b"do".as_ref(), Err(DecodeError::Incomplete)),
-            (b"don".as_ref(), Err(DecodeError::Incomplete)),
-            (b"done".as_ref(), Err(DecodeError::Incomplete)),
-            (b"done\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"d".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
+            (b"do".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
+            (b"don".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
+            (b"done".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
+            (b"done\r".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
             // Failed
-            (b"donee\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b" done\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b"done \r\n".as_ref(), Err(DecodeError::Failed)),
-            (b" done \r\n".as_ref(), Err(DecodeError::Failed)),
+            (b"donee\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
+            (b" done\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
+            (b"done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
+            (b" done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {
@@ -413,18 +600,21 @@ mod tests {
     fn test_decode_response() {
         let tests = [
             // Incomplete
-            (b"".as_ref(), Err(DecodeError::Incomplete)),
-            (b"*".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* S".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SE".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEA".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEAR".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARC".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH ".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH 1".as_ref(), Err(DecodeError::Incomplete)),
-            (b"* SEARCH 1\r".as_ref(), Err(DecodeError::Incomplete)),
+            (b"".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"*".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* ".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* S".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SE".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEA".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEAR".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARC".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH ".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (b"* SEARCH 1".as_ref(), Err(ResponseDecodeError::Incomplete)),
+            (
+                b"* SEARCH 1\r".as_ref(),
+                Err(ResponseDecodeError::Incomplete),
+            ),
             // Ok
             (
                 b"* SEARCH 1\r\n".as_ref(),
@@ -452,18 +642,16 @@ mod tests {
                     }),
                 )),
             ),
-            // LiteralAck treated the same as in response, even though it could be `Incomplete`.
             (
                 b"* 1 FETCH (RFC822 {5}\r\n".as_ref(),
-                Err(DecodeError::LiteralFound {
-                    length: 5,
-                    #[cfg(feature = "ext_literal")]
-                    mode: LiteralMode::Sync,
-                }),
+                Err(ResponseDecodeError::LiteralFound { length: 5 }),
             ),
             // Failed
-            (b"*  search 1 2 3\r\n".as_ref(), Err(DecodeError::Failed)),
-            (b"A search\r\n".as_ref(), Err(DecodeError::Failed)),
+            (
+                b"*  search 1 2 3\r\n".as_ref(),
+                Err(ResponseDecodeError::Failed),
+            ),
+            (b"A search\r\n".as_ref(), Err(ResponseDecodeError::Failed)),
         ];
 
         for (test, expected) in tests {

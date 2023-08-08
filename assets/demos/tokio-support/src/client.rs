@@ -3,11 +3,13 @@ use std::io::{Error as IoError, Write};
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
-    codec::{DecodeError, Decoder, Encode, GreetingCodec, ResponseCodec},
+    codec::{
+        Decoder, Encode, GreetingCodec, GreetingDecodeError, ResponseCodec, ResponseDecodeError,
+    },
     imap_types::{
         command::Command,
         response::{Greeting, Response},
-        state::State as ImapState,
+        state::{State as ImapState, State},
     },
 };
 use thiserror::Error;
@@ -65,6 +67,29 @@ impl TokioDecoder for ImapClientCodec {
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         loop {
+            if self.imap_state == State::Greeting {
+                match GreetingCodec::decode(src) {
+                    Ok((remaining, grt)) => {
+                        let grt = grt.into_static();
+
+                        let to_consume_acc = src.len() - remaining.len();
+                        src.advance(to_consume_acc);
+
+                        self.imap_state = ImapState::NotAuthenticated;
+
+                        return Ok(Some(Event::Greeting(grt)));
+                    }
+                    Err(GreetingDecodeError::Incomplete) => {
+                        return Ok(None);
+                    }
+                    Err(GreetingDecodeError::Failed) => {
+                        let discarded = src.split_to(src.len());
+                        src.clear();
+                        return Err(ImapClientCodecError::ParsingFailed(discarded));
+                    }
+                }
+            }
+
             match self.state {
                 FramingState::ReadLine {
                     ref mut to_consume_acc,
@@ -78,17 +103,9 @@ impl TokioDecoder for ImapClientCodec {
                                 let line = &src[..*to_consume_acc];
 
                                 // TODO: Choose the required parser.
-                                let parser = match self.imap_state {
-                                    ImapState::Greeting => |input| {
-                                        GreetingCodec::decode(input).map(|(rem, grt)| {
-                                            (rem, Event::Greeting(grt.into_static()))
-                                        })
-                                    },
-                                    _ => |input| {
-                                        ResponseCodec::decode(input).map(|(rem, rsp)| {
-                                            (rem, Event::Response(rsp.into_static()))
-                                        })
-                                    },
+                                let parser = |input| {
+                                    ResponseCodec::decode(input)
+                                        .map(|(rem, rsp)| (rem, Event::Response(rsp.into_static())))
                                 };
 
                                 match parser(line) {
@@ -110,11 +127,11 @@ impl TokioDecoder for ImapClientCodec {
                                         //
                                         // This should not happen because a line that doesn't end
                                         // with a literal is always "complete" in IMAP.
-                                        DecodeError::Incomplete => {
+                                        ResponseDecodeError::Incomplete => {
                                             unreachable!();
                                         }
                                         // We found a literal.
-                                        DecodeError::LiteralFound { length, .. } => {
+                                        ResponseDecodeError::LiteralFound { length } => {
                                             if length <= self.max_literal_length {
                                                 src.reserve(length as usize);
 
@@ -138,7 +155,7 @@ impl TokioDecoder for ImapClientCodec {
                                                 ));
                                             }
                                         }
-                                        DecodeError::Failed => {
+                                        ResponseDecodeError::Failed => {
                                             let consumed = src.split_to(*to_consume_acc);
                                             self.state =
                                                 FramingState::ReadLine { to_consume_acc: 0 };

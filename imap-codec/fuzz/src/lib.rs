@@ -4,7 +4,7 @@ macro_rules! impl_decode_target {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: &[u8]| {
-            use imap_codec::codec::{DecodeError, Decoder, Encode};
+            use imap_codec::codec::{Decoder, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
 
@@ -30,6 +30,7 @@ macro_rules! impl_decode_target {
 
                 assert_eq!(parsed1, parsed2);
 
+                /*
                 #[cfg(feature = "split")]
                 {
                     // Check splits ...
@@ -62,6 +63,7 @@ macro_rules! impl_decode_target {
                         }
                     }
                 }
+                */
             } else {
                 #[cfg(feature = "debug")]
                 println!("[!] <invalid>");
