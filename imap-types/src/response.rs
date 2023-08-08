@@ -13,7 +13,6 @@ use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
 use crate::extensions::compress::CompressionAlgorithm;
@@ -21,10 +20,12 @@ use crate::extensions::compress::CompressionAlgorithm;
 use crate::extensions::enable::CapabilityEnable;
 use crate::{
     auth::AuthMechanism,
-    core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text, TextError},
+    core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
+    error::ValidationError,
     fetch::MessageDataItem,
     flag::{Flag, FlagNameAttribute, FlagPerm},
     mailbox::Mailbox,
+    response::error::{ContinueError, FetchError},
     status::StatusDataItem,
 };
 #[cfg(feature = "ext_quota")]
@@ -51,7 +52,7 @@ impl<'a> Greeting<'a> {
         kind: GreetingKind,
         code: Option<Code<'a>>,
         text: &'a str,
-    ) -> Result<Self, TextError> {
+    ) -> Result<Self, ValidationError> {
         Ok(Greeting {
             kind,
             code,
@@ -59,7 +60,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn ok(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
+    pub fn ok(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ValidationError> {
         Ok(Greeting {
             kind: GreetingKind::Ok,
             code,
@@ -67,7 +68,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
+    pub fn preauth(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ValidationError> {
         Ok(Greeting {
             kind: GreetingKind::PreAuth,
             code,
@@ -75,7 +76,7 @@ impl<'a> Greeting<'a> {
         })
     }
 
-    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, TextError> {
+    pub fn bye(code: Option<Code<'a>>, text: &'a str) -> Result<Self, ValidationError> {
         Ok(Greeting {
             kind: GreetingKind::Bye,
             code,
@@ -610,14 +611,6 @@ impl<'a> Data<'a> {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum FetchError<S, I> {
-    #[error("Invalid sequence or UID: {0:?}")]
-    SeqOrUid(S),
-    #[error("Invalid items: {0:?}")]
-    InvalidItems(I),
-}
-
 /// ## 7.5. Server Responses - Command Continuation Request
 ///
 /// The command continuation request response is indicated by a "+" token
@@ -707,14 +700,6 @@ impl<'a> CommandContinuationRequestBasic<'a> {
     pub fn text(&self) -> &Text<'a> {
         &self.text
     }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum ContinueError<T> {
-    #[error("invalid text")]
-    Text(T),
-    #[error("ambiguity detected")]
-    Ambiguity,
 }
 
 /// A response code consists of data inside square brackets in the form of an atom,
@@ -1138,6 +1123,27 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityOther<'a>(Atom<'a>);
+
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum ContinueError<T> {
+        #[error("invalid text")]
+        Text(T),
+        #[error("ambiguity detected")]
+        Ambiguity,
+    }
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum FetchError<S, I> {
+        #[error("Invalid sequence or UID: {0:?}")]
+        SeqOrUid(S),
+        #[error("Invalid items: {0:?}")]
+        InvalidItems(I),
+    }
+}
 
 #[cfg(test)]
 mod tests {

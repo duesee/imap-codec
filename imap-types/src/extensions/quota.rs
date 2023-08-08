@@ -44,11 +44,11 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{
     command::CommandBody,
     core::{impl_try_from, AString, Atom, NonEmptyVec},
+    extensions::quota::error::{QuotaError, QuotaRootError, SetQuotaError},
     mailbox::Mailbox,
     response::Data,
 };
@@ -250,26 +250,31 @@ impl<'a> QuotaSet<'a> {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum QuotaError<R, Q> {
-    #[error("Invalid root: {0}")]
-    Root(R),
-    #[error("Invalid quotas: {0}")]
-    Quotas(Q),
-}
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum QuotaRootError<M, R> {
-    #[error("Invalid mailbox: {0}")]
-    Mailbox(M),
-    #[error("Invalid roots: {0}")]
-    Roots(R),
-}
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum QuotaError<R, Q> {
+        #[error("Invalid root: {0}")]
+        Root(R),
+        #[error("Invalid quotas: {0}")]
+        Quotas(Q),
+    }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum SetQuotaError<R, S> {
-    #[error("Invalid root: {0}")]
-    Root(R),
-    #[error("Invalid quota set: {0}")]
-    QuotaSet(S),
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum QuotaRootError<M, R> {
+        #[error("Invalid mailbox: {0}")]
+        Mailbox(M),
+        #[error("Invalid roots: {0}")]
+        Roots(R),
+    }
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum SetQuotaError<R, S> {
+        #[error("Invalid root: {0}")]
+        Root(R),
+        #[error("Invalid quota set: {0}")]
+        QuotaSet(S),
+    }
 }

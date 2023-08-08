@@ -8,10 +8,11 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{
-    core::{impl_try_from, AString, IString, LiteralError},
+    core::{impl_try_from, AString, IString},
+    error::{ValidationError, ValidationErrorKind},
+    mailbox::error::MailboxOtherError,
     utils::indicators::is_list_char,
 };
 
@@ -21,18 +22,18 @@ use crate::{
 pub struct ListCharString<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> ListCharString<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ListCharStringError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
         if value.is_empty() {
-            return Err(ListCharStringError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
-        if let Some(position) = value.iter().position(|b| !is_list_char(*b)) {
-            return Err(ListCharStringError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_list_char(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -61,7 +62,7 @@ impl<'a> ListCharString<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for ListCharString<'a> {
-    type Error = ListCharStringError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -71,21 +72,13 @@ impl<'a> TryFrom<&'a str> for ListCharString<'a> {
 }
 
 impl<'a> TryFrom<String> for ListCharString<'a> {
-    type Error = ListCharStringError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
 
         Ok(Self(Cow::Owned(value)))
     }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum ListCharStringError {
-    #[error("Must not be empty.")]
-    Empty,
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 impl<'a> AsRef<[u8]> for ListCharString<'a> {
@@ -104,7 +97,7 @@ pub enum ListMailbox<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for ListMailbox<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         if s.is_empty() {
@@ -121,7 +114,7 @@ impl<'a> TryFrom<&'a str> for ListMailbox<'a> {
 }
 
 impl<'a> TryFrom<String> for ListMailbox<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         if s.is_empty() {
@@ -275,12 +268,19 @@ impl<'a> AsRef<[u8]> for MailboxOther<'a> {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum MailboxOtherError {
-    #[error(transparent)]
-    Literal(#[from] LiteralError),
-    #[error("Reserved: Please use one of the typed variants")]
-    Reserved,
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
+
+    use crate::error::ValidationError;
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum MailboxOtherError {
+        #[error(transparent)]
+        Literal(#[from] ValidationError),
+        #[error("Reserved: Please use one of the typed variants")]
+        Reserved,
+    }
 }
 
 #[cfg(test)]

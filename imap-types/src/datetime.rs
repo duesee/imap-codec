@@ -7,7 +7,8 @@ use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 use chrono::{Datelike, FixedOffset};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+
+use crate::datetime::error::{DateTimeError, NaiveDateError};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Hash)]
@@ -57,16 +58,6 @@ impl TryFrom<chrono::DateTime<FixedOffset>> for DateTime {
 
         Ok(Self(value))
     }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum DateTimeError {
-    #[error("expected `0 <= year <= 9999`, got {got}")]
-    YearOutOfRange { got: i32 },
-    #[error("expected `nanos == 0`, got {got}")]
-    UnalignedNanoSeconds { got: u32 },
-    #[error("expected `offset % 60 == 0`, got {got}")]
-    UnalignedOffset { got: i32 },
 }
 
 impl Debug for DateTime {
@@ -137,12 +128,6 @@ impl TryFrom<chrono::NaiveDate> for NaiveDate {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum NaiveDateError {
-    #[error("expected `0 <= year <= 9999`, got {got}")]
-    YearOutOfRange { got: i32 },
-}
-
 impl Debug for NaiveDate {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
@@ -170,6 +155,27 @@ impl ToBoundedStatic for NaiveDate {
 
     fn to_static(&self) -> Self::Static {
         self.clone()
+    }
+}
+
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum DateTimeError {
+        #[error("expected `0 <= year <= 9999`, got {got}")]
+        YearOutOfRange { got: i32 },
+        #[error("expected `nanos == 0`, got {got}")]
+        UnalignedNanoSeconds { got: u32 },
+        #[error("expected `offset % 60 == 0`, got {got}")]
+        UnalignedOffset { got: i32 },
+    }
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum NaiveDateError {
+        #[error("expected `0 <= year <= 9999`, got {got}")]
+        YearOutOfRange { got: i32 },
     }
 }
 

@@ -1,8 +1,9 @@
 //! IMAP - MOVE Extension
 
-use thiserror::Error;
-
-use crate::{command::CommandBody, mailbox::Mailbox, sequence::SequenceSet};
+use crate::{
+    command::CommandBody, extensions::r#move::error::MoveError, mailbox::Mailbox,
+    sequence::SequenceSet,
+};
 
 impl<'a> CommandBody<'a> {
     pub fn r#move<S, M>(
@@ -22,11 +23,16 @@ impl<'a> CommandBody<'a> {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub enum MoveError<S, M> {
-    #[error("Invalid sequence: {0}")]
-    Sequence(S),
-    #[error("Invalid mailbox: {0}")]
-    Mailbox(M),
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    #[non_exhaustive]
+    pub enum MoveError<S, M> {
+        #[error("Invalid sequence: {0}")]
+        Sequence(S),
+        #[error("Invalid mailbox: {0}")]
+        Mailbox(M),
+    }
 }

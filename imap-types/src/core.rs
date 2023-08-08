@@ -47,7 +47,6 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
@@ -68,6 +67,8 @@ macro_rules! impl_try_from {
 }
 
 pub(crate) use impl_try_from;
+
+use crate::error::{ValidationError, ValidationErrorKind};
 
 /// A string subset to model IMAP's `atom`s.
 ///
@@ -107,18 +108,18 @@ impl<'a> Debug for Atom<'a> {
 
 impl<'a> Atom<'a> {
     /// Validates if value conforms to atom's ABNF definition.
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
         if value.is_empty() {
-            return Err(AtomError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
-        if let Some(position) = value.iter().position(|b| !is_atom_char(*b)) {
-            return Err(AtomError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_atom_char(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -157,7 +158,7 @@ impl<'a> Atom<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -168,7 +169,7 @@ impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -179,7 +180,7 @@ impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Atom<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -189,7 +190,7 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
 }
 
 impl<'a> TryFrom<String> for Atom<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -199,7 +200,7 @@ impl<'a> TryFrom<String> for Atom<'a> {
 }
 
 impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
         Self::validate(value.as_bytes())?;
@@ -218,15 +219,6 @@ impl<'a> Display for Atom<'a> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
-}
-
-/// Error during creation of an atom.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum AtomError {
-    #[error("Must not be empty")]
-    Empty,
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// A string subset to model IMAP's `1*ASTRING-CHAR` ("extended `atom`").
@@ -266,18 +258,18 @@ impl<'a> Debug for AtomExt<'a> {
 
 impl<'a> AtomExt<'a> {
     /// Validates if value conforms to extended atom's ABNF definition.
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), AtomExtError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
         if value.is_empty() {
-            return Err(AtomExtError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
-        if let Some(position) = value.iter().position(|b| !is_astring_char(*b)) {
-            return Err(AtomExtError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_astring_char(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -316,7 +308,7 @@ impl<'a> AtomExt<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
-    type Error = AtomExtError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -327,7 +319,7 @@ impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
-    type Error = AtomExtError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -338,7 +330,7 @@ impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for AtomExt<'a> {
-    type Error = AtomExtError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -348,7 +340,7 @@ impl<'a> TryFrom<&'a str> for AtomExt<'a> {
 }
 
 impl<'a> TryFrom<String> for AtomExt<'a> {
-    type Error = AtomExtError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -367,15 +359,6 @@ impl<'a> AsRef<str> for AtomExt<'a> {
     fn as_ref(&self) -> &str {
         &self.0
     }
-}
-
-/// Error during creation of an extended atom.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum AtomExtError {
-    #[error("Must not be empty.")]
-    Empty,
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// Either a quoted string or a literal.
@@ -416,7 +399,7 @@ impl<'a> IString<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for IString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if let Ok(quoted) = Quoted::try_from(value) {
@@ -428,7 +411,7 @@ impl<'a> TryFrom<&'a [u8]> for IString<'a> {
 }
 
 impl TryFrom<Vec<u8>> for IString<'_> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -441,7 +424,7 @@ impl TryFrom<Vec<u8>> for IString<'_> {
 }
 
 impl<'a> TryFrom<&'a str> for IString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(quoted) = Quoted::try_from(value) {
@@ -453,7 +436,7 @@ impl<'a> TryFrom<&'a str> for IString<'a> {
 }
 
 impl<'a> TryFrom<String> for IString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -557,14 +540,14 @@ impl<'a> Debug for Literal<'a> {
 }
 
 impl<'a> Literal<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), LiteralError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
-        if let Some(position) = value.iter().position(|b| !is_char8(*b)) {
-            return Err(LiteralError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_char8(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -650,7 +633,7 @@ impl<'a> Literal<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -664,7 +647,7 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -678,7 +661,7 @@ impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Literal<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -692,7 +675,7 @@ impl<'a> TryFrom<&'a str> for Literal<'a> {
 }
 
 impl<'a> TryFrom<String> for Literal<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -723,13 +706,6 @@ pub enum LiteralMode {
     Sync,
     /// A non-synchronizing literal according to RFC 7888, i.e., `{<n>+}\r\n<data>`.
     NonSync,
-}
-
-/// Error during creation of a literal.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum LiteralError {
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// A quoted string.
@@ -766,14 +742,14 @@ impl<'a> Debug for Quoted<'a> {
 }
 
 impl<'a> Quoted<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), QuotedError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
-        if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
-            return Err(QuotedError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_text_char(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -810,7 +786,7 @@ impl<'a> Quoted<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Quoted<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Quoted::validate(value)?;
@@ -821,7 +797,7 @@ impl<'a> TryFrom<&'a [u8]> for Quoted<'a> {
 }
 
 impl TryFrom<Vec<u8>> for Quoted<'_> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Quoted::validate(&value)?;
@@ -832,7 +808,7 @@ impl TryFrom<Vec<u8>> for Quoted<'_> {
 }
 
 impl<'a> TryFrom<&'a str> for Quoted<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Quoted::validate(value)?;
@@ -842,20 +818,13 @@ impl<'a> TryFrom<&'a str> for Quoted<'a> {
 }
 
 impl<'a> TryFrom<String> for Quoted<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Quoted::validate(&value)?;
 
         Ok(Quoted(Cow::Owned(value)))
     }
-}
-
-/// Error during creation of a quoted string.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum QuotedError {
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 impl<'a> AsRef<str> for Quoted<'a> {
@@ -897,7 +866,7 @@ impl<'a> NString<'a> {
 macro_rules! impl_try_from_nstring {
     ($from:ty) => {
         impl<'a> TryFrom<$from> for NString<'a> {
-            type Error = LiteralError;
+            type Error = ValidationError;
 
             fn try_from(value: $from) -> Result<Self, Self::Error> {
                 Ok(Self(Some(IString::try_from(value)?)))
@@ -944,7 +913,7 @@ pub enum AString<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for AString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if let Ok(atom) = AtomExt::try_from(value) {
@@ -956,7 +925,7 @@ impl<'a> TryFrom<&'a [u8]> for AString<'a> {
 }
 
 impl TryFrom<Vec<u8>> for AString<'_> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -969,7 +938,7 @@ impl TryFrom<Vec<u8>> for AString<'_> {
 }
 
 impl<'a> TryFrom<&'a str> for AString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(atom) = AtomExt::try_from(value) {
@@ -981,7 +950,7 @@ impl<'a> TryFrom<&'a str> for AString<'a> {
 }
 
 impl<'a> TryFrom<String> for AString<'a> {
-    type Error = LiteralError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -1062,21 +1031,21 @@ impl<'a> Debug for Tag<'a> {
 }
 
 impl<'a> Tag<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TagError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
         if value.is_empty() {
-            return Err(TagError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
-        if let Some(position) = value
+        if let Some(at) = value
             .iter()
             .position(|b| !is_astring_char(*b) || *b == b'+')
         {
-            return Err(TagError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -1109,7 +1078,7 @@ impl<'a> Tag<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
-    type Error = TagError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -1120,7 +1089,7 @@ impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
-    type Error = TagError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -1131,7 +1100,7 @@ impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Tag<'a> {
-    type Error = TagError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -1141,7 +1110,7 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
 }
 
 impl<'a> TryFrom<String> for Tag<'a> {
-    type Error = TagError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -1154,15 +1123,6 @@ impl<'a> AsRef<str> for Tag<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
-}
-
-/// Error during creation of a tag.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum TagError {
-    #[error("Must not be empty.")]
-    Empty,
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// A human-readable text string used in some server responses.
@@ -1198,18 +1158,18 @@ impl<'a> Debug for Text<'a> {
 }
 
 impl<'a> Text<'a> {
-    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), TextError> {
+    pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
 
         if value.is_empty() {
-            return Err(TextError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
-        if let Some(position) = value.iter().position(|b| !is_text_char(*b)) {
-            return Err(TextError::ByteNotAllowed {
-                found: value[position],
-                position,
-            });
+        if let Some(at) = value.iter().position(|b| !is_text_char(*b)) {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                byte: value[at],
+                at,
+            }));
         };
 
         Ok(())
@@ -1246,7 +1206,7 @@ impl<'a> Text<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Text<'a> {
-    type Error = TextError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -1257,7 +1217,7 @@ impl<'a> TryFrom<&'a [u8]> for Text<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for Text<'a> {
-    type Error = TextError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -1268,7 +1228,7 @@ impl<'a> TryFrom<Vec<u8>> for Text<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Text<'a> {
-    type Error = TextError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::validate(value)?;
@@ -1278,7 +1238,7 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
 }
 
 impl<'a> TryFrom<String> for Text<'a> {
-    type Error = TextError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::validate(&value)?;
@@ -1291,15 +1251,6 @@ impl<'a> AsRef<str> for Text<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
-}
-
-/// Error during creation of a human-readable text.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum TextError {
-    #[error("Must not be empty.")]
-    Empty,
-    #[error("Invalid byte b'\\x{found:02x}' at index {position}")]
-    ByteNotAllowed { found: u8, position: usize },
 }
 
 /// A quoted char.
@@ -1321,7 +1272,7 @@ pub enum TextError {
 pub struct QuotedChar(char);
 
 impl QuotedChar {
-    pub fn validate(input: char) -> Result<(), QuotedCharError> {
+    pub fn validate(input: char) -> Result<(), ValidationError> {
         if input.is_ascii()
             && (is_any_text_char_except_quoted_specials(input as u8)
                 || input == '\\'
@@ -1329,7 +1280,7 @@ impl QuotedChar {
         {
             Ok(())
         } else {
-            Err(QuotedCharError::Invalid(input))
+            Err(ValidationError::new(ValidationErrorKind::Invalid))
         }
     }
 
@@ -1355,20 +1306,13 @@ impl QuotedChar {
 }
 
 impl TryFrom<char> for QuotedChar {
-    type Error = QuotedCharError;
+    type Error = ValidationError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         Self::validate(value)?;
 
         Ok(QuotedChar(value))
     }
-}
-
-/// Error during creation of a quoted char.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum QuotedCharError {
-    #[error("Invalid character `{0}`.")]
-    Invalid(char),
 }
 
 /// A charset.
@@ -1418,7 +1362,7 @@ impl<'a> From<Quoted<'a>> for Charset<'a> {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         if let Ok(atom) = Atom::try_from(value) {
@@ -1430,7 +1374,7 @@ impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
 }
 
 impl<'a> TryFrom<Vec<u8>> for Charset<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -1443,7 +1387,7 @@ impl<'a> TryFrom<Vec<u8>> for Charset<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Charset<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Ok(atom) = Atom::try_from(value) {
@@ -1455,7 +1399,7 @@ impl<'a> TryFrom<&'a str> for Charset<'a> {
 }
 
 impl<'a> TryFrom<String> for Charset<'a> {
-    type Error = QuotedError;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         // TODO(efficiency)
@@ -1498,9 +1442,9 @@ where
 }
 
 impl<T> NonEmptyVec<T> {
-    pub fn validate(value: &[T]) -> Result<(), NonEmptyVecError> {
+    pub fn validate(value: &[T]) -> Result<(), ValidationError> {
         if value.is_empty() {
-            return Err(NonEmptyVecError::Empty);
+            return Err(ValidationError::new(ValidationErrorKind::Empty));
         }
 
         Ok(())
@@ -1534,7 +1478,7 @@ impl<T> From<T> for NonEmptyVec<T> {
 }
 
 impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
-    type Error = NonEmptyVecError;
+    type Error = ValidationError;
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
         Self::validate(&inner)?;
@@ -1552,13 +1496,6 @@ impl<T> IntoIterator for NonEmptyVec<T> {
     }
 }
 
-/// Error during creation of a non-empty vector.
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum NonEmptyVecError {
-    #[error("Must not be empty.")]
-    Empty,
-}
-
 impl<T> AsRef<[T]> for NonEmptyVec<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
@@ -1574,7 +1511,10 @@ mod tests {
     #[test]
     fn test_conversion_atom() {
         #[allow(clippy::type_complexity)]
-        let tests: Vec<(&[u8], (Result<Atom, AtomError>, Result<Atom, AtomError>))> = vec![
+        let tests: Vec<(
+            &[u8],
+            (Result<Atom, ValidationError>, Result<Atom, ValidationError>),
+        )> = vec![
             (
                 b"A",
                 (
@@ -1592,54 +1532,60 @@ mod tests {
             (
                 b" A",
                 (
-                    Err(AtomError::ByteNotAllowed {
-                        found: b' ',
-                        position: 0,
-                    }),
-                    Err(AtomError::ByteNotAllowed {
-                        found: b' ',
-                        position: 0,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 0,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 0,
+                    })),
                 ),
             ),
             (
                 b"A ",
                 (
-                    Err(AtomError::ByteNotAllowed {
-                        found: b' ',
-                        position: 1,
-                    }),
-                    Err(AtomError::ByteNotAllowed {
-                        found: b' ',
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 1,
+                    })),
                 ),
             ),
-            (b"", (Err(AtomError::Empty), Err(AtomError::Empty))),
             (
-                b"A\x00",
+                b"",
                 (
-                    Err(AtomError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
-                    Err(AtomError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::Empty)),
+                    Err(ValidationError::new(ValidationErrorKind::Empty)),
                 ),
             ),
             (
                 b"A\x00",
                 (
-                    Err(AtomError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
-                    Err(AtomError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
+                ),
+            ),
+            (
+                b"A\x00",
+                (
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
                 ),
             ),
         ];
@@ -1678,7 +1624,10 @@ mod tests {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &[u8],
-            (Result<AtomExt, AtomExtError>, Result<AtomExt, AtomExtError>),
+            (
+                Result<AtomExt, ValidationError>,
+                Result<AtomExt, ValidationError>,
+            ),
         )> = vec![
             (
                 b"A",
@@ -1704,54 +1653,60 @@ mod tests {
             (
                 b" A",
                 (
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: b' ',
-                        position: 0,
-                    }),
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: b' ',
-                        position: 0,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 0,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 0,
+                    })),
                 ),
             ),
             (
                 b"A ",
                 (
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: b' ',
-                        position: 1,
-                    }),
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: b' ',
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: b' ',
+                        at: 1,
+                    })),
                 ),
             ),
-            (b"", (Err(AtomExtError::Empty), Err(AtomExtError::Empty))),
+            (
+                b"",
+                (
+                    Err(ValidationError::new(ValidationErrorKind::Empty)),
+                    Err(ValidationError::new(ValidationErrorKind::Empty)),
+                ),
+            ),
             (
                 b"A\x00",
                 (
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 1,
+                    })),
                 ),
             ),
             (
                 b"\x00",
                 (
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 0,
-                    }),
-                    Err(AtomExtError::ByteNotAllowed {
-                        found: 0x00,
-                        position: 0,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 0,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0x00,
+                        at: 0,
+                    })),
                 ),
             ),
         ];
@@ -1790,7 +1745,10 @@ mod tests {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &[u8],
-            (Result<AString, LiteralError>, Result<AString, LiteralError>),
+            (
+                Result<AString, ValidationError>,
+                Result<AString, ValidationError>,
+            ),
         )> = vec![
             (
                 b"A",
@@ -1862,27 +1820,27 @@ mod tests {
             (
                 b"A\x00",
                 (
-                    Err(LiteralError::ByteNotAllowed {
-                        found: 0,
-                        position: 1,
-                    }),
-                    Err(LiteralError::ByteNotAllowed {
-                        found: 0,
-                        position: 1,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0,
+                        at: 1,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0,
+                        at: 1,
+                    })),
                 ),
             ),
             (
                 b"\x00",
                 (
-                    Err(LiteralError::ByteNotAllowed {
-                        found: 0,
-                        position: 0,
-                    }),
-                    Err(LiteralError::ByteNotAllowed {
-                        found: 0,
-                        position: 0,
-                    }),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0,
+                        at: 0,
+                    })),
+                    Err(ValidationError::new(ValidationErrorKind::InvalidByteAt {
+                        byte: 0,
+                        at: 0,
+                    })),
                 ),
             ),
         ];
