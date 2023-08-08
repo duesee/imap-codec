@@ -2,7 +2,7 @@
 
 use std::{
     borrow::Cow,
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
     num::{NonZeroU32, TryFromIntError},
 };
 
@@ -887,8 +887,27 @@ impl<'a> Code<'a> {
 /// It's guaranteed that this type can't represent any code from [`Code`].
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct CodeOther<'a>(Cow<'a, [u8]>);
+
+// We want a more readable `Debug` implementation.
+impl<'a> Debug for CodeOther<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        struct BStr<'a>(&'a Cow<'a, [u8]>);
+
+        impl<'a> Debug for BStr<'a> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                write!(
+                    f,
+                    "b\"{}\"",
+                    crate::utils::escape_byte_string(self.0.as_ref())
+                )
+            }
+        }
+
+        f.debug_tuple("CodeOther").field(&BStr(&self.0)).finish()
+    }
+}
 
 impl<'a> CodeOther<'a> {
     /// Constructs an unsupported code without validation.
