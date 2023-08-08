@@ -1009,7 +1009,7 @@ impl<'a> Display for Capability<'a> {
             Self::LiteralMinus => write!(f, "LITERAL-"),
             #[cfg(feature = "ext_move")]
             Self::Move => write!(f, "MOVE"),
-            Self::Other(other) => write!(f, "{}", other),
+            Self::Other(other) => write!(f, "{}", other.0),
         }
     }
 }
@@ -1116,35 +1116,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CapabilityOther<'a>(pub(crate) Atom<'a>);
-
-impl<'a> Display for CapabilityOther<'a> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl<'a> CapabilityOther<'a> {
-    /// Constructs an unsupported capability without validation.
-    ///
-    /// # Warning: IMAP conformance
-    ///
-    /// The caller must ensure that `data` is valid. Failing to do so may create invalid/unparsable
-    /// IMAP messages, or even produce unintended protocol flows. Do not call this constructor with
-    /// untrusted data.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
-    pub fn unvalidated<C>(inner: C) -> Self
-    where
-        C: Into<Cow<'a, str>>,
-    {
-        Self(Atom::unvalidated(inner))
-    }
-
-    pub fn inner(&self) -> &Atom<'a> {
-        &self.0
-    }
-}
+pub struct CapabilityOther<'a>(Atom<'a>);
 
 #[cfg(test)]
 mod tests {
