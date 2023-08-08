@@ -123,7 +123,6 @@ pub enum FlagPerm<'a> {
 }
 
 /// Four name attributes are defined.
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -145,9 +144,15 @@ pub enum FlagNameAttribute<'a> {
     /// last time the mailbox was selected. (`\Unmarked`)
     Unmarked,
 
-    /// Note: extension flags must also be accepted here...
-    Extension(Atom<'a>),
+    /// An extension flags.
+    Extension(FlagNameAttributeExtension<'a>),
 }
+
+/// An extension flag.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FlagNameAttributeExtension<'a>(Atom<'a>);
 
 impl<'a> FlagNameAttribute<'a> {
     pub fn is_selectability(&self) -> bool {
@@ -165,7 +170,19 @@ impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
             "noselect" => Self::Noselect,
             "marked" => Self::Marked,
             "unmarked" => Self::Unmarked,
-            _ => Self::Extension(atom),
+            _ => Self::Extension(FlagNameAttributeExtension(atom)),
+        }
+    }
+}
+
+impl<'a> Display for FlagNameAttribute<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Noinferiors => f.write_str("\\Noinferiors"),
+            Self::Noselect => f.write_str("\\Noselect"),
+            Self::Marked => f.write_str("\\Marked"),
+            Self::Unmarked => f.write_str("\\Unmarked"),
+            Self::Extension(extension) => write!(f, "\\{}", extension.0),
         }
     }
 }

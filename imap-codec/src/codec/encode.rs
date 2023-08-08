@@ -1175,16 +1175,7 @@ impl<'a> Encoder for Data<'a> {
 
 impl<'a> Encoder for FlagNameAttribute<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Self::Noinferiors => ctx.write_all(b"\\Noinferiors"),
-            Self::Noselect => ctx.write_all(b"\\Noselect"),
-            Self::Marked => ctx.write_all(b"\\Marked"),
-            Self::Unmarked => ctx.write_all(b"\\Unmarked"),
-            Self::Extension(atom) => {
-                ctx.write_all(b"\\")?;
-                atom.encode_ctx(ctx)
-            }
-        }
+        write!(ctx, "{}", self)
     }
 }
 

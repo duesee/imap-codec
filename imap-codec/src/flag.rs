@@ -178,9 +178,7 @@ mod tests {
         let tests = [
             (
                 "\\Markedm)",
-                vec![FlagNameAttribute::Extension(
-                    Atom::try_from("Markedm").unwrap(),
-                )],
+                vec![FlagNameAttribute::from(Atom::try_from("Markedm").unwrap())],
             ),
             ("\\Marked)", vec![FlagNameAttribute::Marked]),
         ];
