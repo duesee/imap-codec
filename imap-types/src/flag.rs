@@ -9,7 +9,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::core::{Atom, AtomError};
+use crate::{core::Atom, error::ValidationError};
 
 /// There are two types of flags in IMAP4rev1: System and keyword flags.
 ///
@@ -69,7 +69,7 @@ impl<'a> Flag<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for Flag<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Ok(if let Some(value) = value.strip_prefix('\\') {

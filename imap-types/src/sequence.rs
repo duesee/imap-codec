@@ -10,9 +10,11 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
-use crate::core::NonEmptyVec;
+use crate::{
+    core::NonEmptyVec,
+    error::{ValidationError, ValidationErrorKind},
+};
 
 pub const ONE: NonZeroU32 = match NonZeroU32::new(1) {
     Some(one) => one,
@@ -49,7 +51,7 @@ macro_rules! impl_from_t_for_sequence_set {
 macro_rules! impl_try_from_t_for_sequence_set {
     ($thing:ty) => {
         impl TryFrom<$thing> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(value: $thing) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(value)?))
@@ -70,17 +72,17 @@ impl_from_t_for_sequence_set!(RangeInclusive<NonZeroU32>);
 // `SequenceSet::try_from` implementations.
 
 impl TryFrom<Vec<Sequence>> for SequenceSet {
-    type Error = SequenceSetError;
+    type Error = ValidationError;
 
     fn try_from(sequences: Vec<Sequence>) -> Result<Self, Self::Error> {
-        Ok(Self(
-            NonEmptyVec::try_from(sequences).map_err(|_| SequenceSetError::Empty)?,
-        ))
+        Ok(Self(NonEmptyVec::try_from(sequences).map_err(|_| {
+            ValidationError::new(ValidationErrorKind::Empty)
+        })?))
     }
 }
 
 impl TryFrom<Vec<NonZeroU32>> for SequenceSet {
-    type Error = SequenceSetError;
+    type Error = ValidationError;
 
     fn try_from(sequences: Vec<NonZeroU32>) -> Result<Self, Self::Error> {
         Ok(Self(
@@ -90,13 +92,13 @@ impl TryFrom<Vec<NonZeroU32>> for SequenceSet {
                     .map(Sequence::from)
                     .collect::<Vec<_>>(),
             )
-            .map_err(|_| SequenceSetError::Empty)?,
+            .map_err(|_| ValidationError::new(ValidationErrorKind::Empty))?,
         ))
     }
 }
 
 impl TryFrom<&str> for SequenceSet {
-    type Error = SequenceSetError;
+    type Error = ValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse()
@@ -104,7 +106,7 @@ impl TryFrom<&str> for SequenceSet {
 }
 
 impl FromStr for SequenceSet {
-    type Err = SequenceSetError;
+    type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let mut results = vec![];
@@ -113,9 +115,9 @@ impl FromStr for SequenceSet {
             results.push(Sequence::try_from(seq)?);
         }
 
-        Ok(SequenceSet(
-            NonEmptyVec::try_from(results).map_err(|_| SequenceSetError::Empty)?,
-        ))
+        Ok(SequenceSet(NonEmptyVec::try_from(results).map_err(
+            |_| ValidationError::new(ValidationErrorKind::Empty),
+        )?))
     }
 }
 
@@ -141,7 +143,7 @@ impl From<NonZeroU32> for Sequence {
 }
 
 impl TryFrom<&str> for Sequence {
-    type Error = SequenceError;
+    type Error = ValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse()
@@ -149,11 +151,11 @@ impl TryFrom<&str> for Sequence {
 }
 
 impl FromStr for Sequence {
-    type Err = SequenceError;
+    type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value.split(':').count() {
-            0 => Err(SequenceError::Empty),
+            0 => Err(ValidationError::new(ValidationErrorKind::Empty)),
             1 => Ok(Sequence::Single(SeqOrUid::try_from(value)?)),
             2 => {
                 let mut split = value.split(':');
@@ -166,7 +168,7 @@ impl FromStr for Sequence {
                     SeqOrUid::try_from(end)?,
                 ))
             }
-            _ => Err(SequenceError::Invalid),
+            _ => Err(ValidationError::new(ValidationErrorKind::Invalid)),
         }
     }
 }
@@ -189,7 +191,7 @@ impl From<NonZeroU32> for SeqOrUid {
 macro_rules! impl_try_from_num {
     ($num:ty) => {
         impl TryFrom<&[$num]> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(values: &[$num]) -> Result<Self, Self::Error> {
                 let mut checked = Vec::new();
@@ -203,7 +205,7 @@ macro_rules! impl_try_from_num {
         }
 
         impl TryFrom<$num> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(value: $num) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(value)?))
@@ -211,7 +213,7 @@ macro_rules! impl_try_from_num {
         }
 
         impl TryFrom<$num> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(value: $num) -> Result<Self, Self::Error> {
                 Ok(Self::from(SeqOrUid::try_from(value)?))
@@ -219,7 +221,7 @@ macro_rules! impl_try_from_num {
         }
 
         impl TryFrom<$num> for SeqOrUid {
-            type Error = SeqOrUidError;
+            type Error = ValidationError;
 
             fn try_from(value: $num) -> Result<Self, Self::Error> {
                 if let Ok(value) = u32::try_from(value) {
@@ -228,7 +230,7 @@ macro_rules! impl_try_from_num {
                     }
                 }
 
-                Err(SeqOrUidError::Invalid)
+                Err(ValidationError::new(ValidationErrorKind::Invalid))
             }
         }
     };
@@ -246,7 +248,7 @@ impl_try_from_num!(u64);
 impl_try_from_num!(usize);
 
 impl TryFrom<&str> for SeqOrUid {
-    type Error = SeqOrUidError;
+    type Error = ValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse()
@@ -254,7 +256,7 @@ impl TryFrom<&str> for SeqOrUid {
 }
 
 impl FromStr for SeqOrUid {
-    type Err = SeqOrUidError;
+    type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         if value == "*" {
@@ -264,11 +266,11 @@ impl FromStr for SeqOrUid {
             // Rust's `parse::<NonZeroU32>` function accepts numbers that start with 0.
             // For example, 00001, is interpreted as 1. But this is not allowed in IMAP.
             if value.starts_with('0') {
-                Err(SeqOrUidError::LeadingZero)
+                Err(ValidationError::new(ValidationErrorKind::Invalid))
             } else {
-                Ok(SeqOrUid::Value(
-                    NonZeroU32::from_str(value).map_err(|_| SeqOrUidError::Invalid)?,
-                ))
+                Ok(SeqOrUid::Value(NonZeroU32::from_str(value).map_err(
+                    |_| ValidationError::new(ValidationErrorKind::Invalid),
+                )?))
             }
         }
     }
@@ -279,7 +281,7 @@ impl FromStr for SeqOrUid {
 macro_rules! impl_try_from_num_range {
     ($num:ty) => {
         impl TryFrom<RangeFrom<$num>> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeFrom<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(range)?))
@@ -287,7 +289,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeTo<$num>> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeTo<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(range)?))
@@ -295,7 +297,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeToInclusive<$num>> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeToInclusive<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(range)?))
@@ -303,7 +305,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<Range<$num>> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(range: Range<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(range)?))
@@ -311,7 +313,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeInclusive<$num>> for SequenceSet {
-            type Error = SequenceSetError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeInclusive<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::from(Sequence::try_from(range)?))
@@ -321,7 +323,7 @@ macro_rules! impl_try_from_num_range {
         // -----------------------------------------------------------------------------------------
 
         impl TryFrom<RangeFrom<$num>> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeFrom<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::Range(
@@ -332,7 +334,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeTo<$num>> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeTo<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::Range(
@@ -343,7 +345,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeToInclusive<$num>> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeToInclusive<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::Range(
@@ -354,7 +356,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<Range<$num>> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(range: Range<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::Range(
@@ -365,7 +367,7 @@ macro_rules! impl_try_from_num_range {
         }
 
         impl TryFrom<RangeInclusive<$num>> for Sequence {
-            type Error = SequenceError;
+            type Error = ValidationError;
 
             fn try_from(range: RangeInclusive<$num>) -> Result<Self, Self::Error> {
                 Ok(Self::Range(
@@ -401,7 +403,7 @@ impl From<RangeFrom<NonZeroU32>> for Sequence {
 }
 
 impl TryFrom<RangeTo<NonZeroU32>> for Sequence {
-    type Error = SequenceError;
+    type Error = ValidationError;
 
     fn try_from(range: RangeTo<NonZeroU32>) -> Result<Self, Self::Error> {
         Self::try_from(MIN..range.end)
@@ -415,7 +417,7 @@ impl From<RangeToInclusive<NonZeroU32>> for Sequence {
 }
 
 impl TryFrom<Range<NonZeroU32>> for Sequence {
-    type Error = SequenceError;
+    type Error = ValidationError;
 
     fn try_from(range: Range<NonZeroU32>) -> Result<Self, Self::Error> {
         Ok(Self::Range(
@@ -499,34 +501,6 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
-pub enum SequenceSetError {
-    #[error("Empty sequence set is not allowed")]
-    Empty,
-    #[error(transparent)]
-    Sequence(#[from] SequenceError),
-}
-
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
-pub enum SequenceError {
-    #[error("Empty sequence is not allowed")]
-    Empty,
-    #[error("Invalid sequence")]
-    Invalid,
-    #[error(transparent)]
-    SeqOrUid(#[from] SeqOrUidError),
-}
-
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
-pub enum SeqOrUidError {
-    #[error("Leading zeroes are not allowed")]
-    LeadingZero,
-    #[error("Out of range")]
-    Invalid,
-}
-
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU32;
@@ -544,9 +518,7 @@ mod tests {
         );
         assert_eq!(
             SequenceSet::try_from(0),
-            Err(SequenceSetError::Sequence(SequenceError::SeqOrUid(
-                SeqOrUidError::Invalid
-            )))
+            Err(ValidationError::new(ValidationErrorKind::Invalid))
         );
     }
 

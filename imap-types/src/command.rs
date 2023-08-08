@@ -10,7 +10,6 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[cfg(feature = "ext_compress")]
 use crate::extensions::compress::CompressionAlgorithm;
@@ -18,6 +17,7 @@ use crate::extensions::compress::CompressionAlgorithm;
 use crate::extensions::quota::QuotaSet;
 use crate::{
     auth::AuthMechanism,
+    command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
     core::{AString, Charset, Literal, Tag},
     datetime::DateTime,
     fetch::MacroOrMessageDataItemNames,
@@ -1686,44 +1686,49 @@ impl<'a> CommandBody<'a> {
     }
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum LoginError<U, P> {
-    #[error("Invalid username: {0}")]
-    Username(U),
-    #[error("Invalid password: {0}")]
-    Password(P),
-}
+/// Error-related types.
+pub mod error {
+    use thiserror::Error;
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum RenameError<F, T> {
-    #[error("Invalid (from) mailbox: {0}")]
-    From(F),
-    #[error("Invalid (to) mailbox: {0}")]
-    To(T),
-}
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum LoginError<U, P> {
+        #[error("Invalid username: {0}")]
+        Username(U),
+        #[error("Invalid password: {0}")]
+        Password(P),
+    }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum ListError<R, M> {
-    #[error("Invalid reference: {0}")]
-    Reference(R),
-    #[error("Invalid mailbox: {0}")]
-    Mailbox(M),
-}
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum RenameError<F, T> {
+        #[error("Invalid (from) mailbox: {0}")]
+        From(F),
+        #[error("Invalid (to) mailbox: {0}")]
+        To(T),
+    }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum AppendError<M, D> {
-    #[error("Invalid mailbox: {0}")]
-    Mailbox(M),
-    #[error("Invalid data: {0}")]
-    Data(D),
-}
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum ListError<R, M> {
+        #[error("Invalid reference: {0}")]
+        Reference(R),
+        #[error("Invalid mailbox: {0}")]
+        Mailbox(M),
+    }
 
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-pub enum CopyError<S, M> {
-    #[error("Invalid sequence: {0}")]
-    Sequence(S),
-    #[error("Invalid mailbox: {0}")]
-    Mailbox(M),
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum AppendError<M, D> {
+        #[error("Invalid mailbox: {0}")]
+        Mailbox(M),
+        #[error("Invalid data: {0}")]
+        Data(D),
+    }
+
+    #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
+    pub enum CopyError<S, M> {
+        #[error("Invalid sequence: {0}")]
+        Sequence(S),
+        #[error("Invalid mailbox: {0}")]
+        Mailbox(M),
+    }
 }
 
 #[cfg(test)]

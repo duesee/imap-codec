@@ -17,7 +17,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::CommandBody,
-    core::{Atom, AtomError, NonEmptyVec},
+    core::{Atom, NonEmptyVec},
+    error::ValidationError,
 };
 
 impl<'a> CommandBody<'a> {
@@ -44,7 +45,7 @@ pub enum CapabilityEnable<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for CapabilityEnable<'a> {
-    type Error = AtomError;
+    type Error = ValidationError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Ok(Self::from(Atom::try_from(value)?))

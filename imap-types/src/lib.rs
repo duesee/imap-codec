@@ -167,6 +167,7 @@ pub mod command;
 pub mod core;
 pub mod datetime;
 pub mod envelope;
+pub mod error;
 #[cfg(any(
     feature = "ext_compress",
     feature = "ext_enable",

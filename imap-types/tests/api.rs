@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use imap_types::{
-    command::{Command, CommandBody, LoginError},
+    command::{error::LoginError, Command, CommandBody},
     core::{AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, Tag, Text},
     mailbox::{Mailbox, MailboxOther},
     response::Data,

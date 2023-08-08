@@ -18,9 +18,12 @@ use arbitrary::Arbitrary;
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
-use crate::{command::CommandBody, core::Atom};
+use crate::{
+    command::CommandBody,
+    core::Atom,
+    error::{ValidationError, ValidationErrorKind},
+};
 
 impl<'a> CommandBody<'a> {
     pub fn compress(algorithm: CompressionAlgorithm) -> Self {
@@ -46,34 +49,34 @@ impl Display for CompressionAlgorithm {
 }
 
 impl<'a> TryFrom<&'a str> for CompressionAlgorithm {
-    type Error = CompressionAlgorithmError;
+    type Error = ValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_ref() {
             "deflate" => Ok(Self::Deflate),
-            _ => Err(CompressionAlgorithmError::Invalid),
+            _ => Err(ValidationError::new(ValidationErrorKind::Invalid)),
         }
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for CompressionAlgorithm {
-    type Error = CompressionAlgorithmError;
+    type Error = ValidationError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_slice() {
             b"deflate" => Ok(Self::Deflate),
-            _ => Err(CompressionAlgorithmError::Invalid),
+            _ => Err(ValidationError::new(ValidationErrorKind::Invalid)),
         }
     }
 }
 
 impl<'a> TryFrom<Atom<'a>> for CompressionAlgorithm {
-    type Error = CompressionAlgorithmError;
+    type Error = ValidationError;
 
     fn try_from(atom: Atom<'a>) -> Result<Self, Self::Error> {
         match atom.as_ref().to_ascii_lowercase().as_ref() {
             "deflate" => Ok(Self::Deflate),
-            _ => Err(CompressionAlgorithmError::Invalid),
+            _ => Err(ValidationError::new(ValidationErrorKind::Invalid)),
         }
     }
 }
@@ -84,13 +87,6 @@ impl AsRef<str> for CompressionAlgorithm {
             CompressionAlgorithm::Deflate => "DEFLATE",
         }
     }
-}
-
-#[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub enum CompressionAlgorithmError {
-    #[error("Invalid compression algorithm.")]
-    Invalid,
 }
 
 #[cfg(test)]
