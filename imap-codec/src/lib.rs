@@ -26,7 +26,7 @@
 //!
 //! ## Decoding
 //!
-//! Parsing is implemented through the [`Decode`](crate::codec::Decode) trait.
+//! Parsing is implemented through the [`Decode`](crate::codec::Decoder) trait.
 //! The main entry points for parsing are
 //! [`Greeting::decode(...)`](imap_types::response::Greeting#method.decode) (to parse the first message from a server),
 //! [`Command::decode(...)`](imap_types::command::Command#method.decode) (to parse commands from a client), and
