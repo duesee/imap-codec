@@ -18,8 +18,9 @@ use nom::{
 };
 
 use crate::{
-    codec::{EncodeContext, Encoder, IMAPResult},
     core::atom,
+    decode::IMAPResult,
+    encode::{EncodeContext, Encoder},
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`

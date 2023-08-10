@@ -15,8 +15,8 @@ use nom::{
 };
 
 use crate::{
-    codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
     core::{nil, nstring, number, string},
+    decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
     envelope::envelope,
 };
 

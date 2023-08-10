@@ -12,8 +12,8 @@ use nom::{
 };
 
 use crate::{
-    codec::IMAPResult,
     core::{nil, nstring},
+    decode::IMAPResult,
 };
 
 /// ```abnf

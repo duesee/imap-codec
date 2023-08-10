@@ -1,3 +1,5 @@
+//! Decoding-related types.
+
 use std::num::{ParseIntError, TryFromIntError};
 
 #[cfg(feature = "bounded-static")]
@@ -15,9 +17,9 @@ use imap_types::{
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
 #[cfg(feature = "ext_idle")]
-use crate::codec::IdleDoneCodec;
-#[cfg(feature = "ext_idle")]
 use crate::extensions::idle::idle_done;
+#[cfg(feature = "ext_idle")]
+use crate::IdleDoneCodec;
 use crate::{
     auth::authenticate_data,
     codec::{AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec},
@@ -96,6 +98,9 @@ impl<'a, I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'a, I> 
     }
 }
 
+/// Decoder.
+///
+/// Implemented for types that know how to decode a specific IMAP message. See [implementors](trait.Decoder.html#implementors).
 pub trait Decoder {
     type Item<'a>: Sized;
     type Error<'a>;
@@ -114,6 +119,7 @@ pub trait Decoder {
     }
 }
 
+/// Error during greeting decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GreetingDecodeError {
@@ -124,6 +130,7 @@ pub enum GreetingDecodeError {
     Failed,
 }
 
+/// Error during command decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CommandDecodeError<'a> {
@@ -184,6 +191,18 @@ pub enum CommandDecodeError<'a> {
     Failed,
 }
 
+/// Error during authenticate data line decoding.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AuthenticateDataDecodeError {
+    /// More data is needed.
+    Incomplete,
+
+    /// Decoding failed.
+    Failed,
+}
+
+/// Error during response decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ResponseDecodeError {
@@ -207,16 +226,7 @@ pub enum ResponseDecodeError {
     Failed,
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum AuthenticateDataDecodeError {
-    /// More data is needed.
-    Incomplete,
-
-    /// Decoding failed.
-    Failed,
-}
-
+/// Error during idle done decoding.
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]

@@ -10,7 +10,7 @@ use nom::{
     sequence::tuple,
 };
 
-use crate::{codec::IMAPResult, core::nz_number};
+use crate::{core::nz_number, decode::IMAPResult};
 
 /// `sequence-set = (seq-number / seq-range) ["," sequence-set]`
 ///
@@ -84,7 +84,7 @@ pub(crate) fn seq_number(input: &[u8]) -> IMAPResult<&[u8], SeqOrUid> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::codec::Encode;
+    use crate::encode::Encode;
 
     #[test]
     fn test_encode_of_some_sequence_sets() {

@@ -6,7 +6,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use imap_codec::codec::{CommandCodec, Decoder, Encode};
+//! use imap_codec::{decode::Decoder, encode::Encode, CommandCodec};
 //!
 //! // We assume here that the message is already complete.
 //! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
@@ -26,7 +26,7 @@
 //!
 //! ## Decoding
 //!
-//! Parsing is implemented through the [`Decode`](crate::codec::Decoder) trait.
+//! Parsing is implemented through the [`Decode`](crate::decode::Decoder) trait.
 //! The main entry points for parsing are
 //! [`Greeting::decode(...)`](imap_types::response::Greeting#method.decode) (to parse the first message from a server),
 //! [`Command::decode(...)`](imap_types::command::Command#method.decode) (to parse commands from a client), and
@@ -45,7 +45,7 @@
 //!
 //! ## Encoding
 //!
-//! The [`Encode::encode(...)`](codec::Encode::encode) method will return an instance of [`Encoded`](codec::Encoded)
+//! The [`Encode::encode(...)`](encode::Encode::encode) method will return an instance of [`Encoded`](encode::Encoded)
 //! that facilitates handling of literals. The idea is that the encoder not only "dumps" the final serialization of a message but can be iterated over.
 //!
 //! ### Example
@@ -54,7 +54,7 @@
 //! #[cfg(feature = "ext_literal")]
 //! use imap_codec::imap_types::core::LiteralMode;
 //! use imap_codec::{
-//!     codec::{Encode, Fragment},
+//!     encode::{Encode, Fragment},
 //!     imap_types::command::{Command, CommandBody},
 //! };
 //!
@@ -126,6 +126,7 @@
 
 mod auth;
 mod body;
+mod codec;
 mod command;
 mod core;
 mod datetime;
@@ -152,7 +153,6 @@ mod status;
 #[cfg(test)]
 mod testing;
 
-pub mod codec;
-
+pub use codec::*;
 // Re-export.
 pub use imap_types;

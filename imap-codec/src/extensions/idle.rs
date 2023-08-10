@@ -16,7 +16,10 @@ use abnf_core::streaming::crlf_relaxed as crlf;
 use imap_types::{command::CommandBody, extensions::idle::IdleDone};
 use nom::{bytes::streaming::tag_no_case, combinator::value, sequence::tuple};
 
-use crate::codec::{EncodeContext, Encoder, IMAPResult};
+use crate::{
+    decode::IMAPResult,
+    encode::{EncodeContext, Encoder},
+};
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
 ///
@@ -63,8 +66,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        codec::{Decoder, IdleDoneCodec, IdleDoneDecodeError},
+        decode::{Decoder, IdleDoneDecodeError},
         testing::kat_inverse_command,
+        IdleDoneCodec,
     };
 
     #[test]

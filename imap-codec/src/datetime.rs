@@ -14,7 +14,7 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
-use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
+use crate::decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 
 /// ```abnf
 /// date = date-text / DQUOTE date-text DQUOTE

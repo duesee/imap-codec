@@ -9,7 +9,7 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
-use crate::{codec::IMAPResult, core::atom};
+use crate::{core::atom, decode::IMAPResult};
 
 /// ```abnf
 /// flag = "\Answered" /

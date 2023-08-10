@@ -1,4 +1,7 @@
-use imap_codec::codec::{Decoder, ResponseCodec, ResponseDecodeError};
+use imap_codec::{
+    decode::{Decoder, ResponseDecodeError},
+    ResponseCodec,
+};
 
 #[path = "common/common.rs"]
 mod common;
