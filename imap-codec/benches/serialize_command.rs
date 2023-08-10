@@ -2,11 +2,12 @@ use std::num::NonZeroU32;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
-    encode::Encode,
+    encode::Encoder,
     imap_types::{
         command::{Command, CommandBody},
         fetch::{MacroOrMessageDataItemNames, MessageDataItemName, Section},
     },
+    CommandCodec,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -40,7 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("serialize_command", |b| {
         b.iter(|| {
-            let tmp = cmd.encode().dump();
+            let tmp = CommandCodec::default().encode(&cmd).dump();
             out.extend_from_slice(black_box(&tmp));
 
             // TODO: This should be a single instruction... should...

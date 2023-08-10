@@ -4,12 +4,12 @@ use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
     decode::{CommandDecodeError, Decoder},
-    encode::Encode,
+    encode::Encoder,
     imap_types::{
         command::Command,
         response::{Greeting, Response},
     },
-    CommandCodec,
+    CommandCodec, GreetingCodec, ResponseCodec,
 };
 use thiserror::Error;
 use tokio_util::codec::{Decoder as TokioDecoder, Encoder as TokioEncoder};
@@ -175,7 +175,7 @@ impl TokioEncoder<&Greeting<'_>> for ImapServerCodec {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         // TODO(225): Don't use `dump` here.
-        let data = item.encode().dump();
+        let data = GreetingCodec::default().encode(item).dump();
         writer.write_all(&data)?;
         Ok(())
     }
@@ -188,7 +188,7 @@ impl TokioEncoder<&Response<'_>> for ImapServerCodec {
         //dst.reserve(item.len());
         let mut writer = dst.writer();
         // TODO(225): Don't use `dump` here.
-        let data = item.encode().dump();
+        let data = ResponseCodec::default().encode(item).dump();
         writer.write_all(&data)?;
         Ok(())
     }

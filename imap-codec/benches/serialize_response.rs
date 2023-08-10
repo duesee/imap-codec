@@ -2,8 +2,9 @@ use std::num::NonZeroU32;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
-    encode::Encode,
+    encode::Encoder,
     imap_types::response::{Code, Response, Status},
+    ResponseCodec,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -25,7 +26,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("serialize_response", |b| {
         b.iter(|| {
-            let tmp = rsp.encode().dump();
+            let tmp = ResponseCodec::default().encode(&rsp).dump();
             out.extend_from_slice(black_box(&tmp));
 
             // TODO: This should be a single instruction... should...

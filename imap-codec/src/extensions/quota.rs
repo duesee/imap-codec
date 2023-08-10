@@ -19,7 +19,7 @@ use nom::{
 use crate::{
     core::{astring, atom, number64},
     decode::IMAPResult,
-    encode::{EncodeContext, Encoder},
+    encode::{EncodeContext, EncodeIntoContext},
     mailbox::mailbox,
 };
 
@@ -191,20 +191,20 @@ pub(crate) fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 //     Ok((remaining, Capability::QuotaRes(resource)))
 // }
 
-impl<'a> Encoder for Resource<'a> {
+impl<'a> EncodeIntoContext for Resource<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.to_string().as_bytes())
     }
 }
 
-impl<'a> Encoder for QuotaGet<'a> {
+impl<'a> EncodeIntoContext for QuotaGet<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {} {}", self.usage, self.limit)
     }
 }
 
-impl<'a> Encoder for QuotaSet<'a> {
+impl<'a> EncodeIntoContext for QuotaSet<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {}", self.limit)

@@ -9,15 +9,18 @@ use imap_types::{
 
 use crate::{
     decode::{Decoder, IMAPResult},
-    encode::Encode,
+    encode::{EncodeContext, EncodeIntoContext},
     AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec,
 };
 
 pub(crate) fn known_answer_test_encode(
-    (test_object, expected_bytes): (impl Encode, impl AsRef<[u8]>),
+    (test_object, expected_bytes): (impl EncodeIntoContext, impl AsRef<[u8]>),
 ) {
     let expected_bytes = expected_bytes.as_ref();
-    let got_bytes = test_object.encode().dump();
+    let mut ctx = EncodeContext::new();
+    test_object.encode_ctx(&mut ctx).unwrap();
+
+    let got_bytes = ctx.dump();
     let got_bytes = got_bytes.as_slice();
 
     if expected_bytes != got_bytes {
@@ -57,9 +60,12 @@ macro_rules! impl_kat_inverse {
                 assert_eq!(*expected_object, got_object);
                 assert_eq!(*expected_remainder, got_remainder);
 
-                let got_output = got_object.encode().dump();
+                let mut ctx = EncodeContext::new();
+                got_object.encode_ctx(&mut ctx).unwrap();
 
-                // This second `decode` makes using generic bonuds more complicated due to the
+                let got_output = ctx.dump();
+
+                // This second `decode` makes using generic bounds more complicated due to the
                 // different lifetime.
                 let (got_remainder, got_object_again) = $decoder::decode(&got_output).unwrap();
                 assert_eq!(got_object, got_object_again);

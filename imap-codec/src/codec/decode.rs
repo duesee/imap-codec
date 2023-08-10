@@ -108,6 +108,7 @@ pub trait Decoder {
     fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'_>>;
 
     #[cfg(feature = "bounded-static")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "bounded-static")))]
     fn decode_static<'a>(
         input: &'a [u8],
     ) -> Result<(&'a [u8], Self::Item<'static>), Self::Error<'_>>

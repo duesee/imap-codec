@@ -6,7 +6,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use imap_codec::{decode::Decoder, encode::Encode, CommandCodec};
+//! use imap_codec::{decode::Decoder, encode::Encoder, CommandCodec};
 //!
 //! // We assume here that the message is already complete.
 //! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
@@ -15,7 +15,7 @@
 //! println!("// Parsed:");
 //! println!("{parsed:#?}");
 //!
-//! let serialized = parsed.encode().dump();
+//! let serialized = CommandCodec::default().encode(&parsed).dump();
 //!
 //! // Not every IMAP message is valid UTF-8.
 //! // We ignore that here, so that we can print the message.
@@ -26,17 +26,17 @@
 //!
 //! ## Decoding
 //!
-//! Parsing is implemented through the [`Decode`](crate::decode::Decoder) trait.
-//! The main entry points for parsing are
-//! [`Greeting::decode(...)`](imap_types::response::Greeting#method.decode) (to parse the first message from a server),
-//! [`Command::decode(...)`](imap_types::command::Command#method.decode) (to parse commands from a client), and
-//! [`Response::decode(...)`](imap_types::response::Response#method.decode) (to parse responses or results from a server).
+//! Parsing is implemented through the [`Decoder`](crate::decode::Decoder) trait.
+//! The main codecs for parsing are
+//! [`GreetingCodec`](crate::GreetingCodec#method.decode) (to parse the first message from a server),
+//! [`CommandCodec`](crate::CommandCodec) (to parse commands from a client), and
+//! [`ResponseCodec::decode(...)`](crate::ResponseCodec#method.decode) (to parse responses or results from a server).
 //! Note, however, that certain message flows require other parsers as well.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
 //! ### Example
 //!
-//! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
+//! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
 //!
 //! IMAP literals make separating the parsing logic from the application logic difficult.
 //! When a server recognizes a literal (e.g. "{42}"), it first needs to agree to receive more data by sending a so-called "continuation request" (`+ ...`).
@@ -45,7 +45,7 @@
 //!
 //! ## Encoding
 //!
-//! The [`Encode::encode(...)`](encode::Encode::encode) method will return an instance of [`Encoded`](encode::Encoded)
+//! The [`Encode::encode(...)`](encode::Encoder::encode) method will return an instance of [`Encoded`](encode::Encoded)
 //! that facilitates handling of literals. The idea is that the encoder not only "dumps" the final serialization of a message but can be iterated over.
 //!
 //! ### Example
@@ -54,13 +54,14 @@
 //! #[cfg(feature = "ext_literal")]
 //! use imap_codec::imap_types::core::LiteralMode;
 //! use imap_codec::{
-//!     encode::{Encode, Fragment},
+//!     encode::{Encoder, Fragment},
 //!     imap_types::command::{Command, CommandBody},
+//!     CommandCodec,
 //! };
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
 //!
-//! for fragment in command.encode() {
+//! for fragment in CommandCodec::default().encode(&command) {
 //!     match fragment {
 //!         Fragment::Line { data } => {
 //!             // A line that is ready to be send.

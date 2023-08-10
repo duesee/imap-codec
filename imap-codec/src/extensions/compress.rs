@@ -17,7 +17,7 @@ use nom::{
 
 use crate::{
     decode::IMAPResult,
-    encode::{EncodeContext, Encoder},
+    encode::{EncodeContext, EncodeIntoContext},
 };
 
 /// `algorithm = "DEFLATE"`
@@ -32,7 +32,7 @@ pub(crate) fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     })(input)
 }
 
-impl Encoder for CompressionAlgorithm {
+impl EncodeIntoContext for CompressionAlgorithm {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }

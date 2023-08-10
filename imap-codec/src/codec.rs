@@ -1,7 +1,6 @@
 //! # (De)serialization of messages.
 //!
-//! All messages implement the `Encode` trait.
-//! You can `use imap_codec::Encode` and call the `.encode()` (or `.encode().dump()`) method to serialize a message.
+//! You can `use imap_codec::Encoder` and call the `Encoder::encode(...)` to serialize a message.
 //! Note that IMAP traces are not guaranteed to be UTF-8. Thus, be careful when using things like `std::str::from_utf8(...).unwrap()`.
 //! It should generally be better not to think about IMAP as being UTF-8.
 //! This is also why `Display` is not implemented.
@@ -11,15 +10,16 @@
 //!
 //! ```
 //! use imap_codec::{
-//!     encode::Encode,
+//!     encode::Encoder,
 //!     imap_types::command::{Command, CommandBody},
+//!     CommandCodec,
 //! };
 //!
 //! // Create some command.
 //! let cmd = Command::new("A123", CommandBody::login("alice", "password").unwrap()).unwrap();
 //!
 //! // Encode the `cmd` into `out`.
-//! let out = cmd.encode().dump();
+//! let out = CommandCodec::default().encode(&cmd).dump();
 //!
 //! // Print the command.
 //! // (Note that IMAP traces are not guaranteed to be valid UTF-8.)
@@ -31,12 +31,11 @@ pub mod encode;
 
 /// Codec for greetings.
 ///
-/// # Example
+/// # Decoding
 ///
 /// ```rust
 /// # use imap_codec::{
 /// #     decode::Decoder,
-/// #     encode::Encode,
 /// #     imap_types::{
 /// #         core::Text,
 /// #         response::{Code, Greeting, GreetingKind},
@@ -56,26 +55,75 @@ pub mod encode;
 /// );
 /// assert_eq!(remaining, &b"<remaining>"[..])
 /// ```
-#[derive(Debug)]
+///
+/// # Encoding
+///
+/// ```rust
+/// # use imap_codec::{
+/// #     encode::Encoder,
+/// #     imap_types::{
+/// #         core::Text,
+/// #         response::{Code, Greeting, GreetingKind},
+/// #     },
+/// #     GreetingCodec,
+/// #  };
+/// let greeting = Greeting {
+///     kind: GreetingKind::Ok,
+///     code: Some(Code::Alert),
+///     text: Text::try_from("Hello, World!").unwrap(),
+/// };
+///
+/// let bytes = GreetingCodec::default().encode(&greeting).dump();
+///
+/// assert_eq!(bytes, &b"* OK [ALERT] Hello, World!\r\n"[..]);
+/// ```
+#[derive(Debug, Default)]
+// We use `#[non_exhaustive]` to prevent users from using struct literal syntax.
+//
+// This allows to add configuration options later. For example, the
+// codec could transparently replace all literals with non-sync literals.
+#[non_exhaustive]
 pub struct GreetingCodec;
 
 /// Codec for commands.
-#[derive(Debug)]
+#[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct CommandCodec;
 
 /// Codec for authenticate data lines.
-#[derive(Debug)]
+#[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct AuthenticateDataCodec;
 
 /// Codec for responses.
-#[derive(Debug)]
+#[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct ResponseCodec;
 
 /// Codec for idle dones.
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
-#[derive(Debug)]
+#[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct IdleDoneCodec;
+
+macro_rules! impl_codec_new {
+    ($codec:ty) => {
+        impl $codec {
+            /// Create codec with default configuration.
+            pub fn new() -> Self {
+                Self::default()
+            }
+        }
+    };
+}
+
+impl_codec_new!(GreetingCodec);
+impl_codec_new!(CommandCodec);
+impl_codec_new!(AuthenticateDataCodec);
+impl_codec_new!(ResponseCodec);
+#[cfg(feature = "ext_idle")]
+impl_codec_new!(IdleDoneCodec);
 
 #[cfg(test)]
 mod tests {

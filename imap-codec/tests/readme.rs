@@ -1,4 +1,4 @@
-use imap_codec::{decode::Decoder, encode::Encode, CommandCodec};
+use imap_codec::{decode::Decoder, encode::Encoder, CommandCodec};
 
 #[test]
 fn test_from_readme() {
@@ -7,7 +7,7 @@ fn test_from_readme() {
     let (_remainder, parsed) = CommandCodec::decode(input).unwrap();
     println!("# Parsed\n\n{:#?}\n\n", parsed);
 
-    let buffer = parsed.encode().dump();
+    let buffer = CommandCodec::default().encode(&parsed).dump();
 
     // Note: IMAP4rev1 may produce messages that are not valid UTF-8.
     println!("# Serialized\n\n{:?}", std::str::from_utf8(&buffer));

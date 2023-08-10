@@ -587,7 +587,8 @@ mod tests {
 
     use super::*;
     #[cfg(feature = "ext_sasl_ir")]
-    use crate::encode::Encode;
+    use crate::encode::Encoder;
+    use crate::CommandCodec;
 
     #[test]
     fn test_parse_fetch() {
@@ -663,7 +664,7 @@ mod tests {
         )
         .unwrap();
 
-        let buffer = command.encode().dump();
+        let buffer = CommandCodec::default().encode(&command).dump();
 
         assert_eq!(buffer, b"A AUTHENTICATE PLAIN =\r\n")
     }

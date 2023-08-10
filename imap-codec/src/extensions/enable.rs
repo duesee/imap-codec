@@ -20,7 +20,7 @@ use nom::{
 use crate::{
     core::atom,
     decode::IMAPResult,
-    encode::{EncodeContext, Encoder},
+    encode::{EncodeContext, EncodeIntoContext},
 };
 
 /// `command-any =/ "ENABLE" 1*(SP capability)`
@@ -66,7 +66,7 @@ pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     Ok((remaining, { Data::Enabled { capabilities } }))
 }
 
-impl<'a> Encoder for CapabilityEnable<'a> {
+impl<'a> EncodeIntoContext for CapabilityEnable<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }

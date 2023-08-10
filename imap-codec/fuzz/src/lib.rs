@@ -1,17 +1,17 @@
 #[macro_export]
 macro_rules! impl_decode_target {
-    ($decoder:ident) => {
+    ($codec:ident) => {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: &[u8]| {
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
-            use imap_codec::{decode::Decoder, encode::Encode};
+            use imap_codec::{decode::Decoder, encode::Encoder};
 
             #[cfg(feature = "debug")]
             println!("[!] Input:      {}", escape_byte_string(input));
 
-            if let Ok((_rem, parsed1)) = $decoder::decode(input) {
+            if let Ok((_rem, parsed1)) = $codec::decode(input) {
                 #[cfg(feature = "debug")]
                 {
                     let input = &input[..input.len() - _rem.len()];
@@ -19,11 +19,11 @@ macro_rules! impl_decode_target {
                     println!("[!] Parsed1: {parsed1:?}");
                 }
 
-                let output = parsed1.encode().dump();
+                let output = $codec::default().encode(&parsed1).dump();
                 #[cfg(feature = "debug")]
                 println!("[!] Serialized: {}", escape_byte_string(&output));
 
-                let (rem, parsed2) = $decoder::decode(&output).unwrap();
+                let (rem, parsed2) = $codec::decode(&output).unwrap();
                 #[cfg(feature = "debug")]
                 println!("[!] Parsed2: {parsed2:?}");
                 assert!(rem.is_empty());
@@ -77,23 +77,23 @@ macro_rules! impl_decode_target {
 
 #[macro_export]
 macro_rules! impl_to_bytes_and_back {
-    ($decoder:tt, $object:tt) => {
+    ($codec:tt, $object:tt) => {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: $object| {
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
-            use imap_codec::{decode::Decoder, encode::Encode};
+            use imap_codec::{decode::Decoder, encode::Encoder};
 
             #[cfg(feature = "debug")]
             println!("[!] Input:  {:?}", input);
 
-            let buffer = input.encode().dump();
+            let buffer = <$codec>::default().encode(&input).dump();
 
             #[cfg(feature = "debug")]
             println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
-            let (rem, parsed) = <$decoder>::decode(&buffer).unwrap();
+            let (rem, parsed) = <$codec>::decode(&buffer).unwrap();
             assert!(rem.is_empty());
 
             #[cfg(feature = "debug")]

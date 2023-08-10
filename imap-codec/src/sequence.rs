@@ -84,7 +84,7 @@ pub(crate) fn seq_number(input: &[u8]) -> IMAPResult<&[u8], SeqOrUid> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encode::Encode;
+    use crate::encode::{EncodeContext, EncodeIntoContext};
 
     #[test]
     fn test_encode_of_some_sequence_sets() {
@@ -101,7 +101,10 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let out = test.encode().dump();
+            let mut ctx = EncodeContext::new();
+            test.encode_ctx(&mut ctx).unwrap();
+
+            let out = ctx.dump();
             assert_eq!(*expected, out);
         }
     }
