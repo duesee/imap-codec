@@ -36,9 +36,9 @@ use crate::extensions::quota::{getquota, getquotaroot, setquota};
 use crate::extensions::r#move::r#move;
 use crate::{
     auth::auth_type,
-    codec::{IMAPErrorKind, IMAPResult},
     core::{astring, literal, tag_imap},
     datetime::date_time,
+    decode::{IMAPErrorKind, IMAPResult},
     fetch::fetch_att,
     flag::{flag, flag_list},
     mailbox::{list_mailbox, mailbox},
@@ -587,7 +587,7 @@ mod tests {
 
     use super::*;
     #[cfg(feature = "ext_sasl_ir")]
-    use crate::codec::Encode;
+    use crate::encode::Encode;
 
     #[test]
     fn test_parse_fetch() {

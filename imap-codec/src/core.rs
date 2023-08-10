@@ -27,7 +27,7 @@ use nom::{
     sequence::{delimited, terminated, tuple},
 };
 
-use crate::codec::{IMAPErrorKind, IMAPParseError, IMAPResult};
+use crate::decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
 
 // ----- number -----
 
@@ -305,7 +305,7 @@ pub(crate) fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::codec::Encode;
+    use crate::encode::Encode;
 
     #[test]
     fn test_atom() {

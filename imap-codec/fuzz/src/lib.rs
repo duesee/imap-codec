@@ -4,9 +4,9 @@ macro_rules! impl_decode_target {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: &[u8]| {
-            use imap_codec::codec::{Decoder, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
+            use imap_codec::{decode::Decoder, encode::Encode};
 
             #[cfg(feature = "debug")]
             println!("[!] Input:      {}", escape_byte_string(input));
@@ -81,9 +81,9 @@ macro_rules! impl_to_bytes_and_back {
         use libfuzzer_sys::fuzz_target;
 
         fuzz_target!(|input: $object| {
-            use imap_codec::codec::{Decoder, Encode};
             #[cfg(feature = "debug")]
             use imap_codec::imap_types::utils::escape_byte_string;
+            use imap_codec::{decode::Decoder, encode::Encode};
 
             #[cfg(feature = "debug")]
             println!("[!] Input:  {:?}", input);

@@ -7,8 +7,10 @@ use imap_types::{
     utils::escape_byte_string,
 };
 
-use crate::codec::{
-    AuthenticateDataCodec, CommandCodec, Decoder, Encode, GreetingCodec, IMAPResult, ResponseCodec,
+use crate::{
+    decode::{Decoder, IMAPResult},
+    encode::Encode,
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec,
 };
 
 pub(crate) fn known_answer_test_encode(

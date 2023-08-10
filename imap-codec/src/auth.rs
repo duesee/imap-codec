@@ -9,8 +9,8 @@ use imap_types::{
 use nom::{combinator::map, sequence::terminated};
 
 use crate::{
-    codec::IMAPResult,
     core::{atom, base64},
+    decode::IMAPResult,
 };
 
 // ----- Unsorted IMAP parsers -----

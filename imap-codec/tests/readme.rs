@@ -1,4 +1,4 @@
-use imap_codec::codec::{CommandCodec, Decoder, Encode};
+use imap_codec::{decode::Decoder, encode::Encode, CommandCodec};
 
 #[test]
 fn test_from_readme() {

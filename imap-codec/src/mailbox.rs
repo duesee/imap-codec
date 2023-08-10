@@ -17,8 +17,8 @@ use nom::{
 #[cfg(feature = "ext_quota")]
 use crate::extensions::quota::{quota_response, quotaroot_response};
 use crate::{
-    codec::IMAPResult,
     core::{astring, nil, number, nz_number, quoted_char, string},
+    decode::IMAPResult,
     flag::{flag_list, mbx_list_flags},
     status::status_att_list,
 };

@@ -15,7 +15,10 @@ use nom::{
     sequence::preceded,
 };
 
-use crate::codec::{EncodeContext, Encoder, IMAPResult};
+use crate::{
+    decode::IMAPResult,
+    encode::{EncodeContext, Encoder},
+};
 
 /// `algorithm = "DEFLATE"`
 pub(crate) fn algorithm(input: &[u8]) -> IMAPResult<&[u8], CompressionAlgorithm> {

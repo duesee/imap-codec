@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{
-    codec::Encode,
+    encode::Encode,
     imap_types::{
         command::{Command, CommandBody},
         fetch::{MacroOrMessageDataItemNames, MessageDataItemName, Section},

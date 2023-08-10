@@ -3,14 +3,14 @@ use std::io::{Error as IoError, Write};
 use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
-    codec::{
-        Decoder, Encode, GreetingCodec, GreetingDecodeError, ResponseCodec, ResponseDecodeError,
-    },
+    decode::{Decoder, GreetingDecodeError, ResponseDecodeError},
+    encode::Encode,
     imap_types::{
         command::Command,
         response::{Greeting, Response},
         state::{State as ImapState, State},
     },
+    GreetingCodec, ResponseCodec,
 };
 use thiserror::Error;
 use tokio_util::codec::{Decoder as TokioDecoder, Encoder as TokioEncoder};

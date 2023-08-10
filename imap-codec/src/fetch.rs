@@ -15,9 +15,9 @@ use nom::{
 
 use crate::{
     body::body,
-    codec::IMAPResult,
     core::{astring, nstring, number, nz_number},
     datetime::date_time,
+    decode::IMAPResult,
     envelope::envelope,
     flag::flag_fetch,
 };

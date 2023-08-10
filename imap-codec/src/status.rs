@@ -11,8 +11,8 @@ use nom::{
 #[cfg(feature = "ext_quota")]
 use crate::core::number64;
 use crate::{
-    codec::IMAPResult,
     core::{number, nz_number},
+    decode::IMAPResult,
 };
 
 /// `status-att = "MESSAGES" /

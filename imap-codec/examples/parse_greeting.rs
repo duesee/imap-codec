@@ -1,4 +1,7 @@
-use imap_codec::codec::{Decoder, GreetingCodec, GreetingDecodeError};
+use imap_codec::{
+    decode::{Decoder, GreetingDecodeError},
+    GreetingCodec,
+};
 
 #[path = "common/common.rs"]
 mod common;

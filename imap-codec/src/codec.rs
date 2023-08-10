@@ -11,7 +11,7 @@
 //!
 //! ```
 //! use imap_codec::{
-//!     codec::Encode,
+//!     encode::Encode,
 //!     imap_types::command::{Command, CommandBody},
 //! };
 //!
@@ -26,45 +26,56 @@
 //! println!("{}", std::str::from_utf8(&out).unwrap());
 //! ```
 
-#[cfg(feature = "ext_idle")]
-pub use decode::IdleDoneDecodeError;
-pub use decode::{
-    AuthenticateDataDecodeError, CommandDecodeError, Decoder, GreetingDecodeError,
-    ResponseDecodeError,
-};
-pub(crate) use decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
-#[cfg(any(
-    feature = "ext_compress",
-    feature = "ext_enable",
-    feature = "ext_idle",
-    feature = "ext_literal",
-    feature = "ext_quota",
-))]
-pub(crate) use encode::Encoder;
-pub use encode::{Encode, EncodeContext, Encoded, Fragment};
+pub mod decode;
+pub mod encode;
 
-mod decode;
-mod encode;
-
+/// Codec for greetings.
+///
+/// # Example
+///
+/// ```rust
+/// # use imap_codec::{
+/// #     decode::Decoder,
+/// #     encode::Encode,
+/// #     imap_types::{
+/// #         core::Text,
+/// #         response::{Code, Greeting, GreetingKind},
+/// #     },
+/// #     GreetingCodec,
+/// #  };
+/// let (remaining, greeting) =
+///     GreetingCodec::decode(b"* OK [ALERT] Hello, World!\r\n<remaining>").unwrap();
+///
+/// assert_eq!(
+///     greeting,
+///     Greeting {
+///         kind: GreetingKind::Ok,
+///         code: Some(Code::Alert),
+///         text: Text::try_from("Hello, World!").unwrap(),
+///     }
+/// );
+/// assert_eq!(remaining, &b"<remaining>"[..])
+/// ```
 #[derive(Debug)]
 pub struct GreetingCodec;
 
+/// Codec for commands.
 #[derive(Debug)]
 pub struct CommandCodec;
 
+/// Codec for authenticate data lines.
 #[derive(Debug)]
 pub struct AuthenticateDataCodec;
 
+/// Codec for responses.
+#[derive(Debug)]
+pub struct ResponseCodec;
+
+/// Codec for idle dones.
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 #[derive(Debug)]
 pub struct IdleDoneCodec;
-
-#[derive(Debug)]
-pub struct ResponseCodec;
-
-#[derive(Debug)]
-pub struct ContinueCodec;
 
 #[cfg(test)]
 mod tests {
@@ -83,9 +94,12 @@ mod tests {
     };
 
     use super::*;
-    use crate::testing::{
-        kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
-        kat_inverse_response,
+    use crate::{
+        decode::{CommandDecodeError, Decoder, GreetingDecodeError, ResponseDecodeError},
+        testing::{
+            kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
+            kat_inverse_response,
+        },
     };
 
     #[test]

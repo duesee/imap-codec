@@ -17,8 +17,9 @@ use nom::{
 };
 
 use crate::{
-    codec::{EncodeContext, Encoder, IMAPResult},
     core::{astring, atom, number64},
+    decode::IMAPResult,
+    encode::{EncodeContext, Encoder},
     mailbox::mailbox,
 };
 

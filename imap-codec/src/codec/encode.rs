@@ -1,3 +1,5 @@
+//! Encoding-related types.
+
 use std::{io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
@@ -48,7 +50,7 @@ pub trait Encode {
 ///
 /// ```rust
 /// use imap_codec::{
-///     codec::{Encode, Fragment},
+///     encode::{Encode, Fragment},
 ///     imap_types::command::{Command, CommandBody},
 /// };
 ///
@@ -1553,8 +1555,7 @@ impl<'a> Encoder for CommandContinuationRequest<'a> {
 mod utils {
     use std::io::Write;
 
-    use super::Encoder;
-    use crate::codec::encode::EncodeContext;
+    use super::{EncodeContext, Encoder};
 
     pub struct List1OrNil<'a, T>(pub &'a Vec<T>, pub &'a [u8]);
 

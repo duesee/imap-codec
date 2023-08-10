@@ -4,7 +4,7 @@ use abnf_core::streaming::sp;
 use imap_types::command::CommandBody;
 use nom::{bytes::streaming::tag_no_case, sequence::tuple};
 
-use crate::{codec::IMAPResult, mailbox::mailbox, sequence::sequence_set};
+use crate::{decode::IMAPResult, mailbox::mailbox, sequence::sequence_set};
 
 /// ```abnf
 /// move = "MOVE" SP sequence-set SP mailbox

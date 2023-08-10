@@ -9,9 +9,9 @@ use nom::{
 };
 
 use crate::{
-    codec::{IMAPErrorKind, IMAPParseError, IMAPResult},
     core::{astring, atom, charset, number},
     datetime::date,
+    decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
     fetch::header_fld_name,
     sequence::sequence_set,
 };

@@ -26,8 +26,8 @@ use nom::{
 #[cfg(feature = "ext_enable")]
 use crate::extensions::enable::enable_data;
 use crate::{
-    codec::IMAPResult,
     core::{atom, charset, nz_number, tag_imap, text},
+    decode::IMAPResult,
     fetch::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
