@@ -305,7 +305,7 @@ pub(crate) fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encode::Encode;
+    use crate::encode::{EncodeContext, EncodeIntoContext};
 
     #[test]
     fn test_atom() {
@@ -417,7 +417,10 @@ mod tests {
             let cs = Charset::try_from(*from).unwrap();
             println!("{:?}", cs);
 
-            let out = cs.encode().dump();
+            let mut ctx = EncodeContext::new();
+            cs.encode_ctx(&mut ctx).unwrap();
+
+            let out = ctx.dump();
             assert_eq!(from_utf8(&out).unwrap(), *expected);
         }
 

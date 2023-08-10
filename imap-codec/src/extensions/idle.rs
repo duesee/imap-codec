@@ -18,7 +18,7 @@ use nom::{bytes::streaming::tag_no_case, combinator::value, sequence::tuple};
 
 use crate::{
     decode::IMAPResult,
-    encode::{EncodeContext, Encoder},
+    encode::{EncodeContext, EncodeIntoContext},
 };
 
 /// `idle = "IDLE" CRLF "DONE"` (edited)
@@ -54,7 +54,7 @@ pub(crate) fn idle_done(input: &[u8]) -> IMAPResult<&[u8], IdleDone> {
     value(IdleDone, tuple((tag_no_case("DONE"), crlf)))(input)
 }
 
-impl Encoder for IdleDone {
+impl EncodeIntoContext for IdleDone {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(b"DONE\r\n")
     }
