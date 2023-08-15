@@ -288,9 +288,7 @@ mod tests {
     use std::borrow::Cow;
 
     use super::*;
-    #[cfg(feature = "ext_literal")]
-    use crate::core::LiteralMode;
-    use crate::core::{AString, IString, Literal};
+    use crate::core::{AString, IString, Literal, LiteralMode};
 
     #[test]
     fn test_conversion_mailbox() {
@@ -304,7 +302,6 @@ mod tests {
                 "INBO²",
                 Mailbox::Other(MailboxOther(AString::String(IString::Literal(Literal {
                     data: Cow::Borrowed("INBO²".as_bytes()),
-                    #[cfg(feature = "ext_literal")]
                     mode: LiteralMode::Sync,
                 })))),
             ),

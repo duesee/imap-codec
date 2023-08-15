@@ -14,24 +14,20 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ext_compress")]
-use crate::extensions::compress::CompressionAlgorithm;
-#[cfg(feature = "ext_enable")]
-use crate::extensions::enable::CapabilityEnable;
 use crate::{
     auth::AuthMechanism,
-    core::{impl_try_from, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
+    core::{impl_try_from, AString, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
     error::ValidationError,
+    extensions::{
+        compress::CompressionAlgorithm,
+        enable::CapabilityEnable,
+        quota::{QuotaGet, Resource},
+    },
     fetch::MessageDataItem,
     flag::{Flag, FlagNameAttribute, FlagPerm},
     mailbox::Mailbox,
     response::error::{ContinueError, FetchError},
     status::StatusDataItem,
-};
-#[cfg(feature = "ext_quota")]
-use crate::{
-    core::AString,
-    extensions::quota::{QuotaGet, Resource},
 };
 
 /// An IMAP greeting.
@@ -537,14 +533,10 @@ pub enum Data<'a> {
         items: NonEmptyVec<MessageDataItem<'a>>,
     },
 
-    #[cfg(feature = "ext_enable")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enabled {
         capabilities: Vec<CapabilityEnable<'a>>,
     },
 
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Quota {
         /// Quota root.
         root: AString<'a>,
@@ -552,8 +544,6 @@ pub enum Data<'a> {
         quotas: NonEmptyVec<QuotaGet<'a>>,
     },
 
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaRoot {
         /// Mailbox name.
         mailbox: Mailbox<'a>,
@@ -729,7 +719,9 @@ pub enum Code<'a> {
     /// this implementation.  If the optional list of charsets is
     /// given, this lists the charsets that are supported by this
     /// implementation.
-    BadCharset { allowed: Vec<Charset<'a>> },
+    BadCharset {
+        allowed: Vec<Charset<'a>>,
+    },
 
     /// `CAPABILITY`
     ///
@@ -809,19 +801,13 @@ pub enum Code<'a> {
     )]
     Referral(Cow<'a, str>),
 
-    #[cfg(feature = "ext_compress")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     CompressionActive,
 
     /// SHOULD be returned in the tagged NO response to an APPEND/COPY/MOVE when the addition of the
     /// message(s) puts the target mailbox over any one of its quota limits.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     OverQuota,
 
     /// Server got a non-synchronizing literal larger than 4096 bytes.
-    #[cfg(feature = "ext_literal")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     TooBig,
 
     /// Additional response codes defined by particular client or server
@@ -931,8 +917,6 @@ pub enum Capability<'a> {
     #[cfg(feature = "starttls")]
     #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTls,
-    #[cfg(feature = "ext_idle")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     /// See RFC 2177.
     Idle,
     /// See RFC 2193.
@@ -943,40 +927,22 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_login_referrals")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_login_referrals")))]
     LoginReferrals,
-    #[cfg(feature = "ext_sasl_ir")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     SaslIr,
     /// See RFC 5161.
-    #[cfg(feature = "ext_enable")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enable,
-    #[cfg(feature = "ext_compress")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     Compress {
         algorithm: CompressionAlgorithm,
     },
     /// See RFC 2087 and RFC 9208
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Quota,
     /// See RFC 9208.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaRes(Resource<'a>),
     /// See RFC 9208.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     QuotaSet,
     /// See RFC 7888.
-    #[cfg(feature = "ext_literal")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     LiteralPlus,
-    #[cfg(feature = "ext_literal")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
     LiteralMinus,
     /// See RFC 6851.
-    #[cfg(feature = "ext_move")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
@@ -995,25 +961,15 @@ impl<'a> Display for Capability<'a> {
             Self::MailboxReferrals => write!(f, "MAILBOX-REFERRALS"),
             #[cfg(feature = "ext_login_referrals")]
             Self::LoginReferrals => write!(f, "LOGIN-REFERRALS"),
-            #[cfg(feature = "ext_sasl_ir")]
             Self::SaslIr => write!(f, "SASL-IR"),
-            #[cfg(feature = "ext_idle")]
             Self::Idle => write!(f, "IDLE"),
-            #[cfg(feature = "ext_enable")]
             Self::Enable => write!(f, "ENABLE"),
-            #[cfg(feature = "ext_compress")]
             Self::Compress { algorithm } => write!(f, "COMPRESS={}", algorithm),
-            #[cfg(feature = "ext_quota")]
             Self::Quota => write!(f, "QUOTA"),
-            #[cfg(feature = "ext_quota")]
             Self::QuotaRes(resource) => write!(f, "QUOTA=RES-{}", resource),
-            #[cfg(feature = "ext_quota")]
             Self::QuotaSet => write!(f, "QUOTASET"),
-            #[cfg(feature = "ext_literal")]
             Self::LiteralPlus => write!(f, "LITERAL+"),
-            #[cfg(feature = "ext_literal")]
             Self::LiteralMinus => write!(f, "LITERAL-"),
-            #[cfg(feature = "ext_move")]
             Self::Move => write!(f, "MOVE"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
@@ -1058,25 +1014,17 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "logindisabled" => Self::LoginDisabled,
             #[cfg(feature = "starttls")]
             "starttls" => Self::StartTls,
-            #[cfg(feature = "ext_idle")]
             "idle" => Self::Idle,
             #[cfg(feature = "ext_mailbox_referrals")]
             "mailbox-referrals" => Self::MailboxReferrals,
             #[cfg(feature = "ext_login_referrals")]
             "login-referrals" => Self::LoginReferrals,
-            #[cfg(feature = "ext_sasl_ir")]
             "sasl-ir" => Self::SaslIr,
-            #[cfg(feature = "ext_enable")]
             "enable" => Self::Enable,
-            #[cfg(feature = "ext_quota")]
             "quota" => Self::Quota,
-            #[cfg(feature = "ext_quota")]
             "quotaset" => Self::QuotaSet,
-            #[cfg(feature = "ext_literal")]
             "literal+" => Self::LiteralPlus,
-            #[cfg(feature = "ext_literal")]
             "literal-" => Self::LiteralMinus,
-            #[cfg(feature = "ext_move")]
             "move" => Self::Move,
             _ => {
                 // TODO(efficiency)
@@ -1087,7 +1035,6 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 return Self::Auth(mechanism);
                             }
                         }
-                        #[cfg(feature = "ext_compress")]
                         "compress" => {
                             if let Ok(atom) = Atom::try_from(right) {
                                 if let Ok(algorithm) = CompressionAlgorithm::try_from(atom) {
@@ -1095,7 +1042,6 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 }
                             }
                         }
-                        #[cfg(feature = "ext_quota")]
                         "quota" => {
                             if let Some((_, right)) =
                                 right.as_ref().to_ascii_lowercase().split_once("res-")

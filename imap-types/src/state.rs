@@ -55,9 +55,7 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ext_idle")]
-use crate::core::Tag;
-use crate::mailbox::Mailbox;
+use crate::{core::Tag, mailbox::Mailbox};
 
 /// State of the IMAP4rev1 connection.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -90,12 +88,8 @@ pub enum State<'a> {
     /// If the server detects that the client has unilaterally closed the connection, the server MAY omit the untagged BYE response and simply close its connection.
     Logout,
 
-    #[cfg(feature = "ext_idle")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     IdleAuthenticated(Tag<'a>),
 
-    #[cfg(feature = "ext_idle")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     IdleSelected(Tag<'a>, Mailbox<'a>),
 }
 
@@ -105,9 +99,7 @@ mod tests {
     use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 
     use super::*;
-    #[cfg(feature = "ext_idle")]
-    use crate::core::Tag;
-    use crate::mailbox::Mailbox;
+    use crate::{core::Tag, mailbox::Mailbox};
 
     #[test]
     fn test_conversion() {
@@ -117,9 +109,7 @@ mod tests {
             State::Authenticated,
             State::Selected(Mailbox::Inbox),
             State::Logout,
-            #[cfg(feature = "ext_idle")]
             State::IdleAuthenticated(Tag::try_from("A").unwrap()),
-            #[cfg(feature = "ext_idle")]
             State::IdleSelected(Tag::try_from("A").unwrap(), Mailbox::Inbox),
         ];
 

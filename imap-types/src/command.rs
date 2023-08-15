@@ -11,15 +11,12 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ext_compress")]
-use crate::extensions::compress::CompressionAlgorithm;
-#[cfg(feature = "ext_quota")]
-use crate::extensions::quota::QuotaSet;
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
-    core::{AString, Charset, Literal, Tag},
+    core::{AString, Charset, Literal, NonEmptyVec, Tag},
     datetime::DateTime,
+    extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
     fetch::MacroOrMessageDataItemNames,
     flag::{Flag, StoreResponse, StoreType},
     mailbox::{ListMailbox, Mailbox},
@@ -28,8 +25,6 @@ use crate::{
     sequence::SequenceSet,
     status::StatusDataItemName,
 };
-#[cfg(feature = "ext_enable")]
-use crate::{core::NonEmptyVec, extensions::enable::CapabilityEnable};
 
 /// Command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -264,8 +259,6 @@ pub enum CommandBody<'a> {
         /// This type holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
         ///
         /// Note: Use this only when the server advertised the `SASL-IR` capability.
-        #[cfg(feature = "ext_sasl_ir")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
         initial_response: Option<Secret<Cow<'a, [u8]>>>,
     },
 
@@ -396,8 +389,6 @@ pub enum CommandBody<'a> {
     /// Unselect a mailbox.
     ///
     /// This should bring the client back to the AUTHENTICATED state.
-    #[cfg(feature = "ext_unselect")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_unselect")))]
     Unselect,
 
     /// 6.3.2.  EXAMINE Command
@@ -1243,21 +1234,15 @@ pub enum CommandBody<'a> {
     // by issuing the associated experimental command.
     //X,
     /// IDLE command.
-    #[cfg(feature = "ext_idle")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
     Idle,
 
     /// ENABLE command.
-    #[cfg(feature = "ext_enable")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_enable")))]
     Enable {
         /// Capabilities to enable.
         capabilities: NonEmptyVec<CapabilityEnable<'a>>,
     },
 
     /// COMPRESS command.
-    #[cfg(feature = "ext_compress")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_compress")))]
     Compress {
         /// Compression algorithm.
         algorithm: CompressionAlgorithm,
@@ -1285,8 +1270,6 @@ pub enum CommandBody<'a> {
     /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
     /// S: G0001 OK Getquota complete
     /// ```
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     GetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1320,8 +1303,6 @@ pub enum CommandBody<'a> {
     /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
     /// S: G0002 OK Getquotaroot complete
     /// ```
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     GetQuotaRoot {
         /// Name of mailbox.
         mailbox: Mailbox<'a>,
@@ -1365,8 +1346,6 @@ pub enum CommandBody<'a> {
     /// response here is entirely optional.
     /// S: S0002 NO Cannot change system limit
     /// ```
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     SetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1375,8 +1354,6 @@ pub enum CommandBody<'a> {
     },
 
     /// MOVE command.
-    #[cfg(feature = "ext_move")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_move")))]
     Move {
         /// Set of messages.
         sequence_set: SequenceSet,
@@ -1403,21 +1380,15 @@ impl<'a> CommandBody<'a> {
 
     /// Construct an AUTHENTICATE command.
     pub fn authenticate(mechanism: AuthMechanism<'a>) -> Self {
-        #[cfg(feature = "ext_sasl_ir")]
-        return CommandBody::Authenticate {
+        CommandBody::Authenticate {
             mechanism,
             initial_response: None,
-        };
-
-        #[cfg(not(feature = "ext_sasl_ir"))]
-        return CommandBody::Authenticate { mechanism };
+        }
     }
 
     /// Construct an AUTHENTICATE command (with an initial response, SASL-IR).
     ///
     /// Note: Use this only when the server advertised the `SASL-IR` capability.
-    #[cfg(feature = "ext_sasl_ir")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
     pub fn authenticate_with_ir<I>(mechanism: AuthMechanism<'a>, initial_response: I) -> Self
     where
         I: Into<Cow<'a, [u8]>>,
@@ -1649,7 +1620,6 @@ impl<'a> CommandBody<'a> {
             Self::Authenticate { .. } => "AUTHENTICATE",
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
-            #[cfg(feature = "ext_unselect")]
             Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",
@@ -1668,19 +1638,12 @@ impl<'a> CommandBody<'a> {
             Self::Fetch { .. } => "FETCH",
             Self::Store { .. } => "STORE",
             Self::Copy { .. } => "COPY",
-            #[cfg(feature = "ext_idle")]
             Self::Idle => "IDLE",
-            #[cfg(feature = "ext_enable")]
             Self::Enable { .. } => "ENABLE",
-            #[cfg(feature = "ext_compress")]
             Self::Compress { .. } => "COMPRESS",
-            #[cfg(feature = "ext_quota")]
             Self::GetQuota { .. } => "GETQUOTA",
-            #[cfg(feature = "ext_quota")]
             Self::GetQuotaRoot { .. } => "GETQUOTAROOT",
-            #[cfg(feature = "ext_quota")]
             Self::SetQuota { .. } => "SETQUOTA",
-            #[cfg(feature = "ext_move")]
             Self::Move { .. } => "MOVE",
         }
     }
@@ -1736,12 +1699,14 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;
-    #[cfg(feature = "ext_compress")]
-    use crate::extensions::compress::CompressionAlgorithm;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal},
+        core::{AString, Charset, IString, Literal, NonEmptyVec},
         datetime::DateTime,
+        extensions::{
+            compress::CompressionAlgorithm,
+            enable::{CapabilityEnable, Utf8Kind},
+        },
         fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName, Part, Section},
         flag::{Flag, StoreType},
         mailbox::{ListMailbox, Mailbox},
@@ -1749,11 +1714,6 @@ mod tests {
         secret::Secret,
         sequence::{SeqOrUid, Sequence, SequenceSet},
         status::StatusDataItemName,
-    };
-    #[cfg(feature = "ext_enable")]
-    use crate::{
-        core::NonEmptyVec,
-        extensions::enable::{CapabilityEnable, Utf8Kind},
     };
 
     #[test]
@@ -1766,9 +1726,7 @@ mod tests {
             CommandBody::StartTLS,
             CommandBody::authenticate(AuthMechanism::Plain),
             CommandBody::authenticate(AuthMechanism::Login),
-            #[cfg(feature = "ext_sasl_ir")]
             CommandBody::authenticate_with_ir(AuthMechanism::Plain, b"XXXXXXXX".as_ref()),
-            #[cfg(feature = "ext_sasl_ir")]
             CommandBody::authenticate_with_ir(AuthMechanism::Login, b"YYYYYYYY".as_ref()),
             CommandBody::login("alice", "I_am_an_atom").unwrap(),
             CommandBody::login("alice", "I am \\ \"quoted\"").unwrap(),
@@ -1934,7 +1892,6 @@ mod tests {
             (
                 CommandBody::Authenticate {
                     mechanism: AuthMechanism::Plain,
-                    #[cfg(feature = "ext_sasl_ir")]
                     initial_response: None,
                 },
                 "AUTHENTICATE",
@@ -1952,7 +1909,6 @@ mod tests {
                 },
                 "SELECT",
             ),
-            #[cfg(feature = "ext_unselect")]
             (CommandBody::Unselect, "UNSELECT"),
             (
                 CommandBody::Examine {
@@ -2058,37 +2014,31 @@ mod tests {
                 },
                 "COPY",
             ),
-            #[cfg(feature = "ext_idle")]
             (CommandBody::Idle, "IDLE"),
-            #[cfg(feature = "ext_enable")]
             (
                 CommandBody::Enable {
                     capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
                 },
                 "ENABLE",
             ),
-            #[cfg(feature = "ext_compress")]
             (
                 CommandBody::Compress {
                     algorithm: CompressionAlgorithm::Deflate,
                 },
                 "COMPRESS",
             ),
-            #[cfg(feature = "ext_quota")]
             (
                 CommandBody::GetQuota {
                     root: AString::try_from("root").unwrap(),
                 },
                 "GETQUOTA",
             ),
-            #[cfg(feature = "ext_quota")]
             (
                 CommandBody::GetQuotaRoot {
                     mailbox: Mailbox::Inbox,
                 },
                 "GETQUOTAROOT",
             ),
-            #[cfg(feature = "ext_quota")]
             (
                 CommandBody::SetQuota {
                     root: AString::try_from("root").unwrap(),
@@ -2096,7 +2046,6 @@ mod tests {
                 },
                 "SETQUOTA",
             ),
-            #[cfg(feature = "ext_move")]
             (
                 CommandBody::Move {
                     sequence_set: SequenceSet::try_from(1).unwrap(),

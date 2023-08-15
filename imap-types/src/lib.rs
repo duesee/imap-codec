@@ -97,27 +97,31 @@
 //! };
 //! ```
 //!
+//! # Supported IMAP extensions
+//!
+//! |Description                                                  |
+//! |-------------------------------------------------------------|
+//! |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])    |
+//! |IMAP MOVE Extension ([RFC 6851])                             |
+//! |IMAP UNSELECT command ([RFC 3691])                           |
+//! |IMAP Extension for SASL Initial Client Response ([RFC 4959]) |
+//! |The IMAP COMPRESS Extension ([RFC 4978])                     |
+//! |The IMAP ENABLE Extension ([RFC 5161])                       |
+//! |IMAP4 IDLE command ([RFC 2177])                              |
+//! |IMAP QUOTA Extension ([RFC 9208])                            |
+//!
 //! # Features
 //!
-//! This crate uses the following features to enable IMAP extensions:
+//! This crate uses the following features to enable experimental IMAP extensions:
 //!
 //! |Feature              |Description                                                                          |Status    |Enabled by default |
 //! |---------------------|-------------------------------------------------------------------------------------|----------|-------------------|
-//! |ext_compress         |The IMAP COMPRESS Extension ([RFC 4978])                                             |          |No                 |
 //! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|No                 |
-//! |ext_enable           |The IMAP ENABLE Extension ([RFC 5161])                                               |          |No                 |
-//! |ext_idle             |IMAP4 IDLE command ([RFC 2177])                                                      |          |No                 |
-//! |ext_literal          |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])                            |          |No                 |
 //! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|No                 |
 //! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|No                 |
-//! |ext_move             |IMAP MOVE Extension ([RFC 6851])                                                     |          |No                 |
-//! |ext_quota            |IMAP QUOTA Extension ([RFC 9208])                                                    |          |No                 |
-//! |ext_sasl_ir          |IMAP Extension for SASL Initial Client Response ([RFC 4959])                         |          |No                 |
-//! |ext_unselect         |IMAP UNSELECT command ([RFC 3691])                                                   |          |No                 |
 //! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                |          |No                 |
 //!
-//! Features prefixed with "ext_" are IMAP extensions and often require a more elaborate message flow.
-//! STARTTLS is not considered an extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
+//! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
 //!
 //! Furthermore, imap-types uses the following features to facilitate interoperability:
@@ -168,16 +172,6 @@ pub mod core;
 pub mod datetime;
 pub mod envelope;
 pub mod error;
-#[cfg(any(
-    feature = "ext_compress",
-    feature = "ext_enable",
-    feature = "ext_idle",
-    feature = "ext_literal",
-    feature = "ext_move",
-    feature = "ext_quota",
-    feature = "ext_unselect",
-))]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
 pub mod extensions;
 pub mod fetch;
 pub mod flag;

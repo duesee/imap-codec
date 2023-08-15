@@ -6,11 +6,12 @@
 //! # Example
 //!
 //! ```rust
-//! #[cfg(feature = "ext_literal")]
-//! use imap_codec::imap_types::core::LiteralMode;
 //! use imap_codec::{
 //!     encode::{Encoder, Fragment},
-//!     imap_types::command::{Command, CommandBody},
+//!     imap_types::{
+//!         command::{Command, CommandBody},
+//!         core::LiteralMode,
+//!     },
 //!     CommandCodec,
 //! };
 //!
@@ -22,12 +23,6 @@
 //!             // A line that is ready to be send.
 //!             println!("C: {}", String::from_utf8(data).unwrap());
 //!         }
-//!         #[cfg(not(feature = "ext_literal"))]
-//!         Fragment::Literal { data } => {
-//!             // Wait for a continuation request.
-//!             println!("S: + ...")
-//!         }
-//!         #[cfg(feature = "ext_literal")]
 //!         Fragment::Literal { data, mode } => match mode {
 //!             LiteralMode::Sync => {
 //!                 // Wait for a continuation request.
@@ -54,10 +49,6 @@ use std::{borrow::Borrow, io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
-#[cfg(feature = "ext_literal")]
-use imap_types::core::LiteralMode;
-#[cfg(feature = "ext_idle")]
-use imap_types::extensions::idle::IdleDone;
 use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     body::{
@@ -66,10 +57,12 @@ use imap_types::{
     },
     command::{Command, CommandBody},
     core::{
-        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
+        QuotedChar, Tag, Text,
     },
     datetime::{DateTime, NaiveDate},
     envelope::{Address, Envelope},
+    extensions::idle::IdleDone,
     fetch::{
         Macro, MacroOrMessageDataItemNames, MessageDataItem, MessageDataItemName, Part, Section,
     },
@@ -86,9 +79,7 @@ use imap_types::{
 };
 use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
-#[cfg(feature = "ext_idle")]
-use crate::IdleDoneCodec;
-use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec};
+use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
 
 /// Encoder.
 ///
@@ -123,9 +114,6 @@ pub trait Encoder {
 /// for fragment in CommandCodec::default().encode(&cmd) {
 ///     match fragment {
 ///         Fragment::Line { data } => {}
-///         #[cfg(not(feature = "ext_literal"))]
-///         Fragment::Literal { data } => {}
-///         #[cfg(feature = "ext_literal")]
 ///         Fragment::Literal { data, mode } => {}
 ///     }
 /// }
@@ -170,12 +158,7 @@ pub enum Fragment {
     Line { data: Vec<u8> },
 
     /// A literal that may require an action before it should be send.
-    Literal {
-        data: Vec<u8>,
-        #[cfg(feature = "ext_literal")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "ext_literal")))]
-        mode: LiteralMode,
-    },
+    Literal { data: Vec<u8>, mode: LiteralMode },
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -197,10 +180,9 @@ impl EncodeContext {
         })
     }
 
-    pub fn push_literal(&mut self, #[cfg(feature = "ext_literal")] mode: LiteralMode) {
+    pub fn push_literal(&mut self, mode: LiteralMode) {
         self.items.push(Fragment::Literal {
             data: std::mem::take(&mut self.accumulator),
-            #[cfg(feature = "ext_literal")]
             mode,
         })
     }
@@ -266,7 +248,6 @@ impl_encoder_for_codec!(GreetingCodec, Greeting<'a>);
 impl_encoder_for_codec!(CommandCodec, Command<'a>);
 impl_encoder_for_codec!(AuthenticateDataCodec, AuthenticateData);
 impl_encoder_for_codec!(ResponseCodec, Response<'a>);
-#[cfg(feature = "ext_idle")]
 impl_encoder_for_codec!(IdleDoneCodec, IdleDone);
 
 // -------------------------------------------------------------------------------------------------
@@ -316,14 +297,12 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             CommandBody::StartTLS => ctx.write_all(b"STARTTLS"),
             CommandBody::Authenticate {
                 mechanism,
-                #[cfg(feature = "ext_sasl_ir")]
                 initial_response,
             } => {
                 ctx.write_all(b"AUTHENTICATE")?;
                 ctx.write_all(b" ")?;
                 mechanism.encode_ctx(ctx)?;
 
-                #[cfg(feature = "ext_sasl_ir")]
                 if let Some(ir) = initial_response {
                     ctx.write_all(b" ")?;
 
@@ -351,7 +330,6 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_unselect")]
             CommandBody::Unselect => ctx.write_all(b"UNSELECT"),
             CommandBody::Examine { mailbox } => {
                 ctx.write_all(b"EXAMINE")?;
@@ -527,29 +505,23 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_idle")]
             CommandBody::Idle => ctx.write_all(b"IDLE"),
-            #[cfg(feature = "ext_enable")]
             CommandBody::Enable { capabilities } => {
                 ctx.write_all(b"ENABLE ")?;
                 join_serializable(capabilities.as_ref(), b" ", ctx)
             }
-            #[cfg(feature = "ext_compress")]
             CommandBody::Compress { algorithm } => {
                 ctx.write_all(b"COMPRESS ")?;
                 algorithm.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_quota")]
             CommandBody::GetQuota { root } => {
                 ctx.write_all(b"GETQUOTA ")?;
                 root.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_quota")]
             CommandBody::GetQuotaRoot { mailbox } => {
                 ctx.write_all(b"GETQUOTAROOT ")?;
                 mailbox.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_quota")]
             CommandBody::SetQuota { root, quotas } => {
                 ctx.write_all(b"SETQUOTA ")?;
                 root.encode_ctx(ctx)?;
@@ -557,7 +529,6 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 join_serializable(quotas.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")
             }
-            #[cfg(feature = "ext_move")]
             CommandBody::Move {
                 sequence_set,
                 mailbox,
@@ -622,22 +593,13 @@ impl<'a> EncodeIntoContext for IString<'a> {
 
 impl<'a> EncodeIntoContext for Literal<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        #[cfg(not(feature = "ext_literal"))]
-        write!(ctx, "{{{}}}\r\n", self.as_ref().len())?;
-
-        #[cfg(feature = "ext_literal")]
         match self.mode() {
             LiteralMode::Sync => write!(ctx, "{{{}}}\r\n", self.as_ref().len())?,
             LiteralMode::NonSync => write!(ctx, "{{{}+}}\r\n", self.as_ref().len())?,
         }
 
         ctx.push_line();
-
         ctx.write_all(self.as_ref())?;
-
-        #[cfg(not(feature = "ext_literal"))]
-        ctx.push_literal();
-        #[cfg(feature = "ext_literal")]
         ctx.push_literal(self.mode());
 
         Ok(())
@@ -688,9 +650,7 @@ impl EncodeIntoContext for StatusDataItemName {
             Self::UidNext => ctx.write_all(b"UIDNEXT"),
             Self::UidValidity => ctx.write_all(b"UIDVALIDITY"),
             Self::Unseen => ctx.write_all(b"UNSEEN"),
-            #[cfg(feature = "ext_quota")]
             Self::Deleted => ctx.write_all(b"DELETED"),
-            #[cfg(feature = "ext_quota")]
             Self::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
@@ -1125,11 +1085,8 @@ impl<'a> EncodeIntoContext for Code<'a> {
                 ctx.write_all(b"REFERRAL ")?;
                 ctx.write_all(url.as_bytes())
             }
-            #[cfg(feature = "ext_compress")]
             Code::CompressionActive => ctx.write_all(b"COMPRESSIONACTIVE"),
-            #[cfg(feature = "ext_quota")]
             Code::OverQuota => ctx.write_all(b"OVERQUOTA"),
-            #[cfg(feature = "ext_literal")]
             Code::TooBig => ctx.write_all(b"TOOBIG"),
             Code::Other(unknown) => unknown.encode_ctx(ctx),
         }
@@ -1221,7 +1178,6 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 join_serializable(items.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
-            #[cfg(feature = "ext_enable")]
             Data::Enabled { capabilities } => {
                 write!(ctx, "* ENABLED")?;
 
@@ -1230,7 +1186,6 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     cap.encode_ctx(ctx)?;
                 }
             }
-            #[cfg(feature = "ext_quota")]
             Data::Quota { root, quotas } => {
                 ctx.write_all(b"* QUOTA ")?;
                 root.encode_ctx(ctx)?;
@@ -1238,7 +1193,6 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 join_serializable(quotas.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
-            #[cfg(feature = "ext_quota")]
             Data::QuotaRoot { mailbox, roots } => {
                 ctx.write_all(b"* QUOTAROOT ")?;
                 mailbox.encode_ctx(ctx)?;
@@ -1292,12 +1246,10 @@ impl EncodeIntoContext for StatusDataItem {
                 ctx.write_all(b"UNSEEN ")?;
                 count.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_quota")]
             Self::Deleted(count) => {
                 ctx.write_all(b"DELETED ")?;
                 count.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_quota")]
             Self::DeletedStorage(count) => {
                 ctx.write_all(b"DELETED-STORAGE ")?;
                 count.encode_ctx(ctx)
@@ -1723,12 +1675,7 @@ mod tests {
         let cmd = Command::new(
             "A",
             CommandBody::login(
-                AString::from(
-                    #[cfg(not(feature = "ext_literal"))]
-                    Literal::unvalidated(b"alice".as_ref()),
-                    #[cfg(feature = "ext_literal")]
-                    Literal::unvalidated_non_sync(b"alice".as_ref()),
-                ),
+                AString::from(Literal::unvalidated_non_sync(b"alice".as_ref())),
                 "password",
             )
             .unwrap(),
@@ -1749,14 +1696,6 @@ mod tests {
                     println!("C: {}", escape_byte_string(&data));
                     out.extend_from_slice(&data);
                 }
-                #[cfg(not(feature = "ext_literal"))]
-                Fragment::Literal { data } => {
-                    println!("C: <Waiting for continuation request>");
-
-                    println!("C: {}", escape_byte_string(&data));
-                    out.extend_from_slice(&data);
-                }
-                #[cfg(feature = "ext_literal")]
                 Fragment::Literal { data, mode } => {
                     match mode {
                         LiteralMode::Sync => println!("C: <Waiting for continuation request>"),
@@ -1794,7 +1733,6 @@ mod tests {
                     },
                     Fragment::Literal {
                         data: b"\xCA\xFE".to_vec(),
-                        #[cfg(feature = "ext_literal")]
                         mode: LiteralMode::Sync,
                     },
                     Fragment::Line {
@@ -1810,7 +1748,6 @@ mod tests {
                 }]
                 .as_ref(),
             ),
-            #[cfg(feature = "ext_sasl_ir")]
             (
                 Command::new(
                     "A",
@@ -1829,7 +1766,6 @@ mod tests {
                 }]
                 .as_ref(),
             ),
-            #[cfg(feature = "ext_sasl_ir")]
             (
                 Command::new(
                     "A",
@@ -1865,7 +1801,6 @@ mod tests {
                     },
                     Fragment::Literal {
                         data: b"ABCDE".to_vec(),
-                        #[cfg(feature = "ext_literal")]
                         mode: LiteralMode::Sync,
                     },
                     Fragment::Line {
@@ -1874,7 +1809,6 @@ mod tests {
                 ]
                 .as_ref(),
             ),
-            #[cfg(feature = "ext_literal")]
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),

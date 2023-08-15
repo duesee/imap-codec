@@ -1209,7 +1209,6 @@ Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
 }
 
 #[test]
-#[cfg(feature = "ext_enable")]
 fn test_transcript_from_rfc5161() {
     let trace = br#"C: t1 CAPABILITY
 S: * CAPABILITY IMAP4rev1 ID LITERAL+ ENABLE X-GOOD-IDEA
@@ -1387,7 +1386,6 @@ S: A044 BAD No such command as "BLURDYBLOOP"
     test_lines_of_trace(trace);
 }
 
-#[cfg(feature = "ext_literal")]
 #[test]
 fn test_trace_rfc2088() {
     let test = b"A001 LOGIN {11+}\r\nFRED FOOBAR {7+}\r\nfat man\r\n".as_ref();

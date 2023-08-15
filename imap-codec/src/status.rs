@@ -8,10 +8,8 @@ use nom::{
     sequence::tuple,
 };
 
-#[cfg(feature = "ext_quota")]
-use crate::core::number64;
 use crate::{
-    core::{number, nz_number},
+    core::{number, number64, nz_number},
     decode::IMAPResult,
 };
 
@@ -27,12 +25,10 @@ pub(crate) fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> 
         value(StatusDataItemName::UidNext, tag_no_case(b"UIDNEXT")),
         value(StatusDataItemName::UidValidity, tag_no_case(b"UIDVALIDITY")),
         value(StatusDataItemName::Unseen, tag_no_case(b"UNSEEN")),
-        #[cfg(feature = "ext_quota")]
         value(
             StatusDataItemName::DeletedStorage,
             tag_no_case(b"DELETED-STORAGE"),
         ),
-        #[cfg(feature = "ext_quota")]
         value(StatusDataItemName::Deleted, tag_no_case(b"DELETED")),
         #[cfg(feature = "ext_condstore_qresync")]
         value(
@@ -78,12 +74,10 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
             tuple((tag_no_case(b"UNSEEN"), sp, number)),
             |(_, _, num)| StatusDataItem::Unseen(num),
         ),
-        #[cfg(feature = "ext_quota")]
         map(
             tuple((tag_no_case(b"DELETED-STORAGE"), sp, number64)),
             |(_, _, num)| StatusDataItem::DeletedStorage(num),
         ),
-        #[cfg(feature = "ext_quota")]
         map(
             tuple((tag_no_case(b"DELETED"), sp, number)),
             |(_, _, num)| StatusDataItem::Deleted(num),
@@ -106,9 +100,7 @@ mod tests {
             (StatusDataItemName::UidNext, b"UIDNEXT"),
             (StatusDataItemName::UidValidity, b"UIDVALIDITY"),
             (StatusDataItemName::Unseen, b"UNSEEN"),
-            #[cfg(feature = "ext_quota")]
             (StatusDataItemName::Deleted, b"DELETED"),
-            #[cfg(feature = "ext_quota")]
             (StatusDataItemName::DeletedStorage, b"DELETED-STORAGE"),
         ];
 
@@ -131,9 +123,7 @@ mod tests {
                 b"UIDVALIDITY 4294967295",
             ),
             (StatusDataItem::Unseen(0), b"UNSEEN 0"),
-            #[cfg(feature = "ext_quota")]
             (StatusDataItem::Deleted(1), b"DELETED 1"),
-            #[cfg(feature = "ext_quota")]
             (
                 StatusDataItem::DeletedStorage(u64::MAX),
                 b"DELETED-STORAGE 18446744073709551615",

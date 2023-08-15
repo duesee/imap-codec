@@ -21,17 +21,9 @@ serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
 starttls = ["imap-types/starttls"]
 
 # IMAP Extensions
-ext_compress = ["imap-types/ext_compress"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
-ext_enable = ["imap-types/ext_enable"]
-ext_idle = ["imap-types/ext_idle"]
-ext_literal = ["imap-types/ext_literal"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
-ext_move = ["imap-types/ext_move"]
-ext_quota = ["imap-types/ext_quota"]
-ext_sasl_ir = ["imap-types/ext_sasl_ir"]
-ext_unselect = ["imap-types/ext_unselect"]
 # </Forward to imap-types>
 
 # IMAP quirks
