@@ -6,23 +6,20 @@ use abnf_core::streaming::crlf;
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::{is_alpha, is_digit, streaming::dquote};
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-#[cfg(feature = "ext_literal")]
-use imap_types::core::LiteralMode;
 use imap_types::{
     core::{
-        AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, QuotedChar, Tag, Text,
+        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
+        QuotedChar, Tag, Text,
     },
     utils::{
         indicators::{is_astring_char, is_atom_char, is_quoted_specials, is_text_char},
         unescape_quoted,
     },
 };
-#[cfg(feature = "ext_literal")]
-use nom::character::streaming::char;
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
-    character::streaming::{digit1, one_of},
+    character::streaming::{char, digit1, one_of},
     combinator::{map, map_res, opt, recognize},
     sequence::{delimited, terminated, tuple},
 };
@@ -51,8 +48,6 @@ pub(crate) fn number(input: &[u8]) -> IMAPResult<&[u8], u32> {
 /// Unsigned 63-bit integer (0 <= n <= 9,223,372,036,854,775,807)
 ///
 /// Defined in RFC 9051
-#[cfg(feature = "ext_quota")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
 pub(crate) fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
     map_res(
         // # Safety
@@ -134,7 +129,7 @@ pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
 ///
 /// Number represents the number of CHAR8s
 ///
-/// # For IMAP4 Non-synchronizing Literals only (feature = `ext_literal`)
+/// # IMAP4 Non-synchronizing Literals
 ///
 /// ```abnf
 /// literal  = "{" number ["+"] "}" CRLF *CHAR8
@@ -146,10 +141,6 @@ pub(crate) fn is_any_text_char_except_quoted_specials(byte: u8) -> bool {
 /// ```
 /// -- <https://datatracker.ietf.org/doc/html/rfc7888#section-8>
 pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
-    #[cfg(not(feature = "ext_literal"))]
-    let (remaining, length) = terminated(delimited(tag(b"{"), number, tag(b"}")), crlf)(input)?;
-
-    #[cfg(feature = "ext_literal")]
     let (remaining, (length, mode)) = terminated(
         delimited(
             tag(b"{"),
@@ -173,7 +164,6 @@ pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
                 // We don't know the tag here and rely on an upper parser, e.g., `command` to fill this in.
                 tag: None,
                 length,
-                #[cfg(feature = "ext_literal")]
                 mode,
             },
         }));
@@ -182,9 +172,6 @@ pub(crate) fn literal(input: &[u8]) -> IMAPResult<&[u8], Literal> {
     let (remaining, data) = take(length)(remaining)?;
 
     match Literal::try_from(data) {
-        #[cfg(not(feature = "ext_literal"))]
-        Ok(literal) => Ok((remaining, literal)),
-        #[cfg(feature = "ext_literal")]
         Ok(mut literal) => {
             literal.set_mode(mode);
 

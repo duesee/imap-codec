@@ -32,13 +32,13 @@ jobs:
           tool: cargo-hack
 
       - name: Check
-        # TODO: We exclude the tokio demos for now to bypass a "none of the selected packages contains these features: ext_compress, ..." error.
+        # TODO: We exclude the tokio demos for now to bypass a "none of the selected packages contains these features" error.
         run: |
           cargo hack check \
           --workspace \
           --exclude tokio-client --exclude tokio-server --exclude tokio-support \
           --feature-powerset \
-          --group-features starttls,ext_compress,ext_condstore_qresync,ext_enable,ext_idle,ext_literal,ext_login_referrals,ext_mailbox_referrals,ext_move,ext_quota,ext_sasl_ir,ext_unselect \
+          --group-features starttls,ext_condstore_qresync,ext_login_referrals,ext_mailbox_referrals \
           --exclude-features ext,split
 
   test:

@@ -30,13 +30,9 @@ pub enum StatusDataItemName {
     Unseen,
 
     /// The number of messages with the \Deleted flag set.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Deleted,
 
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     DeletedStorage,
 
     #[cfg(feature = "ext_condstore_qresync")]
@@ -69,12 +65,8 @@ pub enum StatusDataItem {
     Unseen(u32),
 
     /// The number of messages with the \Deleted flag set.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     Deleted(u32),
 
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
-    #[cfg(feature = "ext_quota")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_quota")))]
     DeletedStorage(u64),
 }

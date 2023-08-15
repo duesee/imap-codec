@@ -26,8 +26,6 @@ pub struct AuthenticateDataCodec;
 pub struct ResponseCodec;
 
 /// Codec for idle dones.
-#[cfg(feature = "ext_idle")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 #[derive(Debug, Default)]
 #[non_exhaustive]
 pub struct IdleDoneCodec;
@@ -47,19 +45,16 @@ impl_codec_new!(GreetingCodec);
 impl_codec_new!(CommandCodec);
 impl_codec_new!(AuthenticateDataCodec);
 impl_codec_new!(ResponseCodec);
-#[cfg(feature = "ext_idle")]
 impl_codec_new!(IdleDoneCodec);
 
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU32;
 
-    #[cfg(feature = "ext_literal")]
-    use imap_types::core::LiteralMode;
     use imap_types::{
         auth::AuthenticateData,
         command::{Command, CommandBody},
-        core::{IString, Literal, NString, NonEmptyVec, Tag},
+        core::{IString, Literal, LiteralMode, NString, NonEmptyVec, Tag},
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
@@ -215,11 +210,9 @@ mod tests {
                 Err(CommandDecodeError::LiteralFound {
                     tag: Tag::try_from("a").unwrap(),
                     length: 5,
-                    #[cfg(feature = "ext_literal")]
                     mode: LiteralMode::Sync,
                 }),
             ),
-            #[cfg(feature = "ext_literal")]
             (
                 b"a select {5+}\r\n".as_ref(),
                 Err(CommandDecodeError::LiteralFound {

@@ -13,27 +13,21 @@ use std::num::{ParseIntError, TryFromIntError};
 
 #[cfg(feature = "bounded-static")]
 use bounded_static::{IntoBoundedStatic, ToStatic};
-#[cfg(feature = "ext_literal")]
-use imap_types::core::LiteralMode;
-#[cfg(feature = "ext_idle")]
-use imap_types::extensions::idle::IdleDone;
 use imap_types::{
     auth::AuthenticateData,
     command::Command,
-    core::Tag,
+    core::{LiteralMode, Tag},
+    extensions::idle::IdleDone,
     response::{Greeting, Response},
 };
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
-#[cfg(feature = "ext_idle")]
-use crate::extensions::idle::idle_done;
-#[cfg(feature = "ext_idle")]
-use crate::IdleDoneCodec;
 use crate::{
     auth::authenticate_data,
-    codec::{AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec},
     command::command,
+    extensions::idle::idle_done,
     response::{greeting, response},
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
 
 /// An extended version of [`nom::IResult`].
@@ -53,7 +47,6 @@ pub(crate) enum IMAPErrorKind<'a> {
     Literal {
         tag: Option<Tag<'a>>,
         length: u32,
-        #[cfg(feature = "ext_literal")]
         mode: LiteralMode,
     },
     BadNumber,
@@ -153,9 +146,9 @@ pub enum CommandDecodeError<'a> {
     ///
     /// The decoder stopped at the beginning of literal data. Typically, a server MUST send a
     /// command continuation request to agree to the receival of the remaining data. This behaviour
-    /// is different when the `ext_literal` feature is used.
+    /// is different when `LITERAL+/LITERAL-` is used.
     ///
-    /// # With `ext_literal` feature
+    /// # With `LITERAL+/LITERAL-`
     ///
     /// When the `mode` is sync, everything is the same as above.
     ///
@@ -195,7 +188,6 @@ pub enum CommandDecodeError<'a> {
         length: u32,
 
         /// Literal mode, i.e., sync or non-sync.
-        #[cfg(feature = "ext_literal")]
         mode: LiteralMode,
     },
 
@@ -239,8 +231,6 @@ pub enum ResponseDecodeError {
 }
 
 /// Error during idle done decoding.
-#[cfg(feature = "ext_idle")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum IdleDoneDecodeError {
@@ -283,18 +273,11 @@ impl Decoder for CommandCodec {
             Err(nom::Err::Failure(error)) => match error {
                 IMAPParseError {
                     input: _,
-                    kind:
-                        IMAPErrorKind::Literal {
-                            tag,
-                            length,
-                            #[cfg(feature = "ext_literal")]
-                            mode,
-                        },
+                    kind: IMAPErrorKind::Literal { tag, length, mode },
                 } => Err(CommandDecodeError::LiteralFound {
                     // Unwrap: We *must* receive a `tag` during command parsing.
                     tag: tag.expect("Expected `Some(tag)` in `IMAPErrorKind::Literal`, got `None`"),
                     length,
-                    #[cfg(feature = "ext_literal")]
                     mode,
                 }),
                 _ => Err(CommandDecodeError::Failed),
@@ -344,8 +327,6 @@ impl Decoder for AuthenticateDataCodec {
     }
 }
 
-#[cfg(feature = "ext_idle")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 impl Decoder for IdleDoneCodec {
     type Message<'a> = IdleDone;
     type Error<'a> = IdleDoneDecodeError;
@@ -366,11 +347,10 @@ impl Decoder for IdleDoneCodec {
 mod tests {
     use std::num::NonZeroU32;
 
-    #[cfg(feature = "ext_idle")]
-    use imap_types::extensions::idle::IdleDone;
     use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Literal, NString, NonEmptyVec},
+        extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
@@ -485,7 +465,6 @@ mod tests {
                 Err(CommandDecodeError::LiteralFound {
                     tag: Tag::try_from("a").unwrap(),
                     length: 5,
-                    #[cfg(feature = "ext_literal")]
                     mode: LiteralMode::Sync,
                 }),
             ),
@@ -600,7 +579,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "ext_idle")]
     #[test]
     fn test_decode_idle_done() {
         let tests = [

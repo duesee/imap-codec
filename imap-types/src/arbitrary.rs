@@ -1,12 +1,6 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
-#[cfg(feature = "ext_literal")]
-use crate::core::LiteralMode;
-#[cfg(feature = "ext_enable")]
-use crate::extensions::enable::CapabilityEnable;
-#[cfg(feature = "ext_quota")]
-use crate::extensions::quota::Resource;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -14,11 +8,12 @@ use crate::{
         SinglePartExtensionData, SpecificFields,
     },
     core::{
-        AString, Atom, AtomExt, IString, Literal, NString, NonEmptyVec, Quoted, QuotedChar, Tag,
-        Text,
+        AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, NonEmptyVec, Quoted,
+        QuotedChar, Tag, Text,
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,
+    extensions::{enable::CapabilityEnable, quota::Resource},
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
     response::{
@@ -70,9 +65,7 @@ implement_tryfrom! { Capability<'a>, Atom<'a> }
 implement_tryfrom! { Flag<'a>, &str }
 implement_tryfrom! { FlagNameAttribute<'a>, Atom<'a> }
 implement_tryfrom! { MailboxOther<'a>, AString<'a> }
-#[cfg(feature = "ext_enable")]
 implement_tryfrom! { CapabilityEnable<'a>, &str }
-#[cfg(feature = "ext_quota")]
 implement_tryfrom! { Resource<'a>, &str }
 implement_tryfrom! { AuthMechanism<'a>, &str }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
@@ -144,9 +137,6 @@ impl<'a> Arbitrary<'a> for Status<'a> {
 impl<'a> Arbitrary<'a> for Literal<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         match Literal::try_from(<&[u8]>::arbitrary(u)?) {
-            #[cfg(not(feature = "ext_literal"))]
-            Ok(passed) => Ok(passed),
-            #[cfg(feature = "ext_literal")]
             Ok(mut passed) => {
                 passed.mode = LiteralMode::arbitrary(u)?;
                 Ok(passed)

@@ -18,17 +18,9 @@ serde = ["dep:serde", "chrono/serde"]
 starttls = []
 
 # IMAP Extensions
-ext_compress = []
 ext_condstore_qresync = []
-ext_enable = []
-ext_idle = []
-ext_literal = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
-ext_move = []
-ext_quota = []
-ext_sasl_ir = []
-ext_unselect = []
 
 # Unlock `unvalidated` constructors.
 unvalidated = []

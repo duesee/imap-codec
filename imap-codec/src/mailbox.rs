@@ -14,11 +14,10 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
-#[cfg(feature = "ext_quota")]
-use crate::extensions::quota::{quota_response, quotaroot_response};
 use crate::{
     core::{astring, nil, number, nz_number, quoted_char, string},
     decode::IMAPResult,
+    extensions::quota::{quota_response, quotaroot_response},
     flag::{flag_list, mbx_list_flags},
     status::status_att_list,
 };
@@ -107,9 +106,7 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             tuple((number, sp, tag_no_case(b"RECENT"))),
             |(num, _, _)| Data::Recent(num),
         ),
-        #[cfg(feature = "ext_quota")]
         quotaroot_response,
-        #[cfg(feature = "ext_quota")]
         quota_response,
     ))(input)
 }

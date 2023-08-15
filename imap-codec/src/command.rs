@@ -1,4 +1,3 @@
-#[cfg(feature = "ext_sasl_ir")]
 use std::borrow::Cow;
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
@@ -22,23 +21,18 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
-#[cfg(feature = "ext_sasl_ir")]
-use crate::core::base64;
-#[cfg(feature = "ext_compress")]
-use crate::extensions::compress::compress;
-#[cfg(feature = "ext_enable")]
-use crate::extensions::enable::enable;
-#[cfg(feature = "ext_idle")]
-use crate::extensions::idle::idle;
-#[cfg(feature = "ext_quota")]
-use crate::extensions::quota::{getquota, getquotaroot, setquota};
-#[cfg(feature = "ext_move")]
-use crate::extensions::r#move::r#move;
 use crate::{
     auth::auth_type,
-    core::{astring, literal, tag_imap},
+    core::{astring, base64, literal, tag_imap},
     datetime::date_time,
     decode::{IMAPErrorKind, IMAPResult},
+    extensions::{
+        compress::compress,
+        enable::enable,
+        idle::idle,
+        quota::{getquota, getquotaroot, setquota},
+        r#move::r#move,
+    },
     fetch::fetch_att,
     flag::{flag, flag_list},
     mailbox::{list_mailbox, mailbox},
@@ -128,17 +122,11 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         status,
         subscribe,
         unsubscribe,
-        #[cfg(feature = "ext_idle")]
         idle,
-        #[cfg(feature = "ext_enable")]
         enable,
-        #[cfg(feature = "ext_compress")]
         compress,
-        #[cfg(feature = "ext_quota")]
         getquota,
-        #[cfg(feature = "ext_quota")]
         getquotaroot,
-        #[cfg(feature = "ext_quota")]
         setquota,
     ))(input)
 }
@@ -302,12 +290,7 @@ pub(crate) fn unsubscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 pub(crate) fn command_nonauth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = alt((
         login,
-        #[cfg(not(feature = "ext_sasl_ir"))]
-        map(authenticate, |mechanism| CommandBody::Authenticate {
-            mechanism,
-        }),
-        #[cfg(feature = "ext_sasl_ir")]
-        map(authenticate_sasl_ir, |(mechanism, initial_response)| {
+        map(authenticate, |(mechanism, initial_response)| {
             CommandBody::Authenticate {
                 mechanism,
                 initial_response,
@@ -352,26 +335,6 @@ pub(crate) fn password(input: &[u8]) -> IMAPResult<&[u8], AString> {
 /// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
 ///
 /// ```text
-/// authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)
-///                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-///                |
-///                This is parsed here.
-///                CRLF is parsed by upper command parser.
-/// ```
-#[cfg(not(feature = "ext_sasl_ir"))]
-pub(crate) fn authenticate(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
-    let mut parser = preceded(tag_no_case(b"AUTHENTICATE "), auth_type);
-
-    let (remaining, auth_type) = parser(input)?;
-
-    // Server must send continuation ("+ ") at this point...
-
-    Ok((remaining, auth_type))
-}
-
-/// `authenticate = "AUTHENTICATE" SP auth-type *(CRLF base64)` (edited)
-///
-/// ```text
 ///                                            Added by SASL-IR
 ///                                            |
 ///                                            vvvvvvvvvvvvvvvvvvv
@@ -381,10 +344,8 @@ pub(crate) fn authenticate(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 ///                This is parsed here.
 ///                CRLF is parsed by upper command parser.
 /// ```
-#[cfg(feature = "ext_sasl_ir")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_sasl_ir")))]
 #[allow(clippy::type_complexity)]
-pub(crate) fn authenticate_sasl_ir(
+pub(crate) fn authenticate(
     input: &[u8],
 ) -> IMAPResult<&[u8], (AuthMechanism, Option<Secret<Cow<[u8]>>>)> {
     let mut parser = tuple((
@@ -428,9 +389,7 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         store,
         uid,
         search,
-        #[cfg(feature = "ext_unselect")]
         value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
-        #[cfg(feature = "ext_move")]
         r#move,
     ))(input)
 }
@@ -552,14 +511,7 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"UID"),
         sp,
-        alt((
-            copy,
-            fetch,
-            search,
-            store,
-            #[cfg(feature = "ext_move")]
-            r#move,
-        )),
+        alt((copy, fetch, search, store, r#move)),
     ));
 
     let (remaining, (_, _, mut cmd)) = parser(input)?;
@@ -568,9 +520,8 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         CommandBody::Copy { ref mut uid, .. }
         | CommandBody::Fetch { ref mut uid, .. }
         | CommandBody::Search { ref mut uid, .. }
-        | CommandBody::Store { ref mut uid, .. } => *uid = true,
-        #[cfg(feature = "ext_move")]
-        CommandBody::Move { ref mut uid, .. } => *uid = true,
+        | CommandBody::Store { ref mut uid, .. }
+        | CommandBody::Move { ref mut uid, .. } => *uid = true,
         _ => unreachable!(),
     }
 
@@ -581,14 +532,13 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 mod tests {
     use std::num::NonZeroU32;
 
-    #[cfg(feature = "ext_sasl_ir")]
-    use imap_types::core::Tag;
-    use imap_types::fetch::{MessageDataItemName, Section};
+    use imap_types::{
+        core::Tag,
+        fetch::{MessageDataItemName, Section},
+    };
 
     use super::*;
-    #[cfg(feature = "ext_sasl_ir")]
-    use crate::encode::Encoder;
-    use crate::CommandCodec;
+    use crate::{encode::Encoder, CommandCodec};
 
     #[test]
     fn test_parse_fetch() {
@@ -652,7 +602,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "ext_sasl_ir")]
     #[test]
     fn test_that_empty_ir_is_encoded_correctly() {
         let command = Command::new(

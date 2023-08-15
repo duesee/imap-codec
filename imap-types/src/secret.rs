@@ -54,11 +54,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "ext_literal")]
-    use crate::core::Literal;
     use crate::{
         command::{Command, CommandBody},
-        core::{AString, Atom, Quoted},
+        core::{AString, Atom, Literal, Quoted},
     };
 
     #[test]
@@ -66,9 +64,7 @@ mod tests {
     #[allow(clippy::redundant_clone)]
     fn test_that_secret_is_redacted() {
         use super::Secret;
-        #[cfg(feature = "ext_sasl_ir")]
-        use crate::auth::AuthMechanism;
-        use crate::auth::AuthenticateData;
+        use crate::auth::{AuthMechanism, AuthenticateData};
 
         let secret = Secret("xyz123");
         let got = format!("{:?}", secret);
@@ -82,7 +78,6 @@ mod tests {
                 .unwrap()
                 .tag("A")
                 .unwrap(),
-            #[cfg(feature = "ext_sasl_ir")]
             CommandBody::authenticate_with_ir(AuthMechanism::Plain, b"xyz123".as_ref())
                 .tag("A")
                 .unwrap(),
@@ -135,7 +130,6 @@ mod tests {
             )
         );
 
-        #[cfg(feature = "ext_literal")]
         assert_ne!(
             Command::new(
                 "A",

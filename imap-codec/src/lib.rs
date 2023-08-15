@@ -111,17 +111,6 @@ mod command;
 mod core;
 mod datetime;
 mod envelope;
-#[cfg(any(
-    feature = "ext_compress",
-    feature = "ext_condstore_qresync",
-    feature = "ext_enable",
-    feature = "ext_idle",
-    feature = "ext_literal",
-    feature = "ext_move",
-    feature = "ext_quota",
-    feature = "ext_unselect",
-))]
-#[cfg_attr(docsrs, doc(cfg(feature = "ext_*")))]
 mod extensions;
 mod fetch;
 mod flag;

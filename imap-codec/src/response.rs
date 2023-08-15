@@ -23,11 +23,10 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
-#[cfg(feature = "ext_enable")]
-use crate::extensions::enable::enable_data;
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
+    extensions::enable::enable_data,
     fetch::msg_att,
     flag::flag_perm,
     mailbox::mailbox_data,
@@ -178,11 +177,8 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
             tuple((tag_no_case(b"UNSEEN"), sp, nz_number)),
             |(_, _, num)| Code::Unseen(num),
         ),
-        #[cfg(feature = "ext_compress")]
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
-        #[cfg(feature = "ext_quota")]
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
-        #[cfg(feature = "ext_literal")]
         value(Code::TooBig, tag_no_case(b"TOOBIG")),
     ))(input)
 }
@@ -323,7 +319,6 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
             map(capability_data, |caps| {
                 Response::Data(Data::Capability(caps))
             }),
-            #[cfg(feature = "ext_enable")]
             map(enable_data, Response::Data),
         )),
         crlf,
