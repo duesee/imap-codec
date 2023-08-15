@@ -28,7 +28,6 @@ pub mod error {
     use thiserror::Error;
 
     #[derive(Clone, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd)]
-    #[non_exhaustive]
     pub enum MoveError<S, M> {
         #[error("Invalid sequence: {0}")]
         Sequence(S),
