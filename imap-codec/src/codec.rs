@@ -186,13 +186,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = GreetingCodec::decode(test);
+            let got = GreetingCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = GreetingCodec::decode_static(test);
+                let got = GreetingCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -239,13 +239,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = CommandCodec::decode(test);
+            let got = CommandCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = CommandCodec::decode_static(test);
+                let got = CommandCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -284,13 +284,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = ResponseCodec::decode(test);
+            let got = ResponseCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = ResponseCodec::decode_static(test);
+                let got = ResponseCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }

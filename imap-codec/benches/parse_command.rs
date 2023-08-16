@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{decode::Decoder, imap_types::command::Command, CommandCodec};
 
 fn parse_command(input: &[u8]) -> Command {
-    let (_remaining, cmd) = CommandCodec::decode(input).unwrap();
+    let (_remaining, cmd) = CommandCodec::default().decode(input).unwrap();
 
     cmd
 }

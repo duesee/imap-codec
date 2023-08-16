@@ -107,7 +107,7 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = IdleDoneCodec::decode(test);
+            let got = IdleDoneCodec::default().decode(test);
 
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
 

@@ -30,8 +30,9 @@
 //! #     },
 //! #     GreetingCodec,
 //! #  };
-//! let (remaining, greeting) =
-//!     GreetingCodec::decode(b"* OK [ALERT] Hello, World!\r\n<remaining>").unwrap();
+//! let (remaining, greeting) = GreetingCodec::default()
+//!     .decode(b"* OK [ALERT] Hello, World!\r\n<remaining>")
+//!     .unwrap();
 //!
 //! assert_eq!(
 //!     greeting,

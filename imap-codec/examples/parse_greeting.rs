@@ -28,7 +28,7 @@ fn main() {
 
     loop {
         // Try to parse the first greeting in `buffer`.
-        match GreetingCodec::decode(&buffer) {
+        match GreetingCodec::default().decode(&buffer) {
             // Parser succeeded.
             Ok((remaining, greeting)) => {
                 // Do something with the greeting ...

@@ -111,20 +111,22 @@ impl<'a, I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'a, I> 
 ///
 /// Implemented for types that know how to decode a specific IMAP message. See [implementors](trait.Decoder.html#implementors).
 pub trait Decoder {
-    type Item<'a>: Sized;
+    type Message<'a>: Sized;
     type Error<'a>;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'_>>;
+    fn decode<'a>(&self, input: &'a [u8])
+        -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
 
     #[cfg(feature = "bounded-static")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bounded-static")))]
     fn decode_static<'a>(
+        &self,
         input: &'a [u8],
-    ) -> Result<(&'a [u8], Self::Item<'static>), Self::Error<'_>>
+    ) -> Result<(&'a [u8], Self::Message<'static>), Self::Error<'a>>
     where
-        Self::Item<'a>: IntoBoundedStatic<Static = Self::Item<'static>>,
+        Self::Message<'a>: IntoBoundedStatic<Static = Self::Message<'static>>,
     {
-        let (remaining, value) = Self::decode(input)?;
+        let (remaining, value) = self.decode(input)?;
         Ok((remaining, value.into_static()))
     }
 }
@@ -252,10 +254,13 @@ pub enum IdleDoneDecodeError {
 // -------------------------------------------------------------------------------------------------
 
 impl Decoder for GreetingCodec {
-    type Item<'a> = Greeting<'a>;
+    type Message<'a> = Greeting<'a>;
     type Error<'a> = GreetingDecodeError;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+    fn decode<'a>(
+        &self,
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'static>> {
         match greeting(input) {
             Ok((rem, grt)) => Ok((rem, grt)),
             Err(nom::Err::Incomplete(_)) => Err(GreetingDecodeError::Incomplete),
@@ -265,10 +270,13 @@ impl Decoder for GreetingCodec {
 }
 
 impl Decoder for CommandCodec {
-    type Item<'a> = Command<'a>;
+    type Message<'a> = Command<'a>;
     type Error<'a> = CommandDecodeError<'a>;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'_>> {
+    fn decode<'a>(
+        &self,
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>> {
         match command(input) {
             Ok((rem, cmd)) => Ok((rem, cmd)),
             Err(nom::Err::Incomplete(_)) => Err(CommandDecodeError::Incomplete),
@@ -297,10 +305,13 @@ impl Decoder for CommandCodec {
 }
 
 impl Decoder for ResponseCodec {
-    type Item<'a> = Response<'a>;
+    type Message<'a> = Response<'a>;
     type Error<'a> = ResponseDecodeError;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+    fn decode<'a>(
+        &self,
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'static>> {
         match response(input) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(ResponseDecodeError::Incomplete),
@@ -316,10 +327,13 @@ impl Decoder for ResponseCodec {
 }
 
 impl Decoder for AuthenticateDataCodec {
-    type Item<'a> = AuthenticateData;
+    type Message<'a> = AuthenticateData;
     type Error<'a> = AuthenticateDataDecodeError;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+    fn decode<'a>(
+        &self,
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'static>> {
         match authenticate_data(input) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(AuthenticateDataDecodeError::Incomplete),
@@ -333,10 +347,13 @@ impl Decoder for AuthenticateDataCodec {
 #[cfg(feature = "ext_idle")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ext_idle")))]
 impl Decoder for IdleDoneCodec {
-    type Item<'a> = IdleDone;
+    type Message<'a> = IdleDone;
     type Error<'a> = IdleDoneDecodeError;
 
-    fn decode(input: &[u8]) -> Result<(&[u8], Self::Item<'_>), Self::Error<'static>> {
+    fn decode<'a>(
+        &self,
+        input: &'a [u8],
+    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'static>> {
         match idle_done(input) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(IdleDoneDecodeError::Incomplete),
@@ -401,13 +418,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = GreetingCodec::decode(test);
+            let got = GreetingCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = GreetingCodec::decode_static(test);
+                let got = GreetingCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -483,13 +500,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = CommandCodec::decode(test);
+            let got = CommandCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = CommandCodec::decode_static(test);
+                let got = CommandCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -571,13 +588,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = AuthenticateDataCodec::decode(test);
+            let got = AuthenticateDataCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = AuthenticateDataCodec::decode_static(test);
+                let got = AuthenticateDataCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -604,13 +621,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = IdleDoneCodec::decode(test);
+            let got = IdleDoneCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = IdleDoneCodec::decode_static(test);
+                let got = IdleDoneCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
@@ -675,13 +692,13 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            let got = ResponseCodec::decode(test);
+            let got = ResponseCodec::default().decode(test);
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             #[cfg(feature = "bounded-static")]
             {
-                let got = ResponseCodec::decode_static(test);
+                let got = ResponseCodec::default().decode_static(test);
                 assert_eq!(expected, got);
             }
         }
