@@ -3,99 +3,77 @@
 //! imap-codec provides complete and detailed parsing and construction of [IMAP4rev1] commands and responses.
 //! It is based on [imap-types] and extends it with parsing support using [nom].
 //!
-//! ## Example
+//! The main codecs are
+//! [`GreetingCodec`](crate::GreetingCodec) (to parse the first message from a server),
+//! [`CommandCodec`](crate::CommandCodec) (to parse commands from a client), and
+//! [`ResponseCodec`](crate::ResponseCodec) (to parse responses or results from a server).
 //!
-//! ```rust
-//! use imap_codec::{decode::Decoder, encode::Encoder, CommandCodec};
-//!
-//! // We assume here that the message is already complete.
-//! let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
-//!
-//! let (_remainder, parsed) = CommandCodec::decode(input).unwrap();
-//! println!("// Parsed:");
-//! println!("{parsed:#?}");
-//!
-//! let serialized = CommandCodec::default().encode(&parsed).dump();
-//!
-//! // Not every IMAP message is valid UTF-8.
-//! // We ignore that here, so that we can print the message.
-//! let serialized = String::from_utf8(serialized).unwrap();
-//! println!("// Serialized:");
-//! println!("// {serialized}");
-//! ```
+//! Note that IMAP traces are not guaranteed to be UTF-8.
+//! Thus, be careful when using code like `from_utf8(...)`.
 //!
 //! ## Decoding
 //!
-//! Parsing is implemented through the [`Decoder`](crate::decode::Decoder) trait.
-//! The main codecs for parsing are
-//! [`GreetingCodec`](crate::GreetingCodec#method.decode) (to parse the first message from a server),
-//! [`CommandCodec`](crate::CommandCodec) (to parse commands from a client), and
-//! [`ResponseCodec::decode(...)`](crate::ResponseCodec#method.decode) (to parse responses or results from a server).
-//! Note, however, that certain message flows require other parsers as well.
+//! Decoding is provided through the [`Decoder`](`crate::decode::Decoder`) trait.
 //! Every parser takes an input (`&[u8]`) and produces a remainder and a parsed value.
 //!
-//! ### Example
-//!
-//! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
-//!
-//! IMAP literals make separating the parsing logic from the application logic difficult.
-//! When a server recognizes a literal (e.g. "{42}"), it first needs to agree to receive more data by sending a so-called "continuation request" (`+ ...`).
-//! Without a continuation request, a client won't send more data, and the parser on the server would always return `Incomplete(42)`.
-//! This makes real-world decoding of IMAP a bit more elaborate.
-//!
-//! ## Encoding
-//!
-//! The [`Encode::encode(...)`](encode::Encoder::encode) method will return an instance of [`Encoded`](encode::Encoded)
-//! that facilitates handling of literals. The idea is that the encoder not only "dumps" the final serialization of a message but can be iterated over.
+//! **Note:** Decoding IMAP traces is more elaborate than it seems on a first glance.
+//! Please consult the [`decode`](`crate::decode`) module documentation to learn how to handle real-world decoding.
 //!
 //! ### Example
 //!
 //! ```rust
-//! #[cfg(feature = "ext_literal")]
-//! use imap_codec::imap_types::core::LiteralMode;
-//! use imap_codec::{
-//!     encode::{Encoder, Fragment},
-//!     imap_types::command::{Command, CommandBody},
-//!     CommandCodec,
+//! # use imap_codec::{
+//! #     decode::Decoder,
+//! #     imap_types::{
+//! #         core::Text,
+//! #         response::{Code, Greeting, GreetingKind},
+//! #     },
+//! #     GreetingCodec,
+//! #  };
+//! let (remaining, greeting) =
+//!     GreetingCodec::decode(b"* OK [ALERT] Hello, World!\r\n<remaining>").unwrap();
+//!
+//! assert_eq!(
+//!     greeting,
+//!     Greeting {
+//!         kind: GreetingKind::Ok,
+//!         code: Some(Code::Alert),
+//!         text: Text::try_from("Hello, World!").unwrap(),
+//!     }
+//! );
+//! assert_eq!(remaining, &b"<remaining>"[..])
+//! ```
+//!
+//! ## Encoding
+//!
+//! Encoding is provided through the [`Encoder`](`crate::encode::Encoder`) trait.
+//!
+//! **Note:** Encoding IMAP traces is more elaborate than it seems on a first glance.
+//! Please consult the [`encode`](`crate::encode`) module documentation to learn how to handle real-world encoding.
+//!
+//! ### Example
+//!
+//! ```rust
+//! # use imap_codec::{
+//! #     encode::Encoder,
+//! #     imap_types::{
+//! #         core::Text,
+//! #         response::{Code, Greeting, GreetingKind},
+//! #     },
+//! #     GreetingCodec,
+//! #  };
+//! let greeting = Greeting {
+//!     kind: GreetingKind::Ok,
+//!     code: Some(Code::Alert),
+//!     text: Text::try_from("Hello, World!").unwrap(),
 //! };
 //!
-//! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
+//! let bytes = GreetingCodec::default().encode(&greeting).dump();
 //!
-//! for fragment in CommandCodec::default().encode(&command) {
-//!     match fragment {
-//!         Fragment::Line { data } => {
-//!             // A line that is ready to be send.
-//!             println!("C: {}", String::from_utf8(data).unwrap());
-//!         }
-//!         #[cfg(not(feature = "ext_literal"))]
-//!         Fragment::Literal { data } => {
-//!             // Wait for a continuation request.
-//!             println!("S: + ...")
-//!         }
-//!         #[cfg(feature = "ext_literal")]
-//!         Fragment::Literal { data, mode } => match mode {
-//!             LiteralMode::Sync => {
-//!                 // Wait for a continuation request.
-//!                 println!("S: + ...")
-//!             }
-//!             LiteralMode::NonSync => {
-//!                 // We don't need to wait for a continuation request
-//!                 // as the server will also not send it.
-//!             }
-//!         },
-//!     }
-//! }
+//! assert_eq!(bytes, &b"* OK [ALERT] Hello, World!\r\n"[..]);
 //! ```
 //!
-//! Output of example:
-//!
-//! ```imap
-//! C: A1 LOGIN alice {10}
-//! S: + ...
-//! C: Pa²²W0rD
-//! ```
-//!
-//! # Features
+//! ## Features
 //!
 //! imap-codec forwards many features to imap-types. See [imap-types features] for a comprehensive list.
 //!

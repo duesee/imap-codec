@@ -1,4 +1,54 @@
-//! Encoding-related types.
+//! # Encoding of messages.
+//!
+//! To facilitates handling of literals, [Encoder::encode] returns an instance of [`Encoded`].
+//! The idea is that the encoder not only "dumps" the final serialization of a message but can be iterated over.
+//!
+//! # Example
+//!
+//! ```rust
+//! #[cfg(feature = "ext_literal")]
+//! use imap_codec::imap_types::core::LiteralMode;
+//! use imap_codec::{
+//!     encode::{Encoder, Fragment},
+//!     imap_types::command::{Command, CommandBody},
+//!     CommandCodec,
+//! };
+//!
+//! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
+//!
+//! for fragment in CommandCodec::default().encode(&command) {
+//!     match fragment {
+//!         Fragment::Line { data } => {
+//!             // A line that is ready to be send.
+//!             println!("C: {}", String::from_utf8(data).unwrap());
+//!         }
+//!         #[cfg(not(feature = "ext_literal"))]
+//!         Fragment::Literal { data } => {
+//!             // Wait for a continuation request.
+//!             println!("S: + ...")
+//!         }
+//!         #[cfg(feature = "ext_literal")]
+//!         Fragment::Literal { data, mode } => match mode {
+//!             LiteralMode::Sync => {
+//!                 // Wait for a continuation request.
+//!                 println!("S: + ...")
+//!             }
+//!             LiteralMode::NonSync => {
+//!                 // We don't need to wait for a continuation request
+//!                 // as the server will also not send it.
+//!             }
+//!         },
+//!     }
+//! }
+//! ```
+//!
+//! Output of example:
+//!
+//! ```imap
+//! C: A1 LOGIN alice {10}
+//! S: + ...
+//! C: Pa²²W0rD
+//! ```
 
 use std::{borrow::Borrow, io::Write, num::NonZeroU32};
 
