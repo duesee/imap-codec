@@ -114,12 +114,12 @@
 //!
 //! This crate uses the following features to enable experimental IMAP extensions:
 //!
-//! |Feature              |Description                                                                          |Status    |Enabled by default |
-//! |---------------------|-------------------------------------------------------------------------------------|----------|-------------------|
-//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|No                 |
-//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|No                 |
-//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|No                 |
-//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                |          |No                 |
+//! |Feature              |Description                                                                          |Status    |
+//! |---------------------|-------------------------------------------------------------------------------------|----------|
+//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|
+//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|
+//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|
+//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                |          |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
