@@ -93,7 +93,7 @@ macro_rules! impl_to_bytes_and_back {
             #[cfg(feature = "debug")]
             println!("[!] Serialized: {}", escape_byte_string(&buffer));
 
-            let (rem, parsed) = <$codec>::decode(&buffer).unwrap();
+            let (rem, parsed) = <$codec>::default().decode(&buffer).unwrap();
             assert!(rem.is_empty());
 
             #[cfg(feature = "debug")]
