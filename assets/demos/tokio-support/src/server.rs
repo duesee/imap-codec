@@ -83,7 +83,7 @@ impl TokioDecoder for ImapServerCodec {
                             let line = &src[..*to_consume_acc];
 
                             // TODO: Choose the required parser.
-                            match CommandCodec::decode(line) {
+                            match CommandCodec::default().decode(line) {
                                 // We got a complete message.
                                 Ok((rem, cmd)) => {
                                     assert!(rem.is_empty());

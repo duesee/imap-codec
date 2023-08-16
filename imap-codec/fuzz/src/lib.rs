@@ -11,7 +11,7 @@ macro_rules! impl_decode_target {
             #[cfg(feature = "debug")]
             println!("[!] Input:      {}", escape_byte_string(input));
 
-            if let Ok((_rem, parsed1)) = $codec::decode(input) {
+            if let Ok((_rem, parsed1)) = $codec::default().decode(input) {
                 #[cfg(feature = "debug")]
                 {
                     let input = &input[..input.len() - _rem.len()];
@@ -23,7 +23,7 @@ macro_rules! impl_decode_target {
                 #[cfg(feature = "debug")]
                 println!("[!] Serialized: {}", escape_byte_string(&output));
 
-                let (rem, parsed2) = $codec::decode(&output).unwrap();
+                let (rem, parsed2) = $codec::default().decode(&output).unwrap();
                 #[cfg(feature = "debug")]
                 println!("[!] Parsed2: {parsed2:?}");
                 assert!(rem.is_empty());

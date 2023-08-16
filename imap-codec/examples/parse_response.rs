@@ -29,7 +29,7 @@ fn main() {
 
     loop {
         // Try to parse the first response in `buffer`.
-        match ResponseCodec::decode(&buffer) {
+        match ResponseCodec::default().decode(&buffer) {
             // Parser succeeded.
             Ok((remaining, response)) => {
                 // Do something with the response ...

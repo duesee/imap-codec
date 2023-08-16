@@ -68,7 +68,7 @@ impl TokioDecoder for ImapClientCodec {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         loop {
             if self.imap_state == State::Greeting {
-                match GreetingCodec::decode(src) {
+                match GreetingCodec::default().decode(src) {
                     Ok((remaining, grt)) => {
                         let grt = grt.into_static();
 
@@ -104,7 +104,8 @@ impl TokioDecoder for ImapClientCodec {
 
                                 // TODO: Choose the required parser.
                                 let parser = |input| {
-                                    ResponseCodec::decode(input)
+                                    ResponseCodec::default()
+                                        .decode(input)
                                         .map(|(rem, rsp)| (rem, Event::Response(rsp.into_static())))
                                 };
 

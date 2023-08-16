@@ -30,7 +30,7 @@ fn main() {
 
     loop {
         // Try to parse the first command in `buffer`.
-        match CommandCodec::decode(&buffer) {
+        match CommandCodec::default().decode(&buffer) {
             // Parser succeeded.
             Ok((remaining, command)) => {
                 // Do something with the command ...

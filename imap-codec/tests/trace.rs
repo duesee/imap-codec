@@ -69,7 +69,7 @@ fn test_lines_of_trace(trace: &[u8]) {
         match who {
             Who::Client => {
                 println!("C:          {}", String::from_utf8_lossy(&line).trim());
-                let (rem, parsed) = CommandCodec::decode(&line).unwrap();
+                let (rem, parsed) = CommandCodec::default().decode(&line).unwrap();
                 assert!(rem.is_empty());
                 println!("Parsed      {:?}", parsed);
                 let serialized = CommandCodec::default().encode(&parsed).dump();
@@ -77,14 +77,14 @@ fn test_lines_of_trace(trace: &[u8]) {
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
                 );
-                let (rem, parsed2) = CommandCodec::decode(&serialized).unwrap();
+                let (rem, parsed2) = CommandCodec::default().decode(&serialized).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(parsed, parsed2);
                 println!()
             }
             Who::Server => {
                 println!("S:          {}", String::from_utf8_lossy(&line).trim());
-                let (rem, parsed) = ResponseCodec::decode(&line).unwrap();
+                let (rem, parsed) = ResponseCodec::default().decode(&line).unwrap();
                 println!("Parsed:     {:?}", parsed);
                 assert!(rem.is_empty());
                 let serialized = ResponseCodec::default().encode(&parsed).dump();
@@ -92,7 +92,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                     "Serialized: {}",
                     String::from_utf8_lossy(&serialized).trim()
                 );
-                let (rem, parsed2) = ResponseCodec::decode(&serialized).unwrap();
+                let (rem, parsed2) = ResponseCodec::default().decode(&serialized).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(parsed, parsed2);
                 println!()
@@ -106,24 +106,24 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
         println!("// {}", std::str::from_utf8(test).unwrap().trim());
         match expected {
             Message::Command(expected) => {
-                let (rem, got) = CommandCodec::decode(test).unwrap();
+                let (rem, got) = CommandCodec::default().decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
                 println!("{:?}", got);
                 let encoded = CommandCodec::default().encode(&got).dump();
                 println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
-                let (rem2, got2) = CommandCodec::decode(&encoded).unwrap();
+                let (rem2, got2) = CommandCodec::default().decode(&encoded).unwrap();
                 assert!(rem2.is_empty());
                 assert_eq!(expected, got2);
             }
             Message::Response(expected) => {
-                let (rem, got) = ResponseCodec::decode(test).unwrap();
+                let (rem, got) = ResponseCodec::default().decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
                 println!("{:?}", got);
                 let encoded = ResponseCodec::default().encode(&got).dump();
                 println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
-                let (rem2, got2) = ResponseCodec::decode(&encoded).unwrap();
+                let (rem2, got2) = ResponseCodec::default().decode(&encoded).unwrap();
                 assert!(rem2.is_empty());
                 assert_eq!(expected, got2);
             }
@@ -1270,7 +1270,7 @@ fn test_response_status_preauth() {
     let line = b"* PREAUTH IMAP4rev1 server logged in as Smith\r\n";
 
     println!("S:          {}", String::from_utf8_lossy(line).trim());
-    let (rem, parsed) = GreetingCodec::decode(line).unwrap();
+    let (rem, parsed) = GreetingCodec::default().decode(line).unwrap();
     println!("Parsed:     {:?}", parsed);
     assert!(rem.is_empty());
     let serialized = GreetingCodec::default().encode(&parsed).dump();
@@ -1278,7 +1278,7 @@ fn test_response_status_preauth() {
         "Serialized: {}",
         String::from_utf8_lossy(&serialized).trim()
     );
-    let (rem, parsed2) = GreetingCodec::decode(&serialized).unwrap();
+    let (rem, parsed2) = GreetingCodec::default().decode(&serialized).unwrap();
     assert!(rem.is_empty());
     assert_eq!(parsed, parsed2);
     println!()
@@ -1392,7 +1392,7 @@ S: A044 BAD No such command as "BLURDYBLOOP"
 fn test_trace_rfc2088() {
     let test = b"A001 LOGIN {11+}\r\nFRED FOOBAR {7+}\r\nfat man\r\n".as_ref();
 
-    let (rem, got) = CommandCodec::decode(test).unwrap();
+    let (rem, got) = CommandCodec::default().decode(test).unwrap();
     assert!(rem.is_empty());
     assert_eq!(got, {
         let username = Literal::try_from("FRED FOOBAR").unwrap().into_non_sync();
