@@ -1,4 +1,13 @@
-//! Decoding-related types.
+//! # Decoding of messages.
+//!
+//! You can use [`Decoder`]s to parse messages.
+//!
+//! IMAP literals make separating the parsing logic from the application logic difficult.
+//! When a server recognizes a literal (e.g. `{42}\r\n`) in a command, it first needs to agree to receive more data by sending a so-called "command continuation request" (`+ ...`).
+//! Without a command continuation request, a client won't send more data, and the command parser on the server would always return `LiteralFound { length: 42, .. }`.
+//! This makes real-world decoding of IMAP more elaborate.
+//!
+//! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
 
 use std::num::{ParseIntError, TryFromIntError};
 
