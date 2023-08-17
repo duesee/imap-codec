@@ -118,11 +118,11 @@ mod tests {
         );
         assert_eq!(
             CapabilityEnable::try_from("utf").unwrap(),
-            CapabilityEnable::Other(CapabilityEnableOther(Atom::unvalidated("utf")))
+            CapabilityEnable::Other(CapabilityEnableOther(Atom::try_from("utf").unwrap()))
         );
         assert_eq!(
             CapabilityEnable::try_from("xxxxx").unwrap(),
-            CapabilityEnable::Other(CapabilityEnableOther(Atom::unvalidated("xxxxx")))
+            CapabilityEnable::Other(CapabilityEnableOther(Atom::try_from("xxxxx").unwrap()))
         );
     }
 }
