@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [features]
-default = ["quirk_rectify_numbers"]
+default = ["quirk_rectify_numbers", "quirk_missing_text"]
 
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
