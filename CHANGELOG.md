@@ -5,15 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - YYYY-MM-DD
+## [Version 1.0.0-beta] - 2023-08-17
 
 ### Added
 
-* Implement `Display` for `T` where `T`s `Display` implementation equals `Encode`.
-* Improved SemVer compatibility.
+* Introduced `FlagNameAttributeExtension`.
+* Implemented `Display` for some `T` where `T`s `Display` implementation equals `Encode`.
 
 ### Changed
 
+* Inlined stable `ext_*` features to improve SemVer compatibility.
+* Re-exported `imap_codec::imap_types`.
+* Simplified module hierarchy.
+* Increased MSRV to 1.65.
+* Moved tokio implementation to demos.
+* Replaced `Decode` trait with `Decoder`.
+* Replaced `Encode` trait with `Encoder`.
+* Made `*Other` types merely technicalities.
+* Improved `Debug` print.
+* Updated `Swatinem/rust-cache`.
+* Simplified `Error`s.
+* Aligned type names with IMAP RFC.
+* Improved documentation.
 * Replaced `Capability::Literal(LiteralCapability)` with `Capability::LiteralPlus`, and `Capability::LiteralMinus`.
 
 ## [Version 0.10.0] - 2023-07-05
@@ -234,9 +247,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix benchmarks (thanks, @franziskuskiefer).
 - Fix misuses, e.g., `AtomExt` (1*ASTRING-CHAR).
 
-[Version 0.6.0]:  https://github.com/duesee/imap-codec/compare/fcb400e508f74a8d88bbcbfd777bdca7cb75bdeb...63b6a2e4a94f2734d67a18039b3f6dae68994902
-[Version 0.7.0]:  https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...16e34bce239840bc3a39c811f1ce3d36c6ea20b0
-[Version 0.8.0]:  https://github.com/duesee/imap-codec/compare/16e34bce239840bc3a39c811f1ce3d36c6ea20b0...f5138ac09b6e160256c8e6dc80db1597aee92394
-[Version 0.9.0]:  https://github.com/duesee/imap-codec/compare/f5138ac09b6e160256c8e6dc80db1597aee92394...3bb1b380a6f163a16732f9dd9c8382f2af73868c
-[Version 0.10.0]: https://github.com/duesee/imap-codec/compare/3bb1b380a6f163a16732f9dd9c8382f2af73868c...ca3ef319681d4e8ea2daf28b9a3650d2d74813c7
-[Unreleased]:     https://github.com/duesee/imap-codec/compare/3bb1b380a6f163a16732f9dd9c8382f2af73868c...HEAD
+[Version 0.6.0]:      https://github.com/duesee/imap-codec/compare/fcb400e508f74a8d88bbcbfd777bdca7cb75bdeb...63b6a2e4a94f2734d67a18039b3f6dae68994902
+[Version 0.7.0]:      https://github.com/duesee/imap-codec/compare/63b6a2e4a94f2734d67a18039b3f6dae68994902...16e34bce239840bc3a39c811f1ce3d36c6ea20b0
+[Version 0.8.0]:      https://github.com/duesee/imap-codec/compare/16e34bce239840bc3a39c811f1ce3d36c6ea20b0...f5138ac09b6e160256c8e6dc80db1597aee92394
+[Version 0.9.0]:      https://github.com/duesee/imap-codec/compare/f5138ac09b6e160256c8e6dc80db1597aee92394...3bb1b380a6f163a16732f9dd9c8382f2af73868c
+[Version 0.10.0]:     https://github.com/duesee/imap-codec/compare/3bb1b380a6f163a16732f9dd9c8382f2af73868c...ca3ef319681d4e8ea2daf28b9a3650d2d74813c7
+[Version 1.0.0-beta]: https://github.com/duesee/imap-codec/compare/ca3ef319681d4e8ea2daf28b9a3650d2d74813c7...1b8924dce7c943cd003a8316f384af97649feadf
+[Unreleased]:         https://github.com/duesee/imap-codec/compare/1b8924dce7c943cd003a8316f384af97649feadf...HEAD
