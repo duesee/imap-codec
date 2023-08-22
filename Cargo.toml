@@ -9,3 +9,7 @@ members = [
     "assets/demos/tokio-client",
     "assets/demos/tokio-server",
 ]
+
+[patch.crates-io]
+imap-types = { path = "imap-types" }
+
