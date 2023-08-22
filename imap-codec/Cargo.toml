@@ -3,7 +3,7 @@ name = "imap-codec"
 description = "Rock-solid and complete codec for IMAP"
 keywords = ["email", "imap", "codec", "parser"]
 categories = ["email", "parser-implementations", "encoding", "network-programming"]
-version = "1.0.0-beta"
+version = "1.0.0"
 authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
@@ -47,7 +47,7 @@ abnf-core = "0.6.0"
 base64 = "0.21"
 bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-imap-types = { version = "1.0.0-beta", default-features = false, features = ["unvalidated"] }
+imap-types = { version = "1.0.0", default-features = false, features = ["unvalidated"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.29"
