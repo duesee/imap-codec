@@ -115,11 +115,12 @@ pub trait Decoder {
     fn decode_static<'a>(
         &self,
         input: &'a [u8],
-    ) -> Result<(&'a [u8], Self::Message<'static>), Self::Error<'a>>
+    ) -> Result<(&'a [u8], Self::Message<'static>), Self::Error<'static>>
     where
         Self::Message<'a>: IntoBoundedStatic<Static = Self::Message<'static>>,
+        Self::Error<'a>: IntoBoundedStatic<Static = Self::Error<'static>>,
     {
-        let (remaining, value) = self.decode(input)?;
+        let (remaining, value) = self.decode(input).map_err(IntoBoundedStatic::into_static)?;
         Ok((remaining, value.into_static()))
     }
 }
