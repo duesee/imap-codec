@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Version 1.0.0] - 2032-08-22
+
+### Changed
+
+* Use `'static` lifetime for `Decoder::Error` in `decode_static`.
+
 ## [Version 1.0.0-beta] - 2023-08-17
 
 ### Added
@@ -253,4 +259,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Version 0.9.0]:      https://github.com/duesee/imap-codec/compare/f5138ac09b6e160256c8e6dc80db1597aee92394...3bb1b380a6f163a16732f9dd9c8382f2af73868c
 [Version 0.10.0]:     https://github.com/duesee/imap-codec/compare/3bb1b380a6f163a16732f9dd9c8382f2af73868c...ca3ef319681d4e8ea2daf28b9a3650d2d74813c7
 [Version 1.0.0-beta]: https://github.com/duesee/imap-codec/compare/ca3ef319681d4e8ea2daf28b9a3650d2d74813c7...1b8924dce7c943cd003a8316f384af97649feadf
-[Unreleased]:         https://github.com/duesee/imap-codec/compare/1b8924dce7c943cd003a8316f384af97649feadf...HEAD
+[Version 1.0.0]:      https://github.com/duesee/imap-codec/compare/1b8924dce7c943cd003a8316f384af97649feadf...a5d8dff9e8047bda2c477a3a9d56e53274113b26
+[Unreleased]:         https://github.com/duesee/imap-codec/compare/a5d8dff9e8047bda2c477a3a9d56e53274113b26...HEAD
