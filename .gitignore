@@ -5,3 +5,6 @@ target
 # Coverage
 **/*.profraw
 coveralls.lcov
+
+# direnv (https://direnv.net/)
+.envrc
