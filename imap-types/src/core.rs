@@ -1130,6 +1130,12 @@ impl<'a> Debug for Text<'a> {
     }
 }
 
+impl<'a> Display for Text<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0.as_ref())
+    }
+}
+
 impl<'a> Text<'a> {
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), ValidationError> {
         let value = value.as_ref();
