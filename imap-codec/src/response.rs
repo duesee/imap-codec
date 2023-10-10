@@ -101,14 +101,11 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
             #[cfg(feature = "quirk_missing_text")]
             alt((
                 preceded(sp, text),
-                value(
-                    {
-                        log::warn!("Rectified missing `text` to \"...\"");
+                map(peek(crlf), |_| {
+                    log::warn!("Rectified missing `text` to \"...\"");
 
-                        Text::unvalidated("...")
-                    },
-                    peek(crlf),
-                ),
+                    Text::unvalidated("...")
+                }),
             )),
         ))(input)
     } else {
