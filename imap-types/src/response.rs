@@ -601,6 +601,159 @@ impl<'a> Data<'a> {
     }
 }
 
+/// An alternative definition of [`Status`].
+///
+/// Note: Both definitions are semantically equal, thus, they can always be converted to each other.
+/// However, the new definition makes IMAP processing (and pattern matching) easier.
+#[derive(Debug)]
+pub enum StatusV2<'a> {
+    Untagged(StatusBody<'a>),
+    Tagged(Tagged<'a>),
+    Bye(Bye<'a>),
+}
+
+#[derive(Debug)]
+pub struct StatusBody<'a> {
+    pub kind: StatusKind,
+    pub code: Option<Code<'a>>,
+    pub text: Text<'a>,
+}
+
+#[derive(Debug)]
+pub enum StatusKind {
+    Ok,
+    No,
+    Bad,
+}
+
+#[derive(Debug)]
+pub struct Tagged<'a> {
+    pub tag: Tag<'a>,
+    pub body: StatusBody<'a>,
+}
+
+#[derive(Debug)]
+pub struct Bye<'a> {
+    pub code: Option<Code<'a>>,
+    pub text: Text<'a>,
+}
+
+impl<'a> From<Status<'a>> for StatusV2<'a> {
+    fn from(value: Status<'a>) -> Self {
+        match value {
+            Status::Ok {
+                tag: Some(tag),
+                code,
+                text,
+            } => StatusV2::Tagged(Tagged {
+                tag,
+                body: StatusBody {
+                    kind: StatusKind::Ok,
+                    code,
+                    text,
+                },
+            }),
+            Status::No {
+                tag: Some(tag),
+                code,
+                text,
+            } => StatusV2::Tagged(Tagged {
+                tag,
+                body: StatusBody {
+                    kind: StatusKind::No,
+                    code,
+                    text,
+                },
+            }),
+            Status::Bad {
+                tag: Some(tag),
+                code,
+                text,
+            } => StatusV2::Tagged(Tagged {
+                tag,
+                body: StatusBody {
+                    kind: StatusKind::Bad,
+                    code,
+                    text,
+                },
+            }),
+            Status::Ok {
+                tag: None,
+                code,
+                text,
+            } => StatusV2::Untagged(StatusBody {
+                kind: StatusKind::Ok,
+                code,
+                text,
+            }),
+            Status::No {
+                tag: None,
+                code,
+                text,
+            } => StatusV2::Untagged(StatusBody {
+                kind: StatusKind::No,
+                code,
+                text,
+            }),
+            Status::Bad {
+                tag: None,
+                code,
+                text,
+            } => StatusV2::Untagged(StatusBody {
+                kind: StatusKind::Bad,
+                code,
+                text,
+            }),
+            Status::Bye { code, text } => StatusV2::Bye(Bye { code, text }),
+        }
+    }
+}
+
+impl<'a> From<StatusV2<'a>> for Status<'a> {
+    fn from(status: StatusV2<'a>) -> Self {
+        match status {
+            StatusV2::Untagged(StatusBody { kind, code, text }) => match kind {
+                StatusKind::Ok => Status::Ok {
+                    tag: None,
+                    code,
+                    text,
+                },
+                StatusKind::No => Status::No {
+                    tag: None,
+                    code,
+                    text,
+                },
+                StatusKind::Bad => Status::Bad {
+                    tag: None,
+                    code,
+                    text,
+                },
+            },
+            StatusV2::Tagged(Tagged {
+                tag,
+                body: StatusBody { kind, code, text },
+            }) => match kind {
+                StatusKind::Ok => Status::Ok {
+                    tag: Some(tag),
+                    code,
+                    text,
+                },
+                StatusKind::No => Status::No {
+                    tag: Some(tag),
+                    code,
+                    text,
+                },
+                StatusKind::Bad => Status::Bad {
+                    tag: Some(tag),
+                    code,
+                    text,
+                },
+            },
+            StatusV2::Bye(Bye { code, text }) => Status::Bye { code, text },
+        }
+    }
+}
+
 /// ## 7.5. Server Responses - Command Continuation Request
 ///
 /// The command continuation request response is indicated by a "+" token
