@@ -69,8 +69,8 @@ use imap_types::{
     flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm, StoreResponse, StoreType},
     mailbox::{ListCharString, ListMailbox, Mailbox, MailboxOther},
     response::{
-        Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
-        Response, Status,
+        Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
+        Response, Status, StatusBody, StatusKind, Tagged,
     },
     search::SearchKey,
     sequence::{SeqOrUid, Sequence, SequenceSet},
@@ -1045,7 +1045,7 @@ impl EncodeIntoContext for GreetingKind {
 impl<'a> EncodeIntoContext for Status<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         fn format_status(
-            tag: &Option<Tag>,
+            tag: Option<&Tag>,
             status: &str,
             code: &Option<Code>,
             comment: &Text,
@@ -1068,10 +1068,20 @@ impl<'a> EncodeIntoContext for Status<'a> {
         }
 
         match self {
-            Status::Ok { tag, code, text } => format_status(tag, "OK", code, text, ctx),
-            Status::No { tag, code, text } => format_status(tag, "NO", code, text, ctx),
-            Status::Bad { tag, code, text } => format_status(tag, "BAD", code, text, ctx),
-            Status::Bye { code, text } => format_status(&None, "BYE", code, text, ctx),
+            Self::Untagged(StatusBody { kind, code, text }) => match kind {
+                StatusKind::Ok => format_status(None, "OK", code, text, ctx),
+                StatusKind::No => format_status(None, "NO", code, text, ctx),
+                StatusKind::Bad => format_status(None, "BAD", code, text, ctx),
+            },
+            Self::Tagged(Tagged {
+                tag,
+                body: StatusBody { kind, code, text },
+            }) => match kind {
+                StatusKind::Ok => format_status(Some(tag), "OK", code, text, ctx),
+                StatusKind::No => format_status(Some(tag), "NO", code, text, ctx),
+                StatusKind::Bad => format_status(Some(tag), "BAD", code, text, ctx),
+            },
+            Self::Bye(Bye { code, text }) => format_status(None, "BYE", code, text, ctx),
         }
     }
 }

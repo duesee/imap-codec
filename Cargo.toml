@@ -12,4 +12,4 @@ members = [
 
 [patch.crates-io]
 imap-types = { path = "imap-types" }
-
+imap-codec = { path = "imap-codec" }
