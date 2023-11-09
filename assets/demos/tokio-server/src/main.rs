@@ -3,7 +3,7 @@ use argon2::Argon2;
 use futures::{SinkExt, StreamExt};
 use imap_codec::imap_types::{
     command::CommandBody,
-    core::{NonEmptyVec, Text},
+    core::NonEmptyVec,
     response::{Capability, CommandContinuationRequest, Data, Greeting, Response, Status},
 };
 use tokio::{self, net::TcpListener};
@@ -102,17 +102,11 @@ async fn main() -> Result<(), Error> {
                         };
 
                         let rsp = if login_okay {
-                            Response::Status(Status::Ok {
-                                tag: Some(tag),
-                                code: None,
-                                text: Text::unvalidated("LOGIN succeeded"),
-                            })
+                            Response::Status(
+                                Status::ok(Some(tag), None, "LOGIN succeeded").unwrap(),
+                            )
                         } else {
-                            Response::Status(Status::Ok {
-                                tag: Some(tag),
-                                code: None,
-                                text: Text::unvalidated("LOGIN failed"),
-                            })
+                            Response::Status(Status::no(Some(tag), None, "LOGIN failed").unwrap())
                         };
                         framed.send(&rsp).await.context("Could not send response")?;
                         println!("S: {BLUE}{rsp:#?}{RESET}");

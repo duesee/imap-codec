@@ -3,7 +3,7 @@ use futures::{SinkExt, StreamExt};
 use imap_codec::imap_types::{
     command::{Command, CommandBody},
     core::Tag,
-    response::{Response, Status},
+    response::{Response, Status, StatusBody, StatusKind, Tagged},
 };
 use tokio::{self, net::TcpStream};
 use tokio_support::client::{Event, ImapClientCodec};
@@ -71,20 +71,22 @@ async fn main() -> Result<(), Error> {
             Event::Greeting(greeting) => {
                 return Err(Error::msg(format!("Expected response, got `{greeting:?}`")));
             }
-            Event::Response(response) => match response {
-                Response::Status(ref status) if status.tag() == Some(&tag_login) => {
-                    if matches!(status, Status::Ok { .. }) {
-                        println!("[!] got login done (successful)");
-                    } else {
-                        println!("[!] got login done (failed)");
-                    }
+            Event::Response(Response::Status(Status::Tagged(Tagged {
+                tag,
+                body: StatusBody { kind, .. },
+                ..
+            }))) if tag == tag_login => {
+                if kind == StatusKind::Ok {
+                    println!("[!] got login done (successful)");
+                } else {
+                    println!("[!] got login done (failed)");
+                }
 
-                    break;
-                }
-                _ => {
-                    println!("[!] unexpected response");
-                }
-            },
+                break;
+            }
+            _ => {
+                println!("[!] unexpected response");
+            }
         }
     }
 
@@ -112,9 +114,7 @@ async fn main() -> Result<(), Error> {
                 Response::Status(Status::Bye { .. }) => {
                     println!("[!] got bye");
                 }
-                Response::Status(Status::Ok {
-                    tag: Some(ref tag), ..
-                }) if *tag == tag_logout => {
+                Response::Status(Status::Tagged(Tagged { tag, .. })) if tag == tag_logout => {
                     println!("[!] got logout done");
                     break;
                 }
