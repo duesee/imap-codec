@@ -17,8 +17,8 @@ use crate::{
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
     response::{
-        Capability, Code, CodeOther, CommandContinuationRequestBasic, Greeting, GreetingKind,
-        Status,
+        Bye, Capability, Code, CodeOther, CommandContinuationRequestBasic, Greeting, GreetingKind,
+        Status, StatusBody, StatusKind, Tagged,
     },
     search::SearchKey,
     sequence::SequenceSet,
@@ -113,22 +113,44 @@ impl<'a> Arbitrary<'a> for Status<'a> {
         };
 
         Ok(match u.int_in_range(0u8..=3)? {
-            0 => Status::Ok {
-                tag: Arbitrary::arbitrary(u)?,
-                code,
-                text,
-            },
-            1 => Status::No {
-                tag: Arbitrary::arbitrary(u)?,
-                code,
-                text,
-            },
-            2 => Status::Bad {
-                tag: Arbitrary::arbitrary(u)?,
-                code,
-                text,
-            },
-            3 => Status::Bye { code, text },
+            0 => {
+                let body = StatusBody {
+                    kind: StatusKind::Ok,
+                    code,
+                    text,
+                };
+
+                match Arbitrary::arbitrary(u)? {
+                    Some(tag) => Status::Tagged(Tagged { tag, body }),
+                    None => Status::Untagged(body),
+                }
+            }
+            1 => {
+                let body = StatusBody {
+                    kind: StatusKind::No,
+                    code,
+                    text,
+                };
+
+                match Arbitrary::arbitrary(u)? {
+                    Some(tag) => Status::Tagged(Tagged { tag, body }),
+                    None => Status::Untagged(body),
+                }
+            }
+            2 => {
+                let body = StatusBody {
+                    kind: StatusKind::Bad,
+                    code,
+                    text,
+                };
+
+                match Arbitrary::arbitrary(u)? {
+                    Some(tag) => Status::Tagged(Tagged { tag, body }),
+                    None => Status::Untagged(body),
+                }
+            }
+            3 => Status::Bye(Bye { code, text }),
+
             _ => unreachable!(),
         })
     }

@@ -32,10 +32,10 @@ use crate::{
     status::StatusDataItem,
 };
 
-/// An IMAP greeting.
+/// Greeting.
 ///
 /// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
-// TODO(301)
+/// We could fix this but the fix would make this type unconformable to use.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -103,6 +103,7 @@ pub enum GreetingKind {
     Bye,
 }
 
+/// Response.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -124,119 +125,127 @@ pub enum Response<'a> {
     Status(Status<'a>),
 }
 
-/// ## 7.1. Server Responses - Status Responses
-///
-/// Status responses are OK, NO, BAD, PREAUTH and BYE.
-/// OK, NO, and BAD can be tagged or untagged.
-/// PREAUTH and BYE are always untagged.
-/// Status responses MAY include an OPTIONAL "response code" (see [`Code`](crate::response::Code).)
-///
-/// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
-// TODO(301)
+/// Status response.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Status<'a> {
-    /// ### 7.1.1. OK Response
-    ///
-    /// The OK response indicates an information message from the server.
-    Ok {
-        /// When tagged, it indicates successful completion of the associated
-        /// command.  The human-readable text MAY be presented to the user as
-        /// an information message.
-        ///
-        /// The untagged form indicates an information-only message; the nature
-        /// of the information MAY be indicated by a response code.
-        ///
-        /// The untagged form is also used as one of three possible greetings
-        /// at connection startup.  It indicates that the connection is not
-        /// yet authenticated and that a LOGIN command is needed.
-        tag: Option<Tag<'a>>,
-        /// Response code (optional)
-        code: Option<Code<'a>>,
-        /// Human-readable text (must be at least 1 character!)
-        text: Text<'a>,
-    },
+    Untagged(StatusBody<'a>),
+    Tagged(Tagged<'a>),
+    Bye(Bye<'a>),
+}
 
-    /// ### 7.1.2. NO Response
+/// Status body.
+///
+/// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
+/// We could fix this but the fix would make this type unconformable to use.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct StatusBody<'a> {
+    /// Status kind.
+    pub kind: StatusKind,
+    /// Response code (optional).
+    pub code: Option<Code<'a>>,
+    /// Human-readable text that MAY be displayed to the user.
     ///
-    /// The NO response indicates an operational error message from the server.
-    No {
-        /// When tagged, it indicates unsuccessful completion of the
-        /// associated command.  The untagged form indicates a warning; the
-        /// command can still complete successfully.
-        tag: Option<Tag<'a>>,
-        /// Response code (optional)
-        code: Option<Code<'a>>,
-        /// The human-readable text describes the condition. (must be at least 1 character!)
-        text: Text<'a>,
-    },
+    /// Note: Must be at least 1 character.
+    pub text: Text<'a>,
+}
 
-    /// ### 7.1.3. BAD Response
+/// Status kind.
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StatusKind {
+    /// Indicates an information from the server.
     ///
-    /// The BAD response indicates an error message from the server.
-    Bad {
-        /// When tagged, it reports a protocol-level error in the client's command;
-        /// the tag indicates the command that caused the error.  The untagged
-        /// form indicates a protocol-level error for which the associated
-        /// command can not be determined; it can also indicate an internal
-        /// server failure.
-        tag: Option<Tag<'a>>,
-        /// Response code (optional)
-        code: Option<Code<'a>>,
-        /// The human-readable text describes the condition. (must be at least 1 character!)
-        text: Text<'a>,
-    },
+    /// * In [`Status::Tagged`], it indicates successful completion of the associated command.
+    /// * In [`Status::Untagged`], it indicates an information-only message.
+    Ok,
+    /// Indicates an operational error from the server.
+    ///
+    /// * In [`Status::Tagged`], it indicates unsuccessful completion of the associated command.
+    /// * In [`Status::Untagged`], it indicates a warning.
+    No,
+    /// Indicates a protocol-level error from the server.
+    ///
+    /// * In [`Status::Tagged`], it reports a protocol-level error in the client's command.
+    /// * In [`Status::Untagged`], it indicates a protocol-level error for which the associated command can not be determined.
+    Bad,
+}
 
-    /// ### 7.1.5. BYE Response
-    ///
-    /// The BYE response is always untagged, and indicates that the server
-    /// is about to close the connection.
-    ///
-    /// The BYE response is sent under one of four conditions:
-    ///
-    ///    1) as part of a normal logout sequence.  The server will close
-    ///       the connection after sending the tagged OK response to the
-    ///       LOGOUT command.
-    ///
-    ///    2) as a panic shutdown announcement.  The server closes the
-    ///       connection immediately.
-    ///
-    ///    3) as an announcement of an inactivity autologout.  The server
-    ///       closes the connection immediately.
-    ///
-    ///    4) as one of three possible greetings at connection startup,
-    ///       indicating that the server is not willing to accept a
-    ///       connection from this client.  The server closes the
-    ///       connection immediately.
-    ///
-    /// The difference between a BYE that occurs as part of a normal
-    /// LOGOUT sequence (the first case) and a BYE that occurs because of
-    /// a failure (the other three cases) is that the connection closes
-    /// immediately in the failure case.  In all cases the client SHOULD
-    /// continue to read response data from the server until the
-    /// connection is closed; this will ensure that any pending untagged
-    /// or completion responses are read and processed.
-    Bye {
-        /// Response code (optional)
-        code: Option<Code<'a>>,
-        /// The human-readable text MAY be displayed to the user in a status
-        /// report by the client. (must be at least 1 character!)
-        text: Text<'a>,
-    },
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Tagged<'a> {
+    pub tag: Tag<'a>,
+    pub body: StatusBody<'a>,
+}
+
+/// Indicates that the server is about to close the connection.
+///
+/// The BYE response is sent under one of four conditions:
+///
+///    1) as part of a normal logout sequence.  The server will close
+///       the connection after sending the tagged OK response to the
+///       LOGOUT command.
+///
+///    2) as a panic shutdown announcement.  The server closes the
+///       connection immediately.
+///
+///    3) as an announcement of an inactivity autologout.  The server
+///       closes the connection immediately.
+///
+///    4) as one of three possible greetings at connection startup,
+///       indicating that the server is not willing to accept a
+///       connection from this client.  The server closes the
+///       connection immediately.
+///
+/// The difference between a BYE that occurs as part of a normal
+/// LOGOUT sequence (the first case) and a BYE that occurs because of
+/// a failure (the other three cases) is that the connection closes
+/// immediately in the failure case.  In all cases the client SHOULD
+/// continue to read response data from the server until the
+/// connection is closed; this will ensure that any pending untagged
+/// or completion responses are read and processed.
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Bye<'a> {
+    pub code: Option<Code<'a>>,
+    pub text: Text<'a>,
 }
 
 impl<'a> Status<'a> {
+    pub fn new<T>(
+        tag: Option<Tag<'a>>,
+        kind: StatusKind,
+        code: Option<Code<'a>>,
+        text: T,
+    ) -> Result<Self, T::Error>
+    where
+        T: TryInto<Text<'a>>,
+    {
+        let body = StatusBody {
+            kind,
+            code,
+            text: text.try_into()?,
+        };
+
+        match tag {
+            Some(tag) => Ok(Self::Tagged(Tagged { tag, body })),
+            None => Ok(Self::Untagged(body)),
+        }
+    }
+
     // FIXME(API)
     pub fn ok<T>(tag: Option<Tag<'a>>, code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Status::Ok {
-            tag,
-            code,
-            text: text.try_into()?,
-        })
+        Self::new(tag, StatusKind::Ok, code, text)
     }
 
     // FIXME(API)
@@ -244,11 +253,7 @@ impl<'a> Status<'a> {
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Status::No {
-            tag,
-            code,
-            text: text.try_into()?,
-        })
+        Self::new(tag, StatusKind::No, code, text)
     }
 
     // FIXME(API)
@@ -256,49 +261,47 @@ impl<'a> Status<'a> {
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Status::Bad {
-            tag,
-            code,
-            text: text.try_into()?,
-        })
+        Self::new(tag, StatusKind::Bad, code, text)
     }
 
     pub fn bye<T>(code: Option<Code<'a>>, text: T) -> Result<Self, T::Error>
     where
         T: TryInto<Text<'a>>,
     {
-        Ok(Status::Bye {
+        Ok(Self::Bye(Bye {
             code,
             text: text.try_into()?,
-        })
+        }))
     }
 
     // ---------------------------------------------------------------------------------------------
 
     pub fn tag(&self) -> Option<&Tag> {
         match self {
-            Status::Ok { tag, .. } | Status::No { tag, .. } | Status::Bad { tag, .. } => {
-                tag.as_ref()
-            }
-            Status::Bye { .. } => None,
+            Self::Tagged(Tagged { tag, .. }) => Some(tag),
+            _ => None,
         }
     }
 
     pub fn code(&self) -> Option<&Code> {
         match self {
-            Status::Ok { code, .. }
-            | Status::No { code, .. }
-            | Status::Bad { code, .. }
-            | Status::Bye { code, .. } => code.as_ref(),
+            Self::Untagged(StatusBody { code, .. })
+            | Self::Tagged(Tagged {
+                body: StatusBody { code, .. },
+                ..
+            })
+            | Self::Bye(Bye { code, .. }) => code.as_ref(),
         }
     }
 
     pub fn text(&self) -> &Text {
         match self {
-            Status::Ok { text, .. }
-            | Status::No { text, .. }
-            | Status::Bad { text, .. }
-            | Status::Bye { text, .. } => text,
+            Self::Untagged(StatusBody { text, .. })
+            | Self::Tagged(Tagged {
+                body: StatusBody { text, .. },
+                ..
+            })
+            | Self::Bye(Bye { text, .. }) => text,
         }
     }
 }
@@ -607,159 +610,6 @@ impl<'a> Data<'a> {
         let items = items.try_into().map_err(FetchError::InvalidItems)?;
 
         Ok(Self::Fetch { seq, items })
-    }
-}
-
-/// An alternative definition of [`Status`].
-///
-/// Note: Both definitions are semantically equal, thus, they can always be converted to each other.
-/// However, the new definition makes IMAP processing (and pattern matching) easier.
-#[derive(Debug)]
-pub enum StatusV2<'a> {
-    Untagged(StatusBody<'a>),
-    Tagged(Tagged<'a>),
-    Bye(Bye<'a>),
-}
-
-#[derive(Debug)]
-pub struct StatusBody<'a> {
-    pub kind: StatusKind,
-    pub code: Option<Code<'a>>,
-    pub text: Text<'a>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum StatusKind {
-    Ok,
-    No,
-    Bad,
-}
-
-#[derive(Debug)]
-pub struct Tagged<'a> {
-    pub tag: Tag<'a>,
-    pub body: StatusBody<'a>,
-}
-
-#[derive(Debug)]
-pub struct Bye<'a> {
-    pub code: Option<Code<'a>>,
-    pub text: Text<'a>,
-}
-
-impl<'a> From<Status<'a>> for StatusV2<'a> {
-    fn from(value: Status<'a>) -> Self {
-        match value {
-            Status::Ok {
-                tag: Some(tag),
-                code,
-                text,
-            } => StatusV2::Tagged(Tagged {
-                tag,
-                body: StatusBody {
-                    kind: StatusKind::Ok,
-                    code,
-                    text,
-                },
-            }),
-            Status::No {
-                tag: Some(tag),
-                code,
-                text,
-            } => StatusV2::Tagged(Tagged {
-                tag,
-                body: StatusBody {
-                    kind: StatusKind::No,
-                    code,
-                    text,
-                },
-            }),
-            Status::Bad {
-                tag: Some(tag),
-                code,
-                text,
-            } => StatusV2::Tagged(Tagged {
-                tag,
-                body: StatusBody {
-                    kind: StatusKind::Bad,
-                    code,
-                    text,
-                },
-            }),
-            Status::Ok {
-                tag: None,
-                code,
-                text,
-            } => StatusV2::Untagged(StatusBody {
-                kind: StatusKind::Ok,
-                code,
-                text,
-            }),
-            Status::No {
-                tag: None,
-                code,
-                text,
-            } => StatusV2::Untagged(StatusBody {
-                kind: StatusKind::No,
-                code,
-                text,
-            }),
-            Status::Bad {
-                tag: None,
-                code,
-                text,
-            } => StatusV2::Untagged(StatusBody {
-                kind: StatusKind::Bad,
-                code,
-                text,
-            }),
-            Status::Bye { code, text } => StatusV2::Bye(Bye { code, text }),
-        }
-    }
-}
-
-impl<'a> From<StatusV2<'a>> for Status<'a> {
-    fn from(status: StatusV2<'a>) -> Self {
-        match status {
-            StatusV2::Untagged(StatusBody { kind, code, text }) => match kind {
-                StatusKind::Ok => Status::Ok {
-                    tag: None,
-                    code,
-                    text,
-                },
-                StatusKind::No => Status::No {
-                    tag: None,
-                    code,
-                    text,
-                },
-                StatusKind::Bad => Status::Bad {
-                    tag: None,
-                    code,
-                    text,
-                },
-            },
-            StatusV2::Tagged(Tagged {
-                tag,
-                body: StatusBody { kind, code, text },
-            }) => match kind {
-                StatusKind::Ok => Status::Ok {
-                    tag: Some(tag),
-                    code,
-                    text,
-                },
-                StatusKind::No => Status::No {
-                    tag: Some(tag),
-                    code,
-                    text,
-                },
-                StatusKind::Bad => Status::Bad {
-                    tag: Some(tag),
-                    code,
-                    text,
-                },
-            },
-            StatusV2::Bye(Bye { code, text }) => Status::Bye { code, text },
-        }
     }
 }
 

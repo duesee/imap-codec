@@ -1,5 +1,3 @@
-use std::str::from_utf8;
-
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
@@ -9,8 +7,8 @@ use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
     core::{NonEmptyVec, Text},
     response::{
-        Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
-        Response, Status,
+        Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
+        Response, Status, StatusBody, StatusKind, Tagged,
     },
 };
 #[cfg(feature = "quirk_missing_text")]
@@ -291,30 +289,11 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
         tag(b"*"),
         sp,
         alt((
-            map(resp_cond_state, |(raw_status, code, text)| {
-                let status = match raw_status.to_ascii_lowercase().as_ref() {
-                    "ok" => Status::Ok {
-                        tag: None,
-                        code,
-                        text,
-                    },
-                    "no" => Status::No {
-                        tag: None,
-                        code,
-                        text,
-                    },
-                    "bad" => Status::Bad {
-                        tag: None,
-                        code,
-                        text,
-                    },
-                    _ => unreachable!(),
-                };
-
-                Response::Status(status)
+            map(resp_cond_state, |(kind, code, text)| {
+                Response::Status(Status::Untagged(StatusBody { kind, code, text }))
             }),
             map(resp_cond_bye, |(code, text)| {
-                Response::Status(Status::Bye { code, text })
+                Response::Status(Status::Bye(Bye { code, text }))
             }),
             map(mailbox_data, Response::Data),
             map(message_data, Response::Data),
@@ -338,22 +317,20 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
 /// `resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text`
 ///
 /// Status condition
-pub(crate) fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (&str, Option<Code>, Text)> {
+pub(crate) fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (StatusKind, Option<Code>, Text)> {
     let mut parser = tuple((
-        alt((tag_no_case("OK"), tag_no_case("NO"), tag_no_case("BAD"))),
+        alt((
+            value(StatusKind::Ok, tag_no_case("OK")),
+            value(StatusKind::No, tag_no_case("NO")),
+            value(StatusKind::Bad, tag_no_case("BAD")),
+        )),
         sp,
         resp_text,
     ));
 
-    let (remaining, (raw_status, _, (maybe_code, text))) = parser(input)?;
+    let (remaining, (kind, _, (maybe_code, text))) = parser(input)?;
 
-    Ok((
-        remaining,
-        // # Safety
-        //
-        // `raw_status` is always UTF-8.
-        (from_utf8(raw_status).unwrap(), maybe_code, text),
-    ))
+    Ok((remaining, (kind, maybe_code, text)))
 }
 
 /// `response-done = response-tagged / response-fatal`
@@ -365,28 +342,15 @@ pub(crate) fn response_done(input: &[u8]) -> IMAPResult<&[u8], Status> {
 pub(crate) fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
     let mut parser = tuple((tag_imap, sp, resp_cond_state, crlf));
 
-    let (remaining, (tag, _, (raw_status, code, text), _)) = parser(input)?;
+    let (remaining, (tag, _, (kind, code, text), _)) = parser(input)?;
 
-    let status = match raw_status.to_ascii_lowercase().as_ref() {
-        "ok" => Status::Ok {
-            tag: Some(tag),
-            code,
-            text,
-        },
-        "no" => Status::No {
-            tag: Some(tag),
-            code,
-            text,
-        },
-        "bad" => Status::Bad {
-            tag: Some(tag),
-            code,
-            text,
-        },
-        _ => unreachable!(),
-    };
-
-    Ok((remaining, status))
+    Ok((
+        remaining,
+        Status::Tagged(Tagged {
+            tag,
+            body: StatusBody { kind, code, text },
+        }),
+    ))
 }
 
 /// `response-fatal = "*" SP resp-cond-bye CRLF`
@@ -397,7 +361,7 @@ pub(crate) fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
 
     let (remaining, (_, _, (code, text), _)) = parser(input)?;
 
-    Ok((remaining, { Status::Bye { code, text } }))
+    Ok((remaining, Status::Bye(Bye { code, text })))
 }
 
 /// `message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))`
