@@ -33,6 +33,12 @@
 //!                 // as the server will also not send it.
 //!             }
 //!         },
+//!         Fragment::AuthData { data } => {
+//!             // Wait for a continuation request.
+//!             println!("S: + ...");
+//!
+//!             println!("C: {}", String::from_utf8(data).unwrap());
+//!         }
 //!     }
 //! }
 //! ```
@@ -115,6 +121,7 @@ pub trait Encoder {
 ///     match fragment {
 ///         Fragment::Line { data } => {}
 ///         Fragment::Literal { data, mode } => {}
+///         Fragment::AuthData { data } => {}
 ///     }
 /// }
 /// ```
@@ -132,6 +139,7 @@ impl Encoded {
             match fragment {
                 Fragment::Line { mut data } => out.append(&mut data),
                 Fragment::Literal { mut data, .. } => out.append(&mut data),
+                Fragment::AuthData { mut data } => out.append(&mut data),
             }
         }
 
@@ -159,6 +167,9 @@ pub enum Fragment {
 
     /// A literal that may require an action before it should be send.
     Literal { data: Vec<u8>, mode: LiteralMode },
+
+    /// A auth data line that may require an action before it should be send.
+    AuthData { data: Vec<u8> },
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -187,6 +198,12 @@ impl EncodeContext {
         })
     }
 
+    pub fn push_authenticate_data(&mut self) {
+        self.items.push(Fragment::AuthData {
+            data: std::mem::take(&mut self.accumulator),
+        })
+    }
+
     pub fn into_items(self) -> Vec<Fragment> {
         let Self {
             accumulator,
@@ -206,9 +223,9 @@ impl EncodeContext {
 
         for item in self.into_items() {
             match item {
-                Fragment::Line { data } | Fragment::Literal { data, .. } => {
-                    out.extend_from_slice(&data)
-                }
+                Fragment::Line { data }
+                | Fragment::Literal { data, .. }
+                | Fragment::AuthData { data } => out.extend_from_slice(&data),
             }
         }
 
@@ -592,7 +609,10 @@ impl EncodeIntoContext for AuthenticateData {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         let encoded = base64.encode(self.0.declassify());
         ctx.write_all(encoded.as_bytes())?;
-        ctx.write_all(b"\r\n")
+        ctx.write_all(b"\r\n")?;
+        ctx.push_authenticate_data();
+
+        Ok(())
     }
 }
 
@@ -1783,6 +1803,12 @@ mod tests {
                         LiteralMode::Sync => println!("C: <Waiting for continuation request>"),
                         LiteralMode::NonSync => println!("C: <Skipped continuation request>"),
                     }
+
+                    println!("C: {}", escape_byte_string(&data));
+                    out.extend_from_slice(&data);
+                }
+                Fragment::AuthData { data } => {
+                    println!("C: <Waiting for continuation request>");
 
                     println!("C: {}", escape_byte_string(&data));
                     out.extend_from_slice(&data);
