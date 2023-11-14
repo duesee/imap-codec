@@ -30,7 +30,7 @@ pub enum AuthMechanism<'a> {
     /// ```
     ///
     /// ```text
-    /// base64(b"<authenticate-id>\x00<authorize-id>\x00<password>")
+    /// base64(b"<authorization identity>\x00<authentication identity>\x00<password>")
     /// ```
     ///
     /// # Reference(s):
