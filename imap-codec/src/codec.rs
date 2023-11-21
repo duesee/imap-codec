@@ -158,11 +158,24 @@ mod tests {
 
     #[test]
     fn test_kat_inverse_authenticate_data() {
-        kat_inverse_authenticate_data(&[(
-            b"VGVzdA==\r\n".as_ref(),
-            b"".as_ref(),
-            AuthenticateData(Secret::new(b"Test".to_vec())),
-        )]);
+        kat_inverse_authenticate_data(&[
+            (
+                b"VGVzdA==\r\n".as_ref(),
+                b"".as_ref(),
+                AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
+            ),
+            (
+                b"AA==\r\n".as_ref(),
+                b"".as_ref(),
+                AuthenticateData::Continue(Secret::new(b"\x00".to_vec())),
+            ),
+            (
+                b"aQ==\r\n".as_ref(),
+                b"".as_ref(),
+                AuthenticateData::Continue(Secret::new(b"\x69".to_vec())),
+            ),
+            (b"*\r\n".as_ref(), b"".as_ref(), AuthenticateData::Cancel),
+        ]);
     }
 
     #[test]

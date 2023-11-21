@@ -6,7 +6,12 @@ use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     secret::Secret,
 };
-use nom::{combinator::map, sequence::terminated};
+use nom::{
+    branch::alt,
+    bytes::streaming::tag,
+    combinator::{map, value},
+    sequence::{terminated, tuple},
+};
 
 use crate::{
     core::{atom, base64},
@@ -35,9 +40,12 @@ pub(crate) fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 ///                FIXME: Multiline base64 currently does not work.
 /// ```
 pub(crate) fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
-    map(terminated(base64, crlf), |data| {
-        AuthenticateData(Secret::new(data))
-    })(input) // FIXME: many0 deleted
+    alt((
+        map(terminated(base64, crlf), |data| {
+            AuthenticateData::Continue(Secret::new(data))
+        }),
+        value(AuthenticateData::Cancel, tuple((tag("*"), crlf))),
+    ))(input)
 }
 
 #[cfg(test)]
@@ -85,6 +93,27 @@ mod tests {
 
         for test in tests {
             known_answer_test_parse(test, auth_type);
+        }
+    }
+
+    #[test]
+    fn test_authenticate_data() {
+        let tests = [
+            (b"*\r\n ".as_ref(), b" ".as_ref(), AuthenticateData::Cancel),
+            (
+                b"AA==\r\n ".as_ref(),
+                b" ".as_ref(),
+                AuthenticateData::Continue(Secret::new(b"\x00".to_vec())),
+            ),
+            (
+                b"aQ==\r\n ".as_ref(),
+                b" ".as_ref(),
+                AuthenticateData::Continue(Secret::new(b"\x69".to_vec())),
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_parse(test, authenticate_data);
         }
     }
 }
