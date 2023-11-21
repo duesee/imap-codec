@@ -168,7 +168,15 @@ pub struct AuthMechanismOther<'a>(Atom<'a>);
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AuthenticateData(pub Secret<Vec<u8>>);
+pub enum AuthenticateData {
+    /// Continue SASL authentication.
+    Continue(Secret<Vec<u8>>),
+    /// Cancel SASL authentication.
+    ///
+    /// "If the client wishes to cancel an authentication exchange,
+    /// it issues a line consisting of a single "*"." (RFC 3501)
+    Cancel,
+}
 
 #[cfg(test)]
 mod tests {

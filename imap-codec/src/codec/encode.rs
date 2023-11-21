@@ -590,9 +590,14 @@ impl<'a> EncodeIntoContext for AuthMechanism<'a> {
 
 impl EncodeIntoContext for AuthenticateData {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        let encoded = base64.encode(self.0.declassify());
-        ctx.write_all(encoded.as_bytes())?;
-        ctx.write_all(b"\r\n")
+        match self {
+            Self::Continue(data) => {
+                let encoded = base64.encode(data.declassify());
+                ctx.write_all(encoded.as_bytes())?;
+                ctx.write_all(b"\r\n")
+            }
+            Self::Cancel => ctx.write_all(b"*\r\n"),
+        }
     }
 }
 
