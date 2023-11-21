@@ -92,12 +92,18 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 
 impl<'a> Display for AuthMechanism<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
+        f.write_str(self.as_ref())
+    }
+}
+
+impl<'a> AsRef<str> for AuthMechanism<'a> {
+    fn as_ref(&self) -> &str {
+        match self {
             Self::Plain => "PLAIN",
             Self::Login => "LOGIN",
             Self::XOAuth2 => "XOAUTH2",
             Self::Other(other) => other.0.as_ref(),
-        })
+        }
     }
 }
 
