@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use imap_types::{
     auth::AuthenticateData,
     command::Command,
+    extensions::idle::IdleDone,
     response::{Greeting, Response},
     utils::escape_byte_string,
 };
@@ -10,7 +11,7 @@ use imap_types::{
 use crate::{
     decode::{Decoder, IMAPResult},
     encode::{EncodeContext, EncodeIntoContext},
-    AuthenticateDataCodec, CommandCodec, GreetingCodec, ResponseCodec,
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
 
 pub(crate) fn known_answer_test_encode(
@@ -81,6 +82,7 @@ impl_kat_inverse! {kat_inverse_command, CommandCodec, Command}
 impl_kat_inverse! {kat_inverse_response, ResponseCodec, Response}
 //impl_kat_inverse! {kat_inverse_continue, ContinueCodec, Continue}
 impl_kat_inverse! {kat_inverse_authenticate_data, AuthenticateDataCodec, AuthenticateData}
+impl_kat_inverse! {kat_inverse_done, IdleDoneCodec, IdleDone}
 
 #[cfg(test)]
 mod tests {

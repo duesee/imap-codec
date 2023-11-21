@@ -55,6 +55,7 @@ mod tests {
         auth::AuthenticateData,
         command::{Command, CommandBody},
         core::{IString, Literal, LiteralMode, NString, NonEmptyVec, Tag},
+        extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
@@ -65,8 +66,8 @@ mod tests {
     use crate::{
         decode::{CommandDecodeError, Decoder, GreetingDecodeError, ResponseDecodeError},
         testing::{
-            kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_greeting,
-            kat_inverse_response,
+            kat_inverse_authenticate_data, kat_inverse_command, kat_inverse_done,
+            kat_inverse_greeting, kat_inverse_response,
         },
     };
 
@@ -162,6 +163,14 @@ mod tests {
             b"".as_ref(),
             AuthenticateData(Secret::new(b"Test".to_vec())),
         )]);
+    }
+
+    #[test]
+    fn test_kat_inverse_done() {
+        kat_inverse_done(&[
+            (b"done\r\n".as_ref(), b"".as_ref(), IdleDone),
+            (b"DONE\r\n".as_ref(), b"".as_ref(), IdleDone),
+        ]);
     }
 
     #[test]
