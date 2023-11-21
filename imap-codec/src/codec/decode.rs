@@ -500,15 +500,23 @@ mod tests {
                 b"VGVzdA==\r\n".as_ref(),
                 Ok((
                     b"".as_ref(),
-                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
                 )),
             ),
             (
                 b"VGVzdA==\r\nx".as_ref(),
                 Ok((
                     b"x".as_ref(),
-                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
                 )),
+            ),
+            (
+                b"*\r\n".as_ref(),
+                Ok((b"".as_ref(), AuthenticateData::Cancel)),
+            ),
+            (
+                b"*\r\nx".as_ref(),
+                Ok((b"x".as_ref(), AuthenticateData::Cancel)),
             ),
             // Incomplete
             (b"V".as_ref(), Err(AuthenticateDataDecodeError::Incomplete)),
@@ -545,7 +553,7 @@ mod tests {
                 b"VGVzdA==\r\n".as_ref(),
                 Ok((
                     b"".as_ref(),
-                    AuthenticateData(Secret::new(b"Test".to_vec())),
+                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
                 )),
             ),
             // Failed

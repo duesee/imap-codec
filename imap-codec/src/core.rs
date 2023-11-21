@@ -417,4 +417,21 @@ mod tests {
         assert!(Charset::try_from("²").is_err());
         assert!(Charset::try_from("\x00").is_err());
     }
+
+    #[test]
+    fn test_is_base64_char() {
+        assert!(is_base64_char(b'a'));
+        assert!(is_base64_char(b'z'));
+        assert!(is_base64_char(b'A'));
+        assert!(is_base64_char(b'Z'));
+    }
+
+    #[test]
+    fn test__base64() {
+        _base64.decode(b"AA==").unwrap();
+        // Note: "pad bits MUST be set to zero by conforming encoders" [RFC 4648, sec. 3.5].
+        //_base64.decode(b"aa==").unwrap();
+        _base64.decode(b"aQ==").unwrap();
+        _base64.decode(b"aa==").unwrap();
+    }
 }
