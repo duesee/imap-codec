@@ -69,6 +69,34 @@ pub enum AuthMechanism<'a> {
     /// * <https://developers.google.com/gmail/imap/xoauth2-protocol>
     XOAuth2,
 
+    /// SCRAM-SHA-1
+    ///
+    /// # Reference(s):
+    ///
+    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    ScramSha1,
+
+    /// SCRAM-SHA-1-PLUS
+    ///
+    /// # Reference(s):
+    ///
+    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    ScramSha1Plus,
+
+    /// SCRAM-SHA-256
+    ///
+    /// # Reference(s):
+    ///
+    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    ScramSha256,
+
+    /// SCRAM-SHA-256-PLUS
+    ///
+    /// # Reference(s):
+    ///
+    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    ScramSha256Plus,
+
     /// Some other (unknown) mechanism.
     Other(AuthMechanismOther<'a>),
 }
@@ -85,6 +113,10 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
             "PLAIN" => Self::Plain,
             "LOGIN" => Self::Login,
             "XOAUTH2" => Self::XOAuth2,
+            "SCRAM-SHA-1" => Self::ScramSha1,
+            "SCRAM-SHA-1-PLUS" => Self::ScramSha1Plus,
+            "SCRAM-SHA-256" => Self::ScramSha256,
+            "SCRAM-SHA-256-PLUS" => Self::ScramSha256Plus,
             _ => Self::Other(AuthMechanismOther(atom)),
         }
     }
@@ -102,6 +134,10 @@ impl<'a> AsRef<str> for AuthMechanism<'a> {
             Self::Plain => "PLAIN",
             Self::Login => "LOGIN",
             Self::XOAuth2 => "XOAUTH2",
+            Self::ScramSha1 => "SCRAM-SHA-1",
+            Self::ScramSha1Plus => "SCRAM-SHA-1-PLUS",
+            Self::ScramSha256 => "SCRAM-SHA-256",
+            Self::ScramSha256Plus => "SCRAM-SHA-256-PLUS",
             Self::Other(other) => other.0.as_ref(),
         }
     }
