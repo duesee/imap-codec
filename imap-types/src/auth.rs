@@ -3,6 +3,7 @@
 use std::{
     borrow::Cow,
     fmt::{Display, Formatter},
+    str::FromStr,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{impl_try_from, Atom},
+    error::ValidationError,
     secret::Secret,
 };
 
@@ -140,6 +142,14 @@ impl<'a> AsRef<str> for AuthMechanism<'a> {
             Self::ScramSha256Plus => "SCRAM-SHA-256-PLUS",
             Self::Other(other) => other.0.as_ref(),
         }
+    }
+}
+
+impl FromStr for AuthMechanism<'static> {
+    type Err = ValidationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        AuthMechanism::try_from(s.to_string())
     }
 }
 
