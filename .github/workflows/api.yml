@@ -33,9 +33,9 @@ jobs:
       - name: Check for SemVer violations | imap-types
         run: |
           cd imap-types
-          cargo semver-checks check-release
+          cargo semver-checks check-release --only-explicit-features
 
       - name: Check for SemVer violations | imap-codec
         run: |
           cd imap-codec
-          cargo semver-checks check-release
+          cargo semver-checks check-release --only-explicit-features
