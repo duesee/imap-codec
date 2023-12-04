@@ -21,6 +21,7 @@ starttls = []
 ext_condstore_qresync = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
+ext_id = []
 
 # Unlock `unvalidated` constructors.
 unvalidated = []

@@ -14,6 +14,8 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_id")]
+use crate::core::{IString, NString};
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
@@ -549,6 +551,13 @@ pub enum Data<'a> {
         mailbox: Mailbox<'a>,
         /// List of quota roots.
         roots: Vec<AString<'a>>,
+    },
+
+    #[cfg(feature = "ext_id")]
+    /// ID Response
+    Id {
+        /// Parameters
+        parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
     },
 }
 
@@ -1097,6 +1106,9 @@ pub enum Capability<'a> {
     LiteralMinus,
     /// See RFC 6851.
     Move,
+    #[cfg(feature = "ext_id")]
+    /// See RFC 2971.
+    Id,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1124,6 +1136,8 @@ impl<'a> Display for Capability<'a> {
             Self::LiteralPlus => write!(f, "LITERAL+"),
             Self::LiteralMinus => write!(f, "LITERAL-"),
             Self::Move => write!(f, "MOVE"),
+            #[cfg(feature = "ext_id")]
+            Self::Id => write!(f, "ID"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1179,6 +1193,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "literal+" => Self::LiteralPlus,
             "literal-" => Self::LiteralMinus,
             "move" => Self::Move,
+            #[cfg(feature = "ext_id")]
+            "id" => Self::Id,
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {

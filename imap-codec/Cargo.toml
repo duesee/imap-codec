@@ -24,6 +24,7 @@ starttls = ["imap-types/starttls"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
+ext_id = ["imap-types/ext_id"]
 # </Forward to imap-types>
 
 # IMAP quirks
@@ -41,6 +42,11 @@ quirk_rectify_numbers = []
 # Observed in ...
 # * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
 quirk_missing_text = []
+# Encode `A ID ()` as `A ID NIL
+# Observed in ...
+# * GMX
+# * Microsoft Exchange
+quirk_id_empty_to_nil = []
 
 [dependencies]
 abnf-core = "0.6.0"

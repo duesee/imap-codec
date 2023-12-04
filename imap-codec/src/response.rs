@@ -23,6 +23,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_id")]
+use crate::extensions::id::id_response;
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
@@ -274,13 +276,16 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
     Ok((remaining, continue_request))
 }
 
-/// `response-data = "*" SP (
+/// ```abnf
+/// response-data = "*" SP (
 ///                    resp-cond-state /
 ///                    resp-cond-bye /
 ///                    mailbox-data /
 ///                    message-data /
-///                    capability-data
-///                  ) CRLF`
+///                    capability-data /
+///                    id_response ; (See RFC 2971)
+///                  ) CRLF
+/// ```
 pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
     let mut parser = tuple((
         tag(b"*"),
@@ -317,6 +322,10 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
                 Response::Data(Data::Capability(caps))
             }),
             map(enable_data, Response::Data),
+            #[cfg(feature = "ext_id")]
+            map(id_response, |parameters| {
+                Response::Data(Data::Id { parameters })
+            }),
         )),
         crlf,
     ));
