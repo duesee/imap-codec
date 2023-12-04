@@ -11,6 +11,8 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_id")]
+use crate::core::{IString, NString};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
@@ -1362,6 +1364,13 @@ pub enum CommandBody<'a> {
         /// Use UID variant.
         uid: bool,
     },
+
+    #[cfg(feature = "ext_id")]
+    /// ID command.
+    Id {
+        /// Parameters.
+        parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
+    },
 }
 
 impl<'a> CommandBody<'a> {
@@ -1645,6 +1654,8 @@ impl<'a> CommandBody<'a> {
             Self::GetQuotaRoot { .. } => "GETQUOTAROOT",
             Self::SetQuota { .. } => "SETQUOTA",
             Self::Move { .. } => "MOVE",
+            #[cfg(feature = "ext_id")]
+            Self::Id { .. } => "ID",
         }
     }
 }

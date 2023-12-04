@@ -1,5 +1,7 @@
 pub mod compress;
 pub mod enable;
+#[cfg(feature = "ext_id")]
+pub mod id;
 pub mod idle;
 pub mod literal;
 pub mod r#move;

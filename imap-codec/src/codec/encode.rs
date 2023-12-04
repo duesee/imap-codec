@@ -543,6 +543,41 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)
             }
+            #[cfg(feature = "ext_id")]
+            CommandBody::Id { parameters } => {
+                ctx.write_all(b"ID ")?;
+
+                match parameters {
+                    Some(parameters) => {
+                        if let Some((first, tail)) = parameters.split_first() {
+                            ctx.write_all(b"(")?;
+
+                            first.0.encode_ctx(ctx)?;
+                            ctx.write_all(b" ")?;
+                            first.1.encode_ctx(ctx)?;
+
+                            for parameter in tail {
+                                ctx.write_all(b" ")?;
+                                parameter.0.encode_ctx(ctx)?;
+                                ctx.write_all(b" ")?;
+                                parameter.1.encode_ctx(ctx)?;
+                            }
+
+                            ctx.write_all(b")")
+                        } else {
+                            #[cfg(not(feature = "quirk_id_empty_to_nil"))]
+                            {
+                                ctx.write_all(b"()")
+                            }
+                            #[cfg(feature = "quirk_id_empty_to_nil")]
+                            {
+                                ctx.write_all(b"NIL")
+                            }
+                        }
+                    }
+                    None => ctx.write_all(b"NIL"),
+                }
+            }
         }
     }
 }
@@ -1199,6 +1234,43 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 for root in roots {
                     ctx.write_all(b" ")?;
                     root.encode_ctx(ctx)?;
+                }
+            }
+            #[cfg(feature = "ext_id")]
+            Data::Id { parameters } => {
+                ctx.write_all(b"* ID ")?;
+
+                match parameters {
+                    Some(parameters) => {
+                        if let Some((first, tail)) = parameters.split_first() {
+                            ctx.write_all(b"(")?;
+
+                            first.0.encode_ctx(ctx)?;
+                            ctx.write_all(b" ")?;
+                            first.1.encode_ctx(ctx)?;
+
+                            for parameter in tail {
+                                ctx.write_all(b" ")?;
+                                parameter.0.encode_ctx(ctx)?;
+                                ctx.write_all(b" ")?;
+                                parameter.1.encode_ctx(ctx)?;
+                            }
+
+                            ctx.write_all(b")")?;
+                        } else {
+                            #[cfg(not(feature = "quirk_id_empty_to_nil"))]
+                            {
+                                ctx.write_all(b"()")?;
+                            }
+                            #[cfg(feature = "quirk_id_empty_to_nil")]
+                            {
+                                ctx.write_all(b"NIL")?;
+                            }
+                        }
+                    }
+                    None => {
+                        ctx.write_all(b"NIL")?;
+                    }
                 }
             }
         }

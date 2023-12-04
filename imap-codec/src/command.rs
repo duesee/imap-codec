@@ -21,6 +21,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_id")]
+use crate::extensions::id::id;
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},
@@ -79,7 +81,13 @@ pub(crate) fn command(input: &[u8]) -> IMAPResult<&[u8], Command> {
 
 // # Command Any
 
-/// `command-any = "CAPABILITY" / "LOGOUT" / "NOOP" / x-command`
+/// ```abnf
+/// command-any = "CAPABILITY" /
+///               "LOGOUT" /
+///               "NOOP" /
+///               x-command /
+///               id ; adds id command to command_any (See RFC 2971)
+/// ```
 ///
 /// Note: Valid in all states
 pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
@@ -88,6 +96,8 @@ pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         value(CommandBody::Logout, tag_no_case(b"LOGOUT")),
         value(CommandBody::Noop, tag_no_case(b"NOOP")),
         // x-command = "X" atom <experimental command arguments>
+        #[cfg(feature = "ext_id")]
+        map(id, |parameters| CommandBody::Id { parameters }),
     ))(input)
 }
 
