@@ -32,9 +32,11 @@ However, it's always possible to manually choose a specific representation.
 This ...
 
 ```rust
-Command::new(
+use imap_types::command::{Command, CommandBody};
+
+let cmd = Command::new(
     "A1",
-    CommandBody::login("alice", "password").unwrap(),
+    CommandBody::login("alice", "password").unwrap()
 ).unwrap();
 ```
 
@@ -47,11 +49,12 @@ A1 LOGIN alice password
 However, ...
 
 ```rust
-Command::new(
+use imap_types::command::{Command, CommandBody};
+
+let cmd = Command::new(
     "A1",
     CommandBody::login("alice\"", b"\xCA\xFE".as_ref()).unwrap(),
-)
-.unwrap();
+).unwrap();
 ```
 
 ... will produce ...
@@ -63,8 +66,10 @@ A1 LOGIN "alice\"" {2}
 
 Also, the construction ...
 
-```rust
-Command::new(
+```rust,should_panic
+use imap_types::command::{Command, CommandBody};
+
+let cmd = Command::new(
     "A1",
     CommandBody::login("alice\x00", "password").unwrap(),
 ).unwrap();
@@ -79,11 +84,15 @@ Command::new(
 You can also use ...
 
 ```rust
-Command::new(
+use imap_types::{
+    command::{Command, CommandBody},
+    core::Literal,
+};
+
+let cmd = Command::new(
     "A1",
     CommandBody::login(Literal::try_from("alice").unwrap(), "password").unwrap(),
-)
-.unwrap();
+).unwrap();
 ```
 
 ... to produce ...
@@ -98,17 +107,35 @@ alice password
 Also, you can use Rust literals and resort to `unvalidated` constructors when you are certain that your input is correct:
 
 ```rust
-// This could be provided by the email application.
-let tag = TagGenerator::random();
+// Note: "unvalidated" feature must be activated.
+#[cfg(feature = "unvalidated")]
+{
+  use imap_types::{
+      command::{Command, CommandBody},
+      core::{AString, Atom, Tag},
+      secret::Secret,
+  };
 
-Command {
-    tag,
-    body: CommandBody::Login {
-        // Note that the "unvalidated" feature must be activated.
-        username: AString::from(Atom::unvalidated("alice")),
-        password: Secret::new(AString::from(Atom::unvalidated("password"))),
-    },
-};
+  // This could be provided by the email application.
+  struct TagGenerator;
+
+  impl TagGenerator {
+      fn random() -> Tag<'static> {
+          // Make this random :-)
+          Tag::unvalidated("A1")
+      }
+  }
+
+  let tag = TagGenerator::random();
+
+  let cmd = Command {
+      tag,
+      body: CommandBody::Login {
+          username: AString::from(Atom::unvalidated("alice")),
+          password: Secret::new(AString::from(Atom::unvalidated("password"))),
+      },
+  };
+}
 ```
 
 In this case, imap-codec won't stand in your way.
