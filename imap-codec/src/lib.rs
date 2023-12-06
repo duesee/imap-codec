@@ -104,6 +104,11 @@
 #![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+// Test examples from imap-codec's README.
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
+
 mod auth;
 mod body;
 mod codec;
