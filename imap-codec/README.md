@@ -13,18 +13,16 @@ The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are impl
 ## Usage
 
 ```rust
-use imap_codec::{
-    codec::{Decode, Encode},
-    command::Command,
-};
+use imap_codec::{decode::Decoder, encode::Encoder, CommandCodec};
 
 fn main() {
     let input = b"ABCD UID FETCH 1,2:* (BODY.PEEK[1.2.3.4.MIME]<42.1337>)\r\n";
 
-    let (remainder, parsed) = Command::decode(input).unwrap();
-    println!("# Parsed\n\n{:#?}\n\n", parsed);
+    let codec = CommandCodec::new();
+    let (remainder, command) = codec.decode(input).unwrap();
+    println!("# Parsed\n\n{:#?}\n\n", command);
 
-    let buffer = parsed.encode().dump();
+    let buffer = codec.encode(&command).dump();
 
     // Note: IMAP4rev1 may produce messages that are not valid UTF-8.
     println!("# Serialized\n\n{:?}", std::str::from_utf8(&buffer));
