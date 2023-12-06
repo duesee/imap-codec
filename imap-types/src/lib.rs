@@ -163,6 +163,11 @@
 // #![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+// Test examples from imap-types' README.
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
+
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
 pub mod auth;
