@@ -30,6 +30,13 @@
 //! #     },
 //! #     GreetingCodec,
 //! #  };
+//! // Run 'cargo add imap-types' in your project's root directory.
+//! use imap_codec::{decode::Decoder, GreetingCodec};
+//! use imap_types::{
+//!     core::Text,
+//!     response::{Code, Greeting, GreetingKind},
+//! };
+//! 
 //! let (remaining, greeting) = GreetingCodec::default()
 //!     .decode(b"* OK [ALERT] Hello, World!\r\n<remaining>")
 //!     .unwrap();
@@ -63,6 +70,13 @@
 //! #     },
 //! #     GreetingCodec,
 //! #  };
+//! // Run 'cargo add imap-types' in your project's root directory.
+//! use imap_codec::{encode::Encoder, GreetingCodec};
+//! use imap_types::{
+//!     core::Text,
+//!     response::{Code, Greeting, GreetingKind},
+//! };
+//! 
 //! let greeting = Greeting {
 //!     kind: GreetingKind::Ok,
 //!     code: Some(Code::Alert),
