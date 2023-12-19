@@ -127,7 +127,7 @@ pub trait Decoder {
 
 /// Error during greeting decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GreetingDecodeError {
     /// More data is needed.
     Incomplete,
@@ -198,7 +198,7 @@ pub enum CommandDecodeError<'a> {
 
 /// Error during authenticate data line decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AuthenticateDataDecodeError {
     /// More data is needed.
     Incomplete,
@@ -233,7 +233,7 @@ pub enum ResponseDecodeError {
 
 /// Error during idle done decoding.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum IdleDoneDecodeError {
     /// More data is needed.
     Incomplete,
