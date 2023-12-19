@@ -86,7 +86,7 @@ impl<'a> Greeting<'a> {
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// IMAP4rev1 defines three possible greetings at connection startup.
 pub enum GreetingKind {
     /// The connection is not yet authenticated.
@@ -628,7 +628,7 @@ pub struct StatusBody<'a> {
     pub text: Text<'a>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum StatusKind {
     Ok,
     No,
