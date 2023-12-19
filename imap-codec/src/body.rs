@@ -10,7 +10,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
-    multi::{many0, many1, separated_list1},
+    multi::{many0, many1, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
 };
 
@@ -215,15 +215,18 @@ pub(crate) fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
     ))
 }
 
-/// `body-fld-param = "("
-///                     string SP string
-///                     *(SP string SP string)
-///                   ")" / nil`
+/// ```abnf
+/// body-fld-param = "("
+///                    string SP string
+///                    *(SP string SP string)
+///                  ")" / nil
+/// ```
 pub(crate) fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>> {
     let mut parser = alt((
         delimited(
             tag(b"("),
-            separated_list1(
+            // Quirk: See https://github.com/emersion/go-imap/issues/557
+            separated_list0(
                 sp,
                 map(tuple((string, sp, string)), |(key, _, value)| (key, value)),
             ),
