@@ -1150,6 +1150,7 @@ Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
                             StoreType::Add,
                             StoreResponse::Answer,
                             vec![Flag::Deleted],
+                            vec![],
                             false,
                         )
                         .unwrap(),

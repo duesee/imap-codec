@@ -112,6 +112,7 @@ mod tests {
                     "a",
                     CommandBody::Select {
                         mailbox: Mailbox::Inbox,
+                        parameters: None,
                     },
                 )
                 .unwrap(),
@@ -123,6 +124,7 @@ mod tests {
                     "a",
                     CommandBody::Select {
                         mailbox: Mailbox::Inbox,
+                        parameters: None,
                     },
                 )
                 .unwrap(),

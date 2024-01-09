@@ -16,7 +16,7 @@ use crate::core::{IString, NString};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
-    core::{AString, Charset, Literal, NonEmptyVec, Tag},
+    core::{Atom, AString, Charset, Literal, NonEmptyVec, Tag},
     datetime::DateTime,
     extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
     fetch::MacroOrMessageDataItemNames,
@@ -386,6 +386,8 @@ pub enum CommandBody<'a> {
     Select {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Optional parameters according to RFC466 section 2.1
+        parameters: Option<NonEmptyVec<Atom<'a>>>,
     },
 
     /// Unselect a mailbox.
@@ -415,6 +417,8 @@ pub enum CommandBody<'a> {
     Examine {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Optional parameters according to RFC466 section 2.1
+        parameters: Option<NonEmptyVec<Atom<'a>>>,
     },
 
     /// ### 6.3.3.  CREATE Command
@@ -1110,6 +1114,8 @@ pub enum CommandBody<'a> {
         response: StoreResponse,
         /// Flags.
         flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
+        /// Modifiers.
+        modifiers: Vec<(Atom<'a>, StoreModifier<'a>)>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1427,6 +1433,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Select {
             mailbox: mailbox.try_into()?,
+            parameters: None,
         })
     }
 
@@ -1437,6 +1444,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Examine {
             mailbox: mailbox.try_into()?,
+            parameters: None,
         })
     }
 
@@ -1585,6 +1593,7 @@ impl<'a> CommandBody<'a> {
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag<'a>>,
+        modifiers: Vec<(Atom<'a>, StoreModifier<'a>)>,
         uid: bool,
     ) -> Result<Self, S::Error>
     where
@@ -1597,6 +1606,7 @@ impl<'a> CommandBody<'a> {
             kind,
             response,
             flags,
+            modifiers,
             uid,
         })
     }
@@ -1658,6 +1668,15 @@ impl<'a> CommandBody<'a> {
             Self::Id { .. } => "ID",
         }
     }
+}
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StoreModifier<'a> {
+    Value(u32),
+    SequenceSet(SequenceSet),
+    Arbitrary(AString<'a>),
 }
 
 /// Error-related types.
@@ -1870,6 +1889,7 @@ mod tests {
                 StoreType::Remove,
                 StoreResponse::Answer,
                 vec![Flag::Seen, Flag::Draft],
+                vec![],
                 false,
             )
             .unwrap(),
@@ -1878,6 +1898,7 @@ mod tests {
                 StoreType::Add,
                 StoreResponse::Answer,
                 vec![Flag::Keyword("TEST".try_into().unwrap())],
+                vec![],
                 true,
             )
             .unwrap(),
@@ -1917,6 +1938,7 @@ mod tests {
             (
                 CommandBody::Select {
                     mailbox: Mailbox::Inbox,
+                    parameters: None,
                 },
                 "SELECT",
             ),
@@ -1924,6 +1946,7 @@ mod tests {
             (
                 CommandBody::Examine {
                     mailbox: Mailbox::Inbox,
+                    parameters: None,
                 },
                 "EXAMINE",
             ),
@@ -2013,6 +2036,7 @@ mod tests {
                     flags: vec![],
                     response: StoreResponse::Silent,
                     kind: StoreType::Add,
+                    modifiers: vec![],
                     uid: true,
                 },
                 "STORE",
