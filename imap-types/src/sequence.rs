@@ -1,8 +1,10 @@
 use std::{
-    fmt::{Debug, Formatter},
+    cmp::max,
+    collections::VecDeque,
+    fmt::Debug,
+    iter::Rev,
     num::NonZeroU32,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
-    panic::{RefUnwindSafe, UnwindSafe},
     str::FromStr,
 };
 
@@ -438,13 +440,64 @@ impl From<RangeInclusive<NonZeroU32>> for Sequence {
 // -------------------------------------------------------------------------------------------------
 
 impl<'a> SequenceSet {
-    pub fn iter(&'a self, strategy: Strategy) -> impl Iterator<Item = NonZeroU32> + 'a {
-        match strategy {
-            Strategy::Naive { largest } => SequenceSetIterNaive {
-                iter: self.0.as_ref().iter(),
-                active_range: None,
-                largest,
-            },
+    /// Iterate over a sorted, deduplicated set of sequence numbers or UIDs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::num::NonZeroU32;
+    ///
+    /// use imap_types::sequence::SequenceSet;
+    ///
+    /// let seq = SequenceSet::try_from("1:5,10:3,10,10,10,1").unwrap();
+    /// let largest = NonZeroU32::new(10).unwrap();
+    ///
+    /// assert_eq!(
+    ///     seq.iter(largest).collect::<Vec<_>>(),
+    ///     [1u32, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ///         .into_iter()
+    ///         .map(|e| NonZeroU32::new(e).unwrap())
+    ///         .collect::<Vec<_>>()
+    /// );
+    /// ```
+    pub fn iter(&'a self, largest: NonZeroU32) -> impl Iterator<Item = NonZeroU32> + 'a {
+        let ranges = simplify(self.clone(), largest, true);
+        let ranges = cleanup(ranges);
+
+        SequenceSetIter {
+            ranges,
+            active_range: None,
+        }
+    }
+
+    /// Iterate over the given set of sequence numbers or UIDs.
+    ///
+    /// Note: This method expands the sequence set keeping duplicates and ordering.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::num::NonZeroU32;
+    ///
+    /// use imap_types::sequence::SequenceSet;
+    ///
+    /// let seq = SequenceSet::try_from("1:3,1:3,3:1,1").unwrap();
+    /// let largest = NonZeroU32::new(10).unwrap();
+    ///
+    /// assert_eq!(
+    ///     seq.iter_naive(largest).collect::<Vec<_>>(),
+    ///     [1u32, 2, 3, 1, 2, 3, 3, 2, 1, 1]
+    ///         .into_iter()
+    ///         .map(|e| NonZeroU32::new(e).unwrap())
+    ///         .collect::<Vec<_>>()
+    /// );
+    /// ```
+    pub fn iter_naive(&'a self, largest: NonZeroU32) -> impl Iterator<Item = NonZeroU32> + 'a {
+        let ranges = simplify(self.clone(), largest, false);
+
+        SequenceSetIter {
+            ranges,
+            active_range: None,
         }
     }
 }
@@ -460,62 +513,103 @@ impl SeqOrUid {
 
 // -------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum Strategy {
-    Naive { largest: NonZeroU32 },
+struct SequenceSetIter {
+    ranges: VecDeque<(u32, u32)>,
+    active_range: Option<Sorting>,
 }
 
-// TODO(v2): Remove from public API and cleanup `active_range`.
-pub struct SequenceSetIterNaive<'a> {
-    iter: core::slice::Iter<'a, Sequence>,
-    active_range:
-        Option<Box<dyn DoubleEndedIterator<Item = u32> + Send + Sync + UnwindSafe + RefUnwindSafe>>,
-    largest: NonZeroU32,
-}
-
-impl<'a> Debug for SequenceSetIterNaive<'a> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        f.debug_struct("SequenceSetIterNaive")
-            .field("iter", &self.iter)
-            .field("active_range", &"<no debug>")
-            .field("largest", &self.largest)
-            .finish()
-    }
-}
-
-impl<'a> Iterator for SequenceSetIterNaive<'a> {
+impl Iterator for SequenceSetIter {
     type Item = NonZeroU32;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(ref mut range) = self.active_range {
-                if let Some(seq_or_uid) = range.next() {
-                    return Some(NonZeroU32::try_from(seq_or_uid).unwrap());
-                } else {
-                    self.active_range = None;
-                }
-            }
-
-            match self.iter.next() {
-                Some(seq) => match seq {
-                    Sequence::Single(seq_no) => {
-                        return Some(seq_no.expand(self.largest));
-                    }
-                    Sequence::Range(from, to) => {
-                        let from = from.expand(self.largest);
-                        let to = to.expand(self.largest);
-                        self.active_range = if from <= to {
-                            Some(Box::new(u32::from(from)..=u32::from(to)))
-                        } else {
-                            Some(Box::new((u32::from(to)..=u32::from(from)).rev()))
-                        };
-                    }
+            match self.active_range {
+                Some(ref mut range) => match range.next() {
+                    // We know here that `next >= 1`.
+                    Some(next) => break Some(NonZeroU32::new(next).unwrap()),
+                    None => self.active_range = None,
                 },
-                None => return None,
+                None => match self.ranges.pop_front() {
+                    Some((a, b)) => {
+                        if a <= b {
+                            self.active_range = Some(Sorting::Ascending(a..=b));
+                        } else {
+                            self.active_range = Some(Sorting::Descending((b..=a).rev()));
+                        }
+                    }
+                    None => break None,
+                },
             }
         }
     }
+}
+
+enum Sorting {
+    Ascending(RangeInclusive<u32>),
+    Descending(Rev<RangeInclusive<u32>>),
+}
+
+impl Iterator for Sorting {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Sorting::Ascending(iter) => iter.next(),
+            Sorting::Descending(iter) => iter.next(),
+        }
+    }
+}
+
+// Simplify sequence set into VecDeque<(u32, u32)>:
+// * Use u32 instead of NonZeroU32 (for internal purposes)
+// * Expand Single(a) to (a, a)
+// * Sort Range(a, b) so that a <= b
+fn simplify(sequence_set: SequenceSet, largest: NonZeroU32, sort: bool) -> VecDeque<(u32, u32)> {
+    sequence_set
+        .0
+         .0
+        .into_iter()
+        .map(|seq| match seq {
+            Sequence::Single(a) => (u32::from(a.expand(largest)), u32::from(a.expand(largest))),
+            Sequence::Range(a, b) => {
+                let a = u32::from(a.expand(largest));
+                let b = u32::from(b.expand(largest));
+
+                if sort {
+                    if a <= b {
+                        (a, b)
+                    } else {
+                        (b, a)
+                    }
+                } else {
+                    (a, b)
+                }
+            }
+        })
+        .collect()
+}
+
+fn cleanup(remaining: VecDeque<(u32, u32)>) -> VecDeque<(u32, u32)> {
+    let mut remaining = {
+        let mut tmp = Vec::from(remaining);
+        tmp.sort();
+        VecDeque::from(tmp)
+    };
+
+    let mut stack = VecDeque::new();
+    stack.push_back(remaining.pop_front().unwrap());
+
+    for (x, y) in remaining.into_iter() {
+        let last = stack.back_mut().unwrap();
+
+        if last.0 <= x && x <= last.1.saturating_add(1) {
+            last.1 = max(last.1, y);
+        } else {
+            stack.push_back((x, y));
+        }
+    }
+
+    stack
 }
 
 #[cfg(test)]
@@ -735,11 +829,7 @@ mod tests {
 
         for (test, expected) in tests {
             let seq_set = SequenceSet::try_from(test).unwrap();
-            let got: Vec<NonZeroU32> = seq_set
-                .iter(Strategy::Naive {
-                    largest: 3.try_into().unwrap(),
-                })
-                .collect();
+            let got: Vec<NonZeroU32> = seq_set.iter_naive(3.try_into().unwrap()).collect();
             assert_eq!(*expected, got);
         }
     }
@@ -750,11 +840,55 @@ mod tests {
         let seq = SequenceSet::try_from("22,21,22,*:20").unwrap();
         let largest = NonZeroU32::new(23).unwrap();
 
-        let expected = [22, 21, 22, 23, 22, 21, 20]
-            .map(|n| NonZeroU32::new(n).unwrap())
-            .to_vec();
-        let got: Vec<_> = seq.iter(Strategy::Naive { largest }).collect();
+        // Naive
+        {
+            let expected = [22, 21, 22, 23, 22, 21, 20]
+                .map(|n| NonZeroU32::new(n).unwrap())
+                .to_vec();
+            let got: Vec<_> = seq.iter_naive(largest).collect();
 
-        assert_eq!(expected, got);
+            assert_eq!(expected, got);
+        }
+
+        // Clean
+        {
+            let expected = [20, 21, 22, 23]
+                .map(|n| NonZeroU32::new(n).unwrap())
+                .to_vec();
+            let got: Vec<_> = seq.iter(largest).collect();
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn test_clean() {
+        let tests = vec![
+            "1",
+            "2",
+            "*",
+            "1:*",
+            "2:*",
+            "*:*",
+            "3,2,1",
+            "3,2,2,2,1,1,1",
+            "3:1,5:1,1:2,1:1",
+            "4:5,5:1,1:2,1:1,*:*,*:10,1:100",
+        ];
+
+        for test in tests {
+            let seq = SequenceSet::try_from(test).unwrap();
+            let largest = NonZeroU32::new(13).unwrap();
+
+            let naive = {
+                let mut naive: Vec<_> = seq.iter_naive(largest).collect();
+                naive.sort();
+                naive.dedup();
+                naive
+            };
+            let clean: Vec<_> = seq.iter(largest).collect();
+
+            assert_eq!(naive, clean);
+        }
     }
 }
