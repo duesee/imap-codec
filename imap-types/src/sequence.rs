@@ -1,6 +1,8 @@
 use std::{
+    fmt::{Debug, Formatter},
     num::NonZeroU32,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    panic::{RefUnwindSafe, UnwindSafe},
     str::FromStr,
 };
 
@@ -464,11 +466,22 @@ pub enum Strategy {
     Naive { largest: NonZeroU32 },
 }
 
-#[derive(Debug)]
+// TODO(v2): Remove from public API and cleanup `active_range`.
 pub struct SequenceSetIterNaive<'a> {
     iter: core::slice::Iter<'a, Sequence>,
-    active_range: Option<RangeInclusive<u32>>,
+    active_range:
+        Option<Box<dyn DoubleEndedIterator<Item = u32> + Send + Sync + UnwindSafe + RefUnwindSafe>>,
     largest: NonZeroU32,
+}
+
+impl<'a> Debug for SequenceSetIterNaive<'a> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.debug_struct("SequenceSetIterNaive")
+            .field("iter", &self.iter)
+            .field("active_range", &"<no debug>")
+            .field("largest", &self.largest)
+            .finish()
+    }
 }
 
 impl<'a> Iterator for SequenceSetIterNaive<'a> {
@@ -492,7 +505,11 @@ impl<'a> Iterator for SequenceSetIterNaive<'a> {
                     Sequence::Range(from, to) => {
                         let from = from.expand(self.largest);
                         let to = to.expand(self.largest);
-                        self.active_range = Some(u32::from(from)..=u32::from(to));
+                        self.active_range = if from <= to {
+                            Some(Box::new(u32::from(from)..=u32::from(to)))
+                        } else {
+                            Some(Box::new((u32::from(to)..=u32::from(from)).rev()))
+                        };
                     }
                 },
                 None => return None,
@@ -701,7 +718,7 @@ mod tests {
             ("*", vec![3]),
             ("1:*", vec![1, 2, 3]),
             ("5,1:*,2:*", vec![5, 1, 2, 3, 2, 3]),
-            ("*:2", vec![]),
+            ("*:2", vec![3, 2]),
             ("*:*", vec![3]),
             ("4:6,*", vec![4, 5, 6, 3]),
         ]
@@ -725,5 +742,19 @@ mod tests {
                 .collect();
             assert_eq!(*expected, got);
         }
+    }
+
+    /// See https://github.com/duesee/imap-codec/issues/411
+    #[test]
+    fn test_issue_411() {
+        let seq = SequenceSet::try_from("22,21,22,*:20").unwrap();
+        let largest = NonZeroU32::new(23).unwrap();
+
+        let expected = [22, 21, 22, 23, 22, 21, 20]
+            .map(|n| NonZeroU32::new(n).unwrap())
+            .to_vec();
+        let got: Vec<_> = seq.iter(Strategy::Naive { largest }).collect();
+
+        assert_eq!(expected, got);
     }
 }
