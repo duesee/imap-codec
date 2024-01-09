@@ -427,11 +427,10 @@ mod tests {
     }
 
     #[test]
-    fn test__base64() {
+    fn test_base64() {
         _base64.decode(b"AA==").unwrap();
         // Note: "pad bits MUST be set to zero by conforming encoders" [RFC 4648, sec. 3.5].
         //_base64.decode(b"aa==").unwrap();
         _base64.decode(b"aQ==").unwrap();
-        _base64.decode(b"aa==").unwrap();
     }
 }
