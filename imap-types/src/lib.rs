@@ -116,6 +116,7 @@
 //!
 //! |Feature              |Description                                                                          |Status    |
 //! |---------------------|-------------------------------------------------------------------------------------|----------|
+//! |ext_id               |IMAP4 ID extension ([RFC 2971])                                                      |Unfinished|
 //! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|
 //! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|
 //! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|
@@ -147,6 +148,7 @@
 //! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
 //! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
 //! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
+//! [RFC 2971]: https://datatracker.ietf.org/doc/html/rfc2971
 //! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
 //! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
 //! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
