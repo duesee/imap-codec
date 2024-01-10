@@ -45,7 +45,7 @@
 //! C: Pa²²W0rD
 //! ```
 
-use std::{borrow::Borrow, io::Write, num::NonZeroU32};
+use std::{borrow::Borrow, io::Write, num::{NonZeroU32, NonZeroU64}};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
@@ -980,6 +980,7 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
             Self::Rfc822Size => ctx.write_all(b"RFC822.SIZE"),
             Self::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
             Self::Uid => ctx.write_all(b"UID"),
+            Self::ModSeq => ctx.write_all(b"MODSEQ"),
         }
     }
 }
@@ -1039,6 +1040,12 @@ impl EncodeIntoContext for Part {
 }
 
 impl EncodeIntoContext for NonZeroU32 {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        write!(ctx, "{self}")
+    }
+}
+
+impl EncodeIntoContext for NonZeroU64 {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{self}")
     }
@@ -1295,6 +1302,7 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     root.encode_ctx(ctx)?;
                 }
             }
+
             #[cfg(feature = "ext_id")]
             Data::Id { parameters } => {
                 ctx.write_all(b"* ID ")?;
@@ -1448,6 +1456,11 @@ impl<'a> EncodeIntoContext for MessageDataItem<'a> {
                 nstring.encode_ctx(ctx)
             }
             Self::Uid(uid) => write!(ctx, "UID {uid}"),
+            Self::ModSeq(modseq) => {
+                ctx.write_all(b"MODSEQ (")?;
+                modseq.encode_ctx(ctx)?;
+                ctx.write_all(b")")
+            }
         }
     }
 }

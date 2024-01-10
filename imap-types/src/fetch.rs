@@ -2,7 +2,7 @@
 
 use std::{
     fmt::{Display, Formatter},
-    num::NonZeroU32,
+    num::{NonZeroU32, NonZeroU64},
 };
 
 #[cfg(feature = "arbitrary")]
@@ -229,6 +229,9 @@ pub enum MessageDataItemName<'a> {
     /// UID
     /// ```
     Uid,
+
+    /// The ModSeq of CONDSTORE
+    ModSeq,
 }
 
 /// Message data item.
@@ -356,6 +359,9 @@ pub enum MessageDataItem<'a> {
     /// UID
     /// ```
     Uid(NonZeroU32),
+
+    /// The ModSeq value described in CONDSTORE
+    ModSeq(NonZeroU64),
 }
 
 /// A part specifier is either a part number or one of the following:

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
+use std::{borrow::Cow, num::{NonZeroU32, NonZeroU64}, str::from_utf8};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -63,6 +63,10 @@ pub(crate) fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
 pub(crate) fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     map_res(number, NonZeroU32::try_from)(input)
+}
+
+pub(crate) fn nz_number64(input: &[u8]) -> IMAPResult<&[u8], NonZeroU64> {
+    map_res(number64, NonZeroU64::try_from)(input)
 }
 
 // ----- string -----
