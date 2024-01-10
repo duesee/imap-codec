@@ -35,8 +35,6 @@ pub enum StatusDataItemName {
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     DeletedStorage,
 
-    #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     HighestModSeq,
 }
 
@@ -69,4 +67,7 @@ pub enum StatusDataItem {
 
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     DeletedStorage(u64),
+
+    /// The highest mod sequence in the mailbox
+    HighestModSeq(u64),
 }
