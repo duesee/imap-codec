@@ -72,7 +72,7 @@ use imap_types::{
         Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
         Response, Status, StatusBody, StatusKind, Tagged,
     },
-    search::SearchKey,
+    search::{SearchKey, MetadataItemType},
     sequence::{SeqOrUid, Sequence, SequenceSet},
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
@@ -885,7 +885,29 @@ impl<'a> EncodeIntoContext for SearchKey<'a> {
                 ctx.write_all(b"(")?;
                 join_serializable(search_keys.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")
-            }
+            },
+            SearchKey::ModSeq { metadata_item, modseq } => {
+                ctx.write_all(b"MODSEQ ")?;
+                if let Some(entry) = metadata_item {
+                    ctx.write_all(b"(")?;
+                    entry.entry_name.encode_ctx(ctx)?;
+                    ctx.write_all(b" ")?;
+                    entry.entry_type.encode_ctx(ctx)?;
+                    ctx.write_all(b") ")?;
+                }
+                modseq.encode_ctx(ctx)
+            },
+        }
+    }
+}
+
+impl EncodeIntoContext for MetadataItemType {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        use MetadataItemType::*;
+        match self {
+            Private => ctx.write_all(b"priv"),
+            Shared => ctx.write_all(b"shared"),
+            All => ctx.write_all(b"all"),
         }
     }
 }

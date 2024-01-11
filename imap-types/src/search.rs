@@ -5,11 +5,29 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use std::num::NonZeroU64;
 use crate::{
-    core::{AString, Atom, NonEmptyVec},
+    core::{AString, Atom, NonEmptyVec, Quoted},
     datetime::NaiveDate,
     sequence::SequenceSet,
 };
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MetadataItemType {
+    Private,
+    Shared,
+    All,
+}
+
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MetadataItemSearch<'a> {
+    pub entry_name: Quoted<'a>,
+    pub entry_type: MetadataItemType,
+}
 
 /// The defined search keys.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -81,6 +99,14 @@ pub enum SearchKey<'a> {
     /// Messages with an [RFC-2822] size larger than the specified
     /// number of octets.
     Larger(u32),
+
+    /// Messages with a modseq that have a value equal or greater than the given one.
+    /// Search can optionally be restricted to a specific metadata item type (eg. the Draft flag)
+    /// and/or a visibility scope (private, shared, or both).
+    ModSeq {
+        metadata_item: Option<MetadataItemSearch<'a>>,
+        modseq: NonZeroU64,
+    },
 
     /// Messages that have the \Recent flag set but not the \Seen flag.
     /// This is functionally equivalent to "(RECENT UNSEEN)".

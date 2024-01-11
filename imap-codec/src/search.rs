@@ -1,5 +1,5 @@
 use abnf_core::streaming::sp;
-use imap_types::{command::CommandBody, core::NonEmptyVec, search::SearchKey};
+use imap_types::{command::CommandBody, core::NonEmptyVec, search::{SearchKey, MetadataItemSearch, MetadataItemType}};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -9,7 +9,7 @@ use nom::{
 };
 
 use crate::{
-    core::{astring, atom, charset, number},
+    core::{astring, atom, charset, number, nz_number64, quoted},
     datetime::date,
     decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
     fetch::header_fld_name,
@@ -109,6 +109,12 @@ fn search_key_limited<'a>(
 
     let search_key =
         move |input: &'a [u8]| search_key_limited(input, remaining_recursion.saturating_sub(1));
+
+    let metadata_item_type = alt((
+        value(MetadataItemType::Private, tag_no_case(b"priv")),
+        value(MetadataItemType::Shared, tag_no_case(b"shared")),
+        value(MetadataItemType::All, tag_no_case(b"all")),
+    ));
 
     alt((
         alt((
@@ -212,6 +218,18 @@ fn search_key_limited<'a>(
                 |(_, _, val)| SearchKey::Uid(val),
             ),
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
+            map(
+                tuple((
+                    tag_no_case(b"MODSEQ"), 
+                    sp, 
+                    opt(map(
+                        delimited(tag(b"("), tuple((quoted, sp, metadata_item_type)), tag(b") ")), 
+                        |(entry_name, _, entry_type)| MetadataItemSearch { entry_name, entry_type } ,
+                    )),
+                    nz_number64
+                )),
+                |(_, _, _opt, modseq)| SearchKey::ModSeq { metadata_item: None, modseq },
+            ),
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(sp, search_key), tag(b")")),
