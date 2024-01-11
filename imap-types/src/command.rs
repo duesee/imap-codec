@@ -3,6 +3,7 @@
 //! See <https://tools.ietf.org/html/rfc3501#section-6>.
 
 use std::borrow::Cow;
+use std::num::NonZeroU64;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -16,7 +17,7 @@ use crate::core::{IString, NString};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
-    core::{Atom, AString, Charset, Literal, NonEmptyVec, Tag},
+    core::{AString, Charset, Literal, NonEmptyVec, Tag},
     datetime::DateTime,
     extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
     fetch::MacroOrMessageDataItemNames,
@@ -387,7 +388,7 @@ pub enum CommandBody<'a> {
         /// Mailbox.
         mailbox: Mailbox<'a>,
         /// Optional parameters according to RFC466 section 2.1
-        parameters: Option<NonEmptyVec<Atom<'a>>>,
+        modifiers: Vec<SelectExamineModifier>,
     },
 
     /// Unselect a mailbox.
@@ -418,7 +419,7 @@ pub enum CommandBody<'a> {
         /// Mailbox.
         mailbox: Mailbox<'a>,
         /// Optional parameters according to RFC466 section 2.1
-        parameters: Option<NonEmptyVec<Atom<'a>>>,
+        modifiers: Vec<SelectExamineModifier>,
     },
 
     /// ### 6.3.3.  CREATE Command
@@ -1049,6 +1050,8 @@ pub enum CommandBody<'a> {
     Fetch {
         /// Set of messages.
         sequence_set: SequenceSet,
+        /// Fetch modifiers
+        modifiers: Vec<FetchModifier>,
         /// Message data items (or a macro).
         macro_or_item_names: MacroOrMessageDataItemNames<'a>,
         /// Use UID variant.
@@ -1115,7 +1118,7 @@ pub enum CommandBody<'a> {
         /// Flags.
         flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
         /// Modifiers.
-        modifiers: Vec<(Atom<'a>, StoreModifier<'a>)>,
+        modifiers: Vec<StoreModifier>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1379,6 +1382,30 @@ pub enum CommandBody<'a> {
     },
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SelectExamineModifier {
+    Condstore,
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FetchModifier {
+    ChangedSince(NonZeroU64),
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StoreModifier {
+    UnchangedSince(NonZeroU64),
+}
+
 impl<'a> CommandBody<'a> {
     /// Prepend a tag to finalize the command body to a command.
     pub fn tag<T>(self, tag: T) -> Result<Command<'a>, T::Error>
@@ -1433,7 +1460,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Select {
             mailbox: mailbox.try_into()?,
-            parameters: None,
+            modifiers: vec![],
         })
     }
 
@@ -1444,7 +1471,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Examine {
             mailbox: mailbox.try_into()?,
-            parameters: None,
+            modifiers: vec![],
         })
     }
 
@@ -1573,7 +1600,7 @@ impl<'a> CommandBody<'a> {
     }
 
     /// Construct a FETCH command.
-    pub fn fetch<S, I>(sequence_set: S, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
+    pub fn fetch<S, I>(sequence_set: S, modifiers: Vec<FetchModifier>, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
     where
         S: TryInto<SequenceSet>,
         I: Into<MacroOrMessageDataItemNames<'a>>,
@@ -1583,6 +1610,7 @@ impl<'a> CommandBody<'a> {
         Ok(CommandBody::Fetch {
             sequence_set,
             macro_or_item_names: macro_or_item_names.into(),
+            modifiers,
             uid,
         })
     }
@@ -1593,7 +1621,7 @@ impl<'a> CommandBody<'a> {
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag<'a>>,
-        modifiers: Vec<(Atom<'a>, StoreModifier<'a>)>,
+        modifiers: Vec<StoreModifier>,
         uid: bool,
     ) -> Result<Self, S::Error>
     where
@@ -1668,15 +1696,6 @@ impl<'a> CommandBody<'a> {
             Self::Id { .. } => "ID",
         }
     }
-}
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StoreModifier<'a> {
-    Value(u32),
-    SequenceSet(SequenceSet),
-    Arbitrary(AString<'a>),
 }
 
 /// Error-related types.

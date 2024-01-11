@@ -7,8 +7,8 @@ use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use imap_types::{
     auth::AuthMechanism,
-    command::{Command, CommandBody, StoreModifier},
-    core::{AString, NonEmptyVec},
+    command::{Command, CommandBody, FetchModifier, SelectExamineModifier, StoreModifier},
+    core::AString,
     fetch::{Macro, MacroOrMessageDataItemNames},
     flag::{Flag, StoreResponse, StoreType},
     secret::Secret,
@@ -25,7 +25,7 @@ use nom::{
 use crate::extensions::id::id;
 use crate::{
     auth::auth_type,
-    core::{astring, atom, base64, literal, number, tag_imap},
+    core::{astring, base64, literal, nz_number64, tag_imap},
     datetime::date_time,
     decode::{IMAPErrorKind, IMAPResult},
     extensions::{
@@ -190,17 +190,21 @@ pub(crate) fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `examine = "EXAMINE" SP mailbox`
 pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let modifier = alt((
+        value(SelectExamineModifier::Condstore, tag_no_case(b"CONDSTORE")),
+    ));
+
     let mut parser = tuple((
         tag_no_case(b"EXAMINE"),
         sp, 
         mailbox,
-        opt(tuple((sp, delimited(tag(b"("), separated_list1(sp, atom), tag(b")"))))),
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
     ));
 
-    let (remaining, (_, _, mailbox, maybe_params)) = parser(input)?;
-    let final_params = maybe_params.map(|(_, elems)| NonEmptyVec::unvalidated(elems));
+    let (remaining, (_, _, mailbox, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
-    Ok((remaining, CommandBody::Examine { mailbox, parameters: final_params }))
+    Ok((remaining, CommandBody::Examine { mailbox, modifiers }))
 }
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
@@ -252,17 +256,21 @@ pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `select = "SELECT" SP mailbox`
 pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let modifier = alt((
+        value(SelectExamineModifier::Condstore, tag_no_case(b"CONDSTORE")),
+    ));
+
     let mut parser = tuple((
         tag_no_case(b"SELECT"), 
         sp, 
         mailbox,
-        opt(tuple((sp, delimited(tag(b"("), separated_list1(sp, atom), tag(b")"))))),
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
     ));
 
-    let (remaining, (_, _, mailbox, maybe_params)) = parser(input)?;
-    let final_params = maybe_params.map(|(_, elems)| NonEmptyVec::unvalidated(elems));
+    let (remaining, (_, _, mailbox, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
-    Ok((remaining, CommandBody::Select { mailbox, parameters: final_params }))
+    Ok((remaining, CommandBody::Select { mailbox, modifiers }))
 }
 
 /// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
@@ -437,6 +445,14 @@ pub(crate) fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                                      "FAST" /
 ///                                      fetch-att / "(" fetch-att *(SP fetch-att) ")")`
 pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let modifier = alt((
+        map(
+            tuple((tag_no_case(b"CHANGEDSINCE"), sp, nz_number64)),
+            |(_, _, val)| FetchModifier::ChangedSince(val),
+        ),
+    ));
+
+
     let mut parser = tuple((
         tag_no_case(b"FETCH"),
         sp,
@@ -463,15 +479,18 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
                 MacroOrMessageDataItemNames::MessageDataItemNames,
             ),
         )),
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
     ));
 
-    let (remaining, (_, _, sequence_set, _, macro_or_item_names)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, macro_or_item_names, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
     Ok((
         remaining,
         CommandBody::Fetch {
             sequence_set,
             macro_or_item_names,
+            modifiers,
             uid: false,
         },
     ))
@@ -479,18 +498,23 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `store = "STORE" SP sequence-set SP store-att-flags`
 pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let modifier_val_parser = alt((
-        map(number, |num| StoreModifier::Value(num)),
-        map(sequence_set, |sq| StoreModifier::SequenceSet(sq)), 
-        map(astring, |astr| StoreModifier::Arbitrary(astr)),
+    let modifiers = alt((
+        map(
+            tuple((tag_no_case(b"UNCHANGEDSINCE"), sp, nz_number64)),
+            |(_, _, val)| StoreModifier::UnchangedSince(val),
+        ),
     ));
-    let modifiers_parser = opt(delimited(
-        tag(b"("), 
-        separated_list1(sp, map(tuple((atom, sp, modifier_val_parser)), |(k, _, v)| (k, v))), 
-        tag(b") ")));
-    let mut parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, modifiers_parser, store_att_flags));
 
-    let (remaining, (_, _, sequence_set, _, maybe_modifiers, (kind, response, flags))) = parser(input)?;
+    let mut parser = tuple((
+        tag_no_case(b"STORE"), 
+        sp, 
+        sequence_set, 
+        opt(preceded(sp, delimited(tag("("), separated_list1(sp, modifiers), tag(")")))), 
+        sp, 
+        store_att_flags
+    ));
+
+    let (remaining, (_, _, sequence_set, maybe_modifiers, _, (kind, response, flags))) = parser(input)?;
     let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
     Ok((

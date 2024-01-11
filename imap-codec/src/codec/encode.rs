@@ -55,7 +55,7 @@ use imap_types::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
         MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
-    command::{Command, CommandBody, StoreModifier},
+    command::{Command, CommandBody, StoreModifier, FetchModifier, SelectExamineModifier},
     core::{
         AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
         QuotedChar, Tag, Text,
@@ -325,30 +325,26 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 password.declassify().encode_ctx(ctx)
             }
-            CommandBody::Select { mailbox, parameters } => {
+            CommandBody::Select { mailbox, modifiers } => {
                 ctx.write_all(b"SELECT")?;
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)?;
-                if let Some(p) = parameters {
+                if !modifiers.is_empty() {
                     ctx.write_all(b" (")?;
-                    for atom in p.as_ref().iter() {
-                        atom.encode_ctx(ctx)?;
-                    }
+                    join_serializable(modifiers, b" ", ctx)?;
                     ctx.write_all(b")")?;
                 }
 
                 Ok(())
             }
             CommandBody::Unselect => ctx.write_all(b"UNSELECT"),
-            CommandBody::Examine { mailbox, parameters } => {
+            CommandBody::Examine { mailbox, modifiers } => {
                 ctx.write_all(b"EXAMINE")?;
                 ctx.write_all(b" ")?;
                 mailbox.encode_ctx(ctx)?;
-                if let Some(p) = parameters {
+                if !modifiers.is_empty() {
                     ctx.write_all(b" (")?;
-                    for atom in p.as_ref().iter() {
-                        atom.encode_ctx(ctx)?;
-                    }
+                    join_serializable(modifiers, b" ", ctx)?;
                     ctx.write_all(b")")?;
                 }
 
@@ -463,6 +459,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             }
             CommandBody::Fetch {
                 sequence_set,
+                modifiers,
                 macro_or_item_names,
                 uid,
             } => {
@@ -470,6 +467,12 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     ctx.write_all(b"UID FETCH ")?;
                 } else {
                     ctx.write_all(b"FETCH ")?;
+                }
+
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
                 }
 
                 sequence_set.encode_ctx(ctx)?;
@@ -495,28 +498,8 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
 
                 if !modifiers.is_empty() {
                     ctx.write_all(b" (")?;
-                    let mut mod_iter = modifiers.iter().peekable();
-                    while let Some((k, x)) = mod_iter.next() {
-                        k.encode_ctx(ctx)?;
-                        ctx.write_all(b" ")?;
-                        match x {
-                            StoreModifier::Value(num) => {
-                                num.encode_ctx(ctx)?;
-                            },
-                            StoreModifier::SequenceSet(seq) => {
-                                seq.encode_ctx(ctx)?;
-                            },
-                            StoreModifier::Arbitrary(val) => {
-                                ctx.write_all(b"(")?;
-                                val.encode_ctx(ctx)?;
-                                ctx.write_all(b")")?;
-                            }
-                        }
-                        if mod_iter.peek().is_some() {
-                            ctx.write_all(b" ")?;
-                        }
-                    }
-                    ctx.write_all(b") ")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
                 }
 
                 match kind {
@@ -724,6 +707,36 @@ impl<'a> EncodeIntoContext for ListMailbox<'a> {
 impl<'a> EncodeIntoContext for ListCharString<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.as_ref())
+    }
+}
+
+impl<'a> EncodeIntoContext for SelectExamineModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            SelectExamineModifier::Condstore => ctx.write_all(b"CONDSTORE"),
+        }
+    }
+}
+
+impl<'a> EncodeIntoContext for FetchModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            FetchModifier::ChangedSince(val) => {
+                ctx.write_all(b"CHANGEDSINCE ")?;
+                val.encode_ctx(ctx)
+            }
+        }
+    }
+}
+
+impl<'a> EncodeIntoContext for StoreModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            StoreModifier::UnchangedSince(val) => {
+                ctx.write_all(b"UNCHANGEDSINCE ")?;
+                val.encode_ctx(ctx)
+            }
+        }
     }
 }
 
