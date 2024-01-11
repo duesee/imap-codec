@@ -15,7 +15,7 @@ use nom::{
 };
 
 use crate::{
-    core::{astring, nil, number, nz_number, quoted_char, string},
+    core::{astring, nil, number, nz_number, nz_number64, quoted_char, string},
     decode::IMAPResult,
     extensions::quota::{quota_response, quotaroot_response},
     flag::{flag_list, mbx_list_flags},
@@ -82,8 +82,12 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             },
         ),
         map(
-            tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
-            |(_, nums)| Data::Search(nums),
+            tuple((
+                tag_no_case(b"SEARCH"), 
+                many0(preceded(sp, nz_number)), 
+                opt(delimited(tag_no_case(b"(MODSEQ "), nz_number64, tag(b")")))
+            )),
+            |(_, nums, modseq)| Data::Search(nums, modseq),
         ),
         map(
             tuple((

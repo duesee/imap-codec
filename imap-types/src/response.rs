@@ -3,7 +3,7 @@
 use std::{
     borrow::Cow,
     fmt::{Debug, Display, Formatter},
-    num::{NonZeroU32, TryFromIntError},
+    num::{NonZeroU32, NonZeroU64, TryFromIntError},
 };
 
 #[cfg(feature = "arbitrary")]
@@ -426,7 +426,10 @@ pub enum Data<'a> {
     /// search criteria.  For SEARCH, these are message sequence numbers;
     /// for UID SEARCH, these are unique identifiers.  Each number is
     /// delimited by a space.
-    Search(Vec<NonZeroU32>),
+    ///
+    /// Optionally, a modseq value can be set to inform the client the highest
+    /// modset in the set of returned messages.
+    Search(Vec<NonZeroU32>, Option<NonZeroU64>),
 
     /// ### 7.2.6.  FLAGS Response
     ///

@@ -1280,12 +1280,18 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 join_serializable(items, b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
-            Data::Search(seqs) => {
+            Data::Search(seqs, maybe_modseq) => {
                 if seqs.is_empty() {
                     ctx.write_all(b"* SEARCH")?;
                 } else {
                     ctx.write_all(b"* SEARCH ")?;
                     join_serializable(seqs, b" ", ctx)?;
+                    if let Some(modseq) = maybe_modseq {
+                        ctx.write_all(b" (MODSEQ ")?;
+                        modseq.encode_ctx(ctx)?;
+                        ctx.write_all(b")")?;
+                    }
+                    
                 }
             }
             Data::Flags(flags) => {
