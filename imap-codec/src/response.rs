@@ -452,7 +452,7 @@ mod tests {
                     2.try_into().unwrap(),
                     3.try_into().unwrap(),
                     42.try_into().unwrap(),
-                ])),
+                ], None)),
             ),
             (b"* 42 EXISTS\r\n", b"", Response::Data(Data::Exists(42))),
             (
