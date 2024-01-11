@@ -1890,6 +1890,7 @@ mod tests {
             ),
             CommandBody::fetch(
                 "1",
+                vec![],
                 vec![MessageDataItemName::BodyExt {
                     partial: None,
                     section: Some(Section::Part(Part(
@@ -1902,7 +1903,7 @@ mod tests {
                 false,
             )
             .unwrap(),
-            CommandBody::fetch("1:*,2,3", Macro::Full, true).unwrap(),
+            CommandBody::fetch("1:*,2,3", vec![], Macro::Full, true).unwrap(),
             CommandBody::store(
                 "1,2:*",
                 StoreType::Remove,
@@ -1957,7 +1958,7 @@ mod tests {
             (
                 CommandBody::Select {
                     mailbox: Mailbox::Inbox,
-                    parameters: None,
+                    modifiers: vec![],
                 },
                 "SELECT",
             ),
@@ -1965,7 +1966,7 @@ mod tests {
             (
                 CommandBody::Examine {
                     mailbox: Mailbox::Inbox,
-                    parameters: None,
+                    modifiers: vec![],
                 },
                 "EXAMINE",
             ),
@@ -2045,6 +2046,7 @@ mod tests {
                 CommandBody::Fetch {
                     sequence_set: SequenceSet::try_from(1u32).unwrap(),
                     macro_or_item_names: MacroOrMessageDataItemNames::Macro(Macro::Full),
+                    modifiers: vec![],
                     uid: true,
                 },
                 "FETCH",

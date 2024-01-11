@@ -434,7 +434,7 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
-                            parameters: None,
+                            modifiers: vec![],
                         },
                     )
                     .unwrap(),
@@ -448,7 +448,7 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
-                            parameters: None,
+                            modifiers: vec![],
                         },
                     )
                     .unwrap(),
