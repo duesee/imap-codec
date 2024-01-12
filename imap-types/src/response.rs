@@ -959,6 +959,8 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_id")]
     /// See RFC 2971.
     Id,
+    /// See RFC 3691.
+    Unselect,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -988,6 +990,7 @@ impl<'a> Display for Capability<'a> {
             Self::Move => write!(f, "MOVE"),
             #[cfg(feature = "ext_id")]
             Self::Id => write!(f, "ID"),
+            Self::Unselect => write!(f, "UNSELECT"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1045,6 +1048,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "move" => Self::Move,
             #[cfg(feature = "ext_id")]
             "id" => Self::Id,
+            "unselect" => Self::Unselect,
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {
