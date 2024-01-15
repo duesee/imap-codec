@@ -61,7 +61,7 @@ jobs:
           cargo install cargo-fuzz
 
       - name: Setup | Cache dependencies
-        uses: Swatinem/rust-cache@a22603398250b864f7190077025cf752307154dc
+        uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84
         id: cache
         with:
           cache-all-crates: true
@@ -117,7 +117,7 @@ jobs:
           rustup toolchain install nightly --profile minimal
 
       - name: Setup | Cache dependencies
-        uses: Swatinem/rust-cache@a22603398250b864f7190077025cf752307154dc
+        uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84
         id: cache
         with:
           cache-all-crates: true
