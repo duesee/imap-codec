@@ -428,6 +428,9 @@ pub enum Data<'a> {
     /// delimited by a space.
     Search(Vec<NonZeroU32>),
 
+    #[cfg(feature = "ext_sort_thread")]
+    Sort(Vec<NonZeroU32>),
+
     /// ### 7.2.6.  FLAGS Response
     ///
     /// * Contents: flag parenthesized list
@@ -961,6 +964,8 @@ pub enum Capability<'a> {
     Id,
     /// See RFC 3691.
     Unselect,
+    #[cfg(feature = "ext_sort_thread")]
+    Sort,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -991,6 +996,8 @@ impl<'a> Display for Capability<'a> {
             #[cfg(feature = "ext_id")]
             Self::Id => write!(f, "ID"),
             Self::Unselect => write!(f, "UNSELECT"),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort => write!(f, "SORT"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }

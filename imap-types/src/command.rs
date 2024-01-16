@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::sort::SortCriterion;
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
@@ -1018,6 +1020,29 @@ pub enum CommandBody<'a> {
         uid: bool,
     },
 
+    #[cfg(feature = "ext_sort_thread")]
+    /// SORT command.
+    ///
+    /// The SORT command is a variant of SEARCH with sorting semantics for the results.
+    ///
+    /// Data:
+    /// * untagged responses: SORT
+    ///
+    /// Result:
+    /// * OK - sort completed
+    /// * NO - sort error: can't sort that charset or criteria
+    /// * BAD - command unknown or arguments invalid
+    Sort {
+        /// Sort criteria.
+        sort_criteria: NonEmptyVec<SortCriterion>,
+        /// Charset.
+        charset: Charset<'a>,
+        /// Search criteria.
+        search_criteria: SearchKey<'a>,
+        /// Use UID variant.
+        uid: bool,
+    },
+
     /// ### 6.4.5.  FETCH Command
     ///
     /// * Arguments:
@@ -1629,6 +1654,8 @@ impl<'a> CommandBody<'a> {
             Self::Authenticate { .. } => "AUTHENTICATE",
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort { .. } => "SORT",
             Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",
