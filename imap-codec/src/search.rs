@@ -1,5 +1,9 @@
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_sort_thread")]
+use imap_types::core::Charset;
 use imap_types::{command::CommandBody, core::NonEmptyVec, search::SearchKey};
+#[cfg(feature = "ext_sort_thread")]
+use nom::sequence::pair;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -219,6 +223,25 @@ fn search_key_limited<'a>(
             ),
         )),
     ))(input)
+}
+
+// Used by both, SORT and THREAD.
+#[cfg(feature = "ext_sort_thread")]
+/// ```abnf
+/// search-criteria = charset 1*(SP search-key)
+/// ```
+pub(crate) fn search_criteria(input: &[u8]) -> IMAPResult<&[u8], (Charset, SearchKey)> {
+    let mut parser = pair(charset, many1(preceded(sp, search_key(9))));
+
+    let (remaining, (charset, mut search_key)) = parser(input)?;
+
+    let search_key = match search_key.len() {
+        0 => unreachable!(),
+        1 => search_key.pop().unwrap(),
+        _ => SearchKey::And(NonEmptyVec::unvalidated(search_key)),
+    };
+
+    Ok((remaining, (charset, search_key)))
 }
 
 #[cfg(test)]

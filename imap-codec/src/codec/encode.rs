@@ -443,6 +443,24 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 criteria.encode_ctx(ctx)
             }
+            #[cfg(feature = "ext_sort_thread")]
+            CommandBody::Sort {
+                sort_criteria,
+                charset,
+                search_criteria,
+                uid,
+            } => {
+                if *uid {
+                    ctx.write_all(b"UID SORT (")?;
+                } else {
+                    ctx.write_all(b"SORT (")?;
+                }
+                join_serializable(sort_criteria.as_ref(), b" ", ctx)?;
+                ctx.write_all(b") ")?;
+                charset.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                search_criteria.encode_ctx(ctx)
+            }
             CommandBody::Fetch {
                 sequence_set,
                 macro_or_item_names,
@@ -1212,6 +1230,15 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     ctx.write_all(b"* SEARCH")?;
                 } else {
                     ctx.write_all(b"* SEARCH ")?;
+                    join_serializable(seqs, b" ", ctx)?;
+                }
+            }
+            #[cfg(feature = "ext_sort_thread")]
+            Data::Sort(seqs) => {
+                if seqs.is_empty() {
+                    ctx.write_all(b"* SORT")?;
+                } else {
+                    ctx.write_all(b"* SORT ")?;
                     join_serializable(seqs, b" ", ctx)?;
                 }
             }

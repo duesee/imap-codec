@@ -85,6 +85,11 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
+        #[cfg(feature = "ext_sort_thread")]
+        map(
+            preceded(tag_no_case(b"SORT"), many0(preceded(sp, nz_number))),
+            Data::Sort,
+        ),
         map(
             tuple((
                 tag_no_case(b"STATUS"),

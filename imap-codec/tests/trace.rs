@@ -1403,3 +1403,19 @@ fn test_trace_rfc2088() {
         .unwrap()
     })
 }
+
+#[cfg(feature = "ext_sort_thread")]
+#[test]
+fn test_trace_sort() {
+    let trace = br#"C: A282 SORT (SUBJECT) UTF-8 SINCE 1-Feb-1994
+S: * SORT 2 84 882
+S: A282 OK SORT completed
+C: A283 SORT (SUBJECT REVERSE DATE) UTF-8 ALL
+S: * SORT 5 3 4 1 2
+S: A283 OK SORT completed
+C: A284 SORT (SUBJECT) US-ASCII TEXT "not in mailbox"
+S: * SORT
+S: A284 OK SORT completed"#;
+
+    test_lines_of_trace(trace);
+}
