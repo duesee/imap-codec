@@ -18,6 +18,7 @@ starttls = ["imap-types/starttls"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
+ext_id = ["imap-types/ext_id"]
 ext_sort_thread = ["imap-types/ext_sort_thread"]
 # </Forward to imap-types>
 
@@ -27,6 +28,7 @@ ext = [
     "ext_condstore_qresync",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
+    "ext_id",
     "ext_sort_thread",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
