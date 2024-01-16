@@ -85,6 +85,8 @@ pub(crate) fn sort_key(input: &[u8]) -> IMAPResult<&[u8], SortKey> {
         value(SortKey::Size, tag_no_case("SIZE")),
         value(SortKey::Subject, tag_no_case("SUBJECT")),
         value(SortKey::To, tag_no_case("TO")),
+        value(SortKey::DisplayFrom, tag_no_case("DISPLAYFROM")),
+        value(SortKey::DisplayTo, tag_no_case("DISPLAYTO")),
     ))(input)
 }
 

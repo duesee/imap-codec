@@ -1,6 +1,8 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::sort::SortAlgorithm;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -68,6 +70,8 @@ implement_tryfrom! { MailboxOther<'a>, AString<'a> }
 implement_tryfrom! { CapabilityEnable<'a>, &str }
 implement_tryfrom! { Resource<'a>, &str }
 implement_tryfrom! { AuthMechanism<'a>, &str }
+#[cfg(feature = "ext_sort_thread")]
+implement_tryfrom! { SortAlgorithm<'a>, Atom<'a> }
 implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
