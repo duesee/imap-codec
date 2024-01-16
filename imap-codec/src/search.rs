@@ -3,13 +3,13 @@ use abnf_core::streaming::sp;
 use imap_types::core::Charset;
 use imap_types::{command::CommandBody, core::NonEmptyVec, search::SearchKey};
 #[cfg(feature = "ext_sort_thread")]
-use nom::sequence::pair;
+use nom::sequence::separated_pair;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, opt, value},
-    multi::{many1, separated_list1},
-    sequence::{delimited, preceded, tuple},
+    multi::separated_list1,
+    sequence::{delimited, tuple},
 };
 
 use crate::{
@@ -32,16 +32,11 @@ pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             tuple((sp, tag_no_case(b"CHARSET"), sp, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(sp, search_key(9))),
+        sp,
+        map(separated_list1(sp, search_key(9)), NonEmptyVec::unvalidated),
     ));
 
-    let (remaining, (_, charset, mut criteria)) = parser(input)?;
-
-    let criteria = match criteria.len() {
-        0 => unreachable!(),
-        1 => criteria.pop().unwrap(),
-        _ => SearchKey::And(NonEmptyVec::unvalidated(criteria)),
-    };
+    let (remaining, (_, charset, _, criteria)) = parser(input)?;
 
     Ok((
         remaining,
@@ -230,18 +225,18 @@ fn search_key_limited<'a>(
 /// ```abnf
 /// search-criteria = charset 1*(SP search-key)
 /// ```
-pub(crate) fn search_criteria(input: &[u8]) -> IMAPResult<&[u8], (Charset, SearchKey)> {
-    let mut parser = pair(charset, many1(preceded(sp, search_key(9))));
+pub(crate) fn search_criteria(
+    input: &[u8],
+) -> IMAPResult<&[u8], (Charset, NonEmptyVec<SearchKey>)> {
+    let mut parser = separated_pair(
+        charset,
+        sp,
+        map(separated_list1(sp, search_key(9)), NonEmptyVec::unvalidated),
+    );
 
-    let (remaining, (charset, mut search_key)) = parser(input)?;
+    let (remaining, (charset, search_keys)) = parser(input)?;
 
-    let search_key = match search_key.len() {
-        0 => unreachable!(),
-        1 => search_key.pop().unwrap(),
-        _ => SearchKey::And(NonEmptyVec::unvalidated(search_key)),
-    };
-
-    Ok((remaining, (charset, search_key)))
+    Ok((remaining, (charset, search_keys)))
 }
 
 #[cfg(test)]
@@ -267,11 +262,11 @@ mod tests {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: And(NonEmptyVec::from(Uid(SequenceSetData(
+                criteria: NonEmptyVec::from(And(NonEmptyVec::from(Uid(SequenceSetData(
                     vec![Single(Value(5.try_into().unwrap()))]
                         .try_into()
                         .unwrap()
-                )))),
+                ))))),
                 uid: false,
             }
         );
@@ -279,7 +274,7 @@ mod tests {
         let (_rem, val) = search(b"search (uid 5 or uid 5 (uid 1 uid 2) not uid 5)???").unwrap();
         let expected = CommandBody::Search {
             charset: None,
-            criteria: And(vec![
+            criteria: NonEmptyVec::from(And(vec![
                 Uid(SequenceSetData(
                     vec![Single(Value(5.try_into().unwrap()))]
                         .try_into()
@@ -313,7 +308,7 @@ mod tests {
                 )))),
             ]
             .try_into()
-            .unwrap()),
+            .unwrap())),
             uid: false,
         };
         assert_eq!(val, expected);

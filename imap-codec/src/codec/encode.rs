@@ -441,7 +441,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     charset.encode_ctx(ctx)?;
                 }
                 ctx.write_all(b" ")?;
-                criteria.encode_ctx(ctx)
+                join_serializable(criteria.as_ref(), b" ", ctx)
             }
             #[cfg(feature = "ext_sort_thread")]
             CommandBody::Sort {
@@ -459,7 +459,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b") ")?;
                 charset.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
-                search_criteria.encode_ctx(ctx)
+                join_serializable(search_criteria.as_ref(), b" ", ctx)
             }
             CommandBody::Fetch {
                 sequence_set,

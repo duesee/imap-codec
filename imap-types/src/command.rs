@@ -1015,7 +1015,7 @@ pub enum CommandBody<'a> {
         /// Charset.
         charset: Option<Charset<'a>>,
         /// Criteria.
-        criteria: SearchKey<'a>,
+        criteria: NonEmptyVec<SearchKey<'a>>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1038,7 +1038,7 @@ pub enum CommandBody<'a> {
         /// Charset.
         charset: Charset<'a>,
         /// Search criteria.
-        search_criteria: SearchKey<'a>,
+        search_criteria: NonEmptyVec<SearchKey<'a>>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1581,7 +1581,11 @@ impl<'a> CommandBody<'a> {
     }
 
     /// Construct a SEARCH command.
-    pub fn search(charset: Option<Charset<'a>>, criteria: SearchKey<'a>, uid: bool) -> Self {
+    pub fn search(
+        charset: Option<Charset<'a>>,
+        criteria: NonEmptyVec<SearchKey<'a>>,
+        uid: bool,
+    ) -> Self {
         CommandBody::Search {
             charset,
             criteria,
@@ -1836,25 +1840,25 @@ mod tests {
             CommandBody::Expunge,
             CommandBody::search(
                 None,
-                SearchKey::And(
+                NonEmptyVec::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
-                ),
+                )),
                 false,
             ),
             CommandBody::search(
                 None,
-                SearchKey::And(
+                NonEmptyVec::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
-                ),
+                )),
                 true,
             ),
             CommandBody::search(
                 None,
-                SearchKey::And(
+                NonEmptyVec::from(SearchKey::And(
                     vec![SearchKey::SequenceSet(SequenceSet(
                         vec![Sequence::Single(SeqOrUid::Value(42.try_into().unwrap()))]
                             .try_into()
@@ -1862,19 +1866,33 @@ mod tests {
                     ))]
                     .try_into()
                     .unwrap(),
-                ),
+                )),
                 true,
             ),
-            CommandBody::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
-            CommandBody::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
             CommandBody::search(
                 None,
-                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                NonEmptyVec::from(SearchKey::SequenceSet("42".try_into().unwrap())),
+                true,
+            ),
+            CommandBody::search(
+                None,
+                NonEmptyVec::from(SearchKey::SequenceSet("*".try_into().unwrap())),
+                true,
+            ),
+            CommandBody::search(
+                None,
+                NonEmptyVec::from(SearchKey::Or(
+                    Box::new(SearchKey::Draft),
+                    Box::new(SearchKey::All),
+                )),
                 true,
             ),
             CommandBody::search(
                 Some(Charset::try_from("UTF-8").unwrap()),
-                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                NonEmptyVec::from(SearchKey::Or(
+                    Box::new(SearchKey::Draft),
+                    Box::new(SearchKey::All),
+                )),
                 true,
             ),
             CommandBody::fetch(
@@ -2021,7 +2039,7 @@ mod tests {
             (
                 CommandBody::Search {
                     charset: None,
-                    criteria: SearchKey::Recent,
+                    criteria: NonEmptyVec::from(SearchKey::Recent),
                     uid: true,
                 },
                 "SEARCH",
