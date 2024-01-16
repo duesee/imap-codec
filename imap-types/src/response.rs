@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::sort::SortAlgorithm;
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
@@ -965,7 +967,7 @@ pub enum Capability<'a> {
     /// See RFC 3691.
     Unselect,
     #[cfg(feature = "ext_sort_thread")]
-    Sort,
+    Sort(Option<SortAlgorithm<'a>>),
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -997,7 +999,9 @@ impl<'a> Display for Capability<'a> {
             Self::Id => write!(f, "ID"),
             Self::Unselect => write!(f, "UNSELECT"),
             #[cfg(feature = "ext_sort_thread")]
-            Self::Sort => write!(f, "SORT"),
+            Self::Sort(None) => write!(f, "SORT"),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1055,6 +1059,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "move" => Self::Move,
             #[cfg(feature = "ext_id")]
             "id" => Self::Id,
+            #[cfg(feature = "ext_sort_thread")]
+            "sort" => Self::Sort(None),
             "unselect" => Self::Unselect,
             _ => {
                 // TODO(efficiency)
@@ -1080,6 +1086,12 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 if let Ok(resource) = Resource::try_from(right.to_owned()) {
                                     return Self::QuotaRes(resource);
                                 }
+                            }
+                        }
+                        #[cfg(feature = "ext_sort_thread")]
+                        "sort" => {
+                            if let Ok(atom) = Atom::try_from(right) {
+                                return Self::Sort(Some(SortAlgorithm::from(atom)));
                             }
                         }
                         _ => {}
