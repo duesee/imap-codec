@@ -18,7 +18,7 @@ use crate::extensions::sort::SortCriterion;
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
-    core::{AString, Charset, Literal, NonEmptyVec, Tag},
+    core::{AString, Charset, Literal, Tag, Vec1},
     datetime::DateTime,
     extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
     fetch::MacroOrMessageDataItemNames,
@@ -1015,7 +1015,7 @@ pub enum CommandBody<'a> {
         /// Charset.
         charset: Option<Charset<'a>>,
         /// Criteria.
-        criteria: NonEmptyVec<SearchKey<'a>>,
+        criteria: Vec1<SearchKey<'a>>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1034,11 +1034,11 @@ pub enum CommandBody<'a> {
     /// * BAD - command unknown or arguments invalid
     Sort {
         /// Sort criteria.
-        sort_criteria: NonEmptyVec<SortCriterion>,
+        sort_criteria: Vec1<SortCriterion>,
         /// Charset.
         charset: Charset<'a>,
         /// Search criteria.
-        search_criteria: NonEmptyVec<SearchKey<'a>>,
+        search_criteria: Vec1<SearchKey<'a>>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1266,7 +1266,7 @@ pub enum CommandBody<'a> {
     /// ENABLE command.
     Enable {
         /// Capabilities to enable.
-        capabilities: NonEmptyVec<CapabilityEnable<'a>>,
+        capabilities: Vec1<CapabilityEnable<'a>>,
     },
 
     /// COMPRESS command.
@@ -1581,11 +1581,7 @@ impl<'a> CommandBody<'a> {
     }
 
     /// Construct a SEARCH command.
-    pub fn search(
-        charset: Option<Charset<'a>>,
-        criteria: NonEmptyVec<SearchKey<'a>>,
-        uid: bool,
-    ) -> Self {
+    pub fn search(charset: Option<Charset<'a>>, criteria: Vec1<SearchKey<'a>>, uid: bool) -> Self {
         CommandBody::Search {
             charset,
             criteria,
@@ -1743,7 +1739,7 @@ mod tests {
     use super::*;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal, NonEmptyVec},
+        core::{AString, Charset, IString, Literal, Vec1},
         datetime::DateTime,
         extensions::{
             compress::CompressionAlgorithm,
@@ -1840,7 +1836,7 @@ mod tests {
             CommandBody::Expunge,
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
@@ -1849,7 +1845,7 @@ mod tests {
             ),
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
@@ -1858,7 +1854,7 @@ mod tests {
             ),
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::SequenceSet(SequenceSet(
                         vec![Sequence::Single(SeqOrUid::Value(42.try_into().unwrap()))]
                             .try_into()
@@ -1871,17 +1867,17 @@ mod tests {
             ),
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::SequenceSet("42".try_into().unwrap())),
+                Vec1::from(SearchKey::SequenceSet("42".try_into().unwrap())),
                 true,
             ),
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::SequenceSet("*".try_into().unwrap())),
+                Vec1::from(SearchKey::SequenceSet("*".try_into().unwrap())),
                 true,
             ),
             CommandBody::search(
                 None,
-                NonEmptyVec::from(SearchKey::Or(
+                Vec1::from(SearchKey::Or(
                     Box::new(SearchKey::Draft),
                     Box::new(SearchKey::All),
                 )),
@@ -1889,7 +1885,7 @@ mod tests {
             ),
             CommandBody::search(
                 Some(Charset::try_from("UTF-8").unwrap()),
-                NonEmptyVec::from(SearchKey::Or(
+                Vec1::from(SearchKey::Or(
                     Box::new(SearchKey::Draft),
                     Box::new(SearchKey::All),
                 )),
@@ -2039,7 +2035,7 @@ mod tests {
             (
                 CommandBody::Search {
                     charset: None,
-                    criteria: NonEmptyVec::from(SearchKey::Recent),
+                    criteria: Vec1::from(SearchKey::Recent),
                     uid: true,
                 },
                 "SEARCH",
@@ -2073,7 +2069,7 @@ mod tests {
             (CommandBody::Idle, "IDLE"),
             (
                 CommandBody::Enable {
-                    capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
+                    capabilities: Vec1::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
                 },
                 "ENABLE",
             ),

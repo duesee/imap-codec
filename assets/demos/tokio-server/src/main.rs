@@ -3,7 +3,7 @@ use argon2::Argon2;
 use futures::{SinkExt, StreamExt};
 use imap_codec::imap_types::{
     command::CommandBody,
-    core::NonEmptyVec,
+    core::Vec1,
     response::{Capability, CommandContinuationRequest, Data, Greeting, Response, Status},
 };
 use tokio::{self, net::TcpListener};
@@ -63,9 +63,8 @@ async fn main() -> Result<(), Error> {
 
                 match (cmd.tag, cmd.body) {
                     (tag, CommandBody::Capability) => {
-                        let rsp = Response::Data(Data::Capability(NonEmptyVec::from(
-                            Capability::Imap4Rev1,
-                        )));
+                        let rsp =
+                            Response::Data(Data::Capability(Vec1::from(Capability::Imap4Rev1)));
                         framed.send(&rsp).await.context("Could not send response")?;
                         println!("S: {BLUE}{rsp:#?}{RESET}");
 

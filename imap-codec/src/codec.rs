@@ -54,7 +54,7 @@ mod tests {
     use imap_types::{
         auth::AuthenticateData,
         command::{Command, CommandBody},
-        core::{IString, Literal, LiteralMode, NString, NonEmptyVec, Tag},
+        core::{IString, Literal, LiteralMode, NString, Tag, Vec1},
         extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
@@ -148,9 +148,9 @@ mod tests {
                 b"",
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(1).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::Rfc822(NString(Some(
-                        IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
-                    )))),
+                    items: Vec1::from(MessageDataItem::Rfc822(NString(Some(IString::Literal(
+                        Literal::try_from(b"hello".as_ref()).unwrap(),
+                    ))))),
                 }),
             ),
         ]);

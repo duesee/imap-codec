@@ -20,7 +20,7 @@ use crate::core::{IString, NString};
 use crate::extensions::sort::SortAlgorithm;
 use crate::{
     auth::AuthMechanism,
-    core::{impl_try_from, AString, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
+    core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
     error::ValidationError,
     extensions::{
         compress::CompressionAlgorithm,
@@ -364,7 +364,7 @@ pub enum Data<'a> {
     /// OK response as part of a successful authentication.  It is
     /// unnecessary for a client to send a separate CAPABILITY command if
     /// it recognizes these automatic capabilities.
-    Capability(NonEmptyVec<Capability<'a>>),
+    Capability(Vec1<Capability<'a>>),
 
     /// ### 7.2.2. LIST Response
     ///
@@ -540,7 +540,7 @@ pub enum Data<'a> {
         /// Sequence number.
         seq: NonZeroU32,
         /// Message data items.
-        items: NonEmptyVec<MessageDataItem<'a>>,
+        items: Vec1<MessageDataItem<'a>>,
     },
 
     Enabled {
@@ -551,7 +551,7 @@ pub enum Data<'a> {
         /// Quota root.
         root: AString<'a>,
         /// List of quotas.
-        quotas: NonEmptyVec<QuotaGet<'a>>,
+        quotas: Vec1<QuotaGet<'a>>,
     },
 
     QuotaRoot {
@@ -572,7 +572,7 @@ pub enum Data<'a> {
 impl<'a> Data<'a> {
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability<'a>>>,
+        C: TryInto<Vec1<Capability<'a>>>,
     {
         Ok(Self::Capability(caps.try_into()?))
     }
@@ -609,7 +609,7 @@ impl<'a> Data<'a> {
     pub fn fetch<S, I>(seq: S, items: I) -> Result<Self, FetchError<S::Error, I::Error>>
     where
         S: TryInto<NonZeroU32>,
-        I: TryInto<NonEmptyVec<MessageDataItem<'a>>>,
+        I: TryInto<Vec1<MessageDataItem<'a>>>,
     {
         let seq = seq.try_into().map_err(FetchError::SeqOrUid)?;
         let items = items.try_into().map_err(FetchError::InvalidItems)?;
@@ -747,7 +747,7 @@ pub enum Code<'a> {
     /// capabilities list.  This makes it unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes this
     /// response.
-    Capability(NonEmptyVec<Capability<'a>>), // FIXME(misuse): List must contain IMAP4REV1
+    Capability(Vec1<Capability<'a>>), // FIXME(misuse): List must contain IMAP4REV1
 
     /// `PARSE`
     ///
@@ -850,7 +850,7 @@ impl<'a> Code<'a> {
 
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability<'a>>>,
+        C: TryInto<Vec1<Capability<'a>>>,
     {
         Ok(Self::Capability(caps.try_into()?))
     }

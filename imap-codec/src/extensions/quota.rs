@@ -5,7 +5,7 @@ use std::io::Write;
 use abnf_core::streaming::sp;
 use imap_types::{
     command::CommandBody,
-    core::{AString, NonEmptyVec},
+    core::{AString, Vec1},
     extensions::quota::{QuotaGet, QuotaSet, Resource},
     response::Data,
 };
@@ -111,7 +111,7 @@ pub(crate) fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
         Data::Quota {
             root,
             // Safety: Safe because we use `separated_list1` above.
-            quotas: NonEmptyVec::try_from(quotas).unwrap(),
+            quotas: Vec1::try_from(quotas).unwrap(),
         },
     ))
 }

@@ -10,8 +10,8 @@ use crate::{
         SinglePartExtensionData, SpecificFields,
     },
     core::{
-        AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, NonEmptyVec, Quoted,
-        QuotedChar, Tag, Text,
+        AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, Quoted, QuotedChar, Tag,
+        Text, Vec1,
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,
@@ -72,7 +72,7 @@ implement_tryfrom! { Resource<'a>, &str }
 implement_tryfrom! { AuthMechanism<'a>, &str }
 #[cfg(feature = "ext_sort_thread")]
 implement_tryfrom! { SortAlgorithm<'a>, Atom<'a> }
-implement_tryfrom_t! { NonEmptyVec<T>, Vec<T> }
+implement_tryfrom_t! { Vec1<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -243,9 +243,9 @@ impl<'a> Arbitrary<'a> for SearchKey<'a> {
                     };
 
                     if !keys.is_empty() {
-                        NonEmptyVec::try_from(keys).unwrap()
+                        Vec1::try_from(keys).unwrap()
                     } else {
-                        NonEmptyVec::from(make_search_key(u)?)
+                        Vec1::from(make_search_key(u)?)
                     }
                 }),
                 1 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
@@ -365,9 +365,9 @@ impl<'a> Arbitrary<'a> for BodyStructure<'a> {
                         };
 
                         if !bodies.is_empty() {
-                            NonEmptyVec::try_from(bodies).unwrap()
+                            Vec1::try_from(bodies).unwrap()
                         } else {
-                            NonEmptyVec::from(make_body_structure_terminator(u)?)
+                            Vec1::from(make_body_structure_terminator(u)?)
                         }
                     },
                     subtype: IString::arbitrary(u)?,
@@ -418,9 +418,9 @@ impl<'a> Arbitrary<'a> for BodyExtension<'a> {
                     };
 
                     if !body_extensions.is_empty() {
-                        NonEmptyVec::try_from(body_extensions).unwrap()
+                        Vec1::try_from(body_extensions).unwrap()
                     } else {
-                        NonEmptyVec::from(make_body_extension_terminator(u)?)
+                        Vec1::from(make_body_extension_terminator(u)?)
                     }
                 }),
                 _ => unreachable!(),

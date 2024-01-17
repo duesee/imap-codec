@@ -61,7 +61,7 @@
 //!
 //! use imap_types::{
 //!     body::{BasicFields, Body, BodyStructure, SinglePartExtensionData, SpecificFields},
-//!     core::{IString, NString, NonEmptyVec},
+//!     core::{IString, NString, Vec1},
 //!     fetch::MessageDataItem,
 //!     response::{Data, Response},
 //! };
@@ -69,7 +69,7 @@
 //! let fetch = {
 //!     let data = Data::Fetch {
 //!         seq: NonZeroU32::new(42).unwrap(),
-//!         items: NonEmptyVec::try_from(vec![
+//!         items: Vec1::try_from(vec![
 //!             MessageDataItem::Rfc822Size(1337),
 //!             MessageDataItem::Body(BodyStructure::Single {
 //!                 body: Body {

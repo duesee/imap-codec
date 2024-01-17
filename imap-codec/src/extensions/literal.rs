@@ -2,7 +2,7 @@
 mod tests {
     use imap_types::{
         command::{Command, CommandBody},
-        core::{Literal, NonEmptyVec},
+        core::{Literal, Vec1},
         response::{Capability, Code, Greeting},
     };
 
@@ -73,7 +73,7 @@ mod tests {
                 b"* OK [CAPABILITY LITERAL+] ...\r\n".as_ref(),
                 b"".as_ref(),
                 Greeting::ok(
-                    Some(Code::Capability(NonEmptyVec::from(Capability::LiteralPlus))),
+                    Some(Code::Capability(Vec1::from(Capability::LiteralPlus))),
                     "...",
                 )
                 .unwrap(),
@@ -82,9 +82,7 @@ mod tests {
                 b"* OK [CAPABILITY LITERAL-] ...\r\n?",
                 b"?",
                 Greeting::ok(
-                    Some(Code::Capability(NonEmptyVec::from(
-                        Capability::LiteralMinus,
-                    ))),
+                    Some(Code::Capability(Vec1::from(Capability::LiteralMinus))),
                     "...",
                 )
                 .unwrap(),

@@ -6,7 +6,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{AString, Atom, NonEmptyVec},
+    core::{AString, Atom, Vec1},
     datetime::NaiveDate,
     sequence::SequenceSet,
 };
@@ -26,7 +26,7 @@ pub enum SearchKey<'a> {
     //     and multiple search keys.
     //
     // See also the corresponding `search` parser.
-    And(NonEmptyVec<SearchKey<'a>>),
+    And(Vec1<SearchKey<'a>>),
 
     /// Messages with message sequence numbers corresponding to the
     /// specified message sequence number set.

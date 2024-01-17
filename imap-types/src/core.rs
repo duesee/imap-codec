@@ -1399,31 +1399,40 @@ impl<'a> AsRef<str> for Charset<'a> {
     }
 }
 
-/// A `Vec` that always contains >= 1 elements.
+/// A [`Vec`] containing >= N elements.
 ///
-/// Some messages in IMAP require a list of at least one element. We encoded these situations in a
-/// non-empty vector type to not produce invalid messages.
+/// Some messages in IMAP require a list of *at least N* elements.
+/// We encode these situations with a specific vector type to not produce invalid messages.
 ///
-/// The `Debug` implementation equals `Vec` with an attached `+` at the end.
+/// Notes:
+///
+/// * `Vec<T, 0>` must not be used. Please use the standard [`Vec`] instead.
+/// * `Vec<T, 1>` must not be used. Please use the alias [`Vec1<T>`] instead.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+pub struct VecN<T, const N: usize>(pub(crate) Vec<T>);
 
-impl<T> Debug for NonEmptyVec<T>
+impl<T, const N: usize> Debug for VecN<T, N>
 where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         self.0.fmt(f)?;
-        write!(f, "+")
+        match N {
+            0 => write!(f, "*"),
+            1 => write!(f, "+"),
+            _ => write!(f, "{{{},}}", N),
+        }
     }
 }
 
-impl<T> NonEmptyVec<T> {
+impl<T, const N: usize> VecN<T, N> {
     pub fn validate(value: &[T]) -> Result<(), ValidationError> {
-        if value.is_empty() {
-            return Err(ValidationError::new(ValidationErrorKind::Empty));
+        if value.len() < N {
+            return Err(ValidationError::new(ValidationErrorKind::NotEnough {
+                min: N,
+            }));
         }
 
         Ok(())
@@ -1450,13 +1459,13 @@ impl<T> NonEmptyVec<T> {
     }
 }
 
-impl<T> From<T> for NonEmptyVec<T> {
-    fn from(value: T) -> Self {
-        NonEmptyVec(vec![value])
+impl<T, const N: usize> From<[T; N]> for VecN<T, N> {
+    fn from(value: [T; N]) -> Self {
+        Self(Vec::from(value))
     }
 }
 
-impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
+impl<T, const N: usize> TryFrom<Vec<T>> for VecN<T, N> {
     type Error = ValidationError;
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
@@ -1466,7 +1475,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     }
 }
 
-impl<T> IntoIterator for NonEmptyVec<T> {
+impl<T, const N: usize> IntoIterator for VecN<T, N> {
     type Item = T;
     type IntoIter = IntoIter<Self::Item>;
 
@@ -1475,9 +1484,20 @@ impl<T> IntoIterator for NonEmptyVec<T> {
     }
 }
 
-impl<T> AsRef<[T]> for NonEmptyVec<T> {
+impl<T, const N: usize> AsRef<[T]> for VecN<T, N> {
     fn as_ref(&self) -> &[T] {
         &self.0
+    }
+}
+
+/// A [`Vec`] containing >= 1 elements, i.e., a non-empty vector.
+///
+/// The `Debug` implementation equals the standard [`Vec`] with an attached `+` at the end.
+pub type Vec1<T> = VecN<T, 1>;
+
+impl<T> From<T> for Vec1<T> {
+    fn from(value: T) -> Self {
+        VecN(vec![value])
     }
 }
 
@@ -1868,5 +1888,25 @@ mod tests {
             IString::try_from("\"AAA").unwrap(),
             IString::Quoted("\\\"AAA".try_into().unwrap())
         );
+    }
+
+    #[test]
+    fn test_vec_n() {
+        // Note: Don't use `VecN<T, 0>`, it's only a sanity test here.
+        assert!(VecN::<u8, 0>::try_from(vec![]).is_ok());
+        assert!(VecN::<u8, 0>::try_from(vec![1]).is_ok());
+        assert!(VecN::<u8, 0>::try_from(vec![1, 2]).is_ok());
+
+        assert!(VecN::<u8, 1>::try_from(vec![]).is_err());
+        assert!(VecN::<u8, 1>::try_from(vec![1]).is_ok());
+        assert!(VecN::<u8, 1>::try_from(vec![1, 2]).is_ok());
+
+        assert!(Vec1::<u8>::try_from(vec![]).is_err());
+        assert!(Vec1::<u8>::try_from(vec![1]).is_ok());
+        assert!(Vec1::<u8>::try_from(vec![1, 2]).is_ok());
+
+        assert!(VecN::<u8, 2>::try_from(vec![]).is_err());
+        assert!(VecN::<u8, 2>::try_from(vec![1]).is_err());
+        assert!(VecN::<u8, 2>::try_from(vec![1, 2]).is_ok());
     }
 }

@@ -22,6 +22,8 @@ impl Display for ValidationError {
 pub(crate) enum ValidationErrorKind {
     #[error("Must not be empty")]
     Empty,
+    #[error("Must have at least {min} elements")]
+    NotEnough { min: usize },
     #[error("Invalid value")]
     Invalid,
     #[error("Invalid byte b'\\x{byte:02x}' at index {at}")]
