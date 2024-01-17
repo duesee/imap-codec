@@ -17,14 +17,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::CommandBody,
-    core::{Atom, NonEmptyVec},
+    core::{Atom, Vec1},
     error::ValidationError,
 };
 
 impl<'a> CommandBody<'a> {
     pub fn enable<C>(capabilities: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<CapabilityEnable<'a>>>,
+        C: TryInto<Vec1<CapabilityEnable<'a>>>,
     {
         Ok(CommandBody::Enable {
             capabilities: capabilities.try_into()?,

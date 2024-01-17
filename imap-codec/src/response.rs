@@ -5,7 +5,7 @@ use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
-    core::{NonEmptyVec, Text},
+    core::{Text, Vec1},
     response::{
         Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
         Response, Status, StatusBody, StatusKind, Tagged,
@@ -184,7 +184,7 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 ///
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
-pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability>> {
+pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], Vec1<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
         sp,
@@ -193,7 +193,7 @@ pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Cap
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    Ok((rem, NonEmptyVec::unvalidated(caps)))
+    Ok((rem, Vec1::unvalidated(caps)))
 }
 
 /// `capability = ("AUTH=" auth-type) /
@@ -433,7 +433,7 @@ mod tests {
             (
                 b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
                 b"".as_ref(),
-                Response::Data(Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1))),
+                Response::Data(Data::Capability(Vec1::from(Capability::Imap4Rev1))),
             ),
             (
                 b"* LIST (\\Noselect) \"/\" bbb\r\n",
@@ -657,7 +657,7 @@ mod tests {
                                 language: vec![],
                                 tail: Some(Location{
                                     location: NString(None),
-                                    extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
+                                    extensions: vec![BodyExtension::List(Vec1::from(BodyExtension::Number(1337)))],
                                 })
                             })
                         })

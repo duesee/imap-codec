@@ -4,7 +4,7 @@ use imap_types::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
         MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
-    core::{IString, NString, NonEmptyVec},
+    core::{IString, NString, Vec1},
 };
 use nom::{
     branch::alt,
@@ -424,7 +424,7 @@ fn body_extension_limited<'a>(
         map(number, BodyExtension::Number),
         map(
             delimited(tag(b"("), separated_list1(sp, body_extension), tag(b")")),
-            |body_extensions| BodyExtension::List(NonEmptyVec::unvalidated(body_extensions)),
+            |body_extensions| BodyExtension::List(Vec1::unvalidated(body_extensions)),
         ),
     ))(input)
 }
@@ -459,7 +459,7 @@ fn body_type_mpart_limited(
         remaining,
         BodyStructure::Multi {
             // Safety: `unwrap` can't panic due to the use of `many1`.
-            bodies: NonEmptyVec::try_from(bodies).unwrap(),
+            bodies: Vec1::try_from(bodies).unwrap(),
             subtype,
             extension_data,
         },
@@ -672,14 +672,14 @@ mod tests {
             b"".as_ref(),
             Response::Data(Data::Fetch {
                 seq: NonZeroU32::try_from(3372220415).unwrap(),
-                items: NonEmptyVec::from(MessageDataItem::BodyStructure(
+                items: Vec1::from(MessageDataItem::BodyStructure(
                     BodyStructure::Multi {
-                        bodies: NonEmptyVec::from(BodyStructure::Multi {
-                            bodies: NonEmptyVec::from(BodyStructure::Multi {
-                                bodies: NonEmptyVec::from(BodyStructure::Multi {
-                                    bodies: NonEmptyVec::from(BodyStructure::Multi {
-                                        bodies: NonEmptyVec::from(BodyStructure::Multi {
-                                            bodies: NonEmptyVec::from(BodyStructure::Single {
+                        bodies: Vec1::from(BodyStructure::Multi {
+                            bodies: Vec1::from(BodyStructure::Multi {
+                                bodies: Vec1::from(BodyStructure::Multi {
+                                    bodies: Vec1::from(BodyStructure::Multi {
+                                        bodies: Vec1::from(BodyStructure::Multi {
+                                            bodies: Vec1::from(BodyStructure::Single {
                                                 body: Body {
                                                     basic: BasicFields {
                                                         parameter_list: vec![],

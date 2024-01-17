@@ -1776,7 +1776,7 @@ mod tests {
     use imap_types::{
         auth::AuthMechanism,
         command::{Command, CommandBody},
-        core::{AString, Literal, NString, NonEmptyVec},
+        core::{AString, Literal, NString, Vec1},
         fetch::MessageDataItem,
         response::{Data, Response},
         utils::escape_byte_string,
@@ -1903,7 +1903,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
+                    items: Vec1::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated(b"ABCDE".as_ref())),
@@ -1926,7 +1926,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
+                    items: Vec1::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated_non_sync(b"ABCDE".as_ref())),

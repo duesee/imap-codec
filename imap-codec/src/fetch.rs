@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use abnf_core::streaming::sp;
 use imap_types::{
-    core::{AString, NonEmptyVec},
+    core::{AString, Vec1},
     fetch::{MessageDataItem, MessageDataItemName, Part, PartSpecifier, Section},
 };
 use nom::{
@@ -89,12 +89,12 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
 /// `msg-att = "("
 ///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///            ")"`
-pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> {
+pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> {
     delimited(
         tag(b"("),
         map(
             separated_list1(sp, alt((msg_att_dynamic, msg_att_static))),
-            NonEmptyVec::unvalidated,
+            Vec1::unvalidated,
         ),
         tag(b")"),
     )(input)
@@ -248,11 +248,8 @@ pub(crate) fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> 
 /// `section-part = nz-number *("." nz-number)`
 ///
 /// Body part nesting
-pub(crate) fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> {
-    map(
-        separated_list1(tag(b"."), nz_number),
-        NonEmptyVec::unvalidated,
-    )(input)
+pub(crate) fn section_part(input: &[u8]) -> IMAPResult<&[u8], Vec1<NonZeroU32>> {
+    map(separated_list1(tag(b"."), nz_number), Vec1::unvalidated)(input)
 }
 
 /// `section-text = section-msgtext / "MIME"`
@@ -266,10 +263,10 @@ pub(crate) fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 }
 
 /// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
-pub(crate) fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
+pub(crate) fn header_list(input: &[u8]) -> IMAPResult<&[u8], Vec1<AString>> {
     map(
         delimited(tag(b"("), separated_list1(sp, header_fld_name), tag(b")")),
-        NonEmptyVec::unvalidated,
+        Vec1::unvalidated,
     )(input)
 }
 
@@ -427,47 +424,43 @@ mod tests {
     fn test_encode_section() {
         let tests = [
             (
-                Section::Part(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                Section::Part(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
                 b"1".as_ref(),
             ),
             (Section::Header(None), b"HEADER"),
             (
-                Section::Header(Some(Part(NonEmptyVec::from(
-                    NonZeroU32::try_from(1).unwrap(),
-                )))),
+                Section::Header(Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap())))),
                 b"1.HEADER",
             ),
             (
-                Section::HeaderFields(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                Section::HeaderFields(None, Vec1::from(AString::try_from("").unwrap())),
                 b"HEADER.FIELDS (\"\")",
             ),
             (
                 Section::HeaderFields(
-                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
-                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                    Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
+                    Vec1::from(AString::try_from("").unwrap()),
                 ),
                 b"1.HEADER.FIELDS (\"\")",
             ),
             (
-                Section::HeaderFieldsNot(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                Section::HeaderFieldsNot(None, Vec1::from(AString::try_from("").unwrap())),
                 b"HEADER.FIELDS.NOT (\"\")",
             ),
             (
                 Section::HeaderFieldsNot(
-                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
-                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                    Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
+                    Vec1::from(AString::try_from("").unwrap()),
                 ),
                 b"1.HEADER.FIELDS.NOT (\"\")",
             ),
             (Section::Text(None), b"TEXT"),
             (
-                Section::Text(Some(Part(NonEmptyVec::from(
-                    NonZeroU32::try_from(1).unwrap(),
-                )))),
+                Section::Text(Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap())))),
                 b"1.TEXT",
             ),
             (
-                Section::Mime(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                Section::Mime(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
                 b"1.MIME",
             ),
         ];

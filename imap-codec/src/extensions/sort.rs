@@ -3,7 +3,7 @@ use std::io::Write;
 use abnf_core::streaming::sp;
 use imap_types::{
     command::CommandBody,
-    core::NonEmptyVec,
+    core::Vec1,
     extensions::sort::{SortCriterion, SortKey},
 };
 use nom::{
@@ -48,13 +48,10 @@ pub(crate) fn sort(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// ```abnf
 /// sort-criteria = "(" sort-criterion *(SP sort-criterion) ")"
 /// ```
-pub(crate) fn sort_criteria(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<SortCriterion>> {
+pub(crate) fn sort_criteria(input: &[u8]) -> IMAPResult<&[u8], Vec1<SortCriterion>> {
     delimited(
         tag("("),
-        map(
-            separated_list1(sp, sort_criterion),
-            NonEmptyVec::unvalidated,
-        ),
+        map(separated_list1(sp, sort_criterion), Vec1::unvalidated),
         tag(")"),
     )(input)
 }

@@ -16,7 +16,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::NonEmptyVec,
+    core::Vec1,
     error::{ValidationError, ValidationErrorKind},
 };
 
@@ -34,11 +34,11 @@ pub const MAX: NonZeroU32 = match NonZeroU32::new(u32::MAX) {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SequenceSet(pub NonEmptyVec<Sequence>);
+pub struct SequenceSet(pub Vec1<Sequence>);
 
 impl From<Sequence> for SequenceSet {
     fn from(sequence: Sequence) -> Self {
-        Self(NonEmptyVec::from(sequence))
+        Self(Vec1::from(sequence))
     }
 }
 
@@ -79,7 +79,7 @@ impl TryFrom<Vec<Sequence>> for SequenceSet {
     type Error = ValidationError;
 
     fn try_from(sequences: Vec<Sequence>) -> Result<Self, Self::Error> {
-        Ok(Self(NonEmptyVec::try_from(sequences).map_err(|_| {
+        Ok(Self(Vec1::try_from(sequences).map_err(|_| {
             ValidationError::new(ValidationErrorKind::Empty)
         })?))
     }
@@ -90,7 +90,7 @@ impl TryFrom<Vec<NonZeroU32>> for SequenceSet {
 
     fn try_from(sequences: Vec<NonZeroU32>) -> Result<Self, Self::Error> {
         Ok(Self(
-            NonEmptyVec::try_from(
+            Vec1::try_from(
                 sequences
                     .into_iter()
                     .map(Sequence::from)
@@ -119,9 +119,9 @@ impl FromStr for SequenceSet {
             results.push(Sequence::try_from(seq)?);
         }
 
-        Ok(SequenceSet(NonEmptyVec::try_from(results).map_err(
-            |_| ValidationError::new(ValidationErrorKind::Empty),
-        )?))
+        Ok(SequenceSet(Vec1::try_from(results).map_err(|_| {
+            ValidationError::new(ValidationErrorKind::Empty)
+        })?))
     }
 }
 
@@ -617,15 +617,15 @@ mod tests {
     use std::num::NonZeroU32;
 
     use super::*;
-    use crate::core::NonEmptyVec;
+    use crate::core::Vec1;
 
     #[test]
     fn test_creation_of_sequence_from_u32() {
         assert_eq!(
             SequenceSet::try_from(1),
-            Ok(SequenceSet(NonEmptyVec::from(Sequence::Single(
-                SeqOrUid::Value(NonZeroU32::new(1).unwrap())
-            ))))
+            Ok(SequenceSet(Vec1::from(Sequence::Single(SeqOrUid::Value(
+                NonZeroU32::new(1).unwrap()
+            )))))
         );
         assert_eq!(
             SequenceSet::try_from(0),

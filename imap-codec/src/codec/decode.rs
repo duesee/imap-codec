@@ -350,7 +350,7 @@ mod tests {
 
     use imap_types::{
         command::{Command, CommandBody},
-        core::{IString, Literal, NString, NonEmptyVec},
+        core::{IString, Literal, NString, Vec1},
         extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
@@ -660,7 +660,7 @@ mod tests {
                     b"".as_ref(),
                     Response::Data(Data::Fetch {
                         seq: NonZeroU32::new(1).unwrap(),
-                        items: NonEmptyVec::from(MessageDataItem::Rfc822(NString(Some(
+                        items: Vec1::from(MessageDataItem::Rfc822(NString(Some(
                             IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
                         )))),
                     }),
