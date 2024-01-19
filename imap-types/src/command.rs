@@ -960,7 +960,9 @@ pub enum CommandBody<'a> {
     ///   Note: In this example, messages 3, 4, 7, and 11 had the
     ///   \Deleted flag set.  See the description of the EXPUNGE
     ///   response for further explanation.
-    Expunge,
+    Expunge { 
+        uid_sequence_set: Option<SequenceSet>,
+    },
 
     /// ### 6.4.4.  SEARCH Command
     ///
@@ -1680,7 +1682,7 @@ impl<'a> CommandBody<'a> {
             Self::Append { .. } => "APPEND",
             Self::Check => "CHECK",
             Self::Close => "CLOSE",
-            Self::Expunge => "EXPUNGE",
+            Self::Expunge { .. } => "EXPUNGE",
             Self::Search { .. } => "SEARCH",
             Self::Fetch { .. } => "FETCH",
             Self::Store { .. } => "STORE",
@@ -1844,7 +1846,7 @@ mod tests {
             .unwrap(),
             CommandBody::Check,
             CommandBody::Close,
-            CommandBody::Expunge,
+            CommandBody::Expunge { uid_sequence_set: None },
             CommandBody::search(
                 None,
                 SearchKey::And(
@@ -2033,7 +2035,9 @@ mod tests {
             ),
             (CommandBody::Check, "CHECK"),
             (CommandBody::Close, "CLOSE"),
-            (CommandBody::Expunge, "EXPUNGE"),
+            (CommandBody::Expunge {
+                uid_sequence_set: None,
+            }, "EXPUNGE"),
             (
                 CommandBody::Search {
                     charset: None,

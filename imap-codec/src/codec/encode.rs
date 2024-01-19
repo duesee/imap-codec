@@ -439,7 +439,14 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             }
             CommandBody::Check => ctx.write_all(b"CHECK"),
             CommandBody::Close => ctx.write_all(b"CLOSE"),
-            CommandBody::Expunge => ctx.write_all(b"EXPUNGE"),
+            CommandBody::Expunge { uid_sequence_set } => {
+                if let Some(seqset) = uid_sequence_set {
+                    ctx.write_all(b"UID EXPUNGE ")?;
+                    seqset.encode_ctx(ctx)
+                } else {
+                    ctx.write_all(b"EXPUNGE")
+                }
+            }
             CommandBody::Search {
                 charset,
                 criteria,

@@ -413,7 +413,7 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
-        value(CommandBody::Expunge, tag_no_case(b"EXPUNGE")),
+        value(CommandBody::Expunge { uid_sequence_set: None }, tag_no_case(b"EXPUNGE")),
         copy,
         fetch,
         store,
@@ -561,14 +561,25 @@ pub(crate) fn store_att_flags(
     Ok((remaining, (store_type, store_response, flag_list)))
 }
 
-/// `uid = "UID" SP (copy / fetch / search / store)`
+//  uid-expunge     = "UID" SP "EXPUNGE" SP sequence-set
+pub(crate) fn expunge_range(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let mut parser = preceded(
+        tuple((tag_no_case(b"EXPUNGE"), sp)),
+        map(sequence_set, |seq| CommandBody::Expunge {
+            uid_sequence_set: Some(seq),
+        }),
+    );
+    parser(input)
+}
+
+/// `uid = "UID" SP (copy / fetch / search / store / expunge)`
 ///
 /// Note: Unique identifiers used instead of message sequence numbers
 pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"UID"),
         sp,
-        alt((copy, fetch, search, store, r#move)),
+        alt((copy, fetch, search, store, r#move, expunge_range)),
     ));
 
     let (remaining, (_, _, mut cmd)) = parser(input)?;
@@ -579,6 +590,7 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         | CommandBody::Search { ref mut uid, .. }
         | CommandBody::Store { ref mut uid, .. }
         | CommandBody::Move { ref mut uid, .. } => *uid = true,
+        CommandBody::Expunge { .. } => (),
         _ => unreachable!(),
     }
 
