@@ -7,7 +7,7 @@ use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use imap_types::{
     auth::AuthMechanism,
-    command::{Command, CommandBody, FetchModifier, SelectExamineModifier, StoreModifier},
+    command::{Command, CommandBody, FetchModifier, SelectExamineModifier, StoreModifier, ListReturnItem},
     core::AString,
     fetch::{Macro, MacroOrMessageDataItemNames},
     flag::{Flag, StoreResponse, StoreType},
@@ -209,15 +209,36 @@ pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
 pub(crate) fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
+    let return_item = alt((
+        value(ListReturnItem::Subscribed, tag_no_case(b"SUBSCRIBED")),
+        value(ListReturnItem::Children, tag_no_case(b"CHILDREN")),
+        map(preceded(
+            tuple((tag_no_case(b"STATUS"), sp)),
+            delimited(
+                tag(b"("),
+                separated_list0(sp, status_att),
+                tag(b")"),
+            ),
+        ), |status_att| ListReturnItem::Status(status_att)),
+    ));
 
-    let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
+    let return_parser = preceded(
+        tuple((sp, tag_no_case(b"RETURN"), sp)), 
+        delimited(
+            tag(b"("), 
+            separated_list1(sp, return_item), 
+            tag(b")")
+        ));
+    let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox, opt(return_parser)));
+
+    let (remaining, (_, _, reference, _, mailbox_wildcard, maybe_return)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::List {
             reference,
             mailbox_wildcard,
+            r#return: maybe_return.unwrap_or(vec![]).into(),
         },
     ))
 }

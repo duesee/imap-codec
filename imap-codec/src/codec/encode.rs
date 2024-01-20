@@ -55,7 +55,7 @@ use imap_types::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
         MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
-    command::{Command, CommandBody, StoreModifier, FetchModifier, SelectExamineModifier},
+    command::{Command, CommandBody, StoreModifier, FetchModifier, SelectExamineModifier, ListReturnItem},
     core::{
         AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
         QuotedChar, Tag, Text,
@@ -383,12 +383,20 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             CommandBody::List {
                 reference,
                 mailbox_wildcard,
+                r#return,
             } => {
                 ctx.write_all(b"LIST")?;
                 ctx.write_all(b" ")?;
                 reference.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
-                mailbox_wildcard.encode_ctx(ctx)
+                mailbox_wildcard.encode_ctx(ctx)?;
+                if !r#return.is_empty() {
+                    ctx.write_all(b"(")?;
+                    join_serializable(r#return, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Lsub {
                 reference,
@@ -758,6 +766,20 @@ impl EncodeIntoContext for StatusDataItemName {
             Self::Deleted => ctx.write_all(b"DELETED"),
             Self::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
             Self::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
+        }
+    }
+}
+
+impl EncodeIntoContext for ListReturnItem {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            Self::Subscribed => ctx.write_all(b"SUBSCRIBED"),
+            Self::Children => ctx.write_all(b"CHILDREN"),
+            Self::Status(attr) => {
+                ctx.write_all(b"STATUS (")?;
+                join_serializable(attr, b" ", ctx)?;
+                ctx.write_all(b")")
+            }
         }
     }
 }

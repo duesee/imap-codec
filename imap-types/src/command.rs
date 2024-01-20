@@ -736,6 +736,29 @@ pub enum CommandBody<'a> {
         reference: Mailbox<'a>,
         /// Mailbox (wildcard).
         mailbox_wildcard: ListMailbox<'a>,
+        /// Return Options
+        /// 
+        /// ---
+        /// 
+        /// The return options defined in this specification (RFC5258) are as follows.
+        /// SUBSCRIBED -  causes the LIST command to return subscription state
+        ///   for all matching mailbox names.  The "\Subscribed" attribute MUST
+        ///   be supported and MUST be accurately computed when the SUBSCRIBED
+        ///   return option is specified.  Further, all mailbox flags MUST be
+        ///   accurately computed (this differs from the behavior of the LSUB
+        ///   command).
+        /// CHILDREN -  requests mailbox child information as originally proposed
+        ///   in [CMbox].  See Section 4, below, for details.  This option MUST
+        ///   be supported by all servers.
+        /// 
+        /// ---
+        ///
+        /// STATUS Return Option to LIST Command
+        ///
+        /// In order to achieve this goal, this document
+        /// is extending the LIST command with a new return option, STATUS.  This
+        /// option takes STATUS data items as parameters.
+        r#return: Cow<'a, [ListReturnItem]>,
     },
 
     /// ### 6.3.9.  LSUB Command
@@ -1388,6 +1411,16 @@ pub enum CommandBody<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ListReturnItem {
+    Subscribed,
+    Children,
+    Status(Vec<StatusDataItemName>),
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SelectExamineModifier {
     Condstore,
 }
@@ -1541,6 +1574,7 @@ impl<'a> CommandBody<'a> {
         Ok(CommandBody::List {
             reference: reference.try_into().map_err(ListError::Reference)?,
             mailbox_wildcard: mailbox_wildcard.try_into().map_err(ListError::Mailbox)?,
+            r#return: [][..].into(),
         })
     }
 
@@ -2007,6 +2041,7 @@ mod tests {
                 CommandBody::List {
                     reference: Mailbox::Inbox,
                     mailbox_wildcard: ListMailbox::try_from("").unwrap(),
+                    r#return: [][..].into(),
                 },
                 "LIST",
             ),
