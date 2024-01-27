@@ -3,6 +3,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::sort::SortAlgorithm;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::ThreadingAlgorithm;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -74,6 +76,8 @@ implement_tryfrom! { AuthMechanism<'a>, &str }
 implement_tryfrom! { SortAlgorithm<'a>, Atom<'a> }
 implement_tryfrom_t! { Vec1<T>, Vec<T> }
 implement_tryfrom_t! { Vec2<T>, Vec<T> }
+#[cfg(feature = "ext_sort_thread")]
+implement_tryfrom! { ThreadingAlgorithm<'a>, Atom<'a> }
 
 impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
