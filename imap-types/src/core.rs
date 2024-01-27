@@ -1501,6 +1501,17 @@ impl<T> From<T> for Vec1<T> {
     }
 }
 
+/// A [`Vec`] containing >= 2 elements.
+///
+/// The `Debug` implementation equals the standard [`Vec`] with an attached `{2,}` at the end.
+pub type Vec2<T> = VecN<T, 2>;
+
+impl<T> From<(T, T)> for Vec2<T> {
+    fn from((v1, v2): (T, T)) -> Self {
+        VecN(vec![v1, v2])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::from_utf8;
