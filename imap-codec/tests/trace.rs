@@ -1221,7 +1221,8 @@ S: * CAPABILITY IMAP4rev1 ID LITERAL+ ENABLE X-GOOD-IDEA
 S: t3 OK foo again
 C: a1 ENABLE CONDSTORE
 S: * ENABLED CONDSTORE
-S: a1 OK Conditional Store enabled"#;
+S: a1 OK Conditional Store enabled
+"#;
 
     test_lines_of_trace(trace);
 }
@@ -1415,7 +1416,25 @@ S: * SORT 5 3 4 1 2
 S: A283 OK SORT completed
 C: A284 SORT (SUBJECT) US-ASCII TEXT "not in mailbox"
 S: * SORT
-S: A284 OK SORT completed"#;
+S: A284 OK SORT completed
+"#;
+
+    test_lines_of_trace(trace);
+}
+
+#[cfg(feature = "ext_sort_thread")]
+#[test]
+fn test_trace_thread() {
+    let trace = br#"C: A283 THREAD ORDEREDSUBJECT UTF-8 SINCE 5-MAR-2000
+S: * THREAD (166)(167)(168)(169)(172)(170)(171)(173)(174 (175)(176)(178)(181)(180))(179)(177 (183)(182)(188)(184)(185)(186)(187)(189))(190)(191)(192)(193)(194 195)(196 (197)(198))(199)(200 202)(201)(203)(204)(205)(206 207)(208)
+S: A283 OK THREAD completed
+C: A284 THREAD ORDEREDSUBJECT US-ASCII TEXT "gewp"
+S: * THREAD
+S: A284 OK THREAD completed
+C: A285 THREAD REFERENCES UTF-8 SINCE 5-MAR-2000
+S: * THREAD (166)(167)(168)(169)(172)((170)(179))(171)(173)((174)(175)(176)(178)(181)(180))((177)(183)(182)(188 (184)(189))(185 186)(187))(190)(191)(192)(193)((194)(195 196))(197 198)(199)(200 202)(201)(203)(204)(205 206 207)(208)
+S: A285 OK THREAD completed
+"#;
 
     test_lines_of_trace(trace);
 }

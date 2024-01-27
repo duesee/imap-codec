@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::sort::SortCriterion;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::ThreadingAlgorithm;
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
@@ -1043,6 +1045,29 @@ pub enum CommandBody<'a> {
         uid: bool,
     },
 
+    #[cfg(feature = "ext_sort_thread")]
+    /// THREAD command.
+    ///
+    /// The THREAD command is a variant of SEARCH with threading semantics for the results.
+    ///
+    /// Data:
+    /// * untagged responses: THREAD
+    ///
+    /// Result:
+    /// * OK - thread completed
+    /// * NO - thread error: can't thread that charset or criteria
+    /// * BAD - command unknown or arguments invalid
+    Thread {
+        /// Threading algorithm.
+        algorithm: ThreadingAlgorithm<'a>,
+        /// Charset.
+        charset: Charset<'a>,
+        /// Search criteria.
+        search_criteria: Vec1<SearchKey<'a>>,
+        /// Use UID variant.
+        uid: bool,
+    },
+
     /// ### 6.4.5.  FETCH Command
     ///
     /// * Arguments:
@@ -1656,6 +1681,8 @@ impl<'a> CommandBody<'a> {
             Self::Select { .. } => "SELECT",
             #[cfg(feature = "ext_sort_thread")]
             Self::Sort { .. } => "SORT",
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Thread { .. } => "THREAD",
             Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",

@@ -25,6 +25,8 @@ use nom::{
 use crate::extensions::id::id;
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::sort::sort;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::thread;
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},
@@ -403,6 +405,8 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         search,
         #[cfg(feature = "ext_sort_thread")]
         sort,
+        #[cfg(feature = "ext_sort_thread")]
+        thread,
         value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
         r#move,
     ))(input)

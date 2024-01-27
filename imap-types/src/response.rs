@@ -18,6 +18,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::sort::SortAlgorithm;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::{Thread, ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
@@ -432,6 +434,9 @@ pub enum Data<'a> {
 
     #[cfg(feature = "ext_sort_thread")]
     Sort(Vec<NonZeroU32>),
+
+    #[cfg(feature = "ext_sort_thread")]
+    Thread(Vec<Thread>),
 
     /// ### 7.2.6.  FLAGS Response
     ///
@@ -968,6 +973,8 @@ pub enum Capability<'a> {
     Unselect,
     #[cfg(feature = "ext_sort_thread")]
     Sort(Option<SortAlgorithm<'a>>),
+    #[cfg(feature = "ext_sort_thread")]
+    Thread(ThreadingAlgorithm<'a>),
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1002,6 +1009,8 @@ impl<'a> Display for Capability<'a> {
             Self::Sort(None) => write!(f, "SORT"),
             #[cfg(feature = "ext_sort_thread")]
             Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Thread(algorithm) => write!(f, "THREAD={}", algorithm),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }

@@ -14,6 +14,8 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::thread_data;
 use crate::{
     core::{astring, nil, number, nz_number, quoted_char, string},
     decode::IMAPResult,
@@ -90,6 +92,8 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             preceded(tag_no_case(b"SORT"), many0(preceded(sp, nz_number))),
             Data::Sort,
         ),
+        #[cfg(feature = "ext_sort_thread")]
+        thread_data,
         map(
             tuple((
                 tag_no_case(b"STATUS"),

@@ -461,6 +461,24 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 join_serializable(search_criteria.as_ref(), b" ", ctx)
             }
+            #[cfg(feature = "ext_sort_thread")]
+            CommandBody::Thread {
+                algorithm,
+                charset,
+                search_criteria,
+                uid,
+            } => {
+                if *uid {
+                    ctx.write_all(b"UID THREAD ")?;
+                } else {
+                    ctx.write_all(b"THREAD ")?;
+                }
+                algorithm.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                charset.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                join_serializable(search_criteria.as_ref(), b" ", ctx)
+            }
             CommandBody::Fetch {
                 sequence_set,
                 macro_or_item_names,
@@ -1240,6 +1258,17 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 } else {
                     ctx.write_all(b"* SORT ")?;
                     join_serializable(seqs, b" ", ctx)?;
+                }
+            }
+            #[cfg(feature = "ext_sort_thread")]
+            Data::Thread(threads) => {
+                if threads.is_empty() {
+                    ctx.write_all(b"* THREAD")?;
+                } else {
+                    ctx.write_all(b"* THREAD ")?;
+                    for thread in threads {
+                        thread.encode_ctx(ctx)?;
+                    }
                 }
             }
             Data::Flags(flags) => {
