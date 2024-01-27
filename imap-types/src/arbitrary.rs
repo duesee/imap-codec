@@ -11,7 +11,7 @@ use crate::{
     },
     core::{
         AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, Quoted, QuotedChar, Tag,
-        Text, Vec1,
+        Text, Vec1, Vec2,
     },
     datetime::{DateTime, NaiveDate},
     envelope::Envelope,
@@ -73,6 +73,7 @@ implement_tryfrom! { AuthMechanism<'a>, &str }
 #[cfg(feature = "ext_sort_thread")]
 implement_tryfrom! { SortAlgorithm<'a>, Atom<'a> }
 implement_tryfrom_t! { Vec1<T>, Vec<T> }
+implement_tryfrom_t! { Vec2<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
