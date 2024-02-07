@@ -1,3 +1,5 @@
+#[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU64;
 use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
@@ -63,6 +65,15 @@ pub(crate) fn number64(input: &[u8]) -> IMAPResult<&[u8], u64> {
 /// Non-zero unsigned 32-bit integer (0 < n < 4,294,967,296)
 pub(crate) fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
     map_res(number, NonZeroU32::try_from)(input)
+}
+
+/// mod-sequence-value  = 1*DIGIT
+/// ;; Positive unsigned 64-bit integer
+/// ;; (mod-sequence)
+/// ;; (1 <= n < 18,446,744,073,709,551,615)
+#[cfg(feature = "ext_condstore_qresync")]
+pub(crate) fn mod_sequence_value(input: &[u8]) -> IMAPResult<&[u8], NonZeroU64> {
+    map_res(number64, NonZeroU64::try_from)(input)
 }
 
 // ----- string -----

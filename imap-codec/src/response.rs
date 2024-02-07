@@ -21,6 +21,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::core::mod_sequence_value;
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id_response;
 use crate::{
@@ -124,7 +126,10 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                   "UIDNEXT" SP nz-number /
 ///                   "UIDVALIDITY" SP nz-number /
 ///                   "UNSEEN" SP nz-number /
-///                   "COMPRESSIONACTIVE" ; RFC 4978
+///                   "COMPRESSIONACTIVE" ; RFC 4978 /
+///                   "HIGHESTMODSEQ" SP mod-sequence-value ; RFC4551 /
+///                   "NOMODSEQ" ; RFC4551 /
+///                   "MODIFIED" SP set ; RFC4551 /
 ///                   atom [SP 1*<any TEXT-CHAR except "]">]`
 ///
 /// Note: See errata id: 261
@@ -177,6 +182,22 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         value(Code::TooBig, tag_no_case(b"TOOBIG")),
+        #[cfg(feature = "ext_condstore_qresync")]
+        map(
+            tuple((tag_no_case(b"HIGHESTMODSEQ"), sp, mod_sequence_value)),
+            |(_, _, modseq)| Code::HighestModSeq(modseq),
+        ),
+        #[cfg(feature = "ext_condstore_qresync")]
+        value(Code::NoModSeq, tag_no_case(b"NOMODSEQ")),
+        #[cfg(feature = "ext_condstore_qresync")]
+        map(
+            tuple((
+                tag_no_case(b"MODIFIED"),
+                sp,
+                separated_list1(tag(","), nz_number),
+            )),
+            |(_, _, set)| Code::Modified(Vec1::unvalidated(set)),
+        ),
     ))(input)
 }
 
@@ -700,5 +721,16 @@ mod tests {
             assert!(resp_text(b"[IMAP4rev1] \r\n").is_err());
             assert!(resp_text(b"[IMAP4rev1]  \r\n").is_ok());
         }
+    }
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[test]
+    fn test_condstore_qresync_codes() {
+        assert!(resp_text(b"[MODIFIED 7,9] Conditional STORE failed\r\n").is_ok());
+        assert!(resp_text(
+            b"[NOMODSEQ] Sorry, this mailbox format doesn't support modsequences\r\n"
+        )
+        .is_ok());
+        assert!(resp_text(b"[HIGHESTMODSEQ 715194045007] Highest\r\n").is_ok());
     }
 }
