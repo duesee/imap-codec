@@ -2,7 +2,7 @@ pub mod decode;
 pub mod encode;
 
 /// Codec for greetings.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 // We use `#[non_exhaustive]` to prevent users from using struct literal syntax.
 //
 // This allows to add configuration options later. For example, the
@@ -11,22 +11,22 @@ pub mod encode;
 pub struct GreetingCodec;
 
 /// Codec for commands.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct CommandCodec;
 
 /// Codec for authenticate data lines.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct AuthenticateDataCodec;
 
 /// Codec for responses.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct ResponseCodec;
 
 /// Codec for idle dones.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct IdleDoneCodec;
 
