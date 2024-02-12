@@ -45,6 +45,8 @@
 //! C: Pa²²W0rD
 //! ```
 
+#[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU64;
 use std::{borrow::Borrow, io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
@@ -1036,6 +1038,13 @@ impl EncodeIntoContext for NonZeroU32 {
     }
 }
 
+#[cfg(feature = "ext_condstore_qresync")]
+impl EncodeIntoContext for NonZeroU64 {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        write!(ctx, "{self}")
+    }
+}
+
 impl<'a> EncodeIntoContext for Capability<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
@@ -1171,6 +1180,21 @@ impl<'a> EncodeIntoContext for Code<'a> {
                 ctx.write_all(b"REFERRAL ")?;
                 ctx.write_all(url.as_bytes())
             }
+
+            // RFC 4551
+            #[cfg(feature = "ext_condstore_qresync")]
+            Code::HighestModSeq(modseq) => {
+                ctx.write_all(b"HIGHESTMODSEQ ")?;
+                modseq.encode_ctx(ctx)
+            }
+            #[cfg(feature = "ext_condstore_qresync")]
+            Code::NoModSeq => ctx.write_all(b"NOMODSEQ"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Code::Modified(seq_or_uid_list) => {
+                ctx.write_all(b"MODIFIED ")?;
+                join_serializable(seq_or_uid_list.as_ref(), b",", ctx)
+            }
+
             Code::CompressionActive => ctx.write_all(b"COMPRESSIONACTIVE"),
             Code::OverQuota => ctx.write_all(b"OVERQUOTA"),
             Code::TooBig => ctx.write_all(b"TOOBIG"),
