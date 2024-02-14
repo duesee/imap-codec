@@ -105,20 +105,25 @@ pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 // # Command Auth
 
-/// `command-auth = append /
-///                 create /
-///                 delete /
-///                 examine /
-///                 list /
-///                 lsub /
-///                 rename /
-///                 select /
-///                 status /
-///                 subscribe /
-///                 unsubscribe /
-///                 idle ; RFC 2177
-///                 enable ; RFC 5161
-///                 compress ; RFC 4978`
+/// ```abnf
+/// command-auth = append /
+///                create /
+///                delete /
+///                examine /
+///                list /
+///                lsub /
+///                rename /
+///                select /
+///                status /
+///                subscribe /
+///                unsubscribe /
+///                idle /         ; RFC 2177
+///                enable /       ; RFC 5161
+///                compress /     ; RFC 4978
+///                getquota /     ; RFC 9208
+///                getquotaroot / ; RFC 9208
+///                setquota       ; RFC 9208
+/// ```
 ///
 /// Note: Valid only in Authenticated or Selected state
 pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {

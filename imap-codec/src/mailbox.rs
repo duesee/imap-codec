@@ -54,13 +54,15 @@ pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
     map(astring, Mailbox::from)(input)
 }
 
-/// `mailbox-data = "FLAGS" SP flag-list /
-///                 "LIST" SP mailbox-list /
-///                 "LSUB" SP mailbox-list /
-///                 "SEARCH" *(SP nz-number) /
-///                 "STATUS" SP mailbox SP "(" [status-att-list] ")" /
-///                 number SP "EXISTS" /
-///                 number SP "RECENT"`
+/// ```abnf
+/// mailbox-data = "FLAGS" SP flag-list /
+///                "LIST" SP mailbox-list /
+///                "LSUB" SP mailbox-list /
+///                "SEARCH" *(SP nz-number) /
+///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
+///                number SP "EXISTS" /
+///                number SP "RECENT"
+/// ```
 pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
         map(
