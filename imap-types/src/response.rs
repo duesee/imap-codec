@@ -1103,6 +1103,12 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 return Self::Sort(Some(SortAlgorithm::from(atom)));
                             }
                         }
+                        #[cfg(feature = "ext_sort_thread")]
+                        "thread" => {
+                            if let Ok(atom) = Atom::try_from(right) {
+                                return Self::Thread(ThreadingAlgorithm::from(atom));
+                            }
+                        }
                         _ => {}
                     }
                 }
