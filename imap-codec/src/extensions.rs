@@ -1,3 +1,5 @@
+#[cfg(feature = "ext_binary")]
+pub mod binary;
 pub mod compress;
 pub mod enable;
 #[cfg(feature = "ext_id")]
