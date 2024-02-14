@@ -41,6 +41,12 @@ pub enum CapabilityEnable<'a> {
     #[cfg(feature = "ext_condstore_qresync")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     CondStore,
+    #[cfg(feature = "ext_metadata")]
+    /// Client can handle unsolicited server annotations and mailbox annotations.
+    Metadata,
+    #[cfg(feature = "ext_metadata")]
+    /// Client can handle server annotations.
+    MetadataServer,
     Other(CapabilityEnableOther<'a>),
 }
 
@@ -59,6 +65,10 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
             "utf8=only" => Self::Utf8(Utf8Kind::Only),
             #[cfg(feature = "ext_condstore_qresync")]
             "condstore" => Self::CondStore,
+            #[cfg(feature = "ext_metadata")]
+            "metadata" => Self::Metadata,
+            #[cfg(feature = "ext_metadata")]
+            "metadata-server" => Self::MetadataServer,
             _ => Self::Other(CapabilityEnableOther(atom)),
         }
     }
@@ -70,6 +80,10 @@ impl<'a> Display for CapabilityEnable<'a> {
             Self::Utf8(kind) => write!(f, "UTF8={}", kind),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => write!(f, "CONDSTORE"),
+            #[cfg(feature = "ext_metadata")]
+            Self::Metadata => write!(f, "METADATA"),
+            #[cfg(feature = "ext_metadata")]
+            Self::MetadataServer => write!(f, "METADATA-SERVER"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }

@@ -24,6 +24,7 @@ ext_mailbox_referrals = []
 ext_id = []
 ext_sort_thread = []
 ext_binary = []
+ext_metadata = ["ext_binary"]
 
 # Unlock `unvalidated` constructors.
 unvalidated = []

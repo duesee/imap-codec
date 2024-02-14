@@ -21,6 +21,7 @@ ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_id = ["imap-types/ext_id"]
 ext_sort_thread = ["imap-types/ext_sort_thread"]
 ext_binary = ["imap-types/ext_binary"]
+ext_metadata = ["ext_binary", "imap-types/ext_metadata"]
 # </Forward to imap-types>
 
 # Use (most) IMAP extensions.

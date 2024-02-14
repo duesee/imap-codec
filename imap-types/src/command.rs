@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::{sort::SortCriterion, thread::ThreadingAlgorithm};
 use crate::{
@@ -1419,6 +1421,19 @@ pub enum CommandBody<'a> {
         /// Parameters.
         parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
     },
+
+    #[cfg(feature = "ext_metadata")]
+    SetMetadata {
+        mailbox: Mailbox<'a>,
+        entry_values: Vec1<EntryValue<'a>>,
+    },
+
+    #[cfg(feature = "ext_metadata")]
+    GetMetadata {
+        options: Vec<GetMetadataOption>,
+        mailbox: Mailbox<'a>,
+        entries: Vec1<Entry<'a>>,
+    },
 }
 
 impl<'a> CommandBody<'a> {
@@ -1708,6 +1723,10 @@ impl<'a> CommandBody<'a> {
             Self::Move { .. } => "MOVE",
             #[cfg(feature = "ext_id")]
             Self::Id { .. } => "ID",
+            #[cfg(feature = "ext_metadata")]
+            Self::SetMetadata { .. } => "SETMETADATA",
+            #[cfg(feature = "ext_metadata")]
+            Self::GetMetadata { .. } => "GETMETADATA",
         }
     }
 }

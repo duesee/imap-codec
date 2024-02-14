@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::sort::SortAlgorithm;
 #[cfg(feature = "ext_sort_thread")]
@@ -572,6 +574,13 @@ pub enum Data<'a> {
         /// Parameters
         parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
     },
+
+    #[cfg(feature = "ext_metadata")]
+    /// Metadata response
+    Metadata {
+        mailbox: Mailbox<'a>,
+        items: MetadataResponse<'a>,
+    },
 }
 
 impl<'a> Data<'a> {
@@ -832,6 +841,10 @@ pub enum Code<'a> {
     /// Server got a non-synchronizing literal larger than 4096 bytes.
     TooBig,
 
+    #[cfg(feature = "ext_metadata")]
+    /// Metadata
+    Metadata(MetadataCode),
+
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
@@ -975,6 +988,12 @@ pub enum Capability<'a> {
     Sort(Option<SortAlgorithm<'a>>),
     #[cfg(feature = "ext_sort_thread")]
     Thread(ThreadingAlgorithm<'a>),
+    #[cfg(feature = "ext_metadata")]
+    /// Server supports (both) server annotations and mailbox annotations.
+    Metadata,
+    #[cfg(feature = "ext_metadata")]
+    /// Server supports (only) server annotations.
+    MetadataServer,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1011,6 +1030,10 @@ impl<'a> Display for Capability<'a> {
             Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
             #[cfg(feature = "ext_sort_thread")]
             Self::Thread(algorithm) => write!(f, "THREAD={}", algorithm),
+            #[cfg(feature = "ext_metadata")]
+            Self::Metadata => write!(f, "METADATA"),
+            #[cfg(feature = "ext_metadata")]
+            Self::MetadataServer => write!(f, "METADATA-SERVER"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1070,6 +1093,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "id" => Self::Id,
             #[cfg(feature = "ext_sort_thread")]
             "sort" => Self::Sort(None),
+            #[cfg(feature = "ext_metadata")]
+            "metadata" => Self::Metadata,
+            #[cfg(feature = "ext_metadata")]
+            "metadata-server" => Self::MetadataServer,
             "unselect" => Self::Unselect,
             _ => {
                 // TODO(efficiency)

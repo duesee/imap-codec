@@ -23,6 +23,8 @@ use nom::{
 
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id_response;
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::metadata_code;
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
@@ -128,9 +130,15 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                  "COMPRESSIONACTIVE" / ; RFC 4978
 ///                  "OVERQUOTA" /         ; RFC 9208
 ///                  "TOOBIG" /            ; RFC 4469
+///                  "METADATA" SP (       ; RFC 5464
+//                     "LONGENTRIES" SP number /
+//                     "MAXSIZE" SP number /
+//                     "TOOMANY" /
+//                     "NOPRIVATE"
+//                   ) /
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 /// ```
-///
+/// 
 /// Note: See errata id: 261
 pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
     alt((
@@ -181,6 +189,11 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         value(Code::TooBig, tag_no_case(b"TOOBIG")),
+        #[cfg(feature = "ext_metadata")]
+        map(
+            preceded(tag_no_case("METADATA "), metadata_code),
+            Code::Metadata,
+        ),
     ))(input)
 }
 

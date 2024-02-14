@@ -21,6 +21,7 @@ ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_id = ["imap-codec/ext_id"]
 ext_sort_thread = ["imap-codec/ext_sort_thread"]
 ext_binary = ["imap-codec/ext_binary"]
+ext_metadata = ["ext_binary", "imap-codec/ext_metadata"]
 
 # IMAP quirks
 quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
@@ -35,6 +36,7 @@ ext = [
     "ext_id",
     "ext_sort_thread",
     "ext_binary",
+    "ext_metadata",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []
