@@ -23,6 +23,8 @@ use nom::{
 
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id;
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{getmetadata, setmetadata};
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::{sort::sort, thread::thread};
 use crate::{
@@ -122,7 +124,9 @@ pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                compress /     ; RFC 4978
 ///                getquota /     ; RFC 9208
 ///                getquotaroot / ; RFC 9208
-///                setquota       ; RFC 9208
+///                setquota /     ; RFC 9208
+///                setmetadata /  ; RFC 5464
+///                getmetadata    ; RFC 5464
 /// ```
 ///
 /// Note: Valid only in Authenticated or Selected state
@@ -145,6 +149,10 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         getquota,
         getquotaroot,
         setquota,
+        #[cfg(feature = "ext_metadata")]
+        setmetadata,
+        #[cfg(feature = "ext_metadata")]
+        getmetadata,
     ))(input)
 }
 

@@ -614,6 +614,44 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     None => ctx.write_all(b"NIL"),
                 }
             }
+            #[cfg(feature = "ext_metadata")]
+            CommandBody::SetMetadata {
+                mailbox,
+                entry_values,
+            } => {
+                ctx.write_all(b"SETMETADATA ")?;
+                mailbox.encode_ctx(ctx)?;
+                ctx.write_all(b" (")?;
+                join_serializable(entry_values.as_ref(), b" ", ctx)?;
+                ctx.write_all(b")")
+            }
+            #[cfg(feature = "ext_metadata")]
+            CommandBody::GetMetadata {
+                options,
+                mailbox,
+                entries,
+            } => {
+                ctx.write_all(b"GETMETADATA")?;
+
+                if !options.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(options, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                ctx.write_all(b" ")?;
+                mailbox.encode_ctx(ctx)?;
+
+                ctx.write_all(b" ")?;
+
+                if entries.as_ref().len() == 1 {
+                    entries.as_ref()[0].encode_ctx(ctx)
+                } else {
+                    ctx.write_all(b"(")?;
+                    join_serializable(entries.as_ref(), b" ", ctx)?;
+                    ctx.write_all(b")")
+                }
+            }
         }
     }
 }
@@ -1174,6 +1212,11 @@ impl<'a> EncodeIntoContext for Code<'a> {
             Code::CompressionActive => ctx.write_all(b"COMPRESSIONACTIVE"),
             Code::OverQuota => ctx.write_all(b"OVERQUOTA"),
             Code::TooBig => ctx.write_all(b"TOOBIG"),
+            #[cfg(feature = "ext_metadata")]
+            Code::Metadata(code) => {
+                ctx.write_all(b"METADATA ")?;
+                code.encode_ctx(ctx)
+            }
             Code::Other(unknown) => unknown.encode_ctx(ctx),
         }
     }
@@ -1343,6 +1386,13 @@ impl<'a> EncodeIntoContext for Data<'a> {
                         ctx.write_all(b"NIL")?;
                     }
                 }
+            }
+            #[cfg(feature = "ext_metadata")]
+            Data::Metadata { mailbox, items } => {
+                ctx.write_all(b"* METADATA ")?;
+                mailbox.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                items.encode_ctx(ctx)?;
             }
         }
 
@@ -1722,7 +1772,7 @@ impl<'a> EncodeIntoContext for CommandContinuationRequest<'a> {
     }
 }
 
-mod utils {
+pub(crate) mod utils {
     use std::io::Write;
 
     use super::{EncodeContext, EncodeIntoContext};

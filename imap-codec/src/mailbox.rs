@@ -14,6 +14,8 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::metadata_resp;
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::thread::thread_data;
 use crate::{
@@ -60,6 +62,7 @@ pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
 ///                "LSUB" SP mailbox-list /
 ///                "SEARCH" *(SP nz-number) /
 ///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
+///                "METADATA" SP mailbox SP (entry-values / entry-list) / ; RFC 5464
 ///                number SP "EXISTS" /
 ///                number SP "RECENT"
 /// ```
@@ -109,6 +112,8 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 items: items.unwrap_or_default().into(),
             },
         ),
+        #[cfg(feature = "ext_metadata")]
+        metadata_resp,
         map(
             tuple((number, sp, tag_no_case(b"EXISTS"))),
             |(num, _, _)| Data::Exists(num),

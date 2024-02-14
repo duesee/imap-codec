@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, io::Write};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -15,6 +15,7 @@ use nom::{
 use crate::{
     core::number,
     decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
+    encode::{EncodeContext, EncodeIntoContext},
 };
 
 #[allow(unused)] // TODO(444)
@@ -63,4 +64,19 @@ pub(crate) fn literal8(input: &[u8]) -> IMAPResult<&[u8], Literal8> {
             mode,
         },
     ))
+}
+
+impl<'a> EncodeIntoContext for Literal8<'a> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self.mode {
+            LiteralMode::Sync => write!(ctx, "~{{{}}}\r\n", self.data.len())?,
+            LiteralMode::NonSync => write!(ctx, "~{{{}+}}\r\n", self.data.len())?,
+        }
+
+        ctx.push_line();
+        ctx.write_all(&self.data)?;
+        ctx.push_literal(self.mode);
+
+        Ok(())
+    }
 }

@@ -6,6 +6,8 @@ pub mod enable;
 pub mod id;
 pub mod idle;
 pub mod literal;
+#[cfg(feature = "ext_metadata")]
+pub mod metadata;
 pub mod r#move;
 pub mod quota;
 #[cfg(feature = "ext_sort_thread")]

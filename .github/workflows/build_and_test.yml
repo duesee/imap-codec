@@ -38,7 +38,7 @@ jobs:
           --workspace \
           --exclude tokio-client --exclude tokio-server --exclude tokio-support \
           --feature-powerset \
-          --group-features starttls,ext_condstore_qresync,ext_login_referrals,ext_mailbox_referrals,ext_id,ext_sort_thread,ext_binary \
+          --group-features starttls,ext_condstore_qresync,ext_login_referrals,ext_mailbox_referrals,ext_id,ext_sort_thread,ext_binary,ext_metadata \
           --exclude-features ext,split
 
   test:
