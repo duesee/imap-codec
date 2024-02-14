@@ -24,9 +24,7 @@ use nom::{
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id;
 #[cfg(feature = "ext_sort_thread")]
-use crate::extensions::sort::sort;
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::thread::thread;
+use crate::extensions::{sort::sort, thread::thread};
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},

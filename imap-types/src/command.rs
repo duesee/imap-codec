@@ -14,9 +14,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_sort_thread")]
-use crate::extensions::sort::SortCriterion;
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::thread::ThreadingAlgorithm;
+use crate::extensions::{sort::SortCriterion, thread::ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
