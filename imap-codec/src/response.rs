@@ -113,19 +113,23 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
     }
 }
 
-/// `resp-text-code = "ALERT" /
-///                   "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
-///                   capability-data /
-///                   "PARSE" /
-///                   "PERMANENTFLAGS" SP "(" [flag-perm *(SP flag-perm)] ")" /
-///                   "READ-ONLY" /
-///                   "READ-WRITE" /
-///                   "TRYCREATE" /
-///                   "UIDNEXT" SP nz-number /
-///                   "UIDVALIDITY" SP nz-number /
-///                   "UNSEEN" SP nz-number /
-///                   "COMPRESSIONACTIVE" ; RFC 4978
-///                   atom [SP 1*<any TEXT-CHAR except "]">]`
+/// ```abnf
+/// resp-text-code = "ALERT" /
+///                  "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
+///                  capability-data /
+///                  "PARSE" /
+///                  "PERMANENTFLAGS" SP "(" [flag-perm *(SP flag-perm)] ")" /
+///                  "READ-ONLY" /
+///                  "READ-WRITE" /
+///                  "TRYCREATE" /
+///                  "UIDNEXT" SP nz-number /
+///                  "UIDVALIDITY" SP nz-number /
+///                  "UNSEEN" SP nz-number /
+///                  "COMPRESSIONACTIVE" / ; RFC 4978
+///                  "OVERQUOTA" /         ; RFC 9208
+///                  "TOOBIG" /            ; RFC 4469
+///                  atom [SP 1*<any TEXT-CHAR except "]">]
+/// ```
 ///
 /// Note: See errata id: 261
 pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
