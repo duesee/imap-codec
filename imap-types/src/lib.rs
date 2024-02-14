@@ -121,6 +121,7 @@
 //! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])  |Unfinished|
 //! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                     |Unfinished|
 //! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                   |Unfinished|
+//! |ext_binary           |IMAP4 Binary Content Extension ([RFC 3516])                                            |Unfinished|
 //! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                  |          |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
@@ -151,6 +152,7 @@
 //! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
 //! [RFC 2971]: https://datatracker.ietf.org/doc/html/rfc2971
 //! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
+//! [RFC 3516]: https://datatracker.ietf.org/doc/html/rfc3516
 //! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
 //! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
