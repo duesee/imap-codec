@@ -193,14 +193,23 @@ pub struct AuthMechanismOther<'a>(Atom<'a>);
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AuthenticateData {
+pub enum AuthenticateData<'a> {
     /// Continue SASL authentication.
-    Continue(Secret<Vec<u8>>),
+    Continue(Secret<Cow<'a, [u8]>>),
     /// Cancel SASL authentication.
     ///
     /// "If the client wishes to cancel an authentication exchange,
     /// it issues a line consisting of a single "*"." (RFC 3501)
     Cancel,
+}
+
+impl<'a> AuthenticateData<'a> {
+    pub fn r#continue<D>(data: D) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        Self::Continue(Secret::new(data.into()))
+    }
 }
 
 #[cfg(test)]

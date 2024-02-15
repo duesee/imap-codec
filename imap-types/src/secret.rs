@@ -96,8 +96,8 @@ mod tests {
         println!("-----");
 
         let tests = [
-            AuthenticateData::Continue(Secret::new(b"xyz123".to_vec())),
-            AuthenticateData::Continue(Secret::from(b"xyz123".to_vec())),
+            AuthenticateData::r#continue(b"xyz123".to_vec()),
+            AuthenticateData::r#continue(b"xyz123".to_vec()),
         ];
 
         for test in tests {

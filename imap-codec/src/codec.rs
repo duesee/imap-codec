@@ -59,7 +59,6 @@ mod tests {
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
-        secret::Secret,
     };
 
     use super::*;
@@ -162,17 +161,17 @@ mod tests {
             (
                 b"VGVzdA==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
+                AuthenticateData::r#continue(b"Test".to_vec()),
             ),
             (
                 b"AA==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x00".to_vec())),
+                AuthenticateData::r#continue(b"\x00".to_vec()),
             ),
             (
                 b"aQ==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x69".to_vec())),
+                AuthenticateData::r#continue(b"\x69".to_vec()),
             ),
             (b"*\r\n".as_ref(), b"".as_ref(), AuthenticateData::Cancel),
         ]);

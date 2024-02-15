@@ -246,7 +246,7 @@ macro_rules! impl_encoder_for_codec {
 
 impl_encoder_for_codec!(GreetingCodec, Greeting<'a>);
 impl_encoder_for_codec!(CommandCodec, Command<'a>);
-impl_encoder_for_codec!(AuthenticateDataCodec, AuthenticateData);
+impl_encoder_for_codec!(AuthenticateDataCodec, AuthenticateData<'a>);
 impl_encoder_for_codec!(ResponseCodec, Response<'a>);
 impl_encoder_for_codec!(IdleDoneCodec, IdleDone);
 
@@ -662,7 +662,7 @@ impl<'a> EncodeIntoContext for AuthMechanism<'a> {
     }
 }
 
-impl EncodeIntoContext for AuthenticateData {
+impl EncodeIntoContext for AuthenticateData<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Continue(data) => {
