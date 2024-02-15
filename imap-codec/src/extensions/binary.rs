@@ -1,24 +1,27 @@
-use std::{borrow::Cow, io::Write};
+use std::{borrow::Cow, io::Write, num::NonZeroU32};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
-use imap_types::{core::LiteralMode, extensions::binary::Literal8};
+use imap_types::{
+    core::LiteralMode,
+    extensions::binary::{Literal8, LiteralOrLiteral8},
+};
 use nom::{
     bytes::streaming::{tag, take},
     character::streaming::char,
     combinator::{map, opt},
-    sequence::{delimited, terminated, tuple},
+    sequence::{delimited, separated_pair, terminated, tuple},
 };
 
 use crate::{
-    core::number,
+    core::{number, nz_number},
     decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
     encode::{EncodeContext, EncodeIntoContext},
+    fetch::section_part,
 };
 
-#[allow(unused)] // TODO(444)
 /// See https://datatracker.ietf.org/doc/html/rfc3516 and https://datatracker.ietf.org/doc/html/rfc4466
 ///
 /// ```abnf
@@ -66,6 +69,15 @@ pub(crate) fn literal8(input: &[u8]) -> IMAPResult<&[u8], Literal8> {
     ))
 }
 
+impl<'a> EncodeIntoContext for LiteralOrLiteral8<'a> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            LiteralOrLiteral8::Literal(lit) => lit.encode_ctx(ctx),
+            LiteralOrLiteral8::Literal8(lit8) => lit8.encode_ctx(ctx),
+        }
+    }
+}
+
 impl<'a> EncodeIntoContext for Literal8<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self.mode {
@@ -79,4 +91,29 @@ impl<'a> EncodeIntoContext for Literal8<'a> {
 
         Ok(())
     }
+}
+
+/// ```abnf
+/// section-binary = "[" [section-part] "]"
+/// ```
+pub(crate) fn section_binary(input: &[u8]) -> IMAPResult<&[u8], Vec<NonZeroU32>> {
+    delimited(
+        tag("["),
+        // We use `Vec<T>` instead of `Option<Vec1<T>>`.
+        map(opt(section_part), |section_part| {
+            section_part.map(|i| i.into_inner()).unwrap_or_default()
+        }),
+        tag("]"),
+    )(input)
+}
+
+/// ```abnf
+/// partial = "<" number "." nz-number ">"
+/// ```
+pub(crate) fn partial(input: &[u8]) -> IMAPResult<&[u8], (u32, NonZeroU32)> {
+    delimited(
+        tag(b"<"),
+        separated_pair(number, tag(b"."), nz_number),
+        tag(b">"),
+    )(input)
 }

@@ -5,9 +5,9 @@ use std::io::Write;
 use abnf_core::streaming::sp;
 use imap_types::{
     command::CommandBody,
-    core::Vec1,
+    core::{NString8, Vec1},
     extensions::metadata::{
-        Depth, Entry, EntryValue, GetMetadataOption, MetadataCode, MetadataResponse, Value,
+        Depth, Entry, EntryValue, GetMetadataOption, MetadataCode, MetadataResponse,
     },
     response::Data,
 };
@@ -96,8 +96,11 @@ pub(crate) fn entry(input: &[u8]) -> IMAPResult<&[u8], Entry> {
 /// value = nstring / literal8
 /// ```
 #[inline]
-pub(crate) fn imap_value(input: &[u8]) -> IMAPResult<&[u8], Value> {
-    alt((map(nstring, Value::NString), map(literal8, Value::Literal8)))(input)
+pub(crate) fn imap_value(input: &[u8]) -> IMAPResult<&[u8], NString8> {
+    alt((
+        map(nstring, NString8::NString),
+        map(literal8, NString8::Literal8),
+    ))(input)
 }
 
 /// ```abnf
@@ -271,15 +274,6 @@ impl<'a> EncodeIntoContext for Entry<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Value<'a> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
-            Value::NString(nstring) => nstring.encode_ctx(ctx),
-            Value::Literal8(literal8) => literal8.encode_ctx(ctx),
-        }
-    }
-}
-
 impl EncodeIntoContext for GetMetadataOption {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
@@ -317,11 +311,11 @@ impl<'a> EncodeIntoContext for EntryValue<'a> {
 mod tests {
     use imap_types::{
         command::{Command, CommandBody},
-        core::{AString, IString, Literal, LiteralMode, NString, Text, Vec1},
+        core::{AString, IString, Literal, LiteralMode, NString, NString8, Text, Vec1},
         extensions::{
             binary::Literal8,
             metadata::{
-                Depth, Entry, EntryValue, GetMetadataOption, MetadataCode, MetadataResponse, Value,
+                Depth, Entry, EntryValue, GetMetadataOption, MetadataCode, MetadataResponse,
             },
         },
         mailbox::{Mailbox, MailboxOther},
@@ -342,7 +336,7 @@ mod tests {
                         mailbox: Mailbox::Other(MailboxOther::try_from("").unwrap()),
                         entry_values: Vec1::try_from(vec![EntryValue {
                             entry: Entry::try_from(AString::try_from("/test").unwrap()).unwrap(),
-                            value: Value::NString(NString(None)),
+                            value: NString8::NString(NString(None)),
                         }])
                         .unwrap(),
                     },
@@ -358,7 +352,7 @@ mod tests {
                         mailbox: Mailbox::Other(MailboxOther::try_from("").unwrap()),
                         entry_values: Vec1::try_from(vec![EntryValue {
                             entry: Entry::try_from(AString::try_from("/test").unwrap()).unwrap(),
-                            value: Value::NString(NString(Some(
+                            value: NString8::NString(NString(Some(
                                 IString::try_from("test").unwrap(),
                             ))),
                         }])
@@ -376,7 +370,7 @@ mod tests {
                         mailbox: Mailbox::Other(MailboxOther::try_from("").unwrap()),
                         entry_values: Vec1::try_from(vec![EntryValue {
                             entry: Entry::try_from(AString::try_from("/test").unwrap()).unwrap(),
-                            value: Value::Literal8(Literal8 {
+                            value: NString8::Literal8(Literal8 {
                                 data: b"t\x00st".as_ref().into(),
                                 mode: LiteralMode::NonSync,
                             }),
@@ -525,7 +519,7 @@ mod tests {
                     items: MetadataResponse::WithValues(
                         Vec1::try_from(vec![EntryValue {
                             entry: Entry::try_from(AString::try_from("/test").unwrap()).unwrap(),
-                            value: Value::NString(NString(Some(IString::Literal(
+                            value: NString8::NString(NString(Some(IString::Literal(
                                 Literal::try_from("ABCD").unwrap(),
                             )))),
                         }])

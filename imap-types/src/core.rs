@@ -69,6 +69,8 @@ macro_rules! impl_try_from {
 pub(crate) use impl_try_from;
 
 use crate::error::{ValidationError, ValidationErrorKind};
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+use crate::extensions::binary::Literal8;
 
 /// A string subset to model IMAP's `atom`s.
 ///
@@ -1397,6 +1399,16 @@ impl<'a> AsRef<str> for Charset<'a> {
             Self::Quoted(quoted) => quoted.as_ref(),
         }
     }
+}
+
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum NString8<'a> {
+    NString(NString<'a>),
+    Literal8(Literal8<'a>),
 }
 
 /// A [`Vec`] containing >= N elements.

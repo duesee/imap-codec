@@ -845,6 +845,10 @@ pub enum Code<'a> {
     /// Metadata
     Metadata(MetadataCode),
 
+    #[cfg(feature = "ext_binary")]
+    /// Server does not know how to decode the section's CTE.
+    UnknownCte,
+
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
@@ -994,6 +998,9 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_metadata")]
     /// Server supports (only) server annotations.
     MetadataServer,
+    #[cfg(feature = "ext_binary")]
+    /// IMAP4 Binary Content Extension
+    Binary,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1034,6 +1041,8 @@ impl<'a> Display for Capability<'a> {
             Self::Metadata => write!(f, "METADATA"),
             #[cfg(feature = "ext_metadata")]
             Self::MetadataServer => write!(f, "METADATA-SERVER"),
+            #[cfg(feature = "ext_binary")]
+            Self::Binary => write!(f, "BINARY"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1097,6 +1106,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "metadata" => Self::Metadata,
             #[cfg(feature = "ext_metadata")]
             "metadata-server" => Self::MetadataServer,
+            #[cfg(feature = "ext_binary")]
+            "binary" => Self::Binary,
             "unselect" => Self::Unselect,
             _ => {
                 // TODO(efficiency)

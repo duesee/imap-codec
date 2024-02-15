@@ -136,6 +136,7 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                    "TOOMANY" /
 ///                    "NOPRIVATE"
 ///                  ) /
+///                  "UNKNOWN-CTE" /       ; RFC 3516
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 /// ```
 ///
@@ -194,6 +195,8 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
             preceded(tag_no_case("METADATA "), metadata_code),
             Code::Metadata,
         ),
+        #[cfg(feature = "ext_binary")]
+        value(Code::UnknownCte, tag_no_case(b"UNKNOWN-CTE")),
     ))(input)
 }
 
