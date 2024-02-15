@@ -5,6 +5,8 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_binary")]
+use imap_types::extensions::binary::LiteralOrLiteral8;
 use imap_types::{
     auth::AuthMechanism,
     command::{Command, CommandBody},
@@ -21,6 +23,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::literal8;
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id;
 #[cfg(feature = "ext_metadata")]
@@ -165,7 +169,13 @@ pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         opt(preceded(sp, flag_list)),
         opt(preceded(sp, date_time)),
         sp,
+        #[cfg(not(feature = "ext_binary"))]
         literal,
+        #[cfg(feature = "ext_binary")]
+        alt((
+            map(literal, LiteralOrLiteral8::Literal),
+            map(literal8, LiteralOrLiteral8::Literal8),
+        )),
     ));
 
     let (remaining, (_, _, mailbox, flags, date, _, message)) = parser(input)?;

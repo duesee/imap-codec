@@ -1,10 +1,14 @@
 use std::num::NonZeroU32;
 
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_binary")]
+use imap_types::core::NString8;
 use imap_types::{
     core::{AString, Vec1},
     fetch::{MessageDataItem, MessageDataItemName, Part, PartSpecifier, Section},
 };
+#[cfg(feature = "ext_binary")]
+use nom::sequence::preceded;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -13,6 +17,8 @@ use nom::{
     sequence::{delimited, tuple},
 };
 
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::{literal8, partial, section_binary};
 use crate::{
     body::body,
     core::{astring, nstring, number, nz_number},
@@ -31,6 +37,9 @@ use crate::{
 ///             "UID" /
 ///             "BODY"      section ["<" number "." nz-number ">"] /
 ///             "BODY.PEEK" section ["<" number "." nz-number ">"] /
+///             "BINARY"      section-binary [partial] / ; RFC 3516
+///             "BINARY.PEEK" section-binary [partial] / ; RFC 3516
+///             "BINARY.SIZE" section-binary             ; RFC 3516
 /// ```
 pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
@@ -75,6 +84,29 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
                 partial: byterange.map(|(start, _, end)| (start, end)),
                 peek: false,
             },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case("BINARY.PEEK"), section_binary, opt(partial))),
+            |(_, section, partial)| MessageDataItemName::Binary {
+                section,
+                partial,
+                peek: true,
+            },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case("BINARY"), section_binary, opt(partial))),
+            |(_, section, partial)| MessageDataItemName::Binary {
+                section,
+                partial,
+                peek: false,
+            },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            preceded(tag_no_case("BINARY.SIZE"), section_binary),
+            |section| MessageDataItemName::BinarySize { section },
         ),
         value(MessageDataItemName::Body, tag_no_case(b"BODY")),
         value(MessageDataItemName::Uid, tag_no_case(b"UID")),
@@ -124,7 +156,9 @@ pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem
 ///                  "RFC822.SIZE" SP number /
 ///                  "BODY" ["STRUCTURE"] SP body /
 ///                  "BODY" section ["<" number ">"] SP nstring /
-///                  "UID" SP uniqueid
+///                  "UID" SP uniqueid /
+///                  "BINARY" section-binary SP (nstring / literal8) / ; RFC 3516
+///                  "BINARY.SIZE" section-binary SP number            ; RFC 3516
 /// ```
 ///
 /// Note: MUST NOT change for a message
@@ -179,6 +213,24 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
         map(tuple((tag_no_case(b"UID"), sp, uniqueid)), |(_, _, uid)| {
             MessageDataItem::Uid(uid)
         }),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((
+                tag_no_case(b"BINARY"),
+                section_binary,
+                sp,
+                alt((
+                    map(nstring, NString8::NString),
+                    map(literal8, NString8::Literal8),
+                )),
+            )),
+            |(_, section, _, value)| MessageDataItem::Binary { section, value },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case(b"BINARY.SIZE"), section_binary, sp, number)),
+            |(_, section, _, size)| MessageDataItem::BinarySize { section, size },
+        ),
     ))(input)
 }
 

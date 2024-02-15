@@ -12,7 +12,17 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::core::LiteralMode;
+use crate::core::{Literal, LiteralMode};
+
+/// Either a [`Literal`] or [`Literal8`].
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum LiteralOrLiteral8<'a> {
+    Literal(Literal<'a>),
+    Literal8(Literal8<'a>),
+}
 
 /// String that might contain NULs.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

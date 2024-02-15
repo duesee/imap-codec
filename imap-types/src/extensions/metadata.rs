@@ -6,9 +6,8 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{AString, NString, Vec1},
+    core::{AString, NString8, Vec1},
     error::ValidationError,
-    extensions::binary::Literal8,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
@@ -17,7 +16,7 @@ use crate::{
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct EntryValue<'a> {
     pub entry: Entry<'a>,
-    pub value: Value<'a>,
+    pub value: NString8<'a>,
 }
 
 /// Slash-separated path to entry.
@@ -47,15 +46,6 @@ impl AsRef<[u8]> for Entry<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
-}
-
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Value<'a> {
-    NString(NString<'a>),
-    Literal8(Literal8<'a>),
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]

@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::LiteralOrLiteral8;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
 #[cfg(feature = "ext_sort_thread")]
@@ -889,8 +891,14 @@ pub enum CommandBody<'a> {
         flags: Vec<Flag<'a>>,
         /// Datetime.
         date: Option<DateTime>,
+        #[cfg(not(feature = "ext_binary"))]
         /// Message to append.
         message: Literal<'a>,
+        #[cfg(feature = "ext_binary")]
+        /// Message to append.
+        ///
+        /// Note: Use [`LiteralOrLiteral8::Literal8`] only when the server advertised [`Capability::Binary`](crate::response::Capability::Binary).
+        message: LiteralOrLiteral8<'a>,
     },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
@@ -1614,7 +1622,10 @@ impl<'a> CommandBody<'a> {
             mailbox: mailbox.try_into().map_err(AppendError::Mailbox)?,
             flags,
             date,
+            #[cfg(not(feature = "ext_binary"))]
             message: message.try_into().map_err(AppendError::Data)?,
+            #[cfg(feature = "ext_binary")]
+            message: LiteralOrLiteral8::Literal(message.try_into().map_err(AppendError::Data)?),
         })
     }
 
@@ -1781,9 +1792,11 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;
+    #[cfg(feature = "ext_binary")]
+    use crate::extensions::binary::Literal8;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal, Vec1},
+        core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
         datetime::DateTime,
         extensions::{
             compress::CompressionAlgorithm,
@@ -2067,9 +2080,25 @@ mod tests {
             (
                 CommandBody::Append {
                     mailbox: Mailbox::Inbox,
-                    date: None,
-                    message: Literal::try_from("").unwrap(),
                     flags: vec![],
+                    date: None,
+                    #[cfg(not(feature = "ext_binary"))]
+                    message: Literal::try_from("").unwrap(),
+                    #[cfg(feature = "ext_binary")]
+                    message: LiteralOrLiteral8::Literal(Literal::try_from("").unwrap()),
+                },
+                "APPEND",
+            ),
+            #[cfg(feature = "ext_binary")]
+            (
+                CommandBody::Append {
+                    mailbox: Mailbox::Inbox,
+                    flags: vec![],
+                    date: None,
+                    message: LiteralOrLiteral8::Literal8(Literal8 {
+                        data: b"Hello\x00World\x00".as_ref().into(),
+                        mode: LiteralMode::NonSync,
+                    }),
                 },
                 "APPEND",
             ),
