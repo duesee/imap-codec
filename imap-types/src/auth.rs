@@ -78,14 +78,14 @@ pub enum AuthMechanism<'a> {
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    /// * <https://datatracker.ietf.org/doc/html/rfc5802>
     ScramSha1,
 
     /// SCRAM-SHA-1-PLUS
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    /// * <https://datatracker.ietf.org/doc/html/rfc5802>
     ScramSha1Plus,
 
     //
@@ -95,14 +95,14 @@ pub enum AuthMechanism<'a> {
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    /// * <https://datatracker.ietf.org/doc/html/rfc7677>
     ScramSha256,
 
     /// SCRAM-SHA-256-PLUS
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    /// * <https://datatracker.ietf.org/doc/html/rfc7677>
     ScramSha256Plus,
 
     //
@@ -112,14 +112,14 @@ pub enum AuthMechanism<'a> {
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512
+    /// * <https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512>
     ScramSha3_512,
 
     /// SCRAM-SHA3-512-PLUS
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512
+    /// * <https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512>
     ScramSha3_512Plus,
 
     /// Some other (unknown) mechanism.

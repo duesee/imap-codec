@@ -14,10 +14,10 @@
 //!     - [`Command::GetQuotaRoot`](crate::command::CommandBody::GetQuotaRoot)
 //!     - [`Command::SetQuota`](crate::command::CommandBody::SetQuota)
 //!
-//! * [`Data`](crate::response::Data) with new variants:
+//! * [`Data`] with new variants:
 //!
-//!     - [`Data::Quota`](crate::response::Data::Quota)
-//!     - [`Data::QuotaRoot`](crate::response::Data::QuotaRoot)
+//!     - [`Data::Quota`]
+//!     - [`Data::QuotaRoot`]
 //!
 //! * [`Code`](crate::response::Code) with a new variant:
 //!
