@@ -49,6 +49,7 @@ cargo +nightly fuzz run <target>
 | `command_to_bytes_and_back`           | Test misuse-resistance | Must not fail. |
 | `response_to_bytes_and_back`          | Test misuse-resistance | Must not fail. |
 | `authenticate_data_to_bytes_and_back` | Test misuse-resistance | Must not fail. |
+| `idle_done_to_bytes_and_back`         | Test misuse-resistance | Must not fail. |
 
 Three first five fuzz targets are used to test the parsing routines.
 The fuzzers all do the same: try to parse the input from libFuzzer (and hope that the parsers don't crash), then,
