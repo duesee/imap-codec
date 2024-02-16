@@ -22,14 +22,16 @@ use crate::{
     flag::flag_fetch,
 };
 
-/// `fetch-att = "ENVELOPE" /
-///              "FLAGS" /
-///              "INTERNALDATE" /
-///              "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
-///              "BODY" ["STRUCTURE"] /
-///              "UID" /
-///              "BODY" section ["<" number "." nz-number ">"] /
-///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
+/// ```abnf
+/// fetch-att = "ENVELOPE" /
+///             "FLAGS" /
+///             "INTERNALDATE" /
+///             "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
+///             "BODY" ["STRUCTURE"] /
+///             "UID" /
+///             "BODY"      section ["<" number "." nz-number ">"] /
+///             "BODY.PEEK" section ["<" number "." nz-number ">"] /
+/// ```
 pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
         value(MessageDataItemName::Envelope, tag_no_case(b"ENVELOPE")),
@@ -115,13 +117,15 @@ pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem
     Ok((remaining, MessageDataItem::Flags(flags.unwrap_or_default())))
 }
 
-/// `msg-att-static = "ENVELOPE" SP envelope /
-///                   "INTERNALDATE" SP date-time /
-///                   "RFC822" [".HEADER" / ".TEXT"] SP nstring /
-///                   "RFC822.SIZE" SP number /
-///                   "BODY" ["STRUCTURE"] SP body /
-///                   "BODY" section ["<" number ">"] SP nstring /
-///                   "UID" SP uniqueid`
+/// ```abnf
+/// msg-att-static = "ENVELOPE" SP envelope /
+///                  "INTERNALDATE" SP date-time /
+///                  "RFC822" [".HEADER" / ".TEXT"] SP nstring /
+///                  "RFC822.SIZE" SP number /
+///                  "BODY" ["STRUCTURE"] SP body /
+///                  "BODY" section ["<" number ">"] SP nstring /
+///                  "UID" SP uniqueid
+/// ```
 ///
 /// Note: MUST NOT change for a message
 pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
