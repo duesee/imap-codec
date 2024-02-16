@@ -211,9 +211,9 @@ As far as I know, `imap-proto` provides the "client half" only.
 Separating types and codecs increases cohesion and (hopefully) paves the way for IMAP crates that operate at higher levels.
 However, the maintenance cost of two crates, `imap-types` and `imap-codec`, could be higher than for `imap-proto`.
 
-Generally, `imap-codec` has a more extensive API surface than `imap-proto` and could be [more challenging to use](construction).
+Generally, `imap-codec` has a more extensive API surface than `imap-proto` and could be [more challenging to use].
 In return, it guarantees that you always construct valid messages and aims to make IMAP usable even for people with less IMAP experience.
-For example, `imap-codec` has [build-in support for IMAP literals] and ensures to always use [a correct representation for strings](construction).
+For example, `imap-codec` has [build-in support for IMAP literals] and ensures to always use [a correct representation for strings].
 
 `imap-codec` has a high test coverage and is fuzz-tested to ensure properties such as invertibility, misuse-resistance, etc.
 You should be unable to crash the library or generate messages that can't be parsed.
@@ -270,7 +270,8 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 [`Response`]: https://docs.rs/imap-types/latest/imap_types/response/enum.Response.html
 [`Tag`]: https://docs.rs/imap-types/latest/imap_types/core/struct.Tag.html
 [`BodyStructure`]: https://docs.rs/imap-types/latest/imap_types/body/enum.BodyStructure.html
-[construction]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
+[more challenging to use]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
+[a correct representation for strings]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
 [build-in support for IMAP literals]: https://docs.rs/imap-codec/latest/imap_codec/codec/struct.Encoded.html
 [IMAP servers with imap-codec]: https://github.com/Email-Analysis-Toolkit/fake-mail-server
 [^1]: https://datatracker.ietf.org/doc/html/rfc2683
