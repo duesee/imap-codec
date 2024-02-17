@@ -2,9 +2,10 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_sort_thread")]
-use crate::extensions::sort::SortAlgorithm;
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::thread::ThreadingAlgorithm;
+use crate::extensions::{
+    sort::SortAlgorithm,
+    thread::{Thread, ThreadingAlgorithm},
+};
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -468,6 +469,40 @@ impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         NaiveDate::try_from(chrono::NaiveDate::arbitrary(u)?)
             .map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
+
+#[cfg(feature = "ext_sort_thread")]
+impl<'a> Arbitrary<'a> for Thread {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        // We cheat a bit: Start from a leaf ...
+        let mut current = Thread::Members {
+            prefix: Arbitrary::arbitrary(u)?,
+            answers: None,
+        };
+
+        // ... and build up the thread to the top (with max depth == 8)
+        for _ in 0..7 {
+            match u.int_in_range(0..=2)? {
+                0 => {
+                    current = Thread::Members {
+                        prefix: Arbitrary::arbitrary(u)?,
+                        answers: Some(Vec2::unvalidated(vec![current.clone(), current])),
+                    };
+                }
+                1 => {
+                    current = Thread::Nested {
+                        answers: Vec2::unvalidated(vec![current.clone(), current]),
+                    };
+                }
+                2 => {
+                    return Ok(current);
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        Ok(current)
     }
 }
 
