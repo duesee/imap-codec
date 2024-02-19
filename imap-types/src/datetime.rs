@@ -46,6 +46,9 @@ impl DateTime {
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: chrono::DateTime<FixedOffset>) -> Self {
+        #[cfg(debug_assertions)]
+        Self::validate(&value).unwrap();
+
         Self(value)
     }
 }
@@ -114,6 +117,9 @@ impl NaiveDate {
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: chrono::NaiveDate) -> Self {
+        #[cfg(debug_assertions)]
+        Self::validate(&value).unwrap();
+
         Self(value)
     }
 }
