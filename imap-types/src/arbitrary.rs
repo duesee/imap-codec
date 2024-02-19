@@ -1,11 +1,6 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::{
-    sort::SortAlgorithm,
-    thread::{Thread, ThreadingAlgorithm},
-};
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -29,7 +24,7 @@ use crate::{
     sequence::SequenceSet,
 };
 
-macro_rules! implement_tryfrom {
+macro_rules! impl_arbitrary_try_from {
     ($target:ty, $from:ty) => {
         impl<'a> Arbitrary<'a> for $target {
             fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -42,7 +37,9 @@ macro_rules! implement_tryfrom {
     };
 }
 
-macro_rules! implement_tryfrom_t {
+pub(crate) use impl_arbitrary_try_from;
+
+macro_rules! impl_arbitrary_try_from_t {
     ($target:ty, $from:ty) => {
         impl<'a, T> Arbitrary<'a> for $target
         where
@@ -58,27 +55,23 @@ macro_rules! implement_tryfrom_t {
     };
 }
 
-implement_tryfrom! { Atom<'a>, &str }
-implement_tryfrom! { AtomExt<'a>, &str }
-implement_tryfrom! { Quoted<'a>, &str }
-implement_tryfrom! { Tag<'a>, &str }
-implement_tryfrom! { Text<'a>, &str }
-implement_tryfrom! { ListCharString<'a>, &str }
-implement_tryfrom! { QuotedChar, char }
-implement_tryfrom! { Mailbox<'a>, &str }
-implement_tryfrom! { Capability<'a>, Atom<'a> }
-implement_tryfrom! { Flag<'a>, &str }
-implement_tryfrom! { FlagNameAttribute<'a>, Atom<'a> }
-implement_tryfrom! { MailboxOther<'a>, AString<'a> }
-implement_tryfrom! { CapabilityEnable<'a>, &str }
-implement_tryfrom! { Resource<'a>, &str }
-implement_tryfrom! { AuthMechanism<'a>, &str }
-#[cfg(feature = "ext_sort_thread")]
-implement_tryfrom! { SortAlgorithm<'a>, Atom<'a> }
-implement_tryfrom_t! { Vec1<T>, Vec<T> }
-implement_tryfrom_t! { Vec2<T>, Vec<T> }
-#[cfg(feature = "ext_sort_thread")]
-implement_tryfrom! { ThreadingAlgorithm<'a>, Atom<'a> }
+impl_arbitrary_try_from! { Atom<'a>, &str }
+impl_arbitrary_try_from! { AtomExt<'a>, &str }
+impl_arbitrary_try_from! { Quoted<'a>, &str }
+impl_arbitrary_try_from! { Tag<'a>, &str }
+impl_arbitrary_try_from! { Text<'a>, &str }
+impl_arbitrary_try_from! { ListCharString<'a>, &str }
+impl_arbitrary_try_from! { QuotedChar, char }
+impl_arbitrary_try_from! { Mailbox<'a>, &str }
+impl_arbitrary_try_from! { Capability<'a>, Atom<'a> }
+impl_arbitrary_try_from! { Flag<'a>, &str }
+impl_arbitrary_try_from! { FlagNameAttribute<'a>, Atom<'a> }
+impl_arbitrary_try_from! { MailboxOther<'a>, AString<'a> }
+impl_arbitrary_try_from! { CapabilityEnable<'a>, &str }
+impl_arbitrary_try_from! { Resource<'a>, &str }
+impl_arbitrary_try_from! { AuthMechanism<'a>, &str }
+impl_arbitrary_try_from_t! { Vec1<T>, Vec<T> }
+impl_arbitrary_try_from_t! { Vec2<T>, Vec<T> }
 
 impl<'a> Arbitrary<'a> for CommandContinuationRequestBasic<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -472,40 +465,6 @@ impl<'a> Arbitrary<'a> for NaiveDate {
     }
 }
 
-#[cfg(feature = "ext_sort_thread")]
-impl<'a> Arbitrary<'a> for Thread {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // We cheat a bit: Start from a leaf ...
-        let mut current = Thread::Members {
-            prefix: Arbitrary::arbitrary(u)?,
-            answers: None,
-        };
-
-        // ... and build up the thread to the top (with max depth == 8)
-        for _ in 0..7 {
-            match u.int_in_range(0..=2)? {
-                0 => {
-                    current = Thread::Members {
-                        prefix: Arbitrary::arbitrary(u)?,
-                        answers: Some(Vec2::unvalidated(vec![current.clone(), current])),
-                    };
-                }
-                1 => {
-                    current = Thread::Nested {
-                        answers: Vec2::unvalidated(vec![current.clone(), current]),
-                    };
-                }
-                2 => {
-                    return Ok(current);
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        Ok(current)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
@@ -565,16 +524,16 @@ mod tests {
 
     #[test]
     fn test_arbitrary_greeting() {
-        impl_test_arbitrary! {Greeting};
+        impl_test_arbitrary! {Greeting}
     }
 
     #[test]
     fn test_arbitrary_command() {
-        impl_test_arbitrary! {Command};
+        impl_test_arbitrary! {Command}
     }
 
     #[test]
     fn test_arbitrary_response() {
-        impl_test_arbitrary! {Response};
+        impl_test_arbitrary! {Response}
     }
 }

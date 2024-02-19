@@ -1,12 +1,14 @@
 use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
+use arbitrary::{Arbitrary, Unstructured};
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "arbitrary")]
+use crate::arbitrary::impl_arbitrary_try_from;
 use crate::core::Atom;
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
@@ -34,6 +36,9 @@ impl Display for SortAlgorithm<'_> {
         }
     }
 }
+
+#[cfg(feature = "arbitrary")]
+impl_arbitrary_try_from! { SortAlgorithm<'a>, Atom<'a> }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
