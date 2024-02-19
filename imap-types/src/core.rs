@@ -144,6 +144,8 @@ impl<'a> Atom<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -294,6 +296,8 @@ impl<'a> AtomExt<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -578,6 +582,8 @@ impl<'a> Literal<'a> {
     /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D>(data: D) -> Self
@@ -595,6 +601,15 @@ impl<'a> Literal<'a> {
         }
     }
 
+    /// Constructs a literal without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated_non_sync<D>(data: D) -> Self
@@ -745,6 +760,8 @@ impl<'a> Quoted<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1037,6 +1054,8 @@ impl<'a> Tag<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1171,6 +1190,8 @@ impl<'a> Text<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1276,6 +1297,8 @@ impl QuotedChar {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: char) -> Self {
@@ -1457,6 +1480,8 @@ impl<T, const N: usize> VecN<T, N> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: Vec<T>) -> Self {
