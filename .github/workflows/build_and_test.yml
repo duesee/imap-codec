@@ -100,7 +100,7 @@ jobs:
           for fuzz_target in $(cargo +nightly fuzz list);
           do
           echo "# Fuzzing ${fuzz_target}";
-          cargo +nightly fuzz run --features=ext ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs=25000
+          cargo +nightly fuzz run --features=ext,arbitrary_simplified ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs=25000
           done
 
   minimal-versions:
