@@ -4,15 +4,13 @@ use chrono::{FixedOffset, TimeZone};
 use crate::{
     auth::AuthMechanism,
     body::{
-        BasicFields, Body, BodyExtension, BodyStructure, MultiPartExtensionData,
-        SinglePartExtensionData, SpecificFields,
+        BasicFields, Body, BodyExtension, BodyStructure, SinglePartExtensionData, SpecificFields,
     },
     core::{
         AString, Atom, AtomExt, IString, Literal, LiteralMode, NString, Quoted, QuotedChar, Tag,
         Text, Vec1, Vec2,
     },
     datetime::{DateTime, NaiveDate},
-    envelope::Envelope,
     extensions::{enable::CapabilityEnable, quota::Resource},
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
@@ -23,6 +21,8 @@ use crate::{
     search::SearchKey,
     sequence::SequenceSet,
 };
+#[cfg(not(feature = "arbitrary_simplified"))]
+use crate::{body::MultiPartExtensionData, envelope::Envelope};
 
 macro_rules! impl_arbitrary_try_from {
     ($target:ty, $from:ty) => {
@@ -180,254 +180,266 @@ impl<'a> Arbitrary<'a> for CodeOther<'a> {
 
 impl<'a> Arbitrary<'a> for SearchKey<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        fn make_search_key<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<SearchKey<'a>> {
-            Ok(match u.int_in_range(0u8..=33)? {
-                0 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
-                1 => SearchKey::All,
-                2 => SearchKey::Answered,
-                3 => SearchKey::Bcc(AString::arbitrary(u)?),
-                4 => SearchKey::Before(NaiveDate::arbitrary(u)?),
-                5 => SearchKey::Body(AString::arbitrary(u)?),
-                6 => SearchKey::Cc(AString::arbitrary(u)?),
-                7 => SearchKey::Deleted,
-                8 => SearchKey::Draft,
-                9 => SearchKey::Flagged,
-                10 => SearchKey::From(AString::arbitrary(u)?),
-                11 => SearchKey::Header(AString::arbitrary(u)?, AString::arbitrary(u)?),
-                12 => SearchKey::Keyword(Atom::arbitrary(u)?),
-                13 => SearchKey::Larger(u32::arbitrary(u)?),
-                14 => SearchKey::New,
-                15 => SearchKey::Old,
-                16 => SearchKey::On(NaiveDate::arbitrary(u)?),
-                17 => SearchKey::Recent,
-                18 => SearchKey::Seen,
-                19 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
-                20 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
-                21 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
-                22 => SearchKey::Since(NaiveDate::arbitrary(u)?),
-                23 => SearchKey::Smaller(u32::arbitrary(u)?),
-                24 => SearchKey::Subject(AString::arbitrary(u)?),
-                25 => SearchKey::Text(AString::arbitrary(u)?),
-                26 => SearchKey::To(AString::arbitrary(u)?),
-                27 => SearchKey::Uid(SequenceSet::arbitrary(u)?),
-                28 => SearchKey::Unanswered,
-                29 => SearchKey::Undeleted,
-                30 => SearchKey::Undraft,
-                31 => SearchKey::Unflagged,
-                32 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
-                33 => SearchKey::Unseen,
-                _ => unreachable!(),
-            })
-        }
-
-        fn make_search_key_rec<'a>(
-            u: &mut Unstructured<'a>,
-            depth: u8,
-        ) -> arbitrary::Result<SearchKey<'a>> {
-            if depth == 0 {
-                return make_search_key(u);
-            }
-
-            Ok(match u.int_in_range(0u8..=36)? {
-                0 => SearchKey::And({
-                    let keys = {
-                        let len = u.arbitrary_len::<SearchKey>()?;
-                        let mut tmp = Vec::with_capacity(len);
-
-                        for _ in 0..len {
-                            tmp.push(make_search_key_rec(u, depth - 1)?);
-                        }
-
-                        tmp
-                    };
-
-                    if !keys.is_empty() {
-                        Vec1::try_from(keys).unwrap()
-                    } else {
-                        Vec1::from(make_search_key(u)?)
-                    }
-                }),
-                1 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
-                2 => SearchKey::All,
-                3 => SearchKey::Answered,
-                4 => SearchKey::Bcc(AString::arbitrary(u)?),
-                5 => SearchKey::Before(NaiveDate::arbitrary(u)?),
-                6 => SearchKey::Body(AString::arbitrary(u)?),
-                7 => SearchKey::Cc(AString::arbitrary(u)?),
-                8 => SearchKey::Deleted,
-                9 => SearchKey::Draft,
-                10 => SearchKey::Flagged,
-                11 => SearchKey::From(AString::arbitrary(u)?),
-                12 => SearchKey::Header(AString::arbitrary(u)?, AString::arbitrary(u)?),
-                13 => SearchKey::Keyword(Atom::arbitrary(u)?),
-                14 => SearchKey::Larger(u32::arbitrary(u)?),
-                15 => SearchKey::New,
-                16 => SearchKey::Not(Box::new(make_search_key_rec(u, depth - 1)?)),
-                17 => SearchKey::Old,
-                18 => SearchKey::On(NaiveDate::arbitrary(u)?),
-                19 => SearchKey::Or(
-                    Box::new(make_search_key_rec(u, depth - 1)?),
-                    Box::new(make_search_key_rec(u, depth - 1)?),
-                ),
-                20 => SearchKey::Recent,
-                21 => SearchKey::Seen,
-                22 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
-                23 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
-                24 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
-                25 => SearchKey::Since(NaiveDate::arbitrary(u)?),
-                26 => SearchKey::Smaller(u32::arbitrary(u)?),
-                27 => SearchKey::Subject(AString::arbitrary(u)?),
-                28 => SearchKey::Text(AString::arbitrary(u)?),
-                29 => SearchKey::To(AString::arbitrary(u)?),
-                30 => SearchKey::Uid(SequenceSet::arbitrary(u)?),
-                31 => SearchKey::Unanswered,
-                32 => SearchKey::Undeleted,
-                33 => SearchKey::Undraft,
-                34 => SearchKey::Unflagged,
-                35 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
-                36 => SearchKey::Unseen,
-                _ => unreachable!(),
-            })
-        }
-
-        make_search_key_rec(u, 7)
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_search_key_limited(u, 7);
+        #[cfg(feature = "arbitrary_simplified")]
+        return arbitrary_search_key_leaf(u);
     }
+}
+
+#[cfg(not(feature = "arbitrary_simplified"))]
+fn arbitrary_search_key_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<SearchKey<'a>> {
+    if depth == 0 {
+        return arbitrary_search_key_leaf(u);
+    }
+
+    Ok(match u.int_in_range(0u8..=36)? {
+        0 => SearchKey::And({
+            let keys = {
+                let len = u.arbitrary_len::<SearchKey>()?;
+                let mut tmp = Vec::with_capacity(len);
+
+                for _ in 0..len {
+                    tmp.push(arbitrary_search_key_limited(u, depth - 1)?);
+                }
+
+                tmp
+            };
+
+            if !keys.is_empty() {
+                Vec1::try_from(keys).unwrap()
+            } else {
+                Vec1::from(arbitrary_search_key_leaf(u)?)
+            }
+        }),
+        1 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
+        2 => SearchKey::All,
+        3 => SearchKey::Answered,
+        4 => SearchKey::Bcc(AString::arbitrary(u)?),
+        5 => SearchKey::Before(NaiveDate::arbitrary(u)?),
+        6 => SearchKey::Body(AString::arbitrary(u)?),
+        7 => SearchKey::Cc(AString::arbitrary(u)?),
+        8 => SearchKey::Deleted,
+        9 => SearchKey::Draft,
+        10 => SearchKey::Flagged,
+        11 => SearchKey::From(AString::arbitrary(u)?),
+        12 => SearchKey::Header(AString::arbitrary(u)?, AString::arbitrary(u)?),
+        13 => SearchKey::Keyword(Atom::arbitrary(u)?),
+        14 => SearchKey::Larger(u32::arbitrary(u)?),
+        15 => SearchKey::New,
+        16 => SearchKey::Not(Box::new(arbitrary_search_key_limited(u, depth - 1)?)),
+        17 => SearchKey::Old,
+        18 => SearchKey::On(NaiveDate::arbitrary(u)?),
+        19 => SearchKey::Or(
+            Box::new(arbitrary_search_key_limited(u, depth - 1)?),
+            Box::new(arbitrary_search_key_limited(u, depth - 1)?),
+        ),
+        20 => SearchKey::Recent,
+        21 => SearchKey::Seen,
+        22 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
+        23 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
+        24 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
+        25 => SearchKey::Since(NaiveDate::arbitrary(u)?),
+        26 => SearchKey::Smaller(u32::arbitrary(u)?),
+        27 => SearchKey::Subject(AString::arbitrary(u)?),
+        28 => SearchKey::Text(AString::arbitrary(u)?),
+        29 => SearchKey::To(AString::arbitrary(u)?),
+        30 => SearchKey::Uid(SequenceSet::arbitrary(u)?),
+        31 => SearchKey::Unanswered,
+        32 => SearchKey::Undeleted,
+        33 => SearchKey::Undraft,
+        34 => SearchKey::Unflagged,
+        35 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
+        36 => SearchKey::Unseen,
+        _ => unreachable!(),
+    })
+}
+
+fn arbitrary_search_key_leaf<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<SearchKey<'a>> {
+    Ok(match u.int_in_range(0u8..=33)? {
+        0 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
+        1 => SearchKey::All,
+        2 => SearchKey::Answered,
+        3 => SearchKey::Bcc(AString::arbitrary(u)?),
+        4 => SearchKey::Before(NaiveDate::arbitrary(u)?),
+        5 => SearchKey::Body(AString::arbitrary(u)?),
+        6 => SearchKey::Cc(AString::arbitrary(u)?),
+        7 => SearchKey::Deleted,
+        8 => SearchKey::Draft,
+        9 => SearchKey::Flagged,
+        10 => SearchKey::From(AString::arbitrary(u)?),
+        11 => SearchKey::Header(AString::arbitrary(u)?, AString::arbitrary(u)?),
+        12 => SearchKey::Keyword(Atom::arbitrary(u)?),
+        13 => SearchKey::Larger(u32::arbitrary(u)?),
+        14 => SearchKey::New,
+        15 => SearchKey::Old,
+        16 => SearchKey::On(NaiveDate::arbitrary(u)?),
+        17 => SearchKey::Recent,
+        18 => SearchKey::Seen,
+        19 => SearchKey::SentBefore(NaiveDate::arbitrary(u)?),
+        20 => SearchKey::SentOn(NaiveDate::arbitrary(u)?),
+        21 => SearchKey::SentSince(NaiveDate::arbitrary(u)?),
+        22 => SearchKey::Since(NaiveDate::arbitrary(u)?),
+        23 => SearchKey::Smaller(u32::arbitrary(u)?),
+        24 => SearchKey::Subject(AString::arbitrary(u)?),
+        25 => SearchKey::Text(AString::arbitrary(u)?),
+        26 => SearchKey::To(AString::arbitrary(u)?),
+        27 => SearchKey::Uid(SequenceSet::arbitrary(u)?),
+        28 => SearchKey::Unanswered,
+        29 => SearchKey::Undeleted,
+        30 => SearchKey::Undraft,
+        31 => SearchKey::Unflagged,
+        32 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
+        33 => SearchKey::Unseen,
+        _ => unreachable!(),
+    })
 }
 
 impl<'a> Arbitrary<'a> for BodyStructure<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        fn make_body_structure_terminator<'a>(
-            u: &mut Unstructured<'a>,
-        ) -> arbitrary::Result<BodyStructure<'a>> {
-            Ok(BodyStructure::Single {
-                body: Body {
-                    basic: BasicFields::arbitrary(u)?,
-                    specific: match u.int_in_range(1..=2)? {
-                        1 => SpecificFields::Basic {
-                            r#type: IString::arbitrary(u)?,
-                            subtype: IString::arbitrary(u)?,
-                        },
-                        // No SpecificFields::Message because it would recurse.
-                        2 => SpecificFields::Text {
-                            subtype: IString::arbitrary(u)?,
-                            number_of_lines: u32::arbitrary(u)?,
-                        },
-                        _ => unreachable!(),
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_body_structure_limited(u, 3);
+        #[cfg(feature = "arbitrary_simplified")]
+        return arbitrary_body_structure_leaf(u);
+    }
+}
+
+#[cfg(not(feature = "arbitrary_simplified"))]
+fn arbitrary_body_structure_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<BodyStructure<'a>> {
+    if depth == 0 {
+        return arbitrary_body_structure_leaf(u);
+    }
+
+    Ok(match u.int_in_range(1..=2)? {
+        1 => BodyStructure::Single {
+            body: Body {
+                basic: BasicFields::arbitrary(u)?,
+                specific: match u.int_in_range(1..=3)? {
+                    1 => SpecificFields::Basic {
+                        r#type: IString::arbitrary(u)?,
+                        subtype: IString::arbitrary(u)?,
                     },
+                    2 => SpecificFields::Message {
+                        envelope: Box::<Envelope>::arbitrary(u)?,
+                        body_structure: Box::new(arbitrary_body_structure_limited(u, depth - 1)?),
+                        number_of_lines: u32::arbitrary(u)?,
+                    },
+                    3 => SpecificFields::Text {
+                        subtype: IString::arbitrary(u)?,
+                        number_of_lines: u32::arbitrary(u)?,
+                    },
+                    _ => unreachable!(),
                 },
-                extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
-            })
-        }
+            },
+            extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
+        },
+        2 => BodyStructure::Multi {
+            bodies: {
+                let bodies = {
+                    let len = u.arbitrary_len::<BodyStructure>()?;
+                    let mut tmp = Vec::with_capacity(len);
 
-        fn make_body_structure_rec<'a>(
-            u: &mut Unstructured<'a>,
-            depth: u8,
-        ) -> arbitrary::Result<BodyStructure<'a>> {
-            if depth == 0 {
-                return make_body_structure_terminator(u);
-            }
+                    for _ in 0..len {
+                        tmp.push(arbitrary_body_structure_limited(u, depth - 1)?);
+                    }
 
-            Ok(match u.int_in_range(1..=2)? {
-                1 => BodyStructure::Single {
-                    body: Body {
-                        basic: BasicFields::arbitrary(u)?,
-                        specific: match u.int_in_range(1..=3)? {
-                            1 => SpecificFields::Basic {
-                                r#type: IString::arbitrary(u)?,
-                                subtype: IString::arbitrary(u)?,
-                            },
-                            2 => SpecificFields::Message {
-                                envelope: Box::<Envelope>::arbitrary(u)?,
-                                body_structure: Box::new(make_body_structure_rec(u, depth - 1)?),
-                                number_of_lines: u32::arbitrary(u)?,
-                            },
-                            3 => SpecificFields::Text {
-                                subtype: IString::arbitrary(u)?,
-                                number_of_lines: u32::arbitrary(u)?,
-                            },
-                            _ => unreachable!(),
-                        },
-                    },
-                    extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
-                },
-                2 => BodyStructure::Multi {
-                    bodies: {
-                        let bodies = {
-                            let len = u.arbitrary_len::<BodyStructure>()?;
-                            let mut tmp = Vec::with_capacity(len);
+                    tmp
+                };
 
-                            for _ in 0..len {
-                                tmp.push(make_body_structure_rec(u, depth - 1)?);
-                            }
+                if !bodies.is_empty() {
+                    Vec1::try_from(bodies).unwrap()
+                } else {
+                    Vec1::from(arbitrary_body_structure_leaf(u)?)
+                }
+            },
+            subtype: IString::arbitrary(u)?,
+            extension_data: Option::<MultiPartExtensionData>::arbitrary(u)?,
+        },
+        _ => unreachable!(),
+    })
+}
 
-                            tmp
-                        };
-
-                        if !bodies.is_empty() {
-                            Vec1::try_from(bodies).unwrap()
-                        } else {
-                            Vec1::from(make_body_structure_terminator(u)?)
-                        }
-                    },
+fn arbitrary_body_structure_leaf<'a>(
+    u: &mut Unstructured<'a>,
+) -> arbitrary::Result<BodyStructure<'a>> {
+    Ok(BodyStructure::Single {
+        body: Body {
+            basic: BasicFields::arbitrary(u)?,
+            specific: match u.int_in_range(1..=2)? {
+                1 => SpecificFields::Basic {
+                    r#type: IString::arbitrary(u)?,
                     subtype: IString::arbitrary(u)?,
-                    extension_data: Option::<MultiPartExtensionData>::arbitrary(u)?,
+                },
+                // No SpecificFields::Message because it would recurse.
+                2 => SpecificFields::Text {
+                    subtype: IString::arbitrary(u)?,
+                    number_of_lines: u32::arbitrary(u)?,
                 },
                 _ => unreachable!(),
-            })
-        }
-
-        make_body_structure_rec(u, 3)
-    }
+            },
+        },
+        extension_data: Option::<SinglePartExtensionData>::arbitrary(u)?,
+    })
 }
 
 impl<'a> Arbitrary<'a> for BodyExtension<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        fn make_body_extension_terminator<'a>(
-            u: &mut Unstructured<'a>,
-        ) -> arbitrary::Result<BodyExtension<'a>> {
-            Ok(match u.int_in_range(1..=2)? {
-                1 => BodyExtension::NString(NString::arbitrary(u)?),
-                2 => BodyExtension::Number(u32::arbitrary(u)?),
-                // No `BodyExtension::List` because it could recurse.
-                _ => unreachable!(),
-            })
-        }
-
-        fn make_body_extension_rec<'a>(
-            u: &mut Unstructured<'a>,
-            depth: u8,
-        ) -> arbitrary::Result<BodyExtension<'a>> {
-            if depth == 0 {
-                return make_body_extension_terminator(u);
-            }
-
-            Ok(match u.int_in_range(1..=2)? {
-                1 => BodyExtension::NString(NString::arbitrary(u)?),
-                2 => BodyExtension::Number(u32::arbitrary(u)?),
-                3 => BodyExtension::List({
-                    let body_extensions = {
-                        let len = u.arbitrary_len::<BodyExtension>()?;
-                        let mut tmp = Vec::with_capacity(len);
-
-                        for _ in 0..len {
-                            tmp.push(make_body_extension_rec(u, depth - 1)?);
-                        }
-
-                        tmp
-                    };
-
-                    if !body_extensions.is_empty() {
-                        Vec1::try_from(body_extensions).unwrap()
-                    } else {
-                        Vec1::from(make_body_extension_terminator(u)?)
-                    }
-                }),
-                _ => unreachable!(),
-            })
-        }
-
-        make_body_extension_rec(u, 3)
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_body_extension_limited(u, 3);
+        #[cfg(feature = "arbitrary_simplified")]
+        return arbitrary_body_extension_leaf(u);
     }
+}
+
+#[cfg(not(feature = "arbitrary_simplified"))]
+fn arbitrary_body_extension_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<BodyExtension<'a>> {
+    if depth == 0 {
+        return arbitrary_body_extension_leaf(u);
+    }
+
+    Ok(match u.int_in_range(1..=2)? {
+        1 => BodyExtension::NString(NString::arbitrary(u)?),
+        2 => BodyExtension::Number(u32::arbitrary(u)?),
+        3 => BodyExtension::List({
+            let body_extensions = {
+                let len = u.arbitrary_len::<BodyExtension>()?;
+                let mut tmp = Vec::with_capacity(len);
+
+                for _ in 0..len {
+                    tmp.push(arbitrary_body_extension_limited(u, depth - 1)?);
+                }
+
+                tmp
+            };
+
+            if !body_extensions.is_empty() {
+                Vec1::try_from(body_extensions).unwrap()
+            } else {
+                Vec1::from(arbitrary_body_extension_leaf(u)?)
+            }
+        }),
+        _ => unreachable!(),
+    })
+}
+
+fn arbitrary_body_extension_leaf<'a>(
+    u: &mut Unstructured<'a>,
+) -> arbitrary::Result<BodyExtension<'a>> {
+    Ok(match u.int_in_range(1..=2)? {
+        1 => BodyExtension::NString(NString::arbitrary(u)?),
+        2 => BodyExtension::Number(u32::arbitrary(u)?),
+        // No `BodyExtension::List` because it could recurse.
+        _ => unreachable!(),
+    })
 }
 
 impl<'a> Arbitrary<'a> for DateTime {

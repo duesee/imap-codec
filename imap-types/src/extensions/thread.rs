@@ -97,35 +97,51 @@ fn write_prefix(f: &mut Formatter, prefix: &Vec1<NonZeroU32>) -> std::fmt::Resul
 #[cfg(feature = "arbitrary")]
 impl<'a> Arbitrary<'a> for Thread {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // We cheat a bit: Start from a leaf ...
-        let mut current = Thread::Members {
-            prefix: Arbitrary::arbitrary(u)?,
-            answers: None,
-        };
-
-        // ... and build up the thread to the top (with max depth == 8)
-        for _ in 0..7 {
-            match u.int_in_range(0..=2)? {
-                0 => {
-                    current = Thread::Members {
-                        prefix: Arbitrary::arbitrary(u)?,
-                        answers: Some(Vec2::unvalidated(vec![current.clone(), current])),
-                    };
-                }
-                1 => {
-                    current = Thread::Nested {
-                        answers: Vec2::unvalidated(vec![current.clone(), current]),
-                    };
-                }
-                2 => {
-                    return Ok(current);
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        Ok(current)
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_thread_limited(u, 7);
+        #[cfg(feature = "arbitrary_simplified")]
+        return arbitrary_thread_leaf(u);
     }
+}
+
+#[cfg(all(feature = "arbitrary", not(feature = "arbitrary_simplified")))]
+fn arbitrary_thread_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: usize,
+) -> arbitrary::Result<Thread> {
+    // We cheat a bit: Start from a leaf ...
+    let mut current = arbitrary_thread_leaf(u)?;
+
+    // ... and build up the thread to the top (with max depth == 8)
+    for _ in 0..depth {
+        match u.int_in_range(0..=2)? {
+            0 => {
+                current = Thread::Members {
+                    prefix: Arbitrary::arbitrary(u)?,
+                    answers: Some(Vec2::unvalidated(vec![current.clone(), current])),
+                };
+            }
+            1 => {
+                current = Thread::Nested {
+                    answers: Vec2::unvalidated(vec![current.clone(), current]),
+                };
+            }
+            2 => {
+                return Ok(current);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    Ok(current)
+}
+
+#[cfg(feature = "arbitrary")]
+fn arbitrary_thread_leaf<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<Thread> {
+    Ok(Thread::Members {
+        prefix: Arbitrary::arbitrary(u)?,
+        answers: None,
+    })
 }
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
