@@ -10,6 +10,10 @@ license = "MIT OR Apache-2.0"
 cargo-fuzz = true
 
 [features]
+# <Forward to imap-types>
+arbitrary_simplified = ["imap-types/arbitrary_simplified"]
+# </Forward to imap-types>
+
 # <Forward to imap-codec>
 # IMAP
 starttls = ["imap-codec/starttls"]
@@ -45,6 +49,7 @@ split = []
 
 [dependencies]
 libfuzzer-sys = "0.4"
+imap-types = { path = "../../imap-types" }
 imap-codec = { path = "..", features = ["arbitrary"] }
 
 [[bin]]
