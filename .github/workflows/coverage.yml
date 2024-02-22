@@ -30,7 +30,7 @@ jobs:
           cargo install grcov
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Measure test coverage
         env:
@@ -47,7 +47,7 @@ jobs:
             --llvm > coveralls.lcov
 
       - name: Upload to Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@c203f016dd0ff7855ebef0ed852000c20c117148
         with:
           format: lcov
           file: coveralls.lcov

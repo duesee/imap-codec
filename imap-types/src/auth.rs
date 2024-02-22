@@ -71,33 +71,56 @@ pub enum AuthMechanism<'a> {
     /// * <https://developers.google.com/gmail/imap/xoauth2-protocol>
     XOAuth2,
 
+    //
+    // --- SHA-1 ---
+    //
     /// SCRAM-SHA-1
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    /// * <https://datatracker.ietf.org/doc/html/rfc5802>
     ScramSha1,
 
     /// SCRAM-SHA-1-PLUS
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc5802
+    /// * <https://datatracker.ietf.org/doc/html/rfc5802>
     ScramSha1Plus,
 
+    //
+    // --- SHA-2 ---
+    //
     /// SCRAM-SHA-256
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    /// * <https://datatracker.ietf.org/doc/html/rfc7677>
     ScramSha256,
 
     /// SCRAM-SHA-256-PLUS
     ///
     /// # Reference(s):
     ///
-    /// * https://datatracker.ietf.org/doc/html/rfc7677
+    /// * <https://datatracker.ietf.org/doc/html/rfc7677>
     ScramSha256Plus,
+
+    //
+    // --- SHA-3 ---
+    //
+    /// SCRAM-SHA3-512
+    ///
+    /// # Reference(s):
+    ///
+    /// * <https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512>
+    ScramSha3_512,
+
+    /// SCRAM-SHA3-512-PLUS
+    ///
+    /// # Reference(s):
+    ///
+    /// * <https://datatracker.ietf.org/doc/html/draft-melnikov-scram-sha3-512>
+    ScramSha3_512Plus,
 
     /// Some other (unknown) mechanism.
     Other(AuthMechanismOther<'a>),
@@ -140,6 +163,8 @@ impl<'a> AsRef<str> for AuthMechanism<'a> {
             Self::ScramSha1Plus => "SCRAM-SHA-1-PLUS",
             Self::ScramSha256 => "SCRAM-SHA-256",
             Self::ScramSha256Plus => "SCRAM-SHA-256-PLUS",
+            Self::ScramSha3_512 => "SCRAM-SHA3-512",
+            Self::ScramSha3_512Plus => "SCRAM-SHA3-512-PLUS",
             Self::Other(other) => other.0.as_ref(),
         }
     }
@@ -168,14 +193,23 @@ pub struct AuthMechanismOther<'a>(Atom<'a>);
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AuthenticateData {
+pub enum AuthenticateData<'a> {
     /// Continue SASL authentication.
-    Continue(Secret<Vec<u8>>),
+    Continue(Secret<Cow<'a, [u8]>>),
     /// Cancel SASL authentication.
     ///
     /// "If the client wishes to cancel an authentication exchange,
     /// it issues a line consisting of a single "*"." (RFC 3501)
     Cancel,
+}
+
+impl<'a> AuthenticateData<'a> {
+    pub fn r#continue<D>(data: D) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        Self::Continue(Secret::new(data.into()))
+    }
 }
 
 #[cfg(test)]

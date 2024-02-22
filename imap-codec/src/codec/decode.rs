@@ -311,7 +311,7 @@ impl Decoder for ResponseCodec {
 }
 
 impl Decoder for AuthenticateDataCodec {
-    type Message<'a> = AuthenticateData;
+    type Message<'a> = AuthenticateData<'a>;
     type Error<'a> = AuthenticateDataDecodeError;
 
     fn decode<'a>(
@@ -350,12 +350,11 @@ mod tests {
 
     use imap_types::{
         command::{Command, CommandBody},
-        core::{IString, Literal, NString, NonEmptyVec},
+        core::{IString, Literal, NString, Vec1},
         extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
-        secret::Secret,
     };
 
     use super::*;
@@ -500,16 +499,13 @@ mod tests {
             // Ok
             (
                 b"VGVzdA==\r\n".as_ref(),
-                Ok((
-                    b"".as_ref(),
-                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
-                )),
+                Ok((b"".as_ref(), AuthenticateData::r#continue(b"Test".to_vec()))),
             ),
             (
                 b"VGVzdA==\r\nx".as_ref(),
                 Ok((
                     b"x".as_ref(),
-                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
+                    AuthenticateData::r#continue(b"Test".to_vec()),
                 )),
             ),
             (
@@ -553,10 +549,7 @@ mod tests {
             ),
             (
                 b"VGVzdA==\r\n".as_ref(),
-                Ok((
-                    b"".as_ref(),
-                    AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
-                )),
+                Ok((b"".as_ref(), AuthenticateData::r#continue(b"Test".to_vec()))),
             ),
             // Failed
             (
@@ -662,7 +655,7 @@ mod tests {
                     b"".as_ref(),
                     Response::Data(Data::Fetch {
                         seq: NonZeroU32::new(1).unwrap(),
-                        items: NonEmptyVec::from(MessageDataItem::Rfc822(NString(Some(
+                        items: Vec1::from(MessageDataItem::Rfc822(NString(Some(
                             IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
                         )))),
                     }),

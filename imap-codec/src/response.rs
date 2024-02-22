@@ -5,7 +5,7 @@ use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
 use imap_types::{
-    core::{NonEmptyVec, Text},
+    core::{Text, Vec1},
     response::{
         Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
         Response, Status, StatusBody, StatusKind, Tagged,
@@ -23,6 +23,8 @@ use nom::{
 
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id_response;
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::metadata_code;
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
@@ -113,19 +115,30 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
     }
 }
 
-/// `resp-text-code = "ALERT" /
-///                   "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
-///                   capability-data /
-///                   "PARSE" /
-///                   "PERMANENTFLAGS" SP "(" [flag-perm *(SP flag-perm)] ")" /
-///                   "READ-ONLY" /
-///                   "READ-WRITE" /
-///                   "TRYCREATE" /
-///                   "UIDNEXT" SP nz-number /
-///                   "UIDVALIDITY" SP nz-number /
-///                   "UNSEEN" SP nz-number /
-///                   "COMPRESSIONACTIVE" ; RFC 4978
-///                   atom [SP 1*<any TEXT-CHAR except "]">]`
+/// ```abnf
+/// resp-text-code = "ALERT" /
+///                  "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
+///                  capability-data /
+///                  "PARSE" /
+///                  "PERMANENTFLAGS" SP "(" [flag-perm *(SP flag-perm)] ")" /
+///                  "READ-ONLY" /
+///                  "READ-WRITE" /
+///                  "TRYCREATE" /
+///                  "UIDNEXT" SP nz-number /
+///                  "UIDVALIDITY" SP nz-number /
+///                  "UNSEEN" SP nz-number /
+///                  "COMPRESSIONACTIVE" / ; RFC 4978
+///                  "OVERQUOTA" /         ; RFC 9208
+///                  "TOOBIG" /            ; RFC 4469
+///                  "METADATA" SP (       ; RFC 5464
+///                    "LONGENTRIES" SP number /
+///                    "MAXSIZE" SP number /
+///                    "TOOMANY" /
+///                    "NOPRIVATE"
+///                  ) /
+///                  "UNKNOWN-CTE" /       ; RFC 3516
+///                  atom [SP 1*<any TEXT-CHAR except "]">]
+/// ```
 ///
 /// Note: See errata id: 261
 pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
@@ -177,6 +190,13 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         value(Code::TooBig, tag_no_case(b"TOOBIG")),
+        #[cfg(feature = "ext_metadata")]
+        map(
+            preceded(tag_no_case("METADATA "), metadata_code),
+            Code::Metadata,
+        ),
+        #[cfg(feature = "ext_binary")]
+        value(Code::UnknownCte, tag_no_case(b"UNKNOWN-CTE")),
     ))(input)
 }
 
@@ -184,7 +204,7 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 ///
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
-pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Capability>> {
+pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], Vec1<Capability>> {
     let mut parser = tuple((
         tag_no_case("CAPABILITY"),
         sp,
@@ -193,7 +213,7 @@ pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<Cap
 
     let (rem, (_, _, caps)) = parser(input)?;
 
-    Ok((rem, NonEmptyVec::unvalidated(caps)))
+    Ok((rem, Vec1::unvalidated(caps)))
 }
 
 /// `capability = ("AUTH=" auth-type) /
@@ -433,7 +453,7 @@ mod tests {
             (
                 b"* CAPABILITY IMAP4REV1\r\n".as_ref(),
                 b"".as_ref(),
-                Response::Data(Data::Capability(NonEmptyVec::from(Capability::Imap4Rev1))),
+                Response::Data(Data::Capability(Vec1::from(Capability::Imap4Rev1))),
             ),
             (
                 b"* LIST (\\Noselect) \"/\" bbb\r\n",
@@ -657,7 +677,7 @@ mod tests {
                                 language: vec![],
                                 tail: Some(Location{
                                     location: NString(None),
-                                    extensions: vec![BodyExtension::List(NonEmptyVec::from(BodyExtension::Number(1337)))],
+                                    extensions: vec![BodyExtension::List(Vec1::from(BodyExtension::Number(1337)))],
                                 })
                             })
                         })

@@ -61,7 +61,7 @@
 //!
 //! use imap_types::{
 //!     body::{BasicFields, Body, BodyStructure, SinglePartExtensionData, SpecificFields},
-//!     core::{IString, NString, NonEmptyVec},
+//!     core::{IString, NString, Vec1},
 //!     fetch::MessageDataItem,
 //!     response::{Data, Response},
 //! };
@@ -69,7 +69,7 @@
 //! let fetch = {
 //!     let data = Data::Fetch {
 //!         seq: NonZeroU32::new(42).unwrap(),
-//!         items: NonEmptyVec::try_from(vec![
+//!         items: Vec1::try_from(vec![
 //!             MessageDataItem::Rfc822Size(1337),
 //!             MessageDataItem::Body(BodyStructure::Single {
 //!                 body: Body {
@@ -114,13 +114,16 @@
 //!
 //! This crate uses the following features to enable experimental IMAP extensions:
 //!
-//! |Feature              |Description                                                                          |Status    |
-//! |---------------------|-------------------------------------------------------------------------------------|----------|
-//! |ext_id               |IMAP4 ID extension ([RFC 2971])                                                      |Unfinished|
-//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])|Unfinished|
-//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                   |Unfinished|
-//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                 |Unfinished|
-//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                |          |
+//! |Feature              |Description                                                                            |Status    |
+//! |---------------------|---------------------------------------------------------------------------------------|----------|
+//! |ext_id               |IMAP4 ID extension ([RFC 2971])                                                        |Unfinished|
+//! |ext_sort_thread      |Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256] + [RFC 5957])|Unfinished|
+//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])  |Unfinished|
+//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                     |Unfinished|
+//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                   |Unfinished|
+//! |ext_binary           |IMAP4 Binary Content Extension ([RFC 3516])                                            |Unfinished|
+//! |ext_metadata         |The IMAP METADATA Extension ([RFC 5464])                                               |Unfinished|
+//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                  |          |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
@@ -150,10 +153,14 @@
 //! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
 //! [RFC 2971]: https://datatracker.ietf.org/doc/html/rfc2971
 //! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
+//! [RFC 3516]: https://datatracker.ietf.org/doc/html/rfc3516
 //! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
 //! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
 //! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
+//! [RFC 5256]: https://datatracker.ietf.org/doc/html/rfc5256
+//! [RFC 5464]: https://datatracker.ietf.org/doc/html/rfc5464
+//! [RFC 5957]: https://datatracker.ietf.org/doc/html/rfc5957
 //! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
 //! [RFC 7162]: https://datatracker.ietf.org/doc/html/rfc7162
 //! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888

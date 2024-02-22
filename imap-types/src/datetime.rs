@@ -43,9 +43,14 @@ impl DateTime {
     /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: chrono::DateTime<FixedOffset>) -> Self {
+        #[cfg(debug_assertions)]
+        Self::validate(&value).unwrap();
+
         Self(value)
     }
 }
@@ -111,9 +116,14 @@ impl NaiveDate {
     /// The caller must ensure that `value` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: chrono::NaiveDate) -> Self {
+        #[cfg(debug_assertions)]
+        Self::validate(&value).unwrap();
+
         Self(value)
     }
 }

@@ -49,6 +49,8 @@ use std::{borrow::Borrow, io::Write, num::{NonZeroU32, NonZeroU64}};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+use imap_types::core::NString8;
 use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     body::{
@@ -246,7 +248,7 @@ macro_rules! impl_encoder_for_codec {
 
 impl_encoder_for_codec!(GreetingCodec, Greeting<'a>);
 impl_encoder_for_codec!(CommandCodec, Command<'a>);
-impl_encoder_for_codec!(AuthenticateDataCodec, AuthenticateData);
+impl_encoder_for_codec!(AuthenticateDataCodec, AuthenticateData<'a>);
 impl_encoder_for_codec!(ResponseCodec, Response<'a>);
 impl_encoder_for_codec!(IdleDoneCodec, IdleDone);
 
@@ -470,7 +472,43 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     charset.encode_ctx(ctx)?;
                 }
                 ctx.write_all(b" ")?;
-                criteria.encode_ctx(ctx)
+                join_serializable(criteria.as_ref(), b" ", ctx)
+            }
+            #[cfg(feature = "ext_sort_thread")]
+            CommandBody::Sort {
+                sort_criteria,
+                charset,
+                search_criteria,
+                uid,
+            } => {
+                if *uid {
+                    ctx.write_all(b"UID SORT (")?;
+                } else {
+                    ctx.write_all(b"SORT (")?;
+                }
+                join_serializable(sort_criteria.as_ref(), b" ", ctx)?;
+                ctx.write_all(b") ")?;
+                charset.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                join_serializable(search_criteria.as_ref(), b" ", ctx)
+            }
+            #[cfg(feature = "ext_sort_thread")]
+            CommandBody::Thread {
+                algorithm,
+                charset,
+                search_criteria,
+                uid,
+            } => {
+                if *uid {
+                    ctx.write_all(b"UID THREAD ")?;
+                } else {
+                    ctx.write_all(b"THREAD ")?;
+                }
+                algorithm.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                charset.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                join_serializable(search_criteria.as_ref(), b" ", ctx)
             }
             CommandBody::Fetch {
                 sequence_set,
@@ -621,6 +659,44 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     None => ctx.write_all(b"NIL"),
                 }
             }
+            #[cfg(feature = "ext_metadata")]
+            CommandBody::SetMetadata {
+                mailbox,
+                entry_values,
+            } => {
+                ctx.write_all(b"SETMETADATA ")?;
+                mailbox.encode_ctx(ctx)?;
+                ctx.write_all(b" (")?;
+                join_serializable(entry_values.as_ref(), b" ", ctx)?;
+                ctx.write_all(b")")
+            }
+            #[cfg(feature = "ext_metadata")]
+            CommandBody::GetMetadata {
+                options,
+                mailbox,
+                entries,
+            } => {
+                ctx.write_all(b"GETMETADATA")?;
+
+                if !options.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(options, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                ctx.write_all(b" ")?;
+                mailbox.encode_ctx(ctx)?;
+
+                ctx.write_all(b" ")?;
+
+                if entries.as_ref().len() == 1 {
+                    entries.as_ref()[0].encode_ctx(ctx)
+                } else {
+                    ctx.write_all(b"(")?;
+                    join_serializable(entries.as_ref(), b" ", ctx)?;
+                    ctx.write_all(b")")
+                }
+            }
         }
     }
 }
@@ -631,7 +707,7 @@ impl<'a> EncodeIntoContext for AuthMechanism<'a> {
     }
 }
 
-impl EncodeIntoContext for AuthenticateData {
+impl EncodeIntoContext for AuthenticateData<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Continue(data) => {
@@ -1045,6 +1121,39 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
             Self::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
             Self::Uid => ctx.write_all(b"UID"),
             Self::ModSeq => ctx.write_all(b"MODSEQ"),
+            #[cfg(feature = "ext_binary")]
+            MessageDataItemName::Binary {
+                section,
+                partial,
+                peek,
+            } => {
+                ctx.write_all(b"BINARY")?;
+                if *peek {
+                    ctx.write_all(b".PEEK")?;
+                }
+
+                ctx.write_all(b"[")?;
+                join_serializable(section, b".", ctx)?;
+                ctx.write_all(b"]")?;
+
+                if let Some((a, b)) = partial {
+                    ctx.write_all(b"<")?;
+                    a.encode_ctx(ctx)?;
+                    ctx.write_all(b".")?;
+                    b.encode_ctx(ctx)?;
+                    ctx.write_all(b">")?;
+                }
+
+                Ok(())
+            }
+            #[cfg(feature = "ext_binary")]
+            MessageDataItemName::BinarySize { section } => {
+                ctx.write_all(b"BINARY.SIZE")?;
+
+                ctx.write_all(b"[")?;
+                join_serializable(section, b".", ctx)?;
+                ctx.write_all(b"]")
+            }
         }
     }
 }
@@ -1253,6 +1362,13 @@ impl<'a> EncodeIntoContext for Code<'a> {
             Code::CompressionActive => ctx.write_all(b"COMPRESSIONACTIVE"),
             Code::OverQuota => ctx.write_all(b"OVERQUOTA"),
             Code::TooBig => ctx.write_all(b"TOOBIG"),
+            #[cfg(feature = "ext_metadata")]
+            Code::Metadata(code) => {
+                ctx.write_all(b"METADATA ")?;
+                code.encode_ctx(ctx)
+            }
+            #[cfg(feature = "ext_binary")]
+            Code::UnknownCte => ctx.write_all(b"UNKNOWN-CTE"),
             Code::Other(unknown) => unknown.encode_ctx(ctx),
         }
     }
@@ -1336,6 +1452,26 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     
                 }
             }
+            #[cfg(feature = "ext_sort_thread")]
+            Data::Sort(seqs) => {
+                if seqs.is_empty() {
+                    ctx.write_all(b"* SORT")?;
+                } else {
+                    ctx.write_all(b"* SORT ")?;
+                    join_serializable(seqs, b" ", ctx)?;
+                }
+            }
+            #[cfg(feature = "ext_sort_thread")]
+            Data::Thread(threads) => {
+                if threads.is_empty() {
+                    ctx.write_all(b"* THREAD")?;
+                } else {
+                    ctx.write_all(b"* THREAD ")?;
+                    for thread in threads {
+                        thread.encode_ctx(ctx)?;
+                    }
+                }
+            }
             Data::Flags(flags) => {
                 ctx.write_all(b"* FLAGS (")?;
                 join_serializable(flags, b" ", ctx)?;
@@ -1409,6 +1545,13 @@ impl<'a> EncodeIntoContext for Data<'a> {
                         ctx.write_all(b"NIL")?;
                     }
                 }
+            }
+            #[cfg(feature = "ext_metadata")]
+            Data::Metadata { mailbox, items } => {
+                ctx.write_all(b"* METADATA ")?;
+                mailbox.encode_ctx(ctx)?;
+                ctx.write_all(b" ")?;
+                items.encode_ctx(ctx)?;
             }
         }
 
@@ -1531,6 +1674,20 @@ impl<'a> EncodeIntoContext for MessageDataItem<'a> {
                 modseq.encode_ctx(ctx)?;
                 ctx.write_all(b")")
             }
+            #[cfg(feature = "ext_binary")]
+            Self::Binary { section, value } => {
+                ctx.write_all(b"BINARY[")?;
+                join_serializable(section, b".", ctx)?;
+                ctx.write_all(b"] ")?;
+                value.encode_ctx(ctx)
+            }
+            #[cfg(feature = "ext_binary")]
+            Self::BinarySize { section, size } => {
+                ctx.write_all(b"BINARY.SIZE[")?;
+                join_serializable(section, b".", ctx)?;
+                ctx.write_all(b"] ")?;
+                size.encode_ctx(ctx)
+            }
         }
     }
 }
@@ -1540,6 +1697,16 @@ impl<'a> EncodeIntoContext for NString<'a> {
         match &self.0 {
             Some(imap_str) => imap_str.encode_ctx(ctx),
             None => ctx.write_all(b"NIL"),
+        }
+    }
+}
+
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+impl<'a> EncodeIntoContext for NString8<'a> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            NString8::NString(nstring) => nstring.encode_ctx(ctx),
+            NString8::Literal8(literal8) => literal8.encode_ctx(ctx),
         }
     }
 }
@@ -1797,7 +1964,7 @@ impl<'a> EncodeIntoContext for CommandContinuationRequest<'a> {
     }
 }
 
-mod utils {
+pub(crate) mod utils {
     use std::io::Write;
 
     use super::{EncodeContext, EncodeIntoContext};
@@ -1880,7 +2047,7 @@ mod tests {
     use imap_types::{
         auth::AuthMechanism,
         command::{Command, CommandBody},
-        core::{AString, Literal, NString, NonEmptyVec},
+        core::{AString, Literal, NString, Vec1},
         fetch::MessageDataItem,
         response::{Data, Response},
         utils::escape_byte_string,
@@ -2007,7 +2174,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
+                    items: Vec1::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated(b"ABCDE".as_ref())),
@@ -2030,7 +2197,7 @@ mod tests {
             (
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(12345).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::BodyExt {
+                    items: Vec1::from(MessageDataItem::BodyExt {
                         section: None,
                         origin: None,
                         data: NString::from(Literal::unvalidated_non_sync(b"ABCDE".as_ref())),

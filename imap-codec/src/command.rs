@@ -5,6 +5,8 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_binary")]
+use imap_types::extensions::binary::LiteralOrLiteral8;
 use imap_types::{
     auth::AuthMechanism,
     command::{Command, CommandBody, FetchModifier, SelectExamineModifier, StoreModifier, ListReturnItem},
@@ -21,8 +23,14 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::literal8;
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id;
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{getmetadata, setmetadata};
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::{sort::sort, thread::thread};
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, nz_number64, tag_imap},
@@ -103,20 +111,27 @@ pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 // # Command Auth
 
-/// `command-auth = append /
-///                 create /
-///                 delete /
-///                 examine /
-///                 list /
-///                 lsub /
-///                 rename /
-///                 select /
-///                 status /
-///                 subscribe /
-///                 unsubscribe /
-///                 idle ; RFC 2177
-///                 enable ; RFC 5161
-///                 compress ; RFC 4978`
+/// ```abnf
+/// command-auth = append /
+///                create /
+///                delete /
+///                examine /
+///                list /
+///                lsub /
+///                rename /
+///                select /
+///                status /
+///                subscribe /
+///                unsubscribe /
+///                idle /         ; RFC 2177
+///                enable /       ; RFC 5161
+///                compress /     ; RFC 4978
+///                getquota /     ; RFC 9208
+///                getquotaroot / ; RFC 9208
+///                setquota /     ; RFC 9208
+///                setmetadata /  ; RFC 5464
+///                getmetadata    ; RFC 5464
+/// ```
 ///
 /// Note: Valid only in Authenticated or Selected state
 pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
@@ -138,6 +153,10 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         getquota,
         getquotaroot,
         setquota,
+        #[cfg(feature = "ext_metadata")]
+        setmetadata,
+        #[cfg(feature = "ext_metadata")]
+        getmetadata,
     ))(input)
 }
 
@@ -150,7 +169,13 @@ pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         opt(preceded(sp, flag_list)),
         opt(preceded(sp, date_time)),
         sp,
+        #[cfg(not(feature = "ext_binary"))]
         literal,
+        #[cfg(feature = "ext_binary")]
+        alt((
+            map(literal, LiteralOrLiteral8::Literal),
+            map(literal8, LiteralOrLiteral8::Literal8),
+        )),
     ));
 
     let (remaining, (_, _, mailbox, flags, date, _, message)) = parser(input)?;
@@ -440,6 +465,10 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         store,
         uid,
         search,
+        #[cfg(feature = "ext_sort_thread")]
+        sort,
+        #[cfg(feature = "ext_sort_thread")]
+        thread,
         value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
         r#move,
     ))(input)

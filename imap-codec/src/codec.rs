@@ -2,7 +2,7 @@ pub mod decode;
 pub mod encode;
 
 /// Codec for greetings.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 // We use `#[non_exhaustive]` to prevent users from using struct literal syntax.
 //
 // This allows to add configuration options later. For example, the
@@ -11,22 +11,22 @@ pub mod encode;
 pub struct GreetingCodec;
 
 /// Codec for commands.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct CommandCodec;
 
 /// Codec for authenticate data lines.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct AuthenticateDataCodec;
 
 /// Codec for responses.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct ResponseCodec;
 
 /// Codec for idle dones.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct IdleDoneCodec;
 
@@ -54,12 +54,11 @@ mod tests {
     use imap_types::{
         auth::AuthenticateData,
         command::{Command, CommandBody},
-        core::{IString, Literal, LiteralMode, NString, NonEmptyVec, Tag},
+        core::{IString, Literal, LiteralMode, NString, Tag, Vec1},
         extensions::idle::IdleDone,
         fetch::MessageDataItem,
         mailbox::Mailbox,
         response::{Data, Greeting, GreetingKind, Response},
-        secret::Secret,
     };
 
     use super::*;
@@ -150,9 +149,9 @@ mod tests {
                 b"",
                 Response::Data(Data::Fetch {
                     seq: NonZeroU32::new(1).unwrap(),
-                    items: NonEmptyVec::from(MessageDataItem::Rfc822(NString(Some(
-                        IString::Literal(Literal::try_from(b"hello".as_ref()).unwrap()),
-                    )))),
+                    items: Vec1::from(MessageDataItem::Rfc822(NString(Some(IString::Literal(
+                        Literal::try_from(b"hello".as_ref()).unwrap(),
+                    ))))),
                 }),
             ),
         ]);
@@ -164,17 +163,17 @@ mod tests {
             (
                 b"VGVzdA==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"Test".to_vec())),
+                AuthenticateData::r#continue(b"Test".to_vec()),
             ),
             (
                 b"AA==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x00".to_vec())),
+                AuthenticateData::r#continue(b"\x00".to_vec()),
             ),
             (
                 b"aQ==\r\n".as_ref(),
                 b"".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x69".to_vec())),
+                AuthenticateData::r#continue(b"\x69".to_vec()),
             ),
             (b"*\r\n".as_ref(), b"".as_ref(), AuthenticateData::Cancel),
         ]);

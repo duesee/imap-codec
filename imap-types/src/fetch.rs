@@ -12,9 +12,11 @@ use bounded_static::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_binary")]
+use crate::core::NString8;
 use crate::{
     body::BodyStructure,
-    core::{AString, NString, NonEmptyVec},
+    core::{AString, NString, Vec1},
     datetime::DateTime,
     envelope::Envelope,
     flag::FlagFetch,
@@ -232,6 +234,15 @@ pub enum MessageDataItemName<'a> {
 
     /// The ModSeq of CONDSTORE
     ModSeq,
+    #[cfg(feature = "ext_binary")]
+    Binary {
+        section: Vec<NonZeroU32>,
+        partial: Option<(u32, NonZeroU32)>,
+        peek: bool,
+    },
+
+    #[cfg(feature = "ext_binary")]
+    BinarySize { section: Vec<NonZeroU32> },
 }
 
 /// Message data item.
@@ -362,6 +373,14 @@ pub enum MessageDataItem<'a> {
 
     /// The ModSeq value described in CONDSTORE
     ModSeq(NonZeroU64),
+    #[cfg(feature = "ext_binary")]
+    Binary {
+        section: Vec<NonZeroU32>,
+        value: NString8<'a>,
+    },
+
+    #[cfg(feature = "ext_binary")]
+    BinarySize { section: Vec<NonZeroU32>, size: u32 },
 }
 
 /// A part specifier is either a part number or one of the following:
@@ -419,11 +438,11 @@ pub enum Section<'a> {
 
     /// The subset returned by HEADER.FIELDS contains only those header fields with a field-name that
     /// matches one of the names in the list.
-    HeaderFields(Option<Part>, NonEmptyVec<AString<'a>>), // TODO: what if none matches?
+    HeaderFields(Option<Part>, Vec1<AString<'a>>), // TODO: what if none matches?
 
     /// Similarly, the subset returned by HEADER.FIELDS.NOT contains only the header fields
     /// with a non-matching field-name.
-    HeaderFieldsNot(Option<Part>, NonEmptyVec<AString<'a>>), // TODO: what if none matches?
+    HeaderFieldsNot(Option<Part>, Vec1<AString<'a>>), // TODO: what if none matches?
 
     /// The TEXT part specifier refers to the text body of the message, omitting the [RFC-2822] header.
     Text(Option<Part>),
@@ -437,7 +456,7 @@ pub enum Section<'a> {
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Part(pub NonEmptyVec<NonZeroU32>);
+pub struct Part(pub Vec1<NonZeroU32>);
 
 /// A part specifier is either a part number or one of the following:
 /// `HEADER`, `HEADER.FIELDS`, `HEADER.FIELDS.NOT`, `MIME`, and `TEXT`.
@@ -460,8 +479,8 @@ pub struct Part(pub NonEmptyVec<NonZeroU32>);
 pub enum PartSpecifier<'a> {
     PartNumber(u32),
     Header,
-    HeaderFields(NonEmptyVec<AString<'a>>),
-    HeaderFieldsNot(NonEmptyVec<AString<'a>>),
+    HeaderFields(Vec1<AString<'a>>),
+    HeaderFieldsNot(Vec1<AString<'a>>),
     Mime,
     Text,
 }

@@ -14,10 +14,16 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::LiteralOrLiteral8;
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::{sort::SortCriterion, thread::ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
-    core::{AString, Charset, Literal, NonEmptyVec, Tag},
+    core::{AString, Charset, Literal, Tag, Vec1},
     datetime::DateTime,
     extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
     fetch::MacroOrMessageDataItemNames,
@@ -913,8 +919,14 @@ pub enum CommandBody<'a> {
         flags: Vec<Flag<'a>>,
         /// Datetime.
         date: Option<DateTime>,
+        #[cfg(not(feature = "ext_binary"))]
         /// Message to append.
         message: Literal<'a>,
+        #[cfg(feature = "ext_binary")]
+        /// Message to append.
+        ///
+        /// Note: Use [`LiteralOrLiteral8::Literal8`] only when the server advertised [`Capability::Binary`](crate::response::Capability::Binary).
+        message: LiteralOrLiteral8<'a>,
     },
 
     // ----- Selected State (https://tools.ietf.org/html/rfc3501#section-6.4) -----
@@ -1043,7 +1055,53 @@ pub enum CommandBody<'a> {
         /// Charset.
         charset: Option<Charset<'a>>,
         /// Criteria.
-        criteria: SearchKey<'a>,
+        criteria: Vec1<SearchKey<'a>>,
+        /// Use UID variant.
+        uid: bool,
+    },
+
+    #[cfg(feature = "ext_sort_thread")]
+    /// SORT command.
+    ///
+    /// The SORT command is a variant of SEARCH with sorting semantics for the results.
+    ///
+    /// Data:
+    /// * untagged responses: SORT
+    ///
+    /// Result:
+    /// * OK - sort completed
+    /// * NO - sort error: can't sort that charset or criteria
+    /// * BAD - command unknown or arguments invalid
+    Sort {
+        /// Sort criteria.
+        sort_criteria: Vec1<SortCriterion>,
+        /// Charset.
+        charset: Charset<'a>,
+        /// Search criteria.
+        search_criteria: Vec1<SearchKey<'a>>,
+        /// Use UID variant.
+        uid: bool,
+    },
+
+    #[cfg(feature = "ext_sort_thread")]
+    /// THREAD command.
+    ///
+    /// The THREAD command is a variant of SEARCH with threading semantics for the results.
+    ///
+    /// Data:
+    /// * untagged responses: THREAD
+    ///
+    /// Result:
+    /// * OK - thread completed
+    /// * NO - thread error: can't thread that charset or criteria
+    /// * BAD - command unknown or arguments invalid
+    Thread {
+        /// Threading algorithm.
+        algorithm: ThreadingAlgorithm<'a>,
+        /// Charset.
+        charset: Charset<'a>,
+        /// Search criteria.
+        search_criteria: Vec1<SearchKey<'a>>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1275,7 +1333,7 @@ pub enum CommandBody<'a> {
     /// ENABLE command.
     Enable {
         /// Capabilities to enable.
-        capabilities: NonEmptyVec<CapabilityEnable<'a>>,
+        capabilities: Vec1<CapabilityEnable<'a>>,
     },
 
     /// COMPRESS command.
@@ -1404,6 +1462,19 @@ pub enum CommandBody<'a> {
     Id {
         /// Parameters.
         parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
+    },
+
+    #[cfg(feature = "ext_metadata")]
+    SetMetadata {
+        mailbox: Mailbox<'a>,
+        entry_values: Vec1<EntryValue<'a>>,
+    },
+
+    #[cfg(feature = "ext_metadata")]
+    GetMetadata {
+        options: Vec<GetMetadataOption>,
+        mailbox: Mailbox<'a>,
+        entries: Vec1<Entry<'a>>,
     },
 }
 
@@ -1622,12 +1693,15 @@ impl<'a> CommandBody<'a> {
             mailbox: mailbox.try_into().map_err(AppendError::Mailbox)?,
             flags,
             date,
+            #[cfg(not(feature = "ext_binary"))]
             message: message.try_into().map_err(AppendError::Data)?,
+            #[cfg(feature = "ext_binary")]
+            message: LiteralOrLiteral8::Literal(message.try_into().map_err(AppendError::Data)?),
         })
     }
 
     /// Construct a SEARCH command.
-    pub fn search(charset: Option<Charset<'a>>, criteria: SearchKey<'a>, uid: bool) -> Self {
+    pub fn search(charset: Option<Charset<'a>>, criteria: Vec1<SearchKey<'a>>, uid: bool) -> Self {
         CommandBody::Search {
             charset,
             criteria,
@@ -1703,6 +1777,10 @@ impl<'a> CommandBody<'a> {
             Self::Authenticate { .. } => "AUTHENTICATE",
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort { .. } => "SORT",
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Thread { .. } => "THREAD",
             Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",
             Self::Create { .. } => "CREATE",
@@ -1730,6 +1808,10 @@ impl<'a> CommandBody<'a> {
             Self::Move { .. } => "MOVE",
             #[cfg(feature = "ext_id")]
             Self::Id { .. } => "ID",
+            #[cfg(feature = "ext_metadata")]
+            Self::SetMetadata { .. } => "SETMETADATA",
+            #[cfg(feature = "ext_metadata")]
+            Self::GetMetadata { .. } => "GETMETADATA",
         }
     }
 }
@@ -1784,9 +1866,11 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;
+    #[cfg(feature = "ext_binary")]
+    use crate::extensions::binary::Literal8;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal, NonEmptyVec},
+        core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
         datetime::DateTime,
         extensions::{
             compress::CompressionAlgorithm,
@@ -1883,25 +1967,25 @@ mod tests {
             CommandBody::Expunge { uid_sequence_set: None },
             CommandBody::search(
                 None,
-                SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
-                ),
+                )),
                 false,
             ),
             CommandBody::search(
                 None,
-                SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::All, SearchKey::New, SearchKey::Unseen]
                         .try_into()
                         .unwrap(),
-                ),
+                )),
                 true,
             ),
             CommandBody::search(
                 None,
-                SearchKey::And(
+                Vec1::from(SearchKey::And(
                     vec![SearchKey::SequenceSet(SequenceSet(
                         vec![Sequence::Single(SeqOrUid::Value(42.try_into().unwrap()))]
                             .try_into()
@@ -1909,19 +1993,33 @@ mod tests {
                     ))]
                     .try_into()
                     .unwrap(),
-                ),
+                )),
                 true,
             ),
-            CommandBody::search(None, SearchKey::SequenceSet("42".try_into().unwrap()), true),
-            CommandBody::search(None, SearchKey::SequenceSet("*".try_into().unwrap()), true),
             CommandBody::search(
                 None,
-                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                Vec1::from(SearchKey::SequenceSet("42".try_into().unwrap())),
+                true,
+            ),
+            CommandBody::search(
+                None,
+                Vec1::from(SearchKey::SequenceSet("*".try_into().unwrap())),
+                true,
+            ),
+            CommandBody::search(
+                None,
+                Vec1::from(SearchKey::Or(
+                    Box::new(SearchKey::Draft),
+                    Box::new(SearchKey::All),
+                )),
                 true,
             ),
             CommandBody::search(
                 Some(Charset::try_from("UTF-8").unwrap()),
-                SearchKey::Or(Box::new(SearchKey::Draft), Box::new(SearchKey::All)),
+                Vec1::from(SearchKey::Or(
+                    Box::new(SearchKey::Draft),
+                    Box::new(SearchKey::All),
+                )),
                 true,
             ),
             CommandBody::fetch(
@@ -2062,9 +2160,25 @@ mod tests {
             (
                 CommandBody::Append {
                     mailbox: Mailbox::Inbox,
-                    date: None,
-                    message: Literal::try_from("").unwrap(),
                     flags: vec![],
+                    date: None,
+                    #[cfg(not(feature = "ext_binary"))]
+                    message: Literal::try_from("").unwrap(),
+                    #[cfg(feature = "ext_binary")]
+                    message: LiteralOrLiteral8::Literal(Literal::try_from("").unwrap()),
+                },
+                "APPEND",
+            ),
+            #[cfg(feature = "ext_binary")]
+            (
+                CommandBody::Append {
+                    mailbox: Mailbox::Inbox,
+                    flags: vec![],
+                    date: None,
+                    message: LiteralOrLiteral8::Literal8(Literal8 {
+                        data: b"Hello\x00World\x00".as_ref().into(),
+                        mode: LiteralMode::NonSync,
+                    }),
                 },
                 "APPEND",
             ),
@@ -2076,7 +2190,7 @@ mod tests {
             (
                 CommandBody::Search {
                     charset: None,
-                    criteria: SearchKey::Recent,
+                    criteria: Vec1::from(SearchKey::Recent),
                     uid: true,
                 },
                 "SEARCH",
@@ -2112,7 +2226,7 @@ mod tests {
             (CommandBody::Idle, "IDLE"),
             (
                 CommandBody::Enable {
-                    capabilities: NonEmptyVec::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
+                    capabilities: Vec1::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
                 },
                 "ENABLE",
             ),

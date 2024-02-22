@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - YYYY-MM-DD
+
+### Added
+
+* Implemented more IMAP extensions
+  * ID
+  * UNSELECT
+  * SORT and THREAD
+  * BINARY
+  * METADATA
+* Implemented `AuthenticateData::Cancel`
+* Implemented `AuthMechanism::ScramSha3_512{,Plus}`
+* Implemented more common traits for types
+  * Thanks, @jakoschiko!
+* Implemented missing tests
+* Added `arbitrary_simplified` feature
+* Added `Vec2`
+* Added short `README.md` to `assets` folder
+
+### Changed
+
+* Changed `Status` to make it easier to use
+* Check only explicit features for SemVer violations
+* Renamed `NonEmptyVec` to `Vec1`
+* Updated `CONTRIBUTING.md`
+
+### Fixed
+
+* Fixed examples in README (and test them in CI now)
+  * Thanks, @coalooball!
+* Fixed broken links in README
+* Fixed iteration over sequence numbers
+  * Thanks, @superboum!
+* Don't log `Rectified missing text to \"...\"` unnecessarily
+* Made `{DateTime,NaiveDate}::unvalidated` `panic!` in debug on wrong input
+* Mention `panic!` in `unvalidated` documentation
+* Fixed typo in `AuthMechanism` documentation
+
 ## [Version 1.0.0] - 2023-08-22
 
 ### Changed

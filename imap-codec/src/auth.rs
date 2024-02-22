@@ -2,10 +2,7 @@
 use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
-use imap_types::{
-    auth::{AuthMechanism, AuthenticateData},
-    secret::Secret,
-};
+use imap_types::auth::{AuthMechanism, AuthenticateData};
 use nom::{
     branch::alt,
     bytes::streaming::tag,
@@ -41,9 +38,7 @@ pub(crate) fn auth_type(input: &[u8]) -> IMAPResult<&[u8], AuthMechanism> {
 /// ```
 pub(crate) fn authenticate_data(input: &[u8]) -> IMAPResult<&[u8], AuthenticateData> {
     alt((
-        map(terminated(base64, crlf), |data| {
-            AuthenticateData::Continue(Secret::new(data))
-        }),
+        map(terminated(base64, crlf), AuthenticateData::r#continue),
         value(AuthenticateData::Cancel, tuple((tag("*"), crlf))),
     ))(input)
 }
@@ -103,12 +98,12 @@ mod tests {
             (
                 b"AA==\r\n ".as_ref(),
                 b" ".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x00".to_vec())),
+                AuthenticateData::r#continue(b"\x00".as_ref()),
             ),
             (
                 b"aQ==\r\n ".as_ref(),
                 b" ".as_ref(),
-                AuthenticateData::Continue(Secret::new(b"\x69".to_vec())),
+                AuthenticateData::r#continue(b"\x69".to_vec()),
             ),
         ];
 

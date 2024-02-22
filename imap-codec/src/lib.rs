@@ -4,9 +4,9 @@
 //! It is based on [imap-types] and extends it with parsing support using [nom].
 //!
 //! The main codecs are
-//! [`GreetingCodec`](crate::GreetingCodec) (to parse the first message from a server),
-//! [`CommandCodec`](crate::CommandCodec) (to parse commands from a client), and
-//! [`ResponseCodec`](crate::ResponseCodec) (to parse responses or results from a server).
+//! [`GreetingCodec`] (to parse the first message from a server),
+//! [`CommandCodec`] (to parse commands from a client), and
+//! [`ResponseCodec`] (to parse responses or results from a server).
 //!
 //! Note that IMAP traces are not guaranteed to be UTF-8.
 //! Thus, be careful when using code like `from_utf8(...)`.

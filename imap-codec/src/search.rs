@@ -1,11 +1,15 @@
 use abnf_core::streaming::sp;
-use imap_types::{command::CommandBody, core::NonEmptyVec, search::{SearchKey, MetadataItemSearch, MetadataItemType}};
+use imap_types::{command::CommandBody, core::Vec1, search::{SearchKey, MetadataItemSearch, MetadataItemType}};
+#[cfg(feature = "ext_sort_thread")]
+use imap_types::core::Charset;
+#[cfg(feature = "ext_sort_thread")]
+use nom::sequence::separated_pair;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, opt, value},
-    multi::{many1, separated_list1},
-    sequence::{delimited, preceded, tuple},
+    multi::separated_list1,
+    sequence::{delimited, tuple},
 };
 
 use crate::{
@@ -28,16 +32,11 @@ pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             tuple((sp, tag_no_case(b"CHARSET"), sp, charset)),
             |(_, _, _, charset)| charset,
         )),
-        many1(preceded(sp, search_key(9))),
+        sp,
+        map(separated_list1(sp, search_key(9)), Vec1::unvalidated),
     ));
 
-    let (remaining, (_, charset, mut criteria)) = parser(input)?;
-
-    let criteria = match criteria.len() {
-        0 => unreachable!(),
-        1 => criteria.pop().unwrap(),
-        _ => SearchKey::And(NonEmptyVec::unvalidated(criteria)),
-    };
+    let (remaining, (_, charset, _, criteria)) = parser(input)?;
 
     Ok((
         remaining,
@@ -233,10 +232,27 @@ fn search_key_limited<'a>(
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(sp, search_key), tag(b")")),
-                |val| SearchKey::And(NonEmptyVec::unvalidated(val)),
+                |val| SearchKey::And(Vec1::unvalidated(val)),
             ),
         )),
     ))(input)
+}
+
+// Used by both, SORT and THREAD.
+#[cfg(feature = "ext_sort_thread")]
+/// ```abnf
+/// search-criteria = charset 1*(SP search-key)
+/// ```
+pub(crate) fn search_criteria(input: &[u8]) -> IMAPResult<&[u8], (Charset, Vec1<SearchKey>)> {
+    let mut parser = separated_pair(
+        charset,
+        sp,
+        map(separated_list1(sp, search_key(9)), Vec1::unvalidated),
+    );
+
+    let (remaining, (charset, search_keys)) = parser(input)?;
+
+    Ok((remaining, (charset, search_keys)))
 }
 
 #[cfg(test)]
@@ -262,11 +278,11 @@ mod tests {
             val,
             CommandBody::Search {
                 charset: None,
-                criteria: And(NonEmptyVec::from(Uid(SequenceSetData(
+                criteria: Vec1::from(And(Vec1::from(Uid(SequenceSetData(
                     vec![Single(Value(5.try_into().unwrap()))]
                         .try_into()
                         .unwrap()
-                )))),
+                ))))),
                 uid: false,
             }
         );
@@ -274,7 +290,7 @@ mod tests {
         let (_rem, val) = search(b"search (uid 5 or uid 5 (uid 1 uid 2) not uid 5)???").unwrap();
         let expected = CommandBody::Search {
             charset: None,
-            criteria: And(vec![
+            criteria: Vec1::from(And(vec![
                 Uid(SequenceSetData(
                     vec![Single(Value(5.try_into().unwrap()))]
                         .try_into()
@@ -308,7 +324,7 @@ mod tests {
                 )))),
             ]
             .try_into()
-            .unwrap()),
+            .unwrap())),
             uid: false,
         };
         assert_eq!(val, expected);
@@ -326,13 +342,11 @@ mod tests {
     fn test_encode_search_key() {
         let tests = [
             (
-                SearchKey::And(NonEmptyVec::try_from(vec![SearchKey::Answered]).unwrap()),
+                SearchKey::And(Vec1::try_from(vec![SearchKey::Answered]).unwrap()),
                 b"(ANSWERED)".as_ref(),
             ),
             (
-                SearchKey::And(
-                    NonEmptyVec::try_from(vec![SearchKey::Answered, SearchKey::Seen]).unwrap(),
-                ),
+                SearchKey::And(Vec1::try_from(vec![SearchKey::Answered, SearchKey::Seen]).unwrap()),
                 b"(ANSWERED SEEN)".as_ref(),
             ),
             (

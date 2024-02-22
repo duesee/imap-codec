@@ -1,10 +1,14 @@
 use std::num::{NonZeroU32};
 
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_binary")]
+use imap_types::core::NString8;
 use imap_types::{
-    core::{AString, NonEmptyVec},
+    core::{AString, Vec1},
     fetch::{MessageDataItem, MessageDataItemName, Part, PartSpecifier, Section},
 };
+#[cfg(feature = "ext_binary")]
+use nom::sequence::preceded;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -13,6 +17,8 @@ use nom::{
     sequence::{delimited, tuple},
 };
 
+#[cfg(feature = "ext_binary")]
+use crate::extensions::binary::{literal8, partial, section_binary};
 use crate::{
     body::body,
     core::{astring, nstring, number, nz_number64, nz_number},
@@ -22,14 +28,19 @@ use crate::{
     flag::flag_fetch,
 };
 
-/// `fetch-att = "ENVELOPE" /
-///              "FLAGS" /
-///              "INTERNALDATE" /
-///              "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
-///              "BODY" ["STRUCTURE"] /
-///              "UID" /
-///              "BODY" section ["<" number "." nz-number ">"] /
-///              "BODY.PEEK" section ["<" number "." nz-number ">"]`
+/// ```abnf
+/// fetch-att = "ENVELOPE" /
+///             "FLAGS" /
+///             "INTERNALDATE" /
+///             "RFC822" [".HEADER" / ".SIZE" / ".TEXT"] /
+///             "BODY" ["STRUCTURE"] /
+///             "UID" /
+///             "BODY"      section ["<" number "." nz-number ">"] /
+///             "BODY.PEEK" section ["<" number "." nz-number ">"] /
+///             "BINARY"      section-binary [partial] / ; RFC 3516
+///             "BINARY.PEEK" section-binary [partial] / ; RFC 3516
+///             "BINARY.SIZE" section-binary             ; RFC 3516
+/// ```
 pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
         value(MessageDataItemName::Envelope, tag_no_case(b"ENVELOPE")),
@@ -74,6 +85,29 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
                 peek: false,
             },
         ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case("BINARY.PEEK"), section_binary, opt(partial))),
+            |(_, section, partial)| MessageDataItemName::Binary {
+                section,
+                partial,
+                peek: true,
+            },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case("BINARY"), section_binary, opt(partial))),
+            |(_, section, partial)| MessageDataItemName::Binary {
+                section,
+                partial,
+                peek: false,
+            },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            preceded(tag_no_case("BINARY.SIZE"), section_binary),
+            |section| MessageDataItemName::BinarySize { section },
+        ),
         value(MessageDataItemName::Body, tag_no_case(b"BODY")),
         value(MessageDataItemName::Uid, tag_no_case(b"UID")),
         value(
@@ -90,12 +124,12 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
 /// `msg-att = "("
 ///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///            ")"`
-pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<MessageDataItem>> {
+pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> {
     delimited(
         tag(b"("),
         map(
             separated_list1(sp, alt((msg_att_dynamic, msg_att_static))),
-            NonEmptyVec::unvalidated,
+            Vec1::unvalidated,
         ),
         tag(b")"),
     )(input)
@@ -116,13 +150,17 @@ pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem
     Ok((remaining, MessageDataItem::Flags(flags.unwrap_or_default())))
 }
 
-/// `msg-att-static = "ENVELOPE" SP envelope /
-///                   "INTERNALDATE" SP date-time /
-///                   "RFC822" [".HEADER" / ".TEXT"] SP nstring /
-///                   "RFC822.SIZE" SP number /
-///                   "BODY" ["STRUCTURE"] SP body /
-///                   "BODY" section ["<" number ">"] SP nstring /
-///                   "UID" SP uniqueid`
+/// ```abnf
+/// msg-att-static = "ENVELOPE" SP envelope /
+///                  "INTERNALDATE" SP date-time /
+///                  "RFC822" [".HEADER" / ".TEXT"] SP nstring /
+///                  "RFC822.SIZE" SP number /
+///                  "BODY" ["STRUCTURE"] SP body /
+///                  "BODY" section ["<" number ">"] SP nstring /
+///                  "UID" SP uniqueid /
+///                  "BINARY" section-binary SP (nstring / literal8) / ; RFC 3516
+///                  "BINARY.SIZE" section-binary SP number            ; RFC 3516
+/// ```
 ///
 /// Note: MUST NOT change for a message
 pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
@@ -179,6 +217,24 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
         map(tuple((tag_no_case(b"MODSEQ "), delimited(tag("("), nz_number64, tag(")")))), |(_, modseq)| {
             MessageDataItem::ModSeq(modseq)
         }),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((
+                tag_no_case(b"BINARY"),
+                section_binary,
+                sp,
+                alt((
+                    map(nstring, NString8::NString),
+                    map(literal8, NString8::Literal8),
+                )),
+            )),
+            |(_, section, _, value)| MessageDataItem::Binary { section, value },
+        ),
+        #[cfg(feature = "ext_binary")]
+        map(
+            tuple((tag_no_case(b"BINARY.SIZE"), section_binary, sp, number)),
+            |(_, section, _, size)| MessageDataItem::BinarySize { section, size },
+        ),
     ))(input)
 }
 
@@ -252,11 +308,8 @@ pub(crate) fn section_msgtext(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> 
 /// `section-part = nz-number *("." nz-number)`
 ///
 /// Body part nesting
-pub(crate) fn section_part(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<NonZeroU32>> {
-    map(
-        separated_list1(tag(b"."), nz_number),
-        NonEmptyVec::unvalidated,
-    )(input)
+pub(crate) fn section_part(input: &[u8]) -> IMAPResult<&[u8], Vec1<NonZeroU32>> {
+    map(separated_list1(tag(b"."), nz_number), Vec1::unvalidated)(input)
 }
 
 /// `section-text = section-msgtext / "MIME"`
@@ -270,10 +323,10 @@ pub(crate) fn section_text(input: &[u8]) -> IMAPResult<&[u8], PartSpecifier> {
 }
 
 /// `header-list = "(" header-fld-name *(SP header-fld-name) ")"`
-pub(crate) fn header_list(input: &[u8]) -> IMAPResult<&[u8], NonEmptyVec<AString>> {
+pub(crate) fn header_list(input: &[u8]) -> IMAPResult<&[u8], Vec1<AString>> {
     map(
         delimited(tag(b"("), separated_list1(sp, header_fld_name), tag(b")")),
-        NonEmptyVec::unvalidated,
+        Vec1::unvalidated,
     )(input)
 }
 
@@ -431,47 +484,43 @@ mod tests {
     fn test_encode_section() {
         let tests = [
             (
-                Section::Part(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                Section::Part(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
                 b"1".as_ref(),
             ),
             (Section::Header(None), b"HEADER"),
             (
-                Section::Header(Some(Part(NonEmptyVec::from(
-                    NonZeroU32::try_from(1).unwrap(),
-                )))),
+                Section::Header(Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap())))),
                 b"1.HEADER",
             ),
             (
-                Section::HeaderFields(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                Section::HeaderFields(None, Vec1::from(AString::try_from("").unwrap())),
                 b"HEADER.FIELDS (\"\")",
             ),
             (
                 Section::HeaderFields(
-                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
-                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                    Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
+                    Vec1::from(AString::try_from("").unwrap()),
                 ),
                 b"1.HEADER.FIELDS (\"\")",
             ),
             (
-                Section::HeaderFieldsNot(None, NonEmptyVec::from(AString::try_from("").unwrap())),
+                Section::HeaderFieldsNot(None, Vec1::from(AString::try_from("").unwrap())),
                 b"HEADER.FIELDS.NOT (\"\")",
             ),
             (
                 Section::HeaderFieldsNot(
-                    Some(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
-                    NonEmptyVec::from(AString::try_from("").unwrap()),
+                    Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
+                    Vec1::from(AString::try_from("").unwrap()),
                 ),
                 b"1.HEADER.FIELDS.NOT (\"\")",
             ),
             (Section::Text(None), b"TEXT"),
             (
-                Section::Text(Some(Part(NonEmptyVec::from(
-                    NonZeroU32::try_from(1).unwrap(),
-                )))),
+                Section::Text(Some(Part(Vec1::from(NonZeroU32::try_from(1).unwrap())))),
                 b"1.TEXT",
             ),
             (
-                Section::Mime(Part(NonEmptyVec::from(NonZeroU32::try_from(1).unwrap()))),
+                Section::Mime(Part(Vec1::from(NonZeroU32::try_from(1).unwrap()))),
                 b"1.MIME",
             ),
         ];

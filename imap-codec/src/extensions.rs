@@ -1,9 +1,17 @@
+#[cfg(feature = "ext_binary")]
+pub mod binary;
 pub mod compress;
 pub mod enable;
 #[cfg(feature = "ext_id")]
 pub mod id;
 pub mod idle;
 pub mod literal;
+#[cfg(feature = "ext_metadata")]
+pub mod metadata;
 pub mod r#move;
 pub mod quota;
+#[cfg(feature = "ext_sort_thread")]
+pub mod sort;
+#[cfg(feature = "ext_sort_thread")]
+pub mod thread;
 pub mod unselect;

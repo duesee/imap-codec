@@ -10,6 +10,10 @@ license = "MIT OR Apache-2.0"
 cargo-fuzz = true
 
 [features]
+# <Forward to imap-types>
+arbitrary_simplified = ["imap-types/arbitrary_simplified"]
+# </Forward to imap-types>
+
 # <Forward to imap-codec>
 # IMAP
 starttls = ["imap-codec/starttls"]
@@ -19,6 +23,9 @@ ext_condstore_qresync = ["imap-codec/ext_condstore_qresync"]
 ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_id = ["imap-codec/ext_id"]
+ext_sort_thread = ["imap-codec/ext_sort_thread"]
+ext_binary = ["imap-codec/ext_binary"]
+ext_metadata = ["ext_binary", "imap-codec/ext_metadata"]
 
 # IMAP quirks
 quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
@@ -31,6 +38,9 @@ ext = [
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
     "ext_id",
+    "ext_sort_thread",
+    "ext_binary",
+    "ext_metadata",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []
@@ -39,6 +49,7 @@ split = []
 
 [dependencies]
 libfuzzer-sys = "0.4"
+imap-types = { path = "../../imap-types" }
 imap-codec = { path = "..", features = ["arbitrary"] }
 
 [[bin]]

@@ -6,7 +6,7 @@
 //!
 //! ... adds a new type ...
 //!
-//! * [`IdleDone`](crate::extensions::idle::IdleDone)
+//! * [`IdleDone`]
 //!
 //! ... and extends ...
 //!

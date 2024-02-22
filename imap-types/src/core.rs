@@ -69,6 +69,8 @@ macro_rules! impl_try_from {
 pub(crate) use impl_try_from;
 
 use crate::error::{ValidationError, ValidationErrorKind};
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+use crate::extensions::binary::Literal8;
 
 /// A string subset to model IMAP's `atom`s.
 ///
@@ -142,6 +144,8 @@ impl<'a> Atom<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -292,6 +296,8 @@ impl<'a> AtomExt<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -576,6 +582,8 @@ impl<'a> Literal<'a> {
     /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D>(data: D) -> Self
@@ -593,6 +601,15 @@ impl<'a> Literal<'a> {
         }
     }
 
+    /// Constructs a literal without validation.
+    ///
+    /// # Warning: IMAP conformance
+    ///
+    /// The caller must ensure that `data` is valid according to [`Self::validate`]. Failing to do
+    /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
+    /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated_non_sync<D>(data: D) -> Self
@@ -743,6 +760,8 @@ impl<'a> Quoted<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1035,6 +1054,8 @@ impl<'a> Tag<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1169,6 +1190,8 @@ impl<'a> Text<'a> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
@@ -1274,6 +1297,8 @@ impl QuotedChar {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: char) -> Self {
@@ -1399,31 +1424,50 @@ impl<'a> AsRef<str> for Charset<'a> {
     }
 }
 
-/// A `Vec` that always contains >= 1 elements.
+#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum NString8<'a> {
+    NString(NString<'a>),
+    Literal8(Literal8<'a>),
+}
+
+/// A [`Vec`] containing >= N elements.
 ///
-/// Some messages in IMAP require a list of at least one element. We encoded these situations in a
-/// non-empty vector type to not produce invalid messages.
+/// Some messages in IMAP require a list of *at least N* elements.
+/// We encode these situations with a specific vector type to not produce invalid messages.
 ///
-/// The `Debug` implementation equals `Vec` with an attached `+` at the end.
+/// Notes:
+///
+/// * `Vec<T, 0>` must not be used. Please use the standard [`Vec`] instead.
+/// * `Vec<T, 1>` must not be used. Please use the alias [`Vec1<T>`] instead.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct NonEmptyVec<T>(pub(crate) Vec<T>);
+pub struct VecN<T, const N: usize>(pub(crate) Vec<T>);
 
-impl<T> Debug for NonEmptyVec<T>
+impl<T, const N: usize> Debug for VecN<T, N>
 where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         self.0.fmt(f)?;
-        write!(f, "+")
+        match N {
+            0 => write!(f, "*"),
+            1 => write!(f, "+"),
+            _ => write!(f, "{{{},}}", N),
+        }
     }
 }
 
-impl<T> NonEmptyVec<T> {
+impl<T, const N: usize> VecN<T, N> {
     pub fn validate(value: &[T]) -> Result<(), ValidationError> {
-        if value.is_empty() {
-            return Err(ValidationError::new(ValidationErrorKind::Empty));
+        if value.len() < N {
+            return Err(ValidationError::new(ValidationErrorKind::NotEnough {
+                min: N,
+            }));
         }
 
         Ok(())
@@ -1436,6 +1480,8 @@ impl<T> NonEmptyVec<T> {
     /// The caller must ensure that `inner` is valid according to [`Self::validate`]. Failing to do
     /// so may create invalid/unparsable IMAP messages, or even produce unintended protocol flows.
     /// Do not call this constructor with untrusted data.
+    ///
+    /// Note: This method will `panic!` on wrong input in debug builds.
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: Vec<T>) -> Self {
@@ -1450,13 +1496,13 @@ impl<T> NonEmptyVec<T> {
     }
 }
 
-impl<T> From<T> for NonEmptyVec<T> {
-    fn from(value: T) -> Self {
-        NonEmptyVec(vec![value])
+impl<T, const N: usize> From<[T; N]> for VecN<T, N> {
+    fn from(value: [T; N]) -> Self {
+        Self(Vec::from(value))
     }
 }
 
-impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
+impl<T, const N: usize> TryFrom<Vec<T>> for VecN<T, N> {
     type Error = ValidationError;
 
     fn try_from(inner: Vec<T>) -> Result<Self, Self::Error> {
@@ -1466,7 +1512,7 @@ impl<T> TryFrom<Vec<T>> for NonEmptyVec<T> {
     }
 }
 
-impl<T> IntoIterator for NonEmptyVec<T> {
+impl<T, const N: usize> IntoIterator for VecN<T, N> {
     type Item = T;
     type IntoIter = IntoIter<Self::Item>;
 
@@ -1475,9 +1521,31 @@ impl<T> IntoIterator for NonEmptyVec<T> {
     }
 }
 
-impl<T> AsRef<[T]> for NonEmptyVec<T> {
+impl<T, const N: usize> AsRef<[T]> for VecN<T, N> {
     fn as_ref(&self) -> &[T] {
         &self.0
+    }
+}
+
+/// A [`Vec`] containing >= 1 elements, i.e., a non-empty vector.
+///
+/// The `Debug` implementation equals the standard [`Vec`] with an attached `+` at the end.
+pub type Vec1<T> = VecN<T, 1>;
+
+impl<T> From<T> for Vec1<T> {
+    fn from(value: T) -> Self {
+        VecN(vec![value])
+    }
+}
+
+/// A [`Vec`] containing >= 2 elements.
+///
+/// The `Debug` implementation equals the standard [`Vec`] with an attached `{2,}` at the end.
+pub type Vec2<T> = VecN<T, 2>;
+
+impl<T> From<(T, T)> for Vec2<T> {
+    fn from((v1, v2): (T, T)) -> Self {
+        VecN(vec![v1, v2])
     }
 }
 
@@ -1868,5 +1936,25 @@ mod tests {
             IString::try_from("\"AAA").unwrap(),
             IString::Quoted("\\\"AAA".try_into().unwrap())
         );
+    }
+
+    #[test]
+    fn test_vec_n() {
+        // Note: Don't use `VecN<T, 0>`, it's only a sanity test here.
+        assert!(VecN::<u8, 0>::try_from(vec![]).is_ok());
+        assert!(VecN::<u8, 0>::try_from(vec![1]).is_ok());
+        assert!(VecN::<u8, 0>::try_from(vec![1, 2]).is_ok());
+
+        assert!(VecN::<u8, 1>::try_from(vec![]).is_err());
+        assert!(VecN::<u8, 1>::try_from(vec![1]).is_ok());
+        assert!(VecN::<u8, 1>::try_from(vec![1, 2]).is_ok());
+
+        assert!(Vec1::<u8>::try_from(vec![]).is_err());
+        assert!(Vec1::<u8>::try_from(vec![1]).is_ok());
+        assert!(Vec1::<u8>::try_from(vec![1, 2]).is_ok());
+
+        assert!(VecN::<u8, 2>::try_from(vec![]).is_err());
+        assert!(VecN::<u8, 2>::try_from(vec![1]).is_err());
+        assert!(VecN::<u8, 2>::try_from(vec![1, 2]).is_ok());
     }
 }

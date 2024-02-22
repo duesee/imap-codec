@@ -28,7 +28,7 @@ jobs:
         run: cargo install cargo-semver-checks --locked
 
       - name: Setup | Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check for SemVer violations | imap-types
         run: |

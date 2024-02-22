@@ -57,7 +57,9 @@ macro_rules! impl_kat_inverse {
             {
                 println!("# {no}");
 
-                let (got_remainder, got_object) = $decoder::default().decode(test_input).unwrap();
+                let (got_remainder, got_object) = $decoder::default()
+                    .decode(test_input)
+                    .expect("first parsing failed");
                 assert_eq!(*expected_object, got_object);
                 assert_eq!(*expected_remainder, got_remainder);
 
@@ -68,8 +70,9 @@ macro_rules! impl_kat_inverse {
 
                 // This second `decode` makes using generic bounds more complicated due to the
                 // different lifetime.
-                let (got_remainder, got_object_again) =
-                    $decoder::default().decode(&got_output).unwrap();
+                let (got_remainder, got_object_again) = $decoder::default()
+                    .decode(&got_output)
+                    .expect("second parsing failed");
                 assert_eq!(got_object, got_object_again);
                 assert!(got_remainder.is_empty());
             }

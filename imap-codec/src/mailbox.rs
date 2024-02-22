@@ -14,6 +14,10 @@ use nom::{
     sequence::{delimited, preceded, tuple},
 };
 
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::metadata_resp;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::thread_data;
 use crate::{
     core::{astring, nil, number, nz_number, nz_number64, quoted_char, string},
     decode::IMAPResult,
@@ -52,13 +56,16 @@ pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
     map(astring, Mailbox::from)(input)
 }
 
-/// `mailbox-data = "FLAGS" SP flag-list /
-///                 "LIST" SP mailbox-list /
-///                 "LSUB" SP mailbox-list /
-///                 "SEARCH" *(SP nz-number) /
-///                 "STATUS" SP mailbox SP "(" [status-att-list] ")" /
-///                 number SP "EXISTS" /
-///                 number SP "RECENT"`
+/// ```abnf
+/// mailbox-data = "FLAGS" SP flag-list /
+///                "LIST" SP mailbox-list /
+///                "LSUB" SP mailbox-list /
+///                "SEARCH" *(SP nz-number) /
+///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
+///                "METADATA" SP mailbox SP (entry-values / entry-list) / ; RFC 5464
+///                number SP "EXISTS" /
+///                number SP "RECENT"
+/// ```
 pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
         map(
@@ -89,6 +96,13 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             )),
             |(_, nums, modseq)| Data::Search(nums, modseq),
         ),
+        #[cfg(feature = "ext_sort_thread")]
+        map(
+            preceded(tag_no_case(b"SORT"), many0(preceded(sp, nz_number))),
+            Data::Sort,
+        ),
+        #[cfg(feature = "ext_sort_thread")]
+        thread_data,
         map(
             tuple((
                 tag_no_case(b"STATUS"),
@@ -102,6 +116,8 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 items: items.unwrap_or_default().into(),
             },
         ),
+        #[cfg(feature = "ext_metadata")]
+        metadata_resp,
         map(
             tuple((number, sp, tag_no_case(b"EXISTS"))),
             |(num, _, _)| Data::Exists(num),

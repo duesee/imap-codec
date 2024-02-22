@@ -14,10 +14,10 @@
 //!     - [`Command::GetQuotaRoot`](crate::command::CommandBody::GetQuotaRoot)
 //!     - [`Command::SetQuota`](crate::command::CommandBody::SetQuota)
 //!
-//! * [`Data`](crate::response::Data) with new variants:
+//! * [`Data`] with new variants:
 //!
-//!     - [`Data::Quota`](crate::response::Data::Quota)
-//!     - [`Data::QuotaRoot`](crate::response::Data::QuotaRoot)
+//!     - [`Data::Quota`]
+//!     - [`Data::QuotaRoot`]
 //!
 //! * [`Code`](crate::response::Code) with a new variant:
 //!
@@ -47,7 +47,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::CommandBody,
-    core::{impl_try_from, AString, Atom, NonEmptyVec},
+    core::{impl_try_from, AString, Atom, Vec1},
     extensions::quota::error::{QuotaError, QuotaRootError, SetQuotaError},
     mailbox::Mailbox,
     response::Data,
@@ -88,7 +88,7 @@ impl<'a> Data<'a> {
     pub fn quota<R, Q>(root: R, quotas: Q) -> Result<Self, QuotaError<R::Error, Q::Error>>
     where
         R: TryInto<AString<'a>>,
-        Q: TryInto<NonEmptyVec<QuotaGet<'a>>>,
+        Q: TryInto<Vec1<QuotaGet<'a>>>,
     {
         Ok(Self::Quota {
             root: root.try_into().map_err(QuotaError::Root)?,

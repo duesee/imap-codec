@@ -16,9 +16,15 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
+#[cfg(feature = "ext_metadata")]
+use crate::extensions::metadata::{MetadataCode, MetadataResponse};
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::sort::SortAlgorithm;
+#[cfg(feature = "ext_sort_thread")]
+use crate::extensions::thread::{Thread, ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
-    core::{impl_try_from, AString, Atom, Charset, NonEmptyVec, QuotedChar, Tag, Text},
+    core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
     error::ValidationError,
     extensions::{
         compress::CompressionAlgorithm,
@@ -362,7 +368,7 @@ pub enum Data<'a> {
     /// OK response as part of a successful authentication.  It is
     /// unnecessary for a client to send a separate CAPABILITY command if
     /// it recognizes these automatic capabilities.
-    Capability(NonEmptyVec<Capability<'a>>),
+    Capability(Vec1<Capability<'a>>),
 
     /// ### 7.2.2. LIST Response
     ///
@@ -430,6 +436,12 @@ pub enum Data<'a> {
     /// Optionally, a modseq value can be set to inform the client the highest
     /// modset in the set of returned messages.
     Search(Vec<NonZeroU32>, Option<NonZeroU64>),
+
+    #[cfg(feature = "ext_sort_thread")]
+    Sort(Vec<NonZeroU32>),
+
+    #[cfg(feature = "ext_sort_thread")]
+    Thread(Vec<Thread>),
 
     /// ### 7.2.6.  FLAGS Response
     ///
@@ -538,7 +550,7 @@ pub enum Data<'a> {
         /// Sequence number.
         seq: NonZeroU32,
         /// Message data items.
-        items: NonEmptyVec<MessageDataItem<'a>>,
+        items: Vec1<MessageDataItem<'a>>,
     },
 
     Enabled {
@@ -549,7 +561,7 @@ pub enum Data<'a> {
         /// Quota root.
         root: AString<'a>,
         /// List of quotas.
-        quotas: NonEmptyVec<QuotaGet<'a>>,
+        quotas: Vec1<QuotaGet<'a>>,
     },
 
     QuotaRoot {
@@ -565,12 +577,19 @@ pub enum Data<'a> {
         /// Parameters
         parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
     },
+
+    #[cfg(feature = "ext_metadata")]
+    /// Metadata response
+    Metadata {
+        mailbox: Mailbox<'a>,
+        items: MetadataResponse<'a>,
+    },
 }
 
 impl<'a> Data<'a> {
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability<'a>>>,
+        C: TryInto<Vec1<Capability<'a>>>,
     {
         Ok(Self::Capability(caps.try_into()?))
     }
@@ -607,7 +626,7 @@ impl<'a> Data<'a> {
     pub fn fetch<S, I>(seq: S, items: I) -> Result<Self, FetchError<S::Error, I::Error>>
     where
         S: TryInto<NonZeroU32>,
-        I: TryInto<NonEmptyVec<MessageDataItem<'a>>>,
+        I: TryInto<Vec1<MessageDataItem<'a>>>,
     {
         let seq = seq.try_into().map_err(FetchError::SeqOrUid)?;
         let items = items.try_into().map_err(FetchError::InvalidItems)?;
@@ -745,7 +764,7 @@ pub enum Code<'a> {
     /// capabilities list.  This makes it unnecessary for a client to
     /// send a separate CAPABILITY command if it recognizes this
     /// response.
-    Capability(NonEmptyVec<Capability<'a>>), // FIXME(misuse): List must contain IMAP4REV1
+    Capability(Vec1<Capability<'a>>), // FIXME(misuse): List must contain IMAP4REV1
 
     /// `PARSE`
     ///
@@ -825,6 +844,14 @@ pub enum Code<'a> {
     /// Server got a non-synchronizing literal larger than 4096 bytes.
     TooBig,
 
+    #[cfg(feature = "ext_metadata")]
+    /// Metadata
+    Metadata(MetadataCode),
+
+    #[cfg(feature = "ext_binary")]
+    /// Server does not know how to decode the section's CTE.
+    UnknownCte,
+
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
@@ -848,7 +875,7 @@ impl<'a> Code<'a> {
 
     pub fn capability<C>(caps: C) -> Result<Self, C::Error>
     where
-        C: TryInto<NonEmptyVec<Capability<'a>>>,
+        C: TryInto<Vec1<Capability<'a>>>,
     {
         Ok(Self::Capability(caps.try_into()?))
     }
@@ -962,6 +989,21 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_id")]
     /// See RFC 2971.
     Id,
+    /// See RFC 3691.
+    Unselect,
+    #[cfg(feature = "ext_sort_thread")]
+    Sort(Option<SortAlgorithm<'a>>),
+    #[cfg(feature = "ext_sort_thread")]
+    Thread(ThreadingAlgorithm<'a>),
+    #[cfg(feature = "ext_metadata")]
+    /// Server supports (both) server annotations and mailbox annotations.
+    Metadata,
+    #[cfg(feature = "ext_metadata")]
+    /// Server supports (only) server annotations.
+    MetadataServer,
+    #[cfg(feature = "ext_binary")]
+    /// IMAP4 Binary Content Extension
+    Binary,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -991,6 +1033,19 @@ impl<'a> Display for Capability<'a> {
             Self::Move => write!(f, "MOVE"),
             #[cfg(feature = "ext_id")]
             Self::Id => write!(f, "ID"),
+            Self::Unselect => write!(f, "UNSELECT"),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort(None) => write!(f, "SORT"),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
+            #[cfg(feature = "ext_sort_thread")]
+            Self::Thread(algorithm) => write!(f, "THREAD={}", algorithm),
+            #[cfg(feature = "ext_metadata")]
+            Self::Metadata => write!(f, "METADATA"),
+            #[cfg(feature = "ext_metadata")]
+            Self::MetadataServer => write!(f, "METADATA-SERVER"),
+            #[cfg(feature = "ext_binary")]
+            Self::Binary => write!(f, "BINARY"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1048,6 +1103,15 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "move" => Self::Move,
             #[cfg(feature = "ext_id")]
             "id" => Self::Id,
+            #[cfg(feature = "ext_sort_thread")]
+            "sort" => Self::Sort(None),
+            #[cfg(feature = "ext_metadata")]
+            "metadata" => Self::Metadata,
+            #[cfg(feature = "ext_metadata")]
+            "metadata-server" => Self::MetadataServer,
+            #[cfg(feature = "ext_binary")]
+            "binary" => Self::Binary,
+            "unselect" => Self::Unselect,
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {
@@ -1072,6 +1136,18 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 if let Ok(resource) = Resource::try_from(right.to_owned()) {
                                     return Self::QuotaRes(resource);
                                 }
+                            }
+                        }
+                        #[cfg(feature = "ext_sort_thread")]
+                        "sort" => {
+                            if let Ok(atom) = Atom::try_from(right) {
+                                return Self::Sort(Some(SortAlgorithm::from(atom)));
+                            }
+                        }
+                        #[cfg(feature = "ext_sort_thread")]
+                        "thread" => {
+                            if let Ok(atom) = Atom::try_from(right) {
+                                return Self::Thread(ThreadingAlgorithm::from(atom));
                             }
                         }
                         _ => {}

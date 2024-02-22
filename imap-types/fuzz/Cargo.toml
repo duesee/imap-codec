@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 cargo-fuzz = true
 
 [features]
-# <Forward to imap-codec>
+# <Forward to imap-types>
 # IMAP
 starttls = ["imap-types/starttls"]
 
@@ -18,7 +18,11 @@ starttls = ["imap-types/starttls"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
-# </Forward to imap-codec>
+ext_id = ["imap-types/ext_id"]
+ext_sort_thread = ["imap-types/ext_sort_thread"]
+ext_binary = ["imap-types/ext_binary"]
+ext_metadata = ["ext_binary", "imap-types/ext_metadata"]
+# </Forward to imap-types>
 
 # Use (most) IMAP extensions.
 ext = [
@@ -26,6 +30,9 @@ ext = [
     "ext_condstore_qresync",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
+    "ext_id",
+    "ext_sort_thread",
+    "ext_binary",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []

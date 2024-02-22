@@ -2,7 +2,7 @@
 //!
 //! This extension defines a new type ...
 //!
-//! * [`CompressionAlgorithm`](crate::extensions::compress::CompressionAlgorithm)
+//! * [`CompressionAlgorithm`]
 //!
 //! ... and extends ...
 //!

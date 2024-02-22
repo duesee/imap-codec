@@ -8,7 +8,7 @@ use bounded_static::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{IString, NString, NonEmptyVec},
+    core::{IString, NString, Vec1},
     envelope::Envelope,
 };
 
@@ -243,7 +243,7 @@ pub enum BodyStructure<'a> {
     /// ```
     Multi {
         /// Inner bodies.
-        bodies: NonEmptyVec<BodyStructure<'a>>,
+        bodies: Vec1<BodyStructure<'a>>,
         /// Subtype.
         subtype: IString<'a>,
         /// Extension data.
@@ -344,5 +344,5 @@ pub enum BodyExtension<'a> {
     /// Number.
     Number(u32),
     /// List.
-    List(NonEmptyVec<BodyExtension<'a>>),
+    List(Vec1<BodyExtension<'a>>),
 }
