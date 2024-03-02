@@ -2,7 +2,7 @@
 
 use std::{
     fmt::{Display, Formatter},
-    num::NonZeroU32,
+    num::{NonZeroU32, NonZeroU64},
 };
 
 #[cfg(feature = "arbitrary")]
@@ -232,6 +232,8 @@ pub enum MessageDataItemName<'a> {
     /// ```
     Uid,
 
+    /// The ModSeq of CONDSTORE
+    ModSeq,
     #[cfg(feature = "ext_binary")]
     Binary {
         section: Vec<NonZeroU32>,
@@ -369,6 +371,8 @@ pub enum MessageDataItem<'a> {
     /// ```
     Uid(NonZeroU32),
 
+    /// The ModSeq value described in CONDSTORE
+    ModSeq(NonZeroU64),
     #[cfg(feature = "ext_binary")]
     Binary {
         section: Vec<NonZeroU32>,

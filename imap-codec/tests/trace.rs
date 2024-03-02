@@ -947,7 +947,7 @@ fn test_transcript_from_rfc() {
                 Message::Command(
                     Command::new(
                         "a003",
-                        CommandBody::fetch("12", Macro::Full, false).unwrap(),
+                        CommandBody::fetch("12", vec![], Macro::Full, false).unwrap(),
                     )
                     .unwrap(),
                 ),
@@ -1078,6 +1078,7 @@ fn test_transcript_from_rfc() {
                         "a004",
                         CommandBody::fetch(
                             "12",
+                            vec![],
                             vec![MessageDataItemName::BodyExt {
                                 section: Some(Section::Header(None)),
                                 peek: false,
@@ -1150,6 +1151,7 @@ Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r
                             StoreType::Add,
                             StoreResponse::Answer,
                             vec![Flag::Deleted],
+                            vec![],
                             false,
                         )
                         .unwrap(),

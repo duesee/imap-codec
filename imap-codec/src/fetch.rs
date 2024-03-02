@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32};
 
 use abnf_core::streaming::sp;
 #[cfg(feature = "ext_binary")]
@@ -21,7 +21,7 @@ use nom::{
 use crate::extensions::binary::{literal8, partial, section_binary};
 use crate::{
     body::body,
-    core::{astring, nstring, number, nz_number},
+    core::{astring, nstring, number, nz_number64, nz_number},
     datetime::date_time,
     decode::IMAPResult,
     envelope::envelope,
@@ -117,6 +117,7 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
         value(MessageDataItemName::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
         value(MessageDataItemName::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
         value(MessageDataItemName::Rfc822, tag_no_case(b"RFC822")),
+        value(MessageDataItemName::ModSeq, tag_no_case(b"MODSEQ")),
     ))(input)
 }
 
@@ -212,6 +213,9 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
         ),
         map(tuple((tag_no_case(b"UID"), sp, uniqueid)), |(_, _, uid)| {
             MessageDataItem::Uid(uid)
+        }),
+        map(tuple((tag_no_case(b"MODSEQ "), delimited(tag("("), nz_number64, tag(")")))), |(_, modseq)| {
+            MessageDataItem::ModSeq(modseq)
         }),
         #[cfg(feature = "ext_binary")]
         map(
