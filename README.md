@@ -10,7 +10,7 @@ This workspace contains [`imap-codec`] and [`imap-types`], two [rock-solid] and 
 `imap-types` provides misuse-resistant types, constructors, and general support for IMAP implementations.
 The crates live here together, but `imap-types` is a perfectly fine standalone crate.
 
-If you are looking for a slightly more high-level cient or server, take a look at [`imap-flow`].
+If you are looking for a slightly more high-level client or server, take a look at [`imap-flow`].
 
 Let's talk on [Matrix]!
 
