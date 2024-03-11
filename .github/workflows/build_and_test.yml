@@ -138,7 +138,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Audit dependencies
-        uses: EmbarkStudios/cargo-deny-action@68cd9c5e3e16328a430a37c743167572e3243e7e
+        uses: EmbarkStudios/cargo-deny-action@64015a69ee7ee08f6c56455089cdaf6ad974fd15
 
   clippy:
     runs-on: ubuntu-latest
