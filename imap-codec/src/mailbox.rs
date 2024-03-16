@@ -106,8 +106,12 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 mailbox,
                 sp,
                 delimited(tag(b"("), opt(status_att_list), tag(b")")),
+                #[cfg(feature = "quirk_trailing_space")]
+                opt(sp),
+                #[cfg(not(feature = "quirk_trailing_space"))]
+                nom::combinator::success(()),
             )),
-            |(_, _, mailbox, _, items)| Data::Status {
+            |(_, _, mailbox, _, items, _)| Data::Status {
                 mailbox,
                 items: items.unwrap_or_default().into(),
             },
