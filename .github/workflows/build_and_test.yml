@@ -27,7 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: taiki-e/install-action@d5ead4fdbf0cb2a037f276e7dfb78bbb9dd0ab8c
+      - uses: taiki-e/install-action@a7eed8c9d8a574f9973ac425db6e20a115e5d64e
         with:
           tool: cargo-hack
 
