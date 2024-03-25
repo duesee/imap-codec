@@ -33,4 +33,4 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@64015a69ee7ee08f6c56455089cdaf6ad974fd15
+      - uses: EmbarkStudios/cargo-deny-action@b01e7a8cfb1f496c52d77361e84c1840d8246393
