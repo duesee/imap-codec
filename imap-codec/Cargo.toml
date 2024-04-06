@@ -13,9 +13,7 @@ edition = "2021"
 default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"]
 
 # <Forward to imap-types>
-arbitrary = ["imap-types/arbitrary"]
 bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
-serde = ["dep:serde", "chrono/serde", "imap-types/serde"]
 
 # IMAP
 starttls = ["imap-types/starttls"]
