@@ -415,7 +415,7 @@ mod tests {
             (SearchKey::Text(AString::try_from("A").unwrap()), b"TEXT A"),
             (SearchKey::To(AString::try_from("A").unwrap()), b"TO A"),
             (
-                SearchKey::Uid(SequenceSet::try_from(Sequence::try_from(1..).unwrap()).unwrap()),
+                SearchKey::Uid(SequenceSet::from(Sequence::try_from(1..).unwrap())),
                 b"UID 1:*",
             ),
             (SearchKey::Unanswered, b"UNANSWERED"),

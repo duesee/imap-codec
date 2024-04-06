@@ -25,6 +25,7 @@ use crate::{
 /// ```
 ///
 /// Note: Updated ABNF.
+#[allow(clippy::type_complexity)]
 pub(crate) fn id(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString)>>> {
     preceded(tag_no_case("ID "), id_params_list)(input)
 }
@@ -35,6 +36,7 @@ pub(crate) fn id(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString
 ///
 /// Note: Updated ABNF.
 #[inline]
+#[allow(clippy::type_complexity)]
 pub(crate) fn id_response(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString)>>> {
     id(input)
 }
@@ -44,6 +46,7 @@ pub(crate) fn id_response(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString
 /// ```
 ///
 /// Note: Updated ABNF. (See https://github.com/modern-email/defects/issues/12)
+#[allow(clippy::type_complexity)]
 pub(crate) fn id_params_list(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString)>>> {
     alt((
         map(

@@ -54,7 +54,7 @@ pub(crate) enum IMAPErrorKind<'a> {
     BadDateTime,
     LiteralContainsNull,
     RecursionLimitExceeded,
-    Nom(ErrorKind),
+    Nom(#[allow(dead_code)] ErrorKind),
 }
 
 impl<'a, I> ParseError<I> for IMAPParseError<'a, I> {

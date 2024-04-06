@@ -22,7 +22,7 @@ use crate::{
     search::search_criteria,
 };
 
-impl<'a> EncodeIntoContext for Thread {
+impl EncodeIntoContext for Thread {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.to_string().as_bytes())
     }
@@ -319,7 +319,7 @@ mod tests {
             ),
         ];
 
-        for (test, expected) in tests.into_iter() {
+        for (test, expected) in tests {
             println!("test:     {}", test);
             println!("expected: {}\n", expected);
             assert_eq!(*test, expected.to_string().as_str());
