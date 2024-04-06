@@ -73,19 +73,15 @@ criterion = "0.5.1"
 regex = "1.5.3"
 
 [[bench]]
-name = "serialize_command"
+name = "greeting"
 harness = false
 
 [[bench]]
-name = "serialize_response"
+name = "command"
 harness = false
 
 [[bench]]
-name = "parse_command"
-harness = false
-
-[[bench]]
-name = "parse_response"
+name = "response"
 harness = false
 
 [package.metadata.docs.rs]
