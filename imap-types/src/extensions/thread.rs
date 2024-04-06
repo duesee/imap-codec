@@ -48,34 +48,30 @@ impl Display for Thread {
             }
         };
 
-        loop {
-            if let Some(answers) = stack.last_mut() {
-                if let Some(thread) = answers.next() {
-                    let thing = match thread {
-                        Self::Members { prefix, answers } => {
-                            write!(f, "(")?;
-                            write_prefix(f, prefix)?;
-                            match answers {
-                                Some(answers) => {
-                                    write!(f, " ")?;
-                                    answers.as_ref().iter()
-                                }
-                                None => empty_answers.iter(),
+        while let Some(answers) = stack.last_mut() {
+            if let Some(thread) = answers.next() {
+                let thing = match thread {
+                    Self::Members { prefix, answers } => {
+                        write!(f, "(")?;
+                        write_prefix(f, prefix)?;
+                        match answers {
+                            Some(answers) => {
+                                write!(f, " ")?;
+                                answers.as_ref().iter()
                             }
+                            None => empty_answers.iter(),
                         }
-                        Self::Nested { answers } => {
-                            write!(f, "(")?;
-                            answers.as_ref().iter()
-                        }
-                    };
+                    }
+                    Self::Nested { answers } => {
+                        write!(f, "(")?;
+                        answers.as_ref().iter()
+                    }
+                };
 
-                    stack.push(thing);
-                } else {
-                    stack.pop();
-                    write!(f, ")")?;
-                }
+                stack.push(thing);
             } else {
-                break;
+                stack.pop();
+                write!(f, ")")?;
             }
         }
 
@@ -137,7 +133,7 @@ fn arbitrary_thread_limited<'a>(
 }
 
 #[cfg(feature = "arbitrary")]
-fn arbitrary_thread_leaf<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<Thread> {
+fn arbitrary_thread_leaf(u: &mut Unstructured) -> arbitrary::Result<Thread> {
     Ok(Thread::Members {
         prefix: Arbitrary::arbitrary(u)?,
         answers: None,
