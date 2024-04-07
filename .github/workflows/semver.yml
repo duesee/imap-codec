@@ -18,9 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage:
+  semver:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +37,7 @@ jobs:
           key: ${{ github.workflow }}
 
       - run: cargo install just
-      - run: just coverage
+      - run: just semver
 
       - id: cache-save
         uses: actions/cache/save@v4
@@ -52,8 +51,3 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
-
-      - uses: coverallsapp/github-action@c203f016dd0ff7855ebef0ed852000c20c117148
-        with:
-          format: lcov
-          file: target/coverage/coverage.lcov

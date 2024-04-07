@@ -5,24 +5,24 @@ export RUSTDOCFLAGS := "-D warnings"
 default:
     just -l --unsorted
 
-# Install Rust 1.65, Rust nightly, cargo-deny, cargo-fuzz, cargo-hack, and cargo-semver-checks
+# Install required tooling (ahead of time)
 install: install_rust_1_65 \
          install_rust_nightly \
          install_cargo_clippy \
          install_cargo_deny \
          install_cargo_fuzz \
          install_cargo_hack \
-         install_cargo_semver_checks
+         install_cargo_semver_checks \
+	 install_rustup_llvm_tools_preview \
+	 install_cargo_grcov
 
-# Required to check MSRV
 [private]
 install_rust_1_65:
     rustup toolchain install 1.65 --profile minimal
 
-# Required for code formatting and fuzzing
 [private]
 install_rust_nightly:
-    rustup toolchain install nightly
+    rustup toolchain install nightly --profile minimal
 
 [private]
 install_cargo_clippy:
@@ -43,6 +43,14 @@ install_cargo_hack:
 [private]
 install_cargo_semver_checks:
     cargo install --locked cargo-semver-checks
+
+[private]
+install_rustup_llvm_tools_preview:
+    rustup component add llvm-tools-preview
+
+[private]
+install_cargo_grcov:
+    cargo install grcov
 
 # Check syntax, formatting, clippy, deny, ...
 quick: (quick_impl ""               ""         ) \
@@ -135,12 +143,31 @@ cargo_test features mode:
     {{features}} \
     {{mode}}
 
+# Audit advisories, bans, licenses, and sources
+audit: cargo_deny
+
 # Benchmark
 bench: cargo_bench
 
 [private]
 cargo_bench:
     cargo bench -p imap-codec --all-features
+
+# Measure test coverage
+coverage: install_rustup_llvm_tools_preview install_cargo_grcov
+    mkdir -p target/coverage
+    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="coverage-%m-%p.profraw" cargo test -p imap-codec -p imap-types --all-features
+    grcov . \
+        --source-dir . \
+        --binary-path target/debug \
+        --branch \
+        --keep-only '{imap-codec/src/**,imap-types/src/**}' \
+        --output-types "lcov" \
+        --llvm > target/coverage/coverage.lcov
+    # TODO: Create files in `target/coverage` only.
+    rm *.profraw
+    rm imap-types/*.profraw
+    rm imap-codec/*.profraw
 
 # Fuzz
 [linux]
@@ -153,3 +180,9 @@ fuzz runs="25000": install_cargo_fuzz
         echo "# Fuzzing ${fuzz_target}";
         cargo +nightly fuzz run --features=ext,arbitrary_simplified ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs={{runs}};
     done
+
+# Check MSRV
+minimal_versions: install_rust_1_65 install_rust_nightly
+	cargo +nightly update -Z minimal-versions
+	cargo +1.65 check --workspace --all-targets --all-features --exclude tokio-server
+	cargo +1.65 test --workspace --all-targets --all-features --exclude tokio-server --exclude imap-codec-fuzz --exclude imap-types-fuzz

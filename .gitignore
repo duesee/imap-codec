@@ -2,9 +2,5 @@ Cargo.lock
 target
 .idea
 
-# Coverage
-**/*.profraw
-coveralls.lcov
-
 # direnv (https://direnv.net/)
 .envrc
