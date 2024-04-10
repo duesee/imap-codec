@@ -433,6 +433,7 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
+                            modifiers: vec![],
                         },
                     )
                     .unwrap(),
@@ -446,6 +447,7 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
+                            modifiers: vec![],
                         },
                     )
                     .unwrap(),
@@ -637,14 +639,14 @@ mod tests {
                 b"* SEARCH 1\r\n".as_ref(),
                 Ok((
                     b"".as_ref(),
-                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()], None)),
                 )),
             ),
             (
                 b"* SEARCH 1\r\n???".as_ref(),
                 Ok((
                     b"???".as_ref(),
-                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()], None)),
                 )),
             ),
             (

@@ -9,7 +9,7 @@ use abnf_core::streaming::sp;
 use imap_types::extensions::binary::LiteralOrLiteral8;
 use imap_types::{
     auth::AuthMechanism,
-    command::{Command, CommandBody},
+    command::{Command, CommandBody, FetchModifier, SelectExamineModifier, StoreModifier, ListReturnItem},
     core::AString,
     fetch::{Macro, MacroOrMessageDataItemNames},
     flag::{Flag, StoreResponse, StoreType},
@@ -33,7 +33,7 @@ use crate::extensions::metadata::{getmetadata, setmetadata};
 use crate::extensions::{sort::sort, thread::thread};
 use crate::{
     auth::auth_type,
-    core::{astring, base64, literal, tag_imap},
+    core::{astring, base64, literal, nz_number64, tag_imap},
     datetime::date_time,
     decode::{IMAPErrorKind, IMAPResult},
     extensions::{
@@ -215,24 +215,55 @@ pub(crate) fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `examine = "EXAMINE" SP mailbox`
 pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"EXAMINE"), sp, mailbox));
+    let modifier = alt((
+        value(SelectExamineModifier::Condstore, tag_no_case(b"CONDSTORE")),
+    ));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let mut parser = tuple((
+        tag_no_case(b"EXAMINE"),
+        sp, 
+        mailbox,
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
+    ));
 
-    Ok((remaining, CommandBody::Examine { mailbox }))
+    let (remaining, (_, _, mailbox, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
+
+    Ok((remaining, CommandBody::Examine { mailbox, modifiers }))
 }
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
 pub(crate) fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
+    let return_item = alt((
+        value(ListReturnItem::Subscribed, tag_no_case(b"SUBSCRIBED")),
+        value(ListReturnItem::Children, tag_no_case(b"CHILDREN")),
+        map(preceded(
+            tuple((tag_no_case(b"STATUS"), sp)),
+            delimited(
+                tag(b"("),
+                separated_list0(sp, status_att),
+                tag(b")"),
+            ),
+        ), |status_att| ListReturnItem::Status(status_att)),
+    ));
 
-    let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
+    let return_parser = preceded(
+        tuple((sp, tag_no_case(b"RETURN"), sp)), 
+        delimited(
+            tag(b"("), 
+            separated_list1(sp, return_item), 
+            tag(b")")
+        ));
+    let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox, opt(return_parser)));
+
+    let (remaining, (_, _, reference, _, mailbox_wildcard, maybe_return)) = parser(input)?;
 
     Ok((
         remaining,
         CommandBody::List {
             reference,
             mailbox_wildcard,
+            r#return: maybe_return.unwrap_or(vec![]).into(),
         },
     ))
 }
@@ -271,11 +302,21 @@ pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `select = "SELECT" SP mailbox`
 pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"SELECT"), sp, mailbox));
+    let modifier = alt((
+        value(SelectExamineModifier::Condstore, tag_no_case(b"CONDSTORE")),
+    ));
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let mut parser = tuple((
+        tag_no_case(b"SELECT"), 
+        sp, 
+        mailbox,
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
+    ));
 
-    Ok((remaining, CommandBody::Select { mailbox }))
+    let (remaining, (_, _, mailbox, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
+
+    Ok((remaining, CommandBody::Select { mailbox, modifiers }))
 }
 
 /// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
@@ -418,7 +459,7 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     alt((
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
-        value(CommandBody::Expunge, tag_no_case(b"EXPUNGE")),
+        value(CommandBody::Expunge { uid_sequence_set: None }, tag_no_case(b"EXPUNGE")),
         copy,
         fetch,
         store,
@@ -454,6 +495,14 @@ pub(crate) fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                                      "FAST" /
 ///                                      fetch-att / "(" fetch-att *(SP fetch-att) ")")`
 pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let modifier = alt((
+        map(
+            tuple((tag_no_case(b"CHANGEDSINCE"), sp, nz_number64)),
+            |(_, _, val)| FetchModifier::ChangedSince(val),
+        ),
+    ));
+
+
     let mut parser = tuple((
         tag_no_case(b"FETCH"),
         sp,
@@ -480,15 +529,18 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
                 MacroOrMessageDataItemNames::MessageDataItemNames,
             ),
         )),
+        opt(preceded(sp, delimited(tag(b"("), separated_list1(sp, modifier), tag(b")")))),
     ));
 
-    let (remaining, (_, _, sequence_set, _, macro_or_item_names)) = parser(input)?;
+    let (remaining, (_, _, sequence_set, _, macro_or_item_names, maybe_modifiers)) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
     Ok((
         remaining,
         CommandBody::Fetch {
             sequence_set,
             macro_or_item_names,
+            modifiers,
             uid: false,
         },
     ))
@@ -496,9 +548,24 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `store = "STORE" SP sequence-set SP store-att-flags`
 pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, store_att_flags));
+    let modifiers = alt((
+        map(
+            tuple((tag_no_case(b"UNCHANGEDSINCE"), sp, nz_number64)),
+            |(_, _, val)| StoreModifier::UnchangedSince(val),
+        ),
+    ));
 
-    let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
+    let mut parser = tuple((
+        tag_no_case(b"STORE"), 
+        sp, 
+        sequence_set, 
+        opt(preceded(sp, delimited(tag("("), separated_list1(sp, modifiers), tag(")")))), 
+        sp, 
+        store_att_flags
+    ));
+
+    let (remaining, (_, _, sequence_set, maybe_modifiers, _, (kind, response, flags))) = parser(input)?;
+    let modifiers = maybe_modifiers.unwrap_or(vec![]);
 
     Ok((
         remaining,
@@ -507,6 +574,7 @@ pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             kind,
             response,
             flags,
+            modifiers,
             uid: false,
         },
     ))
@@ -543,14 +611,25 @@ pub(crate) fn store_att_flags(
     Ok((remaining, (store_type, store_response, flag_list)))
 }
 
-/// `uid = "UID" SP (copy / fetch / search / store)`
+//  uid-expunge     = "UID" SP "EXPUNGE" SP sequence-set
+pub(crate) fn expunge_range(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let mut parser = preceded(
+        tuple((tag_no_case(b"EXPUNGE"), sp)),
+        map(sequence_set, |seq| CommandBody::Expunge {
+            uid_sequence_set: Some(seq),
+        }),
+    );
+    parser(input)
+}
+
+/// `uid = "UID" SP (copy / fetch / search / store / expunge)`
 ///
 /// Note: Unique identifiers used instead of message sequence numbers
 pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"UID"),
         sp,
-        alt((copy, fetch, search, store, r#move)),
+        alt((copy, fetch, search, store, r#move, expunge_range)),
     ));
 
     let (remaining, (_, _, mut cmd)) = parser(input)?;
@@ -561,6 +640,7 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         | CommandBody::Search { ref mut uid, .. }
         | CommandBody::Store { ref mut uid, .. }
         | CommandBody::Move { ref mut uid, .. } => *uid = true,
+        CommandBody::Expunge { .. } => (),
         _ => unreachable!(),
     }
 

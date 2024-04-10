@@ -45,7 +45,7 @@
 //! C: Pa²²W0rD
 //! ```
 
-use std::{borrow::Borrow, io::Write, num::NonZeroU32};
+use std::{borrow::Borrow, io::Write, num::{NonZeroU32, NonZeroU64}};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
@@ -57,7 +57,7 @@ use imap_types::{
         BasicFields, Body, BodyExtension, BodyStructure, Disposition, Language, Location,
         MultiPartExtensionData, SinglePartExtensionData, SpecificFields,
     },
-    command::{Command, CommandBody},
+    command::{Command, CommandBody, StoreModifier, FetchModifier, SelectExamineModifier, ListReturnItem},
     core::{
         AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
         QuotedChar, Tag, Text,
@@ -74,7 +74,7 @@ use imap_types::{
         Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
         Response, Status, StatusBody, StatusKind, Tagged,
     },
-    search::SearchKey,
+    search::{SearchKey, MetadataItemType},
     sequence::{SeqOrUid, Sequence, SequenceSet},
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
@@ -327,16 +327,30 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 password.declassify().encode_ctx(ctx)
             }
-            CommandBody::Select { mailbox } => {
+            CommandBody::Select { mailbox, modifiers } => {
                 ctx.write_all(b"SELECT")?;
                 ctx.write_all(b" ")?;
-                mailbox.encode_ctx(ctx)
+                mailbox.encode_ctx(ctx)?;
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Unselect => ctx.write_all(b"UNSELECT"),
-            CommandBody::Examine { mailbox } => {
+            CommandBody::Examine { mailbox, modifiers } => {
                 ctx.write_all(b"EXAMINE")?;
                 ctx.write_all(b" ")?;
-                mailbox.encode_ctx(ctx)
+                mailbox.encode_ctx(ctx)?;
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Create { mailbox } => {
                 ctx.write_all(b"CREATE")?;
@@ -371,12 +385,20 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             CommandBody::List {
                 reference,
                 mailbox_wildcard,
+                r#return,
             } => {
                 ctx.write_all(b"LIST")?;
                 ctx.write_all(b" ")?;
                 reference.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
-                mailbox_wildcard.encode_ctx(ctx)
+                mailbox_wildcard.encode_ctx(ctx)?;
+                if !r#return.is_empty() {
+                    ctx.write_all(b"(")?;
+                    join_serializable(r#return, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Lsub {
                 reference,
@@ -427,7 +449,14 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             }
             CommandBody::Check => ctx.write_all(b"CHECK"),
             CommandBody::Close => ctx.write_all(b"CLOSE"),
-            CommandBody::Expunge => ctx.write_all(b"EXPUNGE"),
+            CommandBody::Expunge { uid_sequence_set } => {
+                if let Some(seqset) = uid_sequence_set {
+                    ctx.write_all(b"UID EXPUNGE ")?;
+                    seqset.encode_ctx(ctx)
+                } else {
+                    ctx.write_all(b"EXPUNGE")
+                }
+            }
             CommandBody::Search {
                 charset,
                 criteria,
@@ -483,6 +512,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             }
             CommandBody::Fetch {
                 sequence_set,
+                modifiers,
                 macro_or_item_names,
                 uid,
             } => {
@@ -490,6 +520,12 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                     ctx.write_all(b"UID FETCH ")?;
                 } else {
                     ctx.write_all(b"FETCH ")?;
+                }
+
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
                 }
 
                 sequence_set.encode_ctx(ctx)?;
@@ -501,6 +537,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 kind,
                 response,
                 flags,
+                modifiers,
                 uid,
             } => {
                 if *uid {
@@ -511,6 +548,12 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
 
                 sequence_set.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
+
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
 
                 match kind {
                     StoreType::Add => ctx.write_all(b"+")?,
@@ -758,6 +801,36 @@ impl<'a> EncodeIntoContext for ListCharString<'a> {
     }
 }
 
+impl<'a> EncodeIntoContext for SelectExamineModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            SelectExamineModifier::Condstore => ctx.write_all(b"CONDSTORE"),
+        }
+    }
+}
+
+impl<'a> EncodeIntoContext for FetchModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            FetchModifier::ChangedSince(val) => {
+                ctx.write_all(b"CHANGEDSINCE ")?;
+                val.encode_ctx(ctx)
+            }
+        }
+    }
+}
+
+impl<'a> EncodeIntoContext for StoreModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            StoreModifier::UnchangedSince(val) => {
+                ctx.write_all(b"UNCHANGEDSINCE ")?;
+                val.encode_ctx(ctx)
+            }
+        }
+    }
+}
+
 impl EncodeIntoContext for StatusDataItemName {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
@@ -768,8 +841,21 @@ impl EncodeIntoContext for StatusDataItemName {
             Self::Unseen => ctx.write_all(b"UNSEEN"),
             Self::Deleted => ctx.write_all(b"DELETED"),
             Self::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
-            #[cfg(feature = "ext_condstore_qresync")]
             Self::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
+        }
+    }
+}
+
+impl EncodeIntoContext for ListReturnItem {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            Self::Subscribed => ctx.write_all(b"SUBSCRIBED"),
+            Self::Children => ctx.write_all(b"CHILDREN"),
+            Self::Status(attr) => {
+                ctx.write_all(b"STATUS (")?;
+                join_serializable(attr, b" ", ctx)?;
+                ctx.write_all(b")")
+            }
         }
     }
 }
@@ -917,7 +1003,29 @@ impl<'a> EncodeIntoContext for SearchKey<'a> {
                 ctx.write_all(b"(")?;
                 join_serializable(search_keys.as_ref(), b" ", ctx)?;
                 ctx.write_all(b")")
-            }
+            },
+            SearchKey::ModSeq { metadata_item, modseq } => {
+                ctx.write_all(b"MODSEQ ")?;
+                if let Some(entry) = metadata_item {
+                    ctx.write_all(b"(")?;
+                    entry.entry_name.encode_ctx(ctx)?;
+                    ctx.write_all(b" ")?;
+                    entry.entry_type.encode_ctx(ctx)?;
+                    ctx.write_all(b") ")?;
+                }
+                modseq.encode_ctx(ctx)
+            },
+        }
+    }
+}
+
+impl EncodeIntoContext for MetadataItemType {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        use MetadataItemType::*;
+        match self {
+            Private => ctx.write_all(b"priv"),
+            Shared => ctx.write_all(b"shared"),
+            All => ctx.write_all(b"all"),
         }
     }
 }
@@ -1012,6 +1120,7 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
             Self::Rfc822Size => ctx.write_all(b"RFC822.SIZE"),
             Self::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
             Self::Uid => ctx.write_all(b"UID"),
+            Self::ModSeq => ctx.write_all(b"MODSEQ"),
             #[cfg(feature = "ext_binary")]
             MessageDataItemName::Binary {
                 section,
@@ -1104,6 +1213,12 @@ impl EncodeIntoContext for Part {
 }
 
 impl EncodeIntoContext for NonZeroU32 {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        write!(ctx, "{self}")
+    }
+}
+
+impl EncodeIntoContext for NonZeroU64 {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{self}")
     }
@@ -1323,12 +1438,18 @@ impl<'a> EncodeIntoContext for Data<'a> {
                 join_serializable(items, b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
-            Data::Search(seqs) => {
+            Data::Search(seqs, maybe_modseq) => {
                 if seqs.is_empty() {
                     ctx.write_all(b"* SEARCH")?;
                 } else {
                     ctx.write_all(b"* SEARCH ")?;
                     join_serializable(seqs, b" ", ctx)?;
+                    if let Some(modseq) = maybe_modseq {
+                        ctx.write_all(b" (MODSEQ ")?;
+                        modseq.encode_ctx(ctx)?;
+                        ctx.write_all(b")")?;
+                    }
+                    
                 }
             }
             #[cfg(feature = "ext_sort_thread")]
@@ -1387,6 +1508,7 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     root.encode_ctx(ctx)?;
                 }
             }
+
             #[cfg(feature = "ext_id")]
             Data::Id { parameters } => {
                 ctx.write_all(b"* ID ")?;
@@ -1484,6 +1606,10 @@ impl EncodeIntoContext for StatusDataItem {
                 ctx.write_all(b"DELETED-STORAGE ")?;
                 count.encode_ctx(ctx)
             }
+            Self::HighestModSeq(modseq) => {
+                ctx.write_all(b"HIGHESTMODSEQ ")?;
+                modseq.encode_ctx(ctx)
+            }
         }
     }
 }
@@ -1543,6 +1669,11 @@ impl<'a> EncodeIntoContext for MessageDataItem<'a> {
                 nstring.encode_ctx(ctx)
             }
             Self::Uid(uid) => write!(ctx, "UID {uid}"),
+            Self::ModSeq(modseq) => {
+                ctx.write_all(b"MODSEQ (")?;
+                modseq.encode_ctx(ctx)?;
+                ctx.write_all(b")")
+            }
             #[cfg(feature = "ext_binary")]
             Self::Binary { section, value } => {
                 ctx.write_all(b"BINARY[")?;

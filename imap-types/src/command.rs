@@ -3,6 +3,7 @@
 //! See <https://tools.ietf.org/html/rfc3501#section-6>.
 
 use std::borrow::Cow;
+use std::num::NonZeroU64;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -392,6 +393,8 @@ pub enum CommandBody<'a> {
     Select {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Optional parameters according to RFC466 section 2.1
+        modifiers: Vec<SelectExamineModifier>,
     },
 
     /// Unselect a mailbox.
@@ -421,6 +424,8 @@ pub enum CommandBody<'a> {
     Examine {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        /// Optional parameters according to RFC466 section 2.1
+        modifiers: Vec<SelectExamineModifier>,
     },
 
     /// ### 6.3.3.  CREATE Command
@@ -737,6 +742,29 @@ pub enum CommandBody<'a> {
         reference: Mailbox<'a>,
         /// Mailbox (wildcard).
         mailbox_wildcard: ListMailbox<'a>,
+        /// Return Options
+        /// 
+        /// ---
+        /// 
+        /// The return options defined in this specification (RFC5258) are as follows.
+        /// SUBSCRIBED -  causes the LIST command to return subscription state
+        ///   for all matching mailbox names.  The "\Subscribed" attribute MUST
+        ///   be supported and MUST be accurately computed when the SUBSCRIBED
+        ///   return option is specified.  Further, all mailbox flags MUST be
+        ///   accurately computed (this differs from the behavior of the LSUB
+        ///   command).
+        /// CHILDREN -  requests mailbox child information as originally proposed
+        ///   in [CMbox].  See Section 4, below, for details.  This option MUST
+        ///   be supported by all servers.
+        /// 
+        /// ---
+        ///
+        /// STATUS Return Option to LIST Command
+        ///
+        /// In order to achieve this goal, this document
+        /// is extending the LIST command with a new return option, STATUS.  This
+        /// option takes STATUS data items as parameters.
+        r#return: Cow<'a, [ListReturnItem]>,
     },
 
     /// ### 6.3.9.  LSUB Command
@@ -967,7 +995,9 @@ pub enum CommandBody<'a> {
     ///   Note: In this example, messages 3, 4, 7, and 11 had the
     ///   \Deleted flag set.  See the description of the EXPUNGE
     ///   response for further explanation.
-    Expunge,
+    Expunge { 
+        uid_sequence_set: Option<SequenceSet>,
+    },
 
     /// ### 6.4.4.  SEARCH Command
     ///
@@ -1103,6 +1133,8 @@ pub enum CommandBody<'a> {
     Fetch {
         /// Set of messages.
         sequence_set: SequenceSet,
+        /// Fetch modifiers
+        modifiers: Vec<FetchModifier>,
         /// Message data items (or a macro).
         macro_or_item_names: MacroOrMessageDataItemNames<'a>,
         /// Use UID variant.
@@ -1168,6 +1200,8 @@ pub enum CommandBody<'a> {
         response: StoreResponse,
         /// Flags.
         flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
+        /// Modifiers.
+        modifiers: Vec<StoreModifier>,
         /// Use UID variant.
         uid: bool,
     },
@@ -1444,6 +1478,40 @@ pub enum CommandBody<'a> {
     },
 }
 
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ListReturnItem {
+    Subscribed,
+    Children,
+    Status(Vec<StatusDataItemName>),
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SelectExamineModifier {
+    Condstore,
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FetchModifier {
+    ChangedSince(NonZeroU64),
+}
+
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StoreModifier {
+    UnchangedSince(NonZeroU64),
+}
+
 impl<'a> CommandBody<'a> {
     /// Prepend a tag to finalize the command body to a command.
     pub fn tag<T>(self, tag: T) -> Result<Command<'a>, T::Error>
@@ -1498,6 +1566,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Select {
             mailbox: mailbox.try_into()?,
+            modifiers: vec![],
         })
     }
 
@@ -1508,6 +1577,7 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Examine {
             mailbox: mailbox.try_into()?,
+            modifiers: vec![],
         })
     }
 
@@ -1575,6 +1645,7 @@ impl<'a> CommandBody<'a> {
         Ok(CommandBody::List {
             reference: reference.try_into().map_err(ListError::Reference)?,
             mailbox_wildcard: mailbox_wildcard.try_into().map_err(ListError::Mailbox)?,
+            r#return: [][..].into(),
         })
     }
 
@@ -1639,7 +1710,7 @@ impl<'a> CommandBody<'a> {
     }
 
     /// Construct a FETCH command.
-    pub fn fetch<S, I>(sequence_set: S, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
+    pub fn fetch<S, I>(sequence_set: S, modifiers: Vec<FetchModifier>, macro_or_item_names: I, uid: bool) -> Result<Self, S::Error>
     where
         S: TryInto<SequenceSet>,
         I: Into<MacroOrMessageDataItemNames<'a>>,
@@ -1649,6 +1720,7 @@ impl<'a> CommandBody<'a> {
         Ok(CommandBody::Fetch {
             sequence_set,
             macro_or_item_names: macro_or_item_names.into(),
+            modifiers,
             uid,
         })
     }
@@ -1659,6 +1731,7 @@ impl<'a> CommandBody<'a> {
         kind: StoreType,
         response: StoreResponse,
         flags: Vec<Flag<'a>>,
+        modifiers: Vec<StoreModifier>,
         uid: bool,
     ) -> Result<Self, S::Error>
     where
@@ -1671,6 +1744,7 @@ impl<'a> CommandBody<'a> {
             kind,
             response,
             flags,
+            modifiers,
             uid,
         })
     }
@@ -1720,7 +1794,7 @@ impl<'a> CommandBody<'a> {
             Self::Append { .. } => "APPEND",
             Self::Check => "CHECK",
             Self::Close => "CLOSE",
-            Self::Expunge => "EXPUNGE",
+            Self::Expunge { .. } => "EXPUNGE",
             Self::Search { .. } => "SEARCH",
             Self::Fetch { .. } => "FETCH",
             Self::Store { .. } => "STORE",
@@ -1890,7 +1964,7 @@ mod tests {
             .unwrap(),
             CommandBody::Check,
             CommandBody::Close,
-            CommandBody::Expunge,
+            CommandBody::Expunge { uid_sequence_set: None },
             CommandBody::search(
                 None,
                 Vec1::from(SearchKey::And(
@@ -1950,6 +2024,7 @@ mod tests {
             ),
             CommandBody::fetch(
                 "1",
+                vec![],
                 vec![MessageDataItemName::BodyExt {
                     partial: None,
                     section: Some(Section::Part(Part(
@@ -1962,12 +2037,13 @@ mod tests {
                 false,
             )
             .unwrap(),
-            CommandBody::fetch("1:*,2,3", Macro::Full, true).unwrap(),
+            CommandBody::fetch("1:*,2,3", vec![], Macro::Full, true).unwrap(),
             CommandBody::store(
                 "1,2:*",
                 StoreType::Remove,
                 StoreResponse::Answer,
                 vec![Flag::Seen, Flag::Draft],
+                vec![],
                 false,
             )
             .unwrap(),
@@ -1976,6 +2052,7 @@ mod tests {
                 StoreType::Add,
                 StoreResponse::Answer,
                 vec![Flag::Keyword("TEST".try_into().unwrap())],
+                vec![],
                 true,
             )
             .unwrap(),
@@ -2015,6 +2092,7 @@ mod tests {
             (
                 CommandBody::Select {
                     mailbox: Mailbox::Inbox,
+                    modifiers: vec![],
                 },
                 "SELECT",
             ),
@@ -2022,6 +2100,7 @@ mod tests {
             (
                 CommandBody::Examine {
                     mailbox: Mailbox::Inbox,
+                    modifiers: vec![],
                 },
                 "EXAMINE",
             ),
@@ -2060,6 +2139,7 @@ mod tests {
                 CommandBody::List {
                     reference: Mailbox::Inbox,
                     mailbox_wildcard: ListMailbox::try_from("").unwrap(),
+                    r#return: [][..].into(),
                 },
                 "LIST",
             ),
@@ -2104,7 +2184,9 @@ mod tests {
             ),
             (CommandBody::Check, "CHECK"),
             (CommandBody::Close, "CLOSE"),
-            (CommandBody::Expunge, "EXPUNGE"),
+            (CommandBody::Expunge {
+                uid_sequence_set: None,
+            }, "EXPUNGE"),
             (
                 CommandBody::Search {
                     charset: None,
@@ -2117,6 +2199,7 @@ mod tests {
                 CommandBody::Fetch {
                     sequence_set: SequenceSet::try_from(1u32).unwrap(),
                     macro_or_item_names: MacroOrMessageDataItemNames::Macro(Macro::Full),
+                    modifiers: vec![],
                     uid: true,
                 },
                 "FETCH",
@@ -2127,6 +2210,7 @@ mod tests {
                     flags: vec![],
                     response: StoreResponse::Silent,
                     kind: StoreType::Add,
+                    modifiers: vec![],
                     uid: true,
                 },
                 "STORE",
