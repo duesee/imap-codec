@@ -16,9 +16,6 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-// Note: The implementation of these traits does agree:
-//       `PartialEq` is just a thin wrapper that ensures constant-time comparison.
-#[allow(clippy::derived_hash_with_manual_eq)]
 #[derive(Clone, Eq, Hash, PartialEq)]
 pub struct Secret<T>(T);
 
