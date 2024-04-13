@@ -14,5 +14,5 @@ runs:
           ~/.cargo/git/db/
           # See https://doc.rust-lang.org/cargo/guide/build-cache.html
           target
-        key: branch|${{ runner.os }}|${{ github.job }}|${{ github.run_attempt }}
+        key: ${{ runner.os }}|${{ github.job }}|${{ github.run_attempt }}
 
