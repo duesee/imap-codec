@@ -24,32 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
-          path: |
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ github.workflow }}
-
+      - uses: ./.github/actions/cache_restore
       - run: cargo install just
       - run: just minimal_versions
-
-      - id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
-          path: |
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+      - uses: ./.github/actions/cache_save
 
