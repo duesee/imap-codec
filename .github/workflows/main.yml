@@ -42,6 +42,21 @@ jobs:
       - run: just test
       - uses: ./.github/actions/cache_save
 
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: bench
+      - run: cargo install just
+      - run: just coverage
+      - uses: ./.github/actions/cache_save
+
   coverage:
     runs-on: ubuntu-latest
 

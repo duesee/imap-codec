@@ -1,0 +1,28 @@
+name: benchmark
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**.rs"
+      - "**.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just bench
+      - uses: ./.github/actions/cache_save
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench
+          path: target/criterion
+
