@@ -1,36 +1,57 @@
-name: Audit
-
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
   schedule:
     # 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
     - cron: '43 21 * * 3,0'
   workflow_dispatch:
 
-jobs:
-  #  test_extended:
-  #    runs-on: ubuntu-latest
-  #
-  #    steps:
-  #      - name: Checkout code
-  #        uses: actions/checkout@v4
-  #
-  #      - uses: taiki-e/install-action@4f8e32492b3baed061f7836e6a4d40eb19e49b71
-  #        with:
-  #          tool: cargo-hack
-  #
-  #      - name: Test (extended)
-  #        # TODO: We exclude the tokio demos for now to bypass a "none of the selected packages contains these features" error.
-  #        run: |
-  #          cargo hack test \
-  #          --workspace \
-  #          --exclude tokio-client --exclude tokio-server \
-  #          --feature-powerset \
-  #          --group-features starttls,ext_condstore_qresync,ext_login_referrals,ext_mailbox_referrals \
-  #          --exclude-features ext,split
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   audit:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@b01e7a8cfb1f496c52d77361e84c1840d8246393
+
+      - id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+          path: |
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.workflow }}
+
+      - run: cargo install just
+      - run: just audit
+
+      - id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+          path: |
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}

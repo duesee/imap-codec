@@ -2,15 +2,15 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '**.rs'
-      - '**.toml'
-      - '.github/workflows/**'
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
   pull_request:
     branches: [ main ]
     paths:
-      - '**.rs'
-      - '**.toml'
-      - '.github/workflows/**'
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage:
+  minimal_versions:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,7 +38,7 @@ jobs:
           key: ${{ github.workflow }}
 
       - run: cargo install just
-      - run: just coverage
+      - run: just minimal_versions
 
       - id: cache-save
         uses: actions/cache/save@v4
@@ -53,7 +53,3 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-      - uses: coverallsapp/github-action@c203f016dd0ff7855ebef0ed852000c20c117148
-        with:
-          format: lcov
-          file: target/coverage/coverage.lcov

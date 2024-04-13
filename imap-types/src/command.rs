@@ -1792,11 +1792,9 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;
-    #[cfg(feature = "ext_binary")]
-    use crate::extensions::binary::Literal8;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
+        core::{AString, Charset, IString, Literal, Vec1},
         datetime::DateTime,
         extensions::{
             compress::CompressionAlgorithm,
@@ -1810,6 +1808,8 @@ mod tests {
         sequence::{SeqOrUid, Sequence, SequenceSet},
         status::StatusDataItemName,
     };
+    #[cfg(feature = "ext_binary")]
+    use crate::{core::LiteralMode, extensions::binary::Literal8};
 
     #[test]
     fn test_conversion_command_body() {

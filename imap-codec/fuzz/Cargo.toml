@@ -49,8 +49,8 @@ split = []
 
 [dependencies]
 libfuzzer-sys = "0.4"
-imap-types = { path = "../../imap-types" }
-imap-codec = { path = "..", features = ["arbitrary"] }
+imap-types = { path = "../../imap-types", features = ["arbitrary"] }
+imap-codec = { path = ".." }
 
 [[bin]]
 name = "greeting"
