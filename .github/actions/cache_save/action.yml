@@ -4,13 +4,15 @@ runs:
   steps:
     - uses: actions/cache/save@v4
       with:
-        # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
         path: |
+          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
           ~/.cargo/.crates.toml
           ~/.cargo/.crates2.json
           ~/.cargo/bin/
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        key: ${{ github.workflow }}
+          # See https://doc.rust-lang.org/cargo/guide/build-cache.html
+          target
+        key: branch|${{ runner.os }}|${{ github.job }}|${{ github.run_attempt }}
 
