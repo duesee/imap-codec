@@ -22,4 +22,4 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-        key: main|${{ runner.os }}|${{ github.run_attempt }}
+          key: main|${{ runner.os }}|${{ github.run_attempt }}
