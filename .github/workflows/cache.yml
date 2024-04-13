@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
       - run: cargo install just
       - run: just install
       - uses: actions/cache/save@v4
