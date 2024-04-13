@@ -119,7 +119,18 @@ audit: cargo_deny
 
 # Benchmark
 bench:
+    cargo bench -p imap-codec --all-features bench_command_parse_simple
+
+# Benchmark against main
+bench_against_main:
+    rm -rf target/bench_tmp
+    mkdir -p target/bench_tmp
+    git clone --depth 1 https://github.com/duesee/imap-codec target/bench_tmp
+    cd target/bench_tmp; cargo bench -p imap-codec --all-features
+    rm -rf target/criterion
+    cp -r target/bench_tmp/target/criterion target/criterion
     cargo bench -p imap-codec --all-features
+    rm -rf target/bench_tmp
 
 # Measure test coverage
 coverage: install_rust_llvm_tools_preview install_cargo_grcov
