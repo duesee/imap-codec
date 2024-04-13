@@ -1,0 +1,81 @@
+name: main
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "**.rs"
+      - "**.toml"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just check
+      - uses: ./.github/actions/cache_save
+
+  test:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just test
+      - uses: ./.github/actions/cache_save
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just coverage
+      - uses: ./.github/actions/cache_save
+
+      - uses: coverallsapp/github-action@c203f016dd0ff7855ebef0ed852000c20c117148
+        with:
+          format: lcov
+          file: target/coverage/coverage.lcov
+
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just fuzz
+      - uses: ./.github/actions/cache_save
+
+  minimal_versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just minimal_versions
+      - uses: ./.github/actions/cache_save
+
