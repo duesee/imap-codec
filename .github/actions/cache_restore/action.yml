@@ -1,0 +1,16 @@
+name: cache_restore
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache/restore@v4
+      with:
+        # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+        path: |
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: ${{ github.workflow }}
+
