@@ -45,7 +45,7 @@ pub(crate) fn id_response(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString
 /// id-params-list = "(" [string SP nstring *(SP string SP nstring)] ")" / nil
 /// ```
 ///
-/// Note: Updated ABNF. (See https://github.com/modern-email/defects/issues/12)
+/// Note: Updated ABNF. (See <https://github.com/modern-email/defects/issues/12>)
 #[allow(clippy::type_complexity)]
 pub(crate) fn id_params_list(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString)>>> {
     alt((

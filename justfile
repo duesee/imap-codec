@@ -35,6 +35,7 @@ check_impl mode features: (cargo_check mode features) \
 [private]
 cargo_check mode features:
     cargo check --workspace --all-targets{{ mode }}{{ features }}
+    cargo doc --no-deps --document-private-items --keep-going{{ mode }}{{ features }}
 
 [private]
 cargo_hack mode: install_cargo_hack

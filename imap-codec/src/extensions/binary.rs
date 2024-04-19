@@ -22,7 +22,7 @@ use crate::{
     fetch::section_part,
 };
 
-/// See https://datatracker.ietf.org/doc/html/rfc3516 and https://datatracker.ietf.org/doc/html/rfc4466
+/// See <https://datatracker.ietf.org/doc/html/rfc3516> and <https://datatracker.ietf.org/doc/html/rfc4466>
 ///
 /// ```abnf
 /// literal8 = "~{" number ["+"] "}" CRLF *OCTET

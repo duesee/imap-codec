@@ -13,6 +13,10 @@ If you're unsure, let's figure it out together!
 
 ## Project management
 
+We use the [just](https://github.com/casey/just) command runner for Continuous Integration (CI).
+The GitHub Actions infrastructure merely calls `just` to execute jobs.
+This means that you can run all required tests for a PR using `just ci`.
+
 ### Code formatting
 
 Code is formatted using [`rustfmt`] with a custom `rustfmt.toml` and checked in CI.
