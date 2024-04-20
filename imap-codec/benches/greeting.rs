@@ -14,18 +14,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     for (instance, object) in instances {
         c.bench_function(
             format!("bench_greeting_serialize_{instance}").as_str(),
-            |b| {
-                b.iter(|| {
-                    serialize(&codec, &object);
-                })
-            },
+            |b| b.iter(|| serialize(&codec, &object)),
         );
 
         let input = serialize(&codec, &object);
         c.bench_function(format!("bench_greeting_parse_{instance}").as_str(), |b| {
-            b.iter(|| {
-                parse(&codec, black_box(&input[..]));
-            })
+            b.iter(|| parse(&codec, black_box(&input[..])))
         });
     }
 }
