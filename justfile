@@ -34,12 +34,12 @@ check_impl mode features: (cargo_check mode features) \
 
 [private]
 cargo_check mode features:
-    cargo check --workspace --all-targets{{ mode }}{{ features }}
+    cargo check --workspace --all-targets --exclude imap-codec-bench{{ mode }}{{ features }}
     cargo doc --no-deps --document-private-items --keep-going{{ mode }}{{ features }}
 
 [private]
 cargo_hack mode: install_cargo_hack
-    cargo hack check --workspace --all-targets{{ mode }}
+    cargo hack check --workspace --all-targets --exclude imap-codec-bench{{ mode }}
     cargo hack check -p imap-codec \
         --no-dev-deps \
         --exclude-features default \
@@ -85,7 +85,7 @@ cargo_fmt: install_rust_nightly install_rust_nightly_fmt
 
 [private]
 cargo_clippy features mode: install_cargo_clippy
-    cargo clippy --workspace --all-targets{{ features }}{{ mode }}
+    cargo clippy --workspace --all-targets --exclude imap-codec-bench{{ features }}{{ mode }}
 
 [private]
 cargo_deny: install_cargo_deny
@@ -111,26 +111,30 @@ cargo_test features mode:
     --workspace \
     --exclude imap-types-fuzz \
     --exclude imap-codec-fuzz \
-    --all-targets\
+    --all-targets \
+    --exclude imap-codec-bench\
     {{ features }}\
     {{ mode }}
 
 # Audit advisories, bans, licenses, and sources
 audit: cargo_deny
 
+bench_check:
+    cargo check -p imap-codec-bench --all-features --all-targets
+
 # Benchmark
 bench:
-    cargo bench -p imap-codec --all-features bench_command_parse_simple
+    cargo bench -p imap-codec-bench --all-features
 
 # Benchmark against main
 bench_against_main:
     rm -rf target/bench_tmp
     mkdir -p target/bench_tmp
     git clone --depth 1 https://github.com/duesee/imap-codec target/bench_tmp
-    cd target/bench_tmp; cargo bench -p imap-codec --all-features
+    cd target/bench_tmp; cargo bench -p imap-codec-bench
     rm -rf target/criterion
     cp -r target/bench_tmp/target/criterion target/criterion
-    cargo bench -p imap-codec --all-features
+    cargo bench -p imap-codec-bench
     rm -rf target/bench_tmp
 
 # Measure test coverage
@@ -165,10 +169,10 @@ fuzz runs="25000": install_cargo_fuzz
 minimal_versions: install_rust_1_65 install_rust_nightly
     cargo +nightly update -Z minimal-versions
     cargo +1.65 check \
-      --workspace --exclude tokio-client --exclude tokio-server \
+      --workspace --exclude tokio-client --exclude tokio-server --exclude imap-codec-bench\
       --all-targets --all-features 
     cargo +1.65 test \
-      --workspace --exclude tokio-client --exclude tokio-server --exclude imap-codec-fuzz --exclude imap-types-fuzz \
+      --workspace --exclude tokio-client --exclude tokio-server --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
       --all-targets --all-features
     cargo update
 
