@@ -280,7 +280,7 @@ pub(crate) fn charset(input: &[u8]) -> IMAPResult<&[u8], Charset> {
 // ----- tag -----
 
 /// `tag = 1*<any ASTRING-CHAR except "+">`
-pub(crate) fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
+pub fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
     map(take_while1(|b| is_astring_char(b) && b != b'+'), |val| {
         // # Safety
         //

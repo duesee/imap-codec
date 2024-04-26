@@ -35,7 +35,7 @@ pub(crate) type IMAPResult<'a, I, O> = Result<(I, O), nom::Err<IMAPParseError<'a
 
 /// An extended version of [`nom::error::Error`].
 #[derive(Debug)]
-pub(crate) struct IMAPParseError<'a, I> {
+pub struct IMAPParseError<'a, I> {
     #[allow(unused)]
     pub input: I,
     pub kind: IMAPErrorKind<'a>,
@@ -43,7 +43,7 @@ pub(crate) struct IMAPParseError<'a, I> {
 
 /// An extended version of [`nom::error::ErrorKind`].
 #[derive(Debug)]
-pub(crate) enum IMAPErrorKind<'a> {
+pub enum IMAPErrorKind<'a> {
     Literal {
         tag: Option<Tag<'a>>,
         length: u32,
