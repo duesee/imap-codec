@@ -40,17 +40,16 @@ use crate::{
 
 /// `greeting = "*" SP (resp-cond-auth / resp-cond-bye) CRLF`
 pub(crate) fn greeting(input: &[u8]) -> IMAPResult<&[u8], Greeting> {
-    let mut parser = tuple((
-        tag(b"*"),
-        sp,
+    let mut parser = delimited(
+        tag(b"* "),
         alt((
             resp_cond_auth,
             map(resp_cond_bye, |resp_text| (GreetingKind::Bye, resp_text)),
         )),
         crlf,
-    ));
+    );
 
-    let (remaining, (_, _, (kind, (code, text)), _)) = parser(input)?;
+    let (remaining, (kind, (code, text))) = parser(input)?;
 
     Ok((remaining, Greeting { kind, code, text }))
 }
@@ -64,14 +63,13 @@ pub(crate) fn resp_cond_auth(
 ) -> IMAPResult<&[u8], (GreetingKind, (Option<Code>, Text))> {
     let mut parser = tuple((
         alt((
-            value(GreetingKind::Ok, tag_no_case(b"OK")),
-            value(GreetingKind::PreAuth, tag_no_case(b"PREAUTH")),
+            value(GreetingKind::Ok, tag_no_case(b"OK ")),
+            value(GreetingKind::PreAuth, tag_no_case(b"PREAUTH ")),
         )),
-        sp,
         resp_text,
     ));
 
-    let (remaining, (kind, _, resp_text)) = parser(input)?;
+    let (remaining, (kind, resp_text)) = parser(input)?;
 
     Ok((remaining, (kind, resp_text)))
 }
@@ -147,23 +145,23 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
     alt((
         value(Code::Alert, tag_no_case(b"ALERT")),
         map(
-            tuple((
+            preceded(
                 tag_no_case(b"BADCHARSET"),
-                opt(preceded(
-                    sp,
-                    delimited(tag(b"("), separated_list1(sp, charset), tag(b")")),
+                opt(delimited(
+                    tag(b" ("),
+                    separated_list1(sp, charset),
+                    tag(b")"),
                 )),
-            )),
-            |(_, maybe_charsets)| Code::BadCharset {
+            ),
+            |maybe_charsets| Code::BadCharset {
                 allowed: maybe_charsets.unwrap_or_default(),
             },
         ),
         map(capability_data, Code::Capability),
         value(Code::Parse, tag_no_case(b"PARSE")),
         map(
-            tuple((
-                tag_no_case(b"PERMANENTFLAGS"),
-                sp,
+            preceded(
+                tag_no_case(b"PERMANENTFLAGS "),
                 delimited(
                     tag(b"("),
                     map(opt(separated_list1(sp, flag_perm)), |maybe_flags| {
@@ -171,24 +169,18 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
                     }),
                     tag(b")"),
                 ),
-            )),
-            |(_, _, flags)| Code::PermanentFlags(flags),
+            ),
+            Code::PermanentFlags,
         ),
         value(Code::ReadOnly, tag_no_case(b"READ-ONLY")),
         value(Code::ReadWrite, tag_no_case(b"READ-WRITE")),
         value(Code::TryCreate, tag_no_case(b"TRYCREATE")),
+        map(preceded(tag_no_case(b"UIDNEXT "), nz_number), Code::UidNext),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
-            |(_, _, num)| Code::UidNext(num),
+            preceded(tag_no_case(b"UIDVALIDITY "), nz_number),
+            Code::UidValidity,
         ),
-        map(
-            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
-            |(_, _, num)| Code::UidValidity(num),
-        ),
-        map(
-            tuple((tag_no_case(b"UNSEEN"), sp, nz_number)),
-            |(_, _, num)| Code::Unseen(num),
-        ),
+        map(preceded(tag_no_case(b"UNSEEN "), nz_number), Code::Unseen),
         value(Code::CompressionActive, tag_no_case(b"COMPRESSIONACTIVE")),
         value(Code::OverQuota, tag_no_case(b"OVERQUOTA")),
         value(Code::TooBig, tag_no_case(b"TOOBIG")),
@@ -213,15 +205,10 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 /// Servers MUST implement the STARTTLS, AUTH=PLAIN, and LOGINDISABLED capabilities
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
 pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], Vec1<Capability>> {
-    let mut parser = tuple((
-        tag_no_case("CAPABILITY"),
-        sp,
-        separated_list1(sp, capability),
-    ));
-
-    let (rem, (_, _, caps)) = parser(input)?;
-
-    Ok((rem, Vec1::unvalidated(caps)))
+    map(
+        preceded(tag_no_case("CAPABILITY "), separated_list1(sp, capability)),
+        Vec1::unvalidated,
+    )(input)
 }
 
 /// `capability = ("AUTH=" auth-type) /
@@ -233,11 +220,7 @@ pub(crate) fn capability(input: &[u8]) -> IMAPResult<&[u8], Capability> {
 
 /// `resp-cond-bye = "BYE" SP resp-text`
 pub(crate) fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
-    let mut parser = tuple((tag_no_case(b"BYE"), sp, resp_text));
-
-    let (remaining, (_, _, resp_text)) = parser(input)?;
-
-    Ok((remaining, resp_text))
+    preceded(tag_no_case(b"BYE "), resp_text)(input)
 }
 
 // ----- response -----
@@ -313,9 +296,8 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
 ///                  ) CRLF
 /// ```
 pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
-    let mut parser = tuple((
-        tag(b"*"),
-        sp,
+    delimited(
+        tag(b"* "),
         alt((
             map(resp_cond_state, |(kind, code, text)| {
                 Response::Status(Status::Untagged(StatusBody { kind, code, text }))
@@ -335,11 +317,7 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
             }),
         )),
         crlf,
-    ));
-
-    let (remaining, (_, _, response, _)) = parser(input)?;
-
-    Ok((remaining, response))
+    )(input)
 }
 
 /// `resp-cond-state = ("OK" / "NO" / "BAD") SP resp-text`
@@ -348,15 +326,14 @@ pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
 pub(crate) fn resp_cond_state(input: &[u8]) -> IMAPResult<&[u8], (StatusKind, Option<Code>, Text)> {
     let mut parser = tuple((
         alt((
-            value(StatusKind::Ok, tag_no_case("OK")),
-            value(StatusKind::No, tag_no_case("NO")),
-            value(StatusKind::Bad, tag_no_case("BAD")),
+            value(StatusKind::Ok, tag_no_case("OK ")),
+            value(StatusKind::No, tag_no_case("NO ")),
+            value(StatusKind::Bad, tag_no_case("BAD ")),
         )),
-        sp,
         resp_text,
     ));
 
-    let (remaining, (kind, _, (maybe_code, text))) = parser(input)?;
+    let (remaining, (kind, (maybe_code, text))) = parser(input)?;
 
     Ok((remaining, (kind, maybe_code, text)))
 }
@@ -385,9 +362,9 @@ pub(crate) fn response_tagged(input: &[u8]) -> IMAPResult<&[u8], Status> {
 ///
 /// Server closes connection immediately
 pub(crate) fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
-    let mut parser = tuple((tag(b"*"), sp, resp_cond_bye, crlf));
+    let mut parser = delimited(tag(b"* "), resp_cond_bye, crlf);
 
-    let (remaining, (_, _, (code, text), _)) = parser(input)?;
+    let (remaining, (code, text)) = parser(input)?;
 
     Ok((remaining, Status::Bye(Bye { code, text })))
 }
@@ -398,10 +375,9 @@ pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 
     alt((
         map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq)),
-        map(
-            tuple((tag_no_case(b"FETCH"), sp, msg_att)),
-            move |(_, _, items)| Data::Fetch { seq, items },
-        ),
+        map(preceded(tag_no_case(b"FETCH "), msg_att), move |items| {
+            Data::Fetch { seq, items }
+        }),
     ))(remaining)
 }
 

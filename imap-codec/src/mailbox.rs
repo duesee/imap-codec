@@ -11,7 +11,7 @@ use nom::{
     bytes::streaming::{tag, tag_no_case, take_while1},
     combinator::{map, opt, value},
     multi::many0,
-    sequence::{delimited, preceded, tuple},
+    sequence::{delimited, preceded, terminated, tuple},
 };
 
 #[cfg(feature = "ext_metadata")]
@@ -68,21 +68,18 @@ pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
 /// ```
 pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
+        map(preceded(tag_no_case(b"FLAGS "), flag_list), Data::Flags),
         map(
-            tuple((tag_no_case(b"FLAGS"), sp, flag_list)),
-            |(_, _, flags)| Data::Flags(flags),
-        ),
-        map(
-            tuple((tag_no_case(b"LIST"), sp, mailbox_list)),
-            |(_, _, (items, delimiter, mailbox))| Data::List {
+            preceded(tag_no_case(b"LIST "), mailbox_list),
+            |(items, delimiter, mailbox)| Data::List {
                 items: items.unwrap_or_default(),
                 mailbox,
                 delimiter,
             },
         ),
         map(
-            tuple((tag_no_case(b"LSUB"), sp, mailbox_list)),
-            |(_, _, (items, delimiter, mailbox))| Data::Lsub {
+            preceded(tag_no_case(b"LSUB "), mailbox_list),
+            |(items, delimiter, mailbox)| Data::Lsub {
                 items: items.unwrap_or_default(),
                 mailbox,
                 delimiter,
@@ -101,31 +98,23 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
         thread_data,
         map(
             tuple((
-                tag_no_case(b"STATUS"),
-                sp,
+                tag_no_case(b"STATUS "),
                 mailbox,
-                sp,
-                delimited(tag(b"("), opt(status_att_list), tag(b")")),
+                delimited(tag(b" ("), opt(status_att_list), tag(b")")),
                 #[cfg(feature = "quirk_trailing_space")]
                 opt(sp),
                 #[cfg(not(feature = "quirk_trailing_space"))]
                 nom::combinator::success(()),
             )),
-            |(_, _, mailbox, _, items, _)| Data::Status {
+            |(_, mailbox, items, _)| Data::Status {
                 mailbox,
                 items: items.unwrap_or_default().into(),
             },
         ),
         #[cfg(feature = "ext_metadata")]
         metadata_resp,
-        map(
-            tuple((number, sp, tag_no_case(b"EXISTS"))),
-            |(num, _, _)| Data::Exists(num),
-        ),
-        map(
-            tuple((number, sp, tag_no_case(b"RECENT"))),
-            |(num, _, _)| Data::Recent(num),
-        ),
+        map(terminated(number, tag_no_case(b" EXISTS")), Data::Exists),
+        map(terminated(number, tag_no_case(b" RECENT")), Data::Recent),
         quotaroot_response,
         quota_response,
     ))(input)

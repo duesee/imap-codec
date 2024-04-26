@@ -100,11 +100,10 @@ pub(crate) fn quota_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
     let mut parser = tuple((
         tag_no_case("QUOTA "),
         quota_root_name,
-        sp,
-        delimited(tag("("), separated_list1(sp, quota_resource), tag(")")),
+        delimited(tag(" ("), separated_list1(sp, quota_resource), tag(")")),
     ));
 
-    let (remaining, (_, root, _, quotas)) = parser(input)?;
+    let (remaining, (_, root, quotas)) = parser(input)?;
 
     Ok((
         remaining,
@@ -140,11 +139,10 @@ pub(crate) fn setquota(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case("SETQUOTA "),
         quota_root_name,
-        sp,
-        delimited(tag("("), separated_list0(sp, setquota_resource), tag(")")),
+        delimited(tag(" ("), separated_list0(sp, setquota_resource), tag(")")),
     ));
 
-    let (remaining, (_, root, _, quotas)) = parser(input)?;
+    let (remaining, (_, root, quotas)) = parser(input)?;
 
     Ok((remaining, CommandBody::SetQuota { root, quotas }))
 }
