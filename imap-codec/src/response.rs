@@ -78,7 +78,7 @@ pub(crate) fn resp_cond_auth(
 
 /// `resp-text = ["[" resp-text-code "]" SP] text`
 pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)> {
-    // When the text starts with "[", we insist to parse a code.
+    // When the text starts with "[", we insist on parsing a code.
     // Otherwise, a broken code could be interpreted as text.
     let (_, start) = opt(tag(b"["))(input)?;
 
