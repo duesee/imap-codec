@@ -165,8 +165,7 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `append = "APPEND" SP mailbox [SP flag-list] [SP date-time] SP literal`
 pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
-        tag_no_case(b"APPEND"),
-        sp,
+        tag_no_case(b"APPEND "),
         mailbox,
         opt(preceded(sp, flag_list)),
         opt(preceded(sp, date_time)),
@@ -180,7 +179,7 @@ pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         )),
     ));
 
-    let (remaining, (_, _, mailbox, flags, date, _, message)) = parser(input)?;
+    let (remaining, (_, mailbox, flags, date, _, message)) = parser(input)?;
 
     Ok((
         remaining,
@@ -197,9 +196,9 @@ pub(crate) fn append(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///
 /// Note: Use of INBOX gives a NO error
 pub(crate) fn create(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"CREATE"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"CREATE "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Create { mailbox }))
 }
@@ -208,27 +207,27 @@ pub(crate) fn create(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///
 /// Note: Use of INBOX gives a NO error
 pub(crate) fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"DELETE"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"DELETE "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Delete { mailbox }))
 }
 
 /// `examine = "EXAMINE" SP mailbox`
 pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"EXAMINE"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"EXAMINE "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Examine { mailbox }))
 }
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
 pub(crate) fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"LIST"), sp, mailbox, sp, list_mailbox));
+    let mut parser = tuple((tag_no_case(b"LIST "), mailbox, sp, list_mailbox));
 
-    let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
+    let (remaining, (_, reference, _, mailbox_wildcard)) = parser(input)?;
 
     Ok((
         remaining,
@@ -241,9 +240,9 @@ pub(crate) fn list(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `lsub = "LSUB" SP mailbox SP list-mailbox`
 pub(crate) fn lsub(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"LSUB"), sp, mailbox, sp, list_mailbox));
+    let mut parser = tuple((tag_no_case(b"LSUB "), mailbox, sp, list_mailbox));
 
-    let (remaining, (_, _, reference, _, mailbox_wildcard)) = parser(input)?;
+    let (remaining, (_, reference, _, mailbox_wildcard)) = parser(input)?;
 
     Ok((
         remaining,
@@ -258,9 +257,9 @@ pub(crate) fn lsub(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///
 /// Note: Use of INBOX as a destination gives a NO error
 pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"RENAME"), sp, mailbox, sp, mailbox));
+    let mut parser = tuple((tag_no_case(b"RENAME "), mailbox, sp, mailbox));
 
-    let (remaining, (_, _, mailbox, _, new_mailbox)) = parser(input)?;
+    let (remaining, (_, mailbox, _, new_mailbox)) = parser(input)?;
 
     Ok((
         remaining,
@@ -273,9 +272,9 @@ pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `select = "SELECT" SP mailbox`
 pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"SELECT"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"SELECT "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Select { mailbox }))
 }
@@ -283,14 +282,12 @@ pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
 pub(crate) fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
-        tag_no_case(b"STATUS"),
-        sp,
+        tag_no_case(b"STATUS "),
         mailbox,
-        sp,
-        delimited(tag(b"("), separated_list0(sp, status_att), tag(b")")),
+        delimited(tag(b" ("), separated_list0(sp, status_att), tag(b")")),
     ));
 
-    let (remaining, (_, _, mailbox, _, item_names)) = parser(input)?;
+    let (remaining, (_, mailbox, item_names)) = parser(input)?;
 
     Ok((
         remaining,
@@ -303,18 +300,18 @@ pub(crate) fn status(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 /// `subscribe = "SUBSCRIBE" SP mailbox`
 pub(crate) fn subscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"SUBSCRIBE"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"SUBSCRIBE "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Subscribe { mailbox }))
 }
 
 /// `unsubscribe = "UNSUBSCRIBE" SP mailbox`
 pub(crate) fn unsubscribe(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"UNSUBSCRIBE"), sp, mailbox));
+    let mut parser = preceded(tag_no_case(b"UNSUBSCRIBE "), mailbox);
 
-    let (remaining, (_, _, mailbox)) = parser(input)?;
+    let (remaining, mailbox) = parser(input)?;
 
     Ok((remaining, CommandBody::Unsubscribe { mailbox }))
 }

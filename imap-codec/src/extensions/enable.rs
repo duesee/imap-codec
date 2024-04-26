@@ -56,12 +56,12 @@ pub(crate) fn capability_enable(input: &[u8]) -> IMAPResult<&[u8], CapabilityEna
 
 /// `enable-data = "ENABLED" *(SP capability)`
 pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
-    let mut parser = tuple((
+    let mut parser = preceded(
         tag_no_case(b"ENABLED"),
         many0(preceded(sp, capability_enable)),
-    ));
+    );
 
-    let (remaining, (_, capabilities)) = parser(input)?;
+    let (remaining, capabilities) = parser(input)?;
 
     Ok((remaining, { Data::Enabled { capabilities } }))
 }
