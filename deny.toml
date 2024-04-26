@@ -1,6 +1,13 @@
 [sources]
 unknown-registry = "deny"
 unknown-git      = "deny"
+allow-git = [
+    # Used in benchmarking
+    "https://github.com/stalwartlabs/mail-server?rev=53f0222f308b3e844c158fc0e603d10361da3c63",
+]
 
 [licenses]
 allow = [ "Apache-2.0", "MIT", "BSD-3-Clause", "Unicode-DFS-2016" ]
+
+[licenses.private]
+ignore = true

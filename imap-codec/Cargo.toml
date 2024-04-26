@@ -72,24 +72,6 @@ serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.61"
 log = "0.4.21"
 
-[dev-dependencies]
-criterion = "0.5.1"
-# Make `cargo +nightly -Z minimal-versions update` work.
-regex = "1.10.4"
-
-[[bench]]
-name = "greeting"
-harness = false
-
-[[bench]]
-name = "command"
-harness = false
-
-[[bench]]
-name = "response"
-harness = false
-
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-

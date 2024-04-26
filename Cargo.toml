@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "imap-codec",
+    "imap-codec/benchmark",
     "imap-codec/fuzz",
     "imap-types",
     "imap-types/fuzz",

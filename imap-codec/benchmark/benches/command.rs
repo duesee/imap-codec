@@ -1,5 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use imap_codec::{decode::Decoder, encode::Encoder, imap_types::command::Command, CommandCodec};
+use imap_proto_stalwart::{
+    receiver::Receiver as ImapProtoStalwartReceiver, Command as ImapProtoStalwartCommand,
+};
 use imap_types::{
     command::CommandBody,
     core::{Charset, Tag, Vec1},
@@ -22,6 +25,27 @@ fn criterion_benchmark(c: &mut Criterion) {
         c.bench_function(format!("bench_command_parse_{instance}").as_str(), |b| {
             b.iter(|| parse(&codec, black_box(&input[..])))
         });
+
+        // Note: We don't get a fully serialized command with stalwart here. This hinders comparison ...
+        //
+        // ```rust
+        // Request {
+        //     tag: "A",
+        //     command: Search(true),
+        //     tokens: [
+        //         Argument([67, 72, 65, 82, 83, 69, 84]), // CHARSET
+        //         Argument([85, 84, 70, 45, 56]), // UTF-8
+        //         Argument([49, 58, 52, 50, 44, 52, 50, 58, 49, 51, 51, 55, 44, 49, 51, 51, 55, 58, 42]), // 1:42,42:1337,1337:*
+        //     ]
+        // }
+        // ```
+        let input = serialize(&codec, &object);
+        let mut receiver: ImapProtoStalwartReceiver<ImapProtoStalwartCommand> =
+            ImapProtoStalwartReceiver::new();
+        c.bench_function(
+            format!("bench_command_parse_{instance}_imap_proto_stalwart").as_str(),
+            |b| b.iter(|| receiver.parse(black_box(&mut input.iter())).unwrap()),
+        );
     }
 }
 
