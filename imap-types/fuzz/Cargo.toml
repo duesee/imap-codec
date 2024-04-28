@@ -34,6 +34,7 @@ ext = [
     "ext_id",
     "ext_sort_thread",
     "ext_binary",
+    "ext_metadata",
     "ext_uidplus",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
