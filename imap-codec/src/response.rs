@@ -25,6 +25,8 @@ use nom::{
 use crate::extensions::id::id_response;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::metadata_code;
+#[cfg(feature = "ext_uidplus")]
+use crate::extensions::uidplus::{resp_code_apnd, resp_code_copy};
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
@@ -197,6 +199,12 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         ),
         #[cfg(feature = "ext_binary")]
         value(Code::UnknownCte, tag_no_case(b"UNKNOWN-CTE")),
+        #[cfg(feature = "ext_uidplus")]
+        resp_code_apnd,
+        #[cfg(feature = "ext_uidplus")]
+        resp_code_copy,
+        #[cfg(feature = "ext_uidplus")]
+        value(Code::UidNotSticky, tag_no_case(b"UIDNOTSTICKY")),
     ))(input)
 }
 

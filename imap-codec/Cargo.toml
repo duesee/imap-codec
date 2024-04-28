@@ -26,6 +26,7 @@ ext_id = ["imap-types/ext_id"]
 ext_sort_thread = ["imap-types/ext_sort_thread"]
 ext_binary = ["imap-types/ext_binary"]
 ext_metadata = ["ext_binary", "imap-types/ext_metadata"]
+ext_uidplus = ["imap-types/ext_uidplus"]
 # </Forward to imap-types>
 
 # IMAP quirks
