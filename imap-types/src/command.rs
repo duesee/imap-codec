@@ -969,6 +969,40 @@ pub enum CommandBody<'a> {
     ///   response for further explanation.
     Expunge,
 
+    /// 2.1.  UID EXPUNGE Command (RFC 4315)
+    ///
+    /// Arguments: sequence set
+    /// Data:      untagged responses: EXPUNGE
+    /// Result:    OK - expunge completed
+    ///            NO - expunge failure (e.g., permission denied)
+    ///            BAD - command unknown or arguments invalid
+    ///
+    /// The UID EXPUNGE command permanently removes all messages that both
+    /// have the \Deleted flag set and have a UID that is included in the
+    /// specified sequence set from the currently selected mailbox.  If a
+    /// message either does not have the \Deleted flag set or has a UID
+    /// that is not included in the specified sequence set, it is not
+    /// affected.
+    ///
+    /// This command is particularly useful for disconnected use clients.
+    /// By using UID EXPUNGE instead of EXPUNGE when resynchronizing with
+    /// the server, the client can ensure that it does not inadvertantly
+    /// remove any messages that have been marked as \Deleted by other
+    /// clients between the time that the client was last connected and
+    /// the time the client resynchronizes.
+    ///
+    /// If the server does not support the UIDPLUS capability, the client
+    /// should fall back to using the STORE command to temporarily remove
+    /// the \Deleted flag from messages it does not want to remove, then
+    /// issuing the EXPUNGE command.  Finally, the client should use the
+    /// STORE command to restore the \Deleted flag on the messages in
+    /// which it was temporarily removed.
+    ///
+    /// Alternatively, the client may fall back to using just the EXPUNGE
+    /// command, risking the unintended removal of some messages.
+    #[cfg(feature = "ext_uidplus")]
+    ExpungeUid { sequence_set: SequenceSet },
+
     /// ### 6.4.4.  SEARCH Command
     ///
     /// * Arguments:
@@ -1721,6 +1755,8 @@ impl<'a> CommandBody<'a> {
             Self::Check => "CHECK",
             Self::Close => "CLOSE",
             Self::Expunge => "EXPUNGE",
+            #[cfg(feature = "ext_uidplus")]
+            Self::ExpungeUid { .. } => "EXPUNGE",
             Self::Search { .. } => "SEARCH",
             Self::Fetch { .. } => "FETCH",
             Self::Store { .. } => "STORE",

@@ -26,6 +26,7 @@ ext_id = ["imap-codec/ext_id"]
 ext_sort_thread = ["imap-codec/ext_sort_thread"]
 ext_binary = ["imap-codec/ext_binary"]
 ext_metadata = ["ext_binary", "imap-codec/ext_metadata"]
+ext_uidplus = ["imap-codec/ext_uidplus"]
 
 # IMAP quirks
 quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
@@ -41,6 +42,7 @@ ext = [
     "ext_sort_thread",
     "ext_binary",
     "ext_metadata",
+    "ext_uidplus",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []
