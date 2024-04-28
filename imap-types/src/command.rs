@@ -952,21 +952,16 @@ pub enum CommandBody<'a> {
 
     /// 6.4.3.  EXPUNGE Command
     ///
-    /// Arguments:  none
-    /// Responses:  untagged responses: EXPUNGE
-    /// Result:     OK - expunge completed
-    ///             NO - expunge failure: can't expunge (e.g., permission
-    ///                  denied)
-    ///             BAD - command unknown or arguments invalid
+    /// Arguments: none
+    /// Responses: untagged responses: EXPUNGE
+    /// Result:    OK - expunge completed
+    ///            NO - expunge failure: can't expunge (e.g., permission denied)
+    ///            BAD - command unknown or arguments invalid
     ///
     /// The EXPUNGE command permanently removes all messages that have the
     /// \Deleted flag set from the currently selected mailbox.  Before
     /// returning an OK to the client, an untagged EXPUNGE response is
     /// sent for each message that is removed.
-    ///
-    ///   Note: In this example, messages 3, 4, 7, and 11 had the
-    ///   \Deleted flag set.  See the description of the EXPUNGE
-    ///   response for further explanation.
     Expunge,
 
     /// 2.1.  UID EXPUNGE Command (RFC 4315)
