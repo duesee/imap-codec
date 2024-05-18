@@ -53,6 +53,7 @@ mod tests {
         let tests = [
             (AuthMechanism::Plain, b"PLAIN".as_ref()),
             (AuthMechanism::Login, b"LOGIN"),
+            (AuthMechanism::OAuthBearer, b"OAUTHBEARER"),
             (AuthMechanism::try_from("PLAINX").unwrap(), b"PLAINX"),
             (AuthMechanism::try_from("LOGINX").unwrap(), b"LOGINX"),
             (AuthMechanism::try_from("XOAUTH2X").unwrap(), b"XOAUTH2X"),
@@ -82,6 +83,12 @@ mod tests {
                 b" ",
                 AuthMechanism::try_from(b"Xplain".as_ref()).unwrap(),
             ),
+            (
+                b"oauthbearer ".as_ref(),
+                b" ".as_ref(),
+                AuthMechanism::OAuthBearer,
+            ),
+            (b"oAuThbearEr ", b" ", AuthMechanism::OAuthBearer),
             (b"xoauth2 ".as_ref(), b" ".as_ref(), AuthMechanism::XOAuth2),
             (b"xOauTh2 ", b" ", AuthMechanism::XOAuth2),
         ];
