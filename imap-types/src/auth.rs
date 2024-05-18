@@ -56,7 +56,7 @@ pub enum AuthMechanism<'a> {
     /// + draft-murchison-sasl-login-00: The LOGIN SASL Mechanism
     Login,
 
-    /// Standard OAuth 2.0 mechanism.
+    /// OAuth 2.0 bearer token mechanism.
     ///
     /// ```imap
     /// AUTH=OAUTHBEARER
