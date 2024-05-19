@@ -56,6 +56,21 @@ pub enum AuthMechanism<'a> {
     /// + draft-murchison-sasl-login-00: The LOGIN SASL Mechanism
     Login,
 
+    /// OAuth 2.0 bearer token mechanism.
+    ///
+    /// ```imap
+    /// AUTH=OAUTHBEARER
+    /// ```
+    ///
+    /// ```text
+    /// base64(b"n,a=<user>,\x01host=<host>\x01port=<port>\x01auth=Bearer <token>\x01\x01")
+    /// ```
+    ///
+    /// # Reference(s):
+    ///
+    /// * <https://datatracker.ietf.org/doc/html/rfc7628>
+    OAuthBearer,
+
     /// Google's OAuth 2.0 mechanism.
     ///
     /// ```imap
@@ -137,6 +152,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
         match atom.as_ref().to_ascii_uppercase().as_str() {
             "PLAIN" => Self::Plain,
             "LOGIN" => Self::Login,
+            "OAUTHBEARER" => Self::OAuthBearer,
             "XOAUTH2" => Self::XOAuth2,
             "SCRAM-SHA-1" => Self::ScramSha1,
             "SCRAM-SHA-1-PLUS" => Self::ScramSha1Plus,
@@ -158,6 +174,7 @@ impl<'a> AsRef<str> for AuthMechanism<'a> {
         match self {
             Self::Plain => "PLAIN",
             Self::Login => "LOGIN",
+            Self::OAuthBearer => "OAUTHBEARER",
             Self::XOAuth2 => "XOAUTH2",
             Self::ScramSha1 => "SCRAM-SHA-1",
             Self::ScramSha1Plus => "SCRAM-SHA-1-PLUS",
@@ -220,6 +237,7 @@ mod tests {
     fn test_conversion() {
         assert!(AuthMechanism::try_from("plain").is_ok());
         assert!(AuthMechanism::try_from("login").is_ok());
+        assert!(AuthMechanism::try_from("oauthbearer").is_ok());
         assert!(AuthMechanism::try_from("xoauth2").is_ok());
         assert!(AuthMechanism::try_from("xxxplain").is_ok());
         assert!(AuthMechanism::try_from("xxxlogin").is_ok());
