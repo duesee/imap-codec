@@ -1,0 +1,17 @@
+[package]
+name = "imap-types-python"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "imap_types"
+crate-type = ["cdylib"]
+
+[dependencies]
+imap-codec = { path="../../imap-codec" }
+imap-types = { path="../../imap-types", features=["serde"] }
+pyo3 = { version = "0.21.2", features = ["serde"] }
+serde-pyobject = "0.3.0"
+
+# This is to keep this crate out of the imap-codec workspace.
+[workspace]
