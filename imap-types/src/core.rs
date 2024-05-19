@@ -45,6 +45,7 @@ use std::{
 use arbitrary::Arbitrary;
 #[cfg(feature = "bounded-static")]
 use bounded_static::ToStatic;
+use serde::Deserializer;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -1140,9 +1141,17 @@ impl<'a> AsRef<str> for Tag<'a> {
 /// LF        = %x0A                        ; linefeed
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
+
+impl<'de, 'a> serde::Deserialize<'de> for Text<'a> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+
+        Text::try_from(s).map_err(serde::de::Error::custom)
+    }
+}
 
 // We want a slightly more dense `Debug` implementation.
 impl<'a> Debug for Text<'a> {
