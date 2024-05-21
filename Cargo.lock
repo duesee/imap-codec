@@ -505,6 +505,7 @@ dependencies = [
 name = "imap-codec-fuzz"
 version = "0.0.0"
 dependencies = [
+ "arbitrary",
  "imap-codec",
  "imap-types",
  "libfuzzer-sys",

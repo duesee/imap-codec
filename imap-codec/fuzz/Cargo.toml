@@ -50,9 +50,10 @@ debug = []
 split = []
 
 [dependencies]
-libfuzzer-sys = "0.4"
+arbitrary = "1.3.2"
+imap-codec = { path = "..", features = ["fuzz"] }
 imap-types = { path = "../../imap-types", features = ["arbitrary"] }
-imap-codec = { path = ".." }
+libfuzzer-sys = "0.4"
 
 [[bin]]
 name = "greeting"
@@ -99,5 +100,11 @@ doc = false
 [[bin]]
 name = "authenticate_data_to_bytes_and_back"
 path = "fuzz_targets/authenticate_data_to_bytes_and_back.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "tags_structured"
+path = "fuzz_targets/tags_structured.rs"
 test = false
 doc = false
