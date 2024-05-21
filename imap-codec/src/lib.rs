@@ -130,6 +130,11 @@ mod status;
 #[cfg(test)]
 mod testing;
 
+#[cfg(feature = "fuzz")]
+pub mod fuzz {
+    pub use crate::core::fuzz_tag_imap;
+}
+
 pub use codec::*;
 // Re-export.
 pub use imap_types;

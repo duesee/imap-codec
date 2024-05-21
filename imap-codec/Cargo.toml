@@ -18,6 +18,9 @@ default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"
 # <Forward to imap-types>
 bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
 
+# Expose internal parsers for fuzzing
+fuzz = []
+
 # IMAP
 starttls = ["imap-types/starttls"]
 

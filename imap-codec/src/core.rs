@@ -16,6 +16,8 @@ use imap_types::{
         unescape_quoted,
     },
 };
+#[cfg(feature = "fuzz")]
+use nom::IResult;
 use nom::{
     branch::alt,
     bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
@@ -287,6 +289,26 @@ pub(crate) fn tag_imap(input: &[u8]) -> IMAPResult<&[u8], Tag> {
         // `is_astring_char` ensures that `val` is UTF-8.
         Tag::unvalidated(from_utf8(val).unwrap())
     })(input)
+}
+
+// TODO: This could be exposed in a more elegant way...
+#[cfg(feature = "fuzz")]
+/// `tag = 1*<any ASTRING-CHAR except "+">`
+pub fn fuzz_tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
+    match tag_imap(input) {
+        Ok((rem, out)) => Ok((rem, out)),
+        Err(e) => match e {
+            nom::Err::Incomplete(needed) => Err(nom::Err::Incomplete(needed)),
+            nom::Err::Error(e) => Err(nom::Err::Error(nom::error::Error::new(
+                e.input,
+                nom::error::ErrorKind::Verify,
+            ))),
+            nom::Err::Failure(e) => Err(nom::Err::Failure(nom::error::Error::new(
+                e.input,
+                nom::error::ErrorKind::Verify,
+            ))),
+        },
+    }
 }
 
 #[cfg(test)]
