@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.71"
+anyhow = "1.0.86"
 futures = "0.3"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["codec"] }

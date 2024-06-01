@@ -66,13 +66,13 @@ chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { path = "../imap-types", default-features = false, features = ["unvalidated"] }
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
-thiserror = "1.0.29"
-log = "0.4.19"
+thiserror = "1.0.61"
+log = "0.4.21"
 
 [dev-dependencies]
 criterion = "0.5.1"
 # Make `cargo +nightly -Z minimal-versions update` work.
-regex = "1.5.3"
+regex = "1.10.4"
 
 [[bench]]
 name = "greeting"
