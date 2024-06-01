@@ -8,6 +8,9 @@ authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
 license = "MIT OR Apache-2.0"
 edition = "2021"
+exclude = [
+    ".github",
+]
 
 [features]
 default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"]
