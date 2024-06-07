@@ -45,5 +45,16 @@ fn read_line(prompt: &str, role: Role) -> String {
 
     print!("{RESET}");
 
-    line.replace('\n', "\r\n")
+    // Ensure `CRLF` line ending of resulting string.
+    // Line ending of `line` can be one of:
+    // - `CRLF` on Windows
+    // - `LF` on Unix-like
+    // - none when EOF of standard input is reached
+    if line.ends_with("\r\n") {
+        return line;
+    }
+    if line.ends_with('\n') {
+        line.pop();
+    }
+    line + "\r\n"
 }
