@@ -975,8 +975,6 @@ impl<'a> CodeOther<'a> {
 pub enum Capability<'a> {
     Imap4Rev1,
     Auth(AuthMechanism<'a>),
-    #[cfg(feature = "starttls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     LoginDisabled,
     #[cfg(feature = "starttls")]
     #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
@@ -1038,7 +1036,6 @@ impl<'a> Display for Capability<'a> {
         match self {
             Self::Imap4Rev1 => write!(f, "IMAP4REV1"),
             Self::Auth(mechanism) => write!(f, "AUTH={}", mechanism),
-            #[cfg(feature = "starttls")]
             Self::LoginDisabled => write!(f, "LOGINDISABLED"),
             #[cfg(feature = "starttls")]
             Self::StartTls => write!(f, "STARTTLS"),
@@ -1112,7 +1109,6 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 
         match cow.to_ascii_lowercase().as_ref() {
             "imap4rev1" => Self::Imap4Rev1,
-            #[cfg(feature = "starttls")]
             "logindisabled" => Self::LoginDisabled,
             #[cfg(feature = "starttls")]
             "starttls" => Self::StartTls,
