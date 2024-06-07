@@ -1,8 +1,26 @@
 # imap-codec
 
+```mermaid
+%%{init: {'theme': 'neutral' } }%%
+flowchart LR
+    imap-types --> imap-codec
+    imap-codec -.-> imap-next
+    imap-next -.-> proxy
+    imap-next -.-> imap-client
+    
+    style imap-codec stroke-width:4px
+    
+    click imap-types href "https://github.com/duesee/imap-codec/tree/main/imap-types"
+    click imap-codec href "https://github.com/duesee/imap-codec"
+    click imap-next href "https://github.com/duesee/imap-next"
+    click proxy href "https://github.com/duesee/imap-next/tree/main/proxy"
+    click imap-client href "https://github.com/soywod/imap-client"
+```
+
 This library provides parsing and serialization for [IMAP4rev1] implementations.
-It is based on [imap-types] and a [rock-solid] and [well-documented] building block for IMAP client and server implementations in Rust.
+It is based on [`imap-types`] and a [rock-solid] and [well-documented] building block for IMAP client and server implementations in Rust.
 The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
+If you are looking for a library that also does protocol handling, please see [`imap-next`]. 
 
 ## Features
 
@@ -34,7 +52,8 @@ fn main() {
 This crate is dual-licensed under Apache 2.0 and MIT terms.
 
 [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
-[imap-types]: https://docs.rs/imap-types/latest/imap_types/
+[`imap-types`]: https://docs.rs/imap-types/latest/imap_types/
+[`imap-next`]: https://github.com/duesee/imap-next
 [rock-solid]: https://github.com/duesee/imap-codec/tree/main/imap-codec/fuzz
 [well-documented]: https://docs.rs/imap-codec/latest/imap_codec/
 [formal syntax]: https://tools.ietf.org/html/rfc3501#section-9
