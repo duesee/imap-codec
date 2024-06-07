@@ -153,8 +153,6 @@ fn test_from_capability() {
                         Capability::try_from("STARTTLS").unwrap(),
                         Capability::Auth(AuthMechanism::try_from("GSSAPI").unwrap()),
                         Capability::LoginDisabled,
-                        #[cfg(not(feature = "starttls"))]
-                        Capability::try_from("LOGINDISABLED").unwrap(),
                     ])
                     .unwrap(),
                 )),
