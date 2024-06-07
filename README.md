@@ -10,7 +10,7 @@ This workspace contains [`imap-codec`] and [`imap-types`], two [rock-solid] and 
 `imap-types` provides misuse-resistant types, constructors, and general support for IMAP implementations.
 The crates live here together, but `imap-types` is a perfectly fine standalone crate.
 
-If you are looking for a slightly more high-level library supporting your client or server implementation, take a look at [`imap-flow`].
+If you are looking for a slightly more high-level library supporting your client or server implementation, take a look at [`imap-next`].
 
 Let's talk on [Matrix]!
 
@@ -262,7 +262,7 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 
 [`imap-codec`]: imap-codec
 [`imap-types`]: imap-types
-[`imap-flow`]: https://github.com/duesee/imap-flow
+[`imap-next`]: https://github.com/duesee/imap-next
 [`imap`]: https://github.com/jonhoo/rust-imap
 [`imap-proto`]: https://crates.io/crates/imap-proto
 [`async-imap`]: https://github.com/async-email/async-imap
@@ -275,6 +275,6 @@ Thanks to the [NLnet Foundation](https://nlnet.nl/) for supporting imap-codec th
 [`BodyStructure`]: https://docs.rs/imap-types/latest/imap_types/body/enum.BodyStructure.html
 [more challenging to use]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
 [a correct representation for strings]: https://github.com/duesee/imap-codec/tree/main/imap-types#examples
-[build-in support for IMAP literals]: https://docs.rs/imap-codec/latest/imap_codec/codec/struct.Encoded.html
+[build-in support for IMAP literals]: https://docs.rs/imap-codec/latest/imap_codec/encode/struct.Encoded.html
 [IMAP servers with imap-codec]: https://github.com/Email-Analysis-Toolkit/fake-mail-server
 [^1]: https://datatracker.ietf.org/doc/html/rfc2683
