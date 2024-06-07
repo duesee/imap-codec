@@ -20,7 +20,8 @@ flowchart LR
 This library provides parsing and serialization for [IMAP4rev1] implementations.
 It is based on [`imap-types`] and a [rock-solid] and [well-documented] building block for IMAP client and server implementations in Rust.
 The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
-If you are looking for a library that also does protocol handling, please see [`imap-next`]. 
+
+If you are looking for thin protocol handling, i.e., LITERAL handling, AUTHENTICATE, and IDLE, head over to [`imap-next`].
 
 ## Features
 
