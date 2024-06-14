@@ -235,7 +235,7 @@ impl<'a> MailboxOther<'a> {
     }
 }
 
-macro_rules! impl_try_from {
+macro_rules! impl_try_from_mailbox_other {
     ($from:ty) => {
         impl<'a> TryFrom<$from> for MailboxOther<'a> {
             type Error = MailboxOtherError;
@@ -251,10 +251,10 @@ macro_rules! impl_try_from {
     };
 }
 
-impl_try_from!(&'a [u8]);
-impl_try_from!(Vec<u8>);
-impl_try_from!(&'a str);
-impl_try_from!(String);
+impl_try_from_mailbox_other!(&'a [u8]);
+impl_try_from_mailbox_other!(Vec<u8>);
+impl_try_from_mailbox_other!(&'a str);
+impl_try_from_mailbox_other!(String);
 
 impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     type Error = MailboxOtherError;
