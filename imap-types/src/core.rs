@@ -1327,13 +1327,13 @@ impl TryFrom<char> for QuotedChar {
 /// looking at the `search` rule. (See [#266](https://github.com/duesee/imap-codec/issues/266).)
 ///
 /// ```abnf
-/// search          = "SEARCH" [SP "CHARSET" SP astring] 1*(SP search-key)
-/// ;                                           ^^^^^^^
-/// ;                                           |
-/// ;                                           `Charset`
-//                     ; CHARSET argument to MUST be registered with IANA
+/// search = "SEARCH" [SP "CHARSET" SP astring] 1*(SP search-key)
+///            ;                       ^^^^^^^
+///            ;                       |
+///            ;                       `Charset`
+///            ; CHARSET argument to MUST be registered with IANA
 /// ```
-/// 
+///
 /// So, it seems that it should be an `AString`. However the IMAP standard also points to ...
 /// ```abnf
 /// mime-charset       = 1*mime-charset-chars
