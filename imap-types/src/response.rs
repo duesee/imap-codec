@@ -684,10 +684,34 @@ impl<'a> CommandContinuationRequest<'a> {
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(try_from = "CommandContinuationRequestBasicShadow")
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommandContinuationRequestBasic<'a> {
     code: Option<Code<'a>>,
     text: Text<'a>,
+}
+
+/// Use shadow type to support validated deserialization
+/// until `serde` provides built-in support for this case.
+#[cfg(feature = "serde")]
+#[derive(Deserialize, Debug)]
+struct CommandContinuationRequestBasicShadow<'a> {
+    code: Option<Code<'a>>,
+    text: Text<'a>,
+}
+
+#[cfg(feature = "serde")]
+impl<'a> TryFrom<CommandContinuationRequestBasicShadow<'a>>
+    for CommandContinuationRequestBasic<'a>
+{
+    type Error = ContinueError<std::convert::Infallible>;
+
+    fn try_from(value: CommandContinuationRequestBasicShadow<'a>) -> Result<Self, Self::Error> {
+        Self::new(value.code, value.text)
+    }
 }
 
 impl<'a> CommandContinuationRequestBasic<'a> {
@@ -1235,5 +1259,26 @@ mod tests {
             println!("{:?}", test);
             assert!(test.is_err());
         }
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_command_continuation_request_basic() {
+        let valid_input = r#"{ "text": "Ready for additional command text" }"#;
+        let invalid_input = r#"{ "text": "[Ready for additional command text" }"#;
+
+        let request = serde_json::from_str::<CommandContinuationRequestBasic>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(
+            request,
+            CommandContinuationRequestBasic {
+                code: None,
+                text: Text(Cow::Borrowed("Ready for additional command text"))
+            }
+        );
+
+        let err = serde_json::from_str::<CommandContinuationRequestBasic>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(err.to_string(), r"ambiguity detected");
     }
 }
