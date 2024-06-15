@@ -98,6 +98,7 @@ use crate::extensions::binary::Literal8;
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
@@ -250,6 +251,7 @@ impl<'a> Display for Atom<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
@@ -502,6 +504,10 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Literal<'a> {
+    #[cfg_attr(
+        feature = "serde",
+        serde(deserialize_with = "deserialize_literal_data")
+    )]
     pub(crate) data: Cow<'a, [u8]>,
     /// Specifies whether this is a synchronizing or non-synchronizing literal.
     ///
@@ -511,6 +517,16 @@ pub struct Literal<'a> {
     /// Note: In the special case that a server advertised a `LITERAL-` capability, AND the literal
     /// has more than 4096 bytes a non-synchronizing literal must still be treated as synchronizing.
     pub(crate) mode: LiteralMode,
+}
+
+#[cfg(feature = "serde")]
+fn deserialize_literal_data<'de, 'a, D>(deserializer: D) -> Result<Cow<'a, [u8]>, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let data = Vec::deserialize(deserializer)?;
+    Literal::validate(&data).map_err(serde::de::Error::custom)?;
+    Ok(Cow::Owned(data))
 }
 
 // We want a more readable `Debug` implementation.
@@ -722,6 +738,7 @@ pub enum LiteralMode {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
@@ -1012,6 +1029,7 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
@@ -1141,6 +1159,7 @@ impl<'a> AsRef<str> for Tag<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
@@ -1270,6 +1289,7 @@ impl<'a> AsRef<str> for Text<'a> {
 /// ```
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "char"))]
 #[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct QuotedChar(char);
 
@@ -1445,6 +1465,7 @@ pub enum NString8<'a> {
 /// * `Vec<T, 1>` must not be used. Please use the alias [`Vec1<T>`] instead.
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "Vec<T>"))]
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct VecN<T, const N: usize>(pub(crate) Vec<T>);
 
@@ -1956,5 +1977,152 @@ mod tests {
         assert!(VecN::<u8, 2>::try_from(vec![]).is_err());
         assert!(VecN::<u8, 2>::try_from(vec![1]).is_err());
         assert!(VecN::<u8, 2>::try_from(vec![1, 2]).is_ok());
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_text() {
+        let valid_input = r#""Hello, world!""#;
+        let invalid_input = r#""Hello,\rworld!""#;
+
+        let text = serde_json::from_str::<Text>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(text, Text(Cow::Borrowed("Hello, world!")));
+
+        let err = serde_json::from_str::<Text>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x0d' at index 6"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_atom() {
+        let valid_input = r#""OneWord""#;
+        let invalid_input = r#""Two Words""#;
+
+        let atom = serde_json::from_str::<Atom>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(atom, Atom(Cow::Borrowed("OneWord")));
+
+        let err = serde_json::from_str::<Atom>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x20' at index 3"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_extended_atom() {
+        let valid_input = r#""OneWord""#;
+        let invalid_input = r#""Two Words""#;
+
+        let atom_ext = serde_json::from_str::<AtomExt>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(atom_ext, AtomExt(Cow::Borrowed("OneWord")));
+
+        let err = serde_json::from_str::<AtomExt>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x20' at index 3"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_literal() {
+        let valid_input = r#"{ "data": [ 1, 2, 3 ], "mode": "Sync" }"#;
+        let invalid_input = r#"{ "data": [ 0, 1, 2, 3 ], "mode": "Sync" }"#;
+
+        let literal = serde_json::from_str::<Literal>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(
+            literal,
+            Literal {
+                data: Cow::Borrowed(b"\x01\x02\x03"),
+                mode: LiteralMode::Sync
+            }
+        );
+
+        let err = serde_json::from_str::<Literal>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x00' at index 0 at line 1 column 24"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_quoted() {
+        let valid_input = r#""Hello, world!""#;
+        let invalid_input = r#""Hello,\rworld!""#;
+
+        let quoted = serde_json::from_str::<Quoted>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(quoted, Quoted(Cow::Borrowed("Hello, world!")));
+
+        let err = serde_json::from_str::<Quoted>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x0d' at index 6"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_tag() {
+        let valid_input = r#""A0001""#;
+        let invalid_input = r#""A+0001""#;
+
+        let tag = serde_json::from_str::<Tag>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(tag, Tag(Cow::Borrowed("A0001")));
+
+        let err = serde_json::from_str::<Tag>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x2b' at index 1"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_quoted_char() {
+        let valid_input = r#""A""#;
+        let invalid_input = r#""\r""#;
+
+        let quoted_char = serde_json::from_str::<QuotedChar>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(quoted_char, QuotedChar('A'));
+
+        let err = serde_json::from_str::<QuotedChar>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(err.to_string(), r"Validation failed: Invalid value");
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_vec_n() {
+        let valid_input = r#"[1, 2, 3]"#;
+        let invalid_input = r#"[1, 2]"#;
+
+        let vec_n = serde_json::from_str::<VecN<u8, 3>>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(vec_n, VecN(vec![1, 2, 3]));
+
+        let err = serde_json::from_str::<VecN<u8, 3>>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Must have at least 3 elements"
+        );
     }
 }

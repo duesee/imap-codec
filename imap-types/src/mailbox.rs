@@ -18,6 +18,7 @@ use crate::{
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListCharString<'a>(pub(crate) Cow<'a, str>);
 
@@ -200,6 +201,7 @@ impl<'a> From<AString<'a>> for Mailbox<'a> {
 
 #[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "AString<'a>"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MailboxOther<'a>(pub(crate) AString<'a>);
 
@@ -292,6 +294,8 @@ mod tests {
     use std::borrow::Cow;
 
     use super::*;
+    #[cfg(feature = "serde")]
+    use crate::core::AtomExt;
     use crate::core::{AString, IString, Literal, LiteralMode};
 
     #[test]
@@ -328,5 +332,44 @@ mod tests {
             assert!(Mailbox::try_from(test).is_err());
             assert!(Mailbox::try_from(String::from(test)).is_err());
         }
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_list_char_string() {
+        let valid_input = r#""OneWord""#;
+        let invalid_input = r#""Two Words""#;
+
+        let list_char_string = serde_json::from_str::<ListCharString>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(list_char_string, ListCharString(Cow::Borrowed("OneWord")));
+
+        let err = serde_json::from_str::<ListCharString>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Validation failed: Invalid byte b'\x20' at index 3"
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_mailbox_other() {
+        let valid_input = r#"{ "Atom": "other" }"#;
+        let invalid_input = r#"{ "Atom": "inbox" }"#;
+
+        let mailbox_other = serde_json::from_str::<MailboxOther>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(
+            mailbox_other,
+            MailboxOther(AString::Atom(AtomExt(Cow::Borrowed("other"))))
+        );
+
+        let err = serde_json::from_str::<MailboxOther>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(
+            err.to_string(),
+            r"Reserved: Please use one of the typed variants"
+        );
     }
 }

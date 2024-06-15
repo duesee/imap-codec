@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::datetime::error::{DateTimeError, NaiveDateError};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "chrono::DateTime<FixedOffset>"))]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct DateTime(chrono::DateTime<FixedOffset>);
 
@@ -96,6 +97,7 @@ impl ToBoundedStatic for DateTime {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "chrono::NaiveDate"))]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct NaiveDate(chrono::NaiveDate);
 
@@ -267,5 +269,46 @@ mod tests {
             println!("{:?}", got.clone().unwrap_err());
             assert_eq!(expected, got.unwrap_err());
         }
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_date_time() {
+        let valid_input = r#""2015-05-15T11:22:33+01:00""#;
+        let invalid_input = r#""+12015-05-15T11:22:33+01:00""#;
+
+        let date_time = serde_json::from_str::<DateTime>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(
+            date_time,
+            DateTime(
+                chrono::FixedOffset::east_opt(3600)
+                    .unwrap()
+                    .with_ymd_and_hms(2015, 5, 15, 11, 22, 33)
+                    .unwrap(),
+            ),
+        );
+
+        let err = serde_json::from_str::<DateTime>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(err.to_string(), r"expected `0 <= year <= 9999`, got 12015");
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialization_naive_date() {
+        let valid_input = r#""2015-05-15""#;
+        let invalid_input = r#""+12015-05-15""#;
+
+        let naive_date = serde_json::from_str::<NaiveDate>(valid_input)
+            .expect("valid input should deserialize successfully");
+        assert_eq!(
+            naive_date,
+            NaiveDate(chrono::NaiveDate::from_ymd_opt(2015, 5, 15).unwrap()),
+        );
+
+        let err = serde_json::from_str::<NaiveDate>(invalid_input)
+            .expect_err("invalid input should not deserialize successfully");
+        assert_eq!(err.to_string(), r"expected `0 <= year <= 9999`, got 12015");
     }
 }
