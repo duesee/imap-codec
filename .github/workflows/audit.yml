@@ -6,12 +6,14 @@ on:
       - "**.rs"
       - "**.toml"
       - ".github/workflows/**"
+      - "justfile"
   pull_request:
     branches: [ main ]
     paths:
       - "**.rs"
       - "**.toml"
       - ".github/workflows/**"
+      - "justfile"
   schedule:
     # 21:43 on Wednesday and Sunday. (Thanks, crontab.guru)
     - cron: '43 21 * * 3,0'
