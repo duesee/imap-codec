@@ -140,18 +140,24 @@ bench_against_main:
 # Measure test coverage
 coverage: install_rust_llvm_tools_preview install_cargo_grcov
     mkdir -p target/coverage
-    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="coverage-%m-%p.profraw" cargo test -p imap-codec -p imap-types --all-features
-    grcov . \
+    # Remove old profiling information and coverage reports
+    rm -rf target/coverage/*
+    # Run instrumented tests to generate coverage information
+    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="$PWD/target/coverage/coverage-%m-%p.profraw" cargo test -p imap-codec -p imap-types --all-features
+    # Generate coverage reports
+    # - LCOV info report for coveralls.io
+    # - HTML report for local use
+    grcov target/coverage \
         --source-dir . \
         --binary-path target/debug \
         --branch \
         --keep-only '{imap-codec/src/**,imap-types/src/**}' \
-        --output-types "lcov" \
-        --llvm > target/coverage/coverage.lcov
-    # TODO: Create files in `target/coverage` only.
-    rm *.profraw
-    rm imap-types/*.profraw
-    rm imap-codec/*.profraw
+        --llvm \
+        --output-types "html,lcov" \
+        --output-path target/coverage/
+    mv target/coverage/lcov target/coverage/coverage.lcov
+    # Remove profiling information to prevent wasting disk space
+    rm target/coverage/*.profraw
 
 # Fuzz all targets
 [linux]
