@@ -71,7 +71,8 @@ jobs:
       # - run: 'rm -rf target/debug/incremental/*' # -> no
       # - run: 'rm -rf target/debug/examples/*' # -> no
       # - run: 'find target/debug/deps/ -type f -not -iname "*.*" -delete' # -> no
-      - run: 'rm -rf target/debug/deps/*'
+      # - run: 'rm -rf target/debug/deps/*' # -> no
+      - run: 'rm -rf target/debug/build/*'
 
       - run: find . > find_after_restore.txt
       - run: git status
