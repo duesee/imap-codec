@@ -1235,7 +1235,9 @@ dependencies = [
 name = "imap-codec-python"
 version = "0.1.0-dev1"
 dependencies = [
+ "imap-codec",
  "pyo3",
+ "serde-pyobject",
 ]
 
 [[package]]
@@ -2616,6 +2618,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-pyobject"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca4b0aad8b225845739a0030a0d5cc2ae949c56a86a7daf9226c7df7c2016d16"
+dependencies = [
+ "pyo3",
+ "serde",
 ]
 
 [[package]]
