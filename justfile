@@ -142,6 +142,8 @@ coverage: install_rust_llvm_tools_preview install_cargo_grcov
     mkdir -p target/coverage
     # Remove old profiling information and coverage reports
     rm -rf target/coverage/*
+    # Old build artifacts seem to be able to mess up coverage data (see #508)
+    cargo clean
     # Run instrumented tests to generate coverage information
     RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="$PWD/target/coverage/coverage-%m-%p.profraw" cargo test -p imap-codec -p imap-types --all-features
     # Generate coverage reports
