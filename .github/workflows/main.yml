@@ -71,6 +71,12 @@ jobs:
           format: lcov
           file: target/coverage/coverage.lcov
 
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: target/coverage/**
+
   fuzz:
     runs-on: ubuntu-latest
     steps:
