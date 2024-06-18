@@ -68,7 +68,8 @@ jobs:
 
       # Is the issue related to remains in there?
       # - run: 'rm -rf target/debug/*' # -> yes
-      - run: 'rm -rf target/debug/incremental/*'
+      # - run: 'rm -rf target/debug/incremental/*' # -> no
+      - run: 'rm -rf target/debug/examples/*'
 
       - run: find . > find_after_restore.txt
       - run: git status
