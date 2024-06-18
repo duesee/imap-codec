@@ -66,14 +66,17 @@ jobs:
 
       - uses: ./.github/actions/cache_restore
 
-      # Is the issue related to remains in there?
-      - run: 'rm -rf target/debug/*'
+      # Is the issue related to remains in there? -> yes
+      # - run: 'rm -rf target/debug/*'
 
-      - run: find . > find_after.txt
+      - run: find . > find_after_restore.txt
       - run: git status
 
       - run: cargo install just
       - run: just coverage
+
+      - run: find . > find_after_coverage.txt
+
       # - uses: ./.github/actions/cache_save
 
       # - uses: coverallsapp/github-action@643bc377ffa44ace6394b2b5d0d3950076de9f63
