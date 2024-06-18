@@ -18,6 +18,8 @@ default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"
 fuzz = []
 
 # <Forward to imap-types>
+serde = ["imap-types/serde"]
+
 # IMAP
 starttls = ["imap-types/starttls"]
 
