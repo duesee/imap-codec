@@ -72,7 +72,8 @@ jobs:
       # - run: 'rm -rf target/debug/examples/*' # -> no
       # - run: 'find target/debug/deps/ -type f -not -iname "*.*" -delete' # -> no
       # - run: 'rm -rf target/debug/deps/*' # -> no
-      - run: 'rm -rf target/debug/build/*'
+      # - run: 'rm -rf target/debug/build/*' # -> no
+      - run: 'rm -rf target/debug/.fingerprint/*'
 
       - run: find . > find_after_restore.txt
       - run: git status
