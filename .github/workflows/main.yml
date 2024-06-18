@@ -66,10 +66,10 @@ jobs:
       - run: just coverage
       # - uses: ./.github/actions/cache_save
 
-      - uses: coverallsapp/github-action@643bc377ffa44ace6394b2b5d0d3950076de9f63
-        with:
-          format: lcov
-          file: target/coverage/coverage.lcov
+      # - uses: coverallsapp/github-action@643bc377ffa44ace6394b2b5d0d3950076de9f63
+      #   with:
+      #     format: lcov
+      #     file: target/coverage/coverage.lcov
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
