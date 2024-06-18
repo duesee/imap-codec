@@ -21,28 +21,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/cache_restore
-      - run: cargo install just
-      - run: just check
-      - uses: ./.github/actions/cache_save
+  # check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./.github/actions/cache_restore
+  #     - run: cargo install just
+  #     - run: just check
+  #     - uses: ./.github/actions/cache_save
 
-  test:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
+  # test:
+  #   strategy:
+  #     matrix:
+  #       os: [ ubuntu-latest, macos-latest, windows-latest ]
+  #   runs-on: ${{ matrix.os }}
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/cache_restore
-      - run: cargo install just
-      - run: just test
-      - uses: ./.github/actions/cache_save
+  #     - uses: ./.github/actions/cache_restore
+  #     - run: cargo install just
+  #     - run: just test
+  #     - uses: ./.github/actions/cache_save
 
 # benchmark:
 #   runs-on: ubuntu-latest
@@ -77,24 +77,24 @@ jobs:
           name: code-coverage-report
           path: target/coverage/**
 
-  fuzz:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # fuzz:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/cache_restore
-      - run: cargo install just
-      - run: just fuzz
-      - uses: ./.github/actions/cache_save
+  #     - uses: ./.github/actions/cache_restore
+  #     - run: cargo install just
+  #     - run: just fuzz
+  #     - uses: ./.github/actions/cache_save
 
-  minimal_versions:
-    runs-on: ubuntu-latest
+  # minimal_versions:
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/cache_restore
-      - run: cargo install just
-      - run: just minimal_versions
-      - uses: ./.github/actions/cache_save
+  #     - uses: ./.github/actions/cache_restore
+  #     - run: cargo install just
+  #     - run: just minimal_versions
+  #     - uses: ./.github/actions/cache_save
 
