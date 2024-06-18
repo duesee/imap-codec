@@ -61,7 +61,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # - uses: ./.github/actions/cache_restore
+      - run: find . > find_before.txt
+      - run: git status
+
+      - uses: ./.github/actions/cache_restore
+      - run: find . > find_after.txt
+      - run: git status
+
       - run: cargo install just
       - run: just coverage
       # - uses: ./.github/actions/cache_save
@@ -77,6 +83,13 @@ jobs:
           name: code-coverage-report
           path: target/coverage/**
 
+
+      - name: Archive debug files
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-files
+          path: '*.txt'
+  
   # fuzz:
   #   runs-on: ubuntu-latest
   #   steps:
