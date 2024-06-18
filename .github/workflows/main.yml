@@ -65,6 +65,10 @@ jobs:
       - run: git status
 
       - uses: ./.github/actions/cache_restore
+
+      # Is the issue related to remains in there?
+      - run: 'rm -rf target/debug/*'
+
       - run: find . > find_after.txt
       - run: git status
 
