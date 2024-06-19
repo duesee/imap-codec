@@ -55,6 +55,15 @@ jobs:
 #     - run: just bench_against_main
 #     - uses: ./.github/actions/cache_save
 
+  bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just bindings
+      - uses: ./.github/actions/cache_save
+
   coverage:
     runs-on: ubuntu-latest
 
