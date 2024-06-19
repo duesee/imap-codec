@@ -137,6 +137,24 @@ bench_against_main:
     cargo bench -p imap-codec-bench
     rm -rf target/bench_tmp
 
+# Build and test bindings
+bindings: bindings_python
+
+# Build and test Python bindings
+bindings_python: install_python_black install_python_maturin install_python_mypy install_python_ruff
+    # Remove any old wheels
+    rm -rf target/wheels/*
+    # Lint Python code using Black and Ruff
+    python -m black --check bindings/imap-codec-python
+    python -m ruff check bindings/imap-codec-python
+    # Build Python extension for all available interpreter version
+    cd bindings/imap-codec-python; maturin build --release --find-interpreter
+    # Install extension and run unit tests
+    pip install --force-reinstall --find-links=target/wheels/ imap_codec
+    cd bindings/imap-codec-python; python -m unittest -v
+    # Perform static type checking using mypy
+    python -m mypy bindings/imap-codec-python
+
 # Measure test coverage
 coverage: install_rust_llvm_tools_preview install_cargo_grcov
     # Old build artifacts seem to be able to mess up coverage data (see #508),
@@ -190,13 +208,17 @@ minimal_versions: install_rust_1_65 install_rust_nightly
 install: install_rust_1_65 \
          install_rust_nightly \
          install_rust_nightly_fmt \
-	 install_rust_llvm_tools_preview \
+         install_rust_llvm_tools_preview \
          install_cargo_clippy \
          install_cargo_deny \
          install_cargo_fuzz \
-	 install_cargo_grcov \
+         install_cargo_grcov \
          install_cargo_hack \
-         install_cargo_semver_checks
+         install_cargo_semver_checks \
+         install_python_black \
+         install_python_maturin \
+         install_python_mypy \
+         install_python_ruff
 
 [private]
 install_rust_1_65:
@@ -238,3 +260,18 @@ install_cargo_hack:
 install_cargo_semver_checks:
     cargo install --locked cargo-semver-checks
 
+[private]
+install_python_black:
+    python -m pip install -U black
+
+[private]
+install_python_maturin:
+    python -m pip install -U maturin
+
+[private]
+install_python_mypy:
+    python -m pip install -U mypy
+
+[private]
+install_python_ruff:
+    python -m pip install -U ruff
