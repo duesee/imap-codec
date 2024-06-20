@@ -2155,8 +2155,7 @@ dependencies = [
 [[package]]
 name = "pyo3-build-config"
 version = "0.21.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7883df5835fafdad87c0d888b266c8ec0f4c9ca48a5bed6bbb592e8dedee1b50"
+source = "git+https://github.com/PyO3/pyo3/?rev=2c205d4586bef8f839eb6a55eb91b905074ddce9#2c205d4586bef8f839eb6a55eb91b905074ddce9"
 dependencies = [
  "once_cell",
  "target-lexicon",
