@@ -15,3 +15,9 @@ members = [
 [patch.crates-io]
 imap-types = { path = "imap-types" }
 imap-codec = { path = "imap-codec" }
+# Package `pyo3-build-config` v0.21.2 specifies its `target-lexicon` dependency with version
+# "0.12", however, only versions from 0.12.6 on will work.
+# This patches `pyo3-build-config` with a version where this dependency has already been fixed
+# until a new version containing this fix has been released.
+# Note: When removing the patch, also remove the corresponding entry in `deny.toml`. (see #516)
+pyo3-build-config = { git = "https://github.com/PyO3/pyo3/", rev = "2c205d4586bef8f839eb6a55eb91b905074ddce9" }
