@@ -4,8 +4,6 @@ unknown-git = "deny"
 allow-git = [
     # Used in benchmarking
     "https://github.com/stalwartlabs/mail-server?rev=53f0222f308b3e844c158fc0e603d10361da3c63",
-    # Used for patching `pyo3-build-config` (see #516)
-    "https://github.com/PyO3/pyo3/?rev=2c205d4586bef8f839eb6a55eb91b905074ddce9",
 ]
 
 [licenses]
