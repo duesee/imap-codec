@@ -3,6 +3,7 @@ use imap_codec::{
     CommandCodec, GreetingCodec, ResponseCodec,
 };
 use pyo3::{create_exception, exceptions::PyException, prelude::*};
+use pythonize::pythonize;
 
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "CommandCodec")]
@@ -36,16 +37,14 @@ impl PyCommandCodec {
     #[staticmethod]
     fn decode<'a>(py: Python, bytes: &'a [u8]) -> PyResult<(&'a [u8], PyObject)> {
         match CommandCodec::default().decode(bytes) {
-            Ok((remaining, command)) => {
-                Ok((remaining, serde_pyobject::to_pyobject(py, &command)?.into()))
-            }
+            Ok((remaining, command)) => Ok((remaining, pythonize(py, &command)?)),
             Err(err) => Err(match err {
                 decode::CommandDecodeError::Incomplete => CommandDecodeIncomplete::new_err(()),
                 decode::CommandDecodeError::LiteralFound { tag, length, mode } => {
                     let dict = pyo3::types::PyDict::new_bound(py);
-                    dict.set_item("tag", serde_pyobject::to_pyobject(py, &tag)?)?;
+                    dict.set_item("tag", pythonize(py, &tag)?)?;
                     dict.set_item("length", length)?;
-                    dict.set_item("mode", serde_pyobject::to_pyobject(py, &mode)?)?;
+                    dict.set_item("mode", pythonize(py, &mode)?)?;
                     CommandDecodeLiteralFound::new_err(dict.unbind())
                 }
                 decode::CommandDecodeError::Failed => CommandDecodeFailed::new_err(()),
@@ -67,10 +66,7 @@ impl PyGreetingCodec {
                     }
                     decode::GreetingDecodeError::Failed => GreetingDecodeFailed::new_err(()),
                 })?;
-        Ok((
-            remaining,
-            serde_pyobject::to_pyobject(py, &greeting)?.into(),
-        ))
+        Ok((remaining, pythonize(py, &greeting)?))
     }
 }
 
@@ -79,10 +75,7 @@ impl PyResponseCodec {
     #[staticmethod]
     fn decode<'a>(py: Python, bytes: &'a [u8]) -> PyResult<(&'a [u8], PyObject)> {
         match ResponseCodec::default().decode(bytes) {
-            Ok((remaining, response)) => Ok((
-                remaining,
-                serde_pyobject::to_pyobject(py, &response)?.into(),
-            )),
+            Ok((remaining, response)) => Ok((remaining, pythonize(py, &response)?)),
             Err(err) => Err(match err {
                 decode::ResponseDecodeError::Incomplete => ResponseDecodeIncomplete::new_err(()),
                 decode::ResponseDecodeError::LiteralFound { length } => {

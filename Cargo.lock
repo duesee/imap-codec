@@ -1241,7 +1241,7 @@ version = "0.1.0-dev1"
 dependencies = [
  "imap-codec",
  "pyo3",
- "serde-pyobject",
+ "pythonize",
 ]
 
 [[package]]
@@ -2204,6 +2204,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pythonize"
+version = "0.21.1"
+source = "git+https://github.com/HenningHolmDE/pythonize/?branch=update_to_pyo3_0.22#c52204c1fcf7a719f424a70efe9992d55c8e2553"
+dependencies = [
+ "pyo3",
+ "serde",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2608,16 +2617,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-pyobject"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca4b0aad8b225845739a0030a0d5cc2ae949c56a86a7daf9226c7df7c2016d16"
-dependencies = [
- "pyo3",
- "serde",
 ]
 
 [[package]]
