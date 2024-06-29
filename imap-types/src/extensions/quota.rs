@@ -54,6 +54,9 @@ use crate::{
 };
 
 impl<'a> CommandBody<'a> {
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA capability.
+    /// </div>
     pub fn get_quota<A>(root: A) -> Result<Self, A::Error>
     where
         A: TryInto<AString<'a>>,
@@ -63,6 +66,9 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA capability.
+    /// </div>
     pub fn get_quota_root<M>(mailbox: M) -> Result<Self, M::Error>
     where
         M: TryInto<Mailbox<'a>>,
@@ -72,6 +78,9 @@ impl<'a> CommandBody<'a> {
         })
     }
 
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA capability.
+    /// </div>
     pub fn set_quota<R, S>(root: R, quotas: S) -> Result<Self, SetQuotaError<R::Error, S::Error>>
     where
         R: TryInto<AString<'a>>,

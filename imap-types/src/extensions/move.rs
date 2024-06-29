@@ -6,6 +6,9 @@ use crate::{
 };
 
 impl<'a> CommandBody<'a> {
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the MOVE capability.
+    /// </div>
     pub fn r#move<S, M>(
         sequence_set: S,
         mailbox: M,

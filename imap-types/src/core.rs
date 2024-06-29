@@ -577,11 +577,17 @@ impl<'a> Literal<'a> {
         self.mode = mode;
     }
 
+    /// Turn literal into sync literal.
     pub fn into_sync(mut self) -> Self {
         self.mode = LiteralMode::Sync;
         self
     }
 
+    /// Turn literal into non-sync literal.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the LITERAL+ or LITERAL- capability.
+    /// </div>
     pub fn into_non_sync(mut self) -> Self {
         self.mode = LiteralMode::NonSync;
         self
@@ -626,6 +632,10 @@ impl<'a> Literal<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the LITERAL+ or LITERAL- capability.
+    /// </div>
     #[cfg(feature = "unvalidated")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated_non_sync<D>(data: D) -> Self
@@ -711,6 +721,10 @@ pub enum LiteralMode {
     /// A synchronizing literal, i.e., `{<n>}\r\n<data>`.
     Sync,
     /// A non-synchronizing literal according to RFC 7888, i.e., `{<n>+}\r\n<data>`.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the LITERAL+ or LITERAL- capability.
+    /// </div>
     NonSync,
 }
 

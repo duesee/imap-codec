@@ -22,6 +22,9 @@ use crate::{
 };
 
 impl<'a> CommandBody<'a> {
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the ENABLE capability.
+    /// </div>
     pub fn enable<C>(capabilities: C) -> Result<Self, C::Error>
     where
         C: TryInto<Vec1<CapabilityEnable<'a>>>,

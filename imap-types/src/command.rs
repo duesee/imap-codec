@@ -166,6 +166,12 @@ pub enum CommandBody<'a> {
     /// the-middle attacks which alter the capabilities list prior to
     /// STARTTLS.  The server MAY advertise different capabilities after
     /// STARTTLS.
+    ///
+    /// <div class="warning">
+    /// This must only be used when the server advertised support for it sending the STARTTLS capability.
+    ///
+    /// Try to avoid STARTTLS using implicit TLS on port 993.
+    /// </div>
     #[cfg(feature = "starttls")]
     #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTLS,
@@ -266,7 +272,9 @@ pub enum CommandBody<'a> {
         ///
         /// This type holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
         ///
-        /// Note: Use this only when the server advertised the `SASL-IR` capability.
+        /// <div class="warning">
+        /// This extension must only be used when the server advertised support for it sending the SASL-IR capability.
+        /// </div>
         initial_response: Option<Secret<Cow<'a, [u8]>>>,
     },
 
@@ -397,6 +405,10 @@ pub enum CommandBody<'a> {
     /// Unselect a mailbox.
     ///
     /// This should bring the client back to the AUTHENTICATED state.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the UNSELECT capability.
+    /// </div>
     Unselect,
 
     /// 6.3.2.  EXAMINE Command
@@ -897,7 +909,9 @@ pub enum CommandBody<'a> {
         #[cfg(feature = "ext_binary")]
         /// Message to append.
         ///
-        /// Note: Use [`LiteralOrLiteral8::Literal8`] only when the server advertised [`Capability::Binary`](crate::response::Capability::Binary).
+        /// <div class="warning">
+        /// Use [`LiteralOrLiteral8::Literal8`] only when the server advertised [`Capability::Binary`](crate::response::Capability::Binary).
+        /// </div>
         message: LiteralOrLiteral8<'a>,
     },
 
@@ -1071,6 +1085,10 @@ pub enum CommandBody<'a> {
     /// * OK - sort completed
     /// * NO - sort error: can't sort that charset or criteria
     /// * BAD - command unknown or arguments invalid
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the SORT capability.
+    /// </div>
     Sort {
         /// Sort criteria.
         sort_criteria: Vec1<SortCriterion>,
@@ -1094,6 +1112,10 @@ pub enum CommandBody<'a> {
     /// * OK - thread completed
     /// * NO - thread error: can't thread that charset or criteria
     /// * BAD - command unknown or arguments invalid
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the THREAD capability.
+    /// </div>
     Thread {
         /// Threading algorithm.
         algorithm: ThreadingAlgorithm<'a>,
@@ -1323,15 +1345,27 @@ pub enum CommandBody<'a> {
     // by issuing the associated experimental command.
     //X,
     /// IDLE command.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the IDLE capability.
+    /// </div>
     Idle,
 
     /// ENABLE command.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the ENABLE capability.
+    /// </div>
     Enable {
         /// Capabilities to enable.
         capabilities: Vec1<CapabilityEnable<'a>>,
     },
 
     /// COMPRESS command.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the COMPRESS capability.
+    /// </div>
     Compress {
         /// Compression algorithm.
         algorithm: CompressionAlgorithm,
@@ -1359,6 +1393,10 @@ pub enum CommandBody<'a> {
     /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
     /// S: G0001 OK Getquota complete
     /// ```
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA* capability.
+    /// </div>
     GetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1392,6 +1430,10 @@ pub enum CommandBody<'a> {
     /// S: * QUOTA "!partition/sda4" (STORAGE 104 10923847)
     /// S: G0002 OK Getquotaroot complete
     /// ```
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA* capability.
+    /// </div>
     GetQuotaRoot {
         /// Name of mailbox.
         mailbox: Mailbox<'a>,
@@ -1435,6 +1477,10 @@ pub enum CommandBody<'a> {
     /// response here is entirely optional.
     /// S: S0002 NO Cannot change system limit
     /// ```
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the QUOTA* capability.
+    /// </div>
     SetQuota {
         /// Name of quota root.
         root: AString<'a>,
@@ -1443,6 +1489,10 @@ pub enum CommandBody<'a> {
     },
 
     /// MOVE command.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the MOVE capability.
+    /// </div>
     Move {
         /// Set of messages.
         sequence_set: SequenceSet,
@@ -1454,18 +1504,32 @@ pub enum CommandBody<'a> {
 
     #[cfg(feature = "ext_id")]
     /// ID command.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the ID capability.
+    /// </div>
     Id {
         /// Parameters.
         parameters: Option<Vec<(IString<'a>, NString<'a>)>>,
     },
 
     #[cfg(feature = "ext_metadata")]
+    /// Set annotation(s).
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the METADATA* capability.
+    /// </div>
     SetMetadata {
         mailbox: Mailbox<'a>,
         entry_values: Vec1<EntryValue<'a>>,
     },
 
     #[cfg(feature = "ext_metadata")]
+    /// Retrieve server or mailbox annotation(s).
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the METADATA* capability.
+    /// </div>
     GetMetadata {
         options: Vec<GetMetadataOption>,
         mailbox: Mailbox<'a>,
@@ -1498,6 +1562,10 @@ impl<'a> CommandBody<'a> {
     /// Construct an AUTHENTICATE command (with an initial response, SASL-IR).
     ///
     /// Note: Use this only when the server advertised the `SASL-IR` capability.
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the SASL-IR capability.
+    /// </div>
     pub fn authenticate_with_ir<I>(mechanism: AuthMechanism<'a>, initial_response: I) -> Self
     where
         I: Into<Cow<'a, [u8]>>,
