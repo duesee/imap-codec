@@ -123,6 +123,7 @@
 //! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
 //! | ext_binary            | IMAP4 Binary Content Extension ([RFC 3516])                                                                                  | Unfinished |
 //! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
+//! | ext_uidplus           | IMAP4 UIDPLUS extension ([RFC 2359], [RFC 4315])                                                                             | Unfinished |
 //! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
@@ -151,10 +152,12 @@
 //! [RFC 2177]: https://datatracker.ietf.org/doc/html/rfc2177
 //! [RFC 2193]: https://datatracker.ietf.org/doc/html/rfc2193
 //! [RFC 2221]: https://datatracker.ietf.org/doc/html/rfc2221
+//! [RFC 2359]: https://datatracker.ietf.org/doc/html/rfc2359
 //! [RFC 2971]: https://datatracker.ietf.org/doc/html/rfc2971
 //! [RFC 3501]: https://datatracker.ietf.org/doc/html/rfc3501
 //! [RFC 3516]: https://datatracker.ietf.org/doc/html/rfc3516
 //! [RFC 3691]: https://datatracker.ietf.org/doc/html/rfc3691
+//! [RFC 4315]: https://datatracker.ietf.org/doc/html/rfc4315
 //! [RFC 4959]: https://datatracker.ietf.org/doc/html/rfc4959
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
 //! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
