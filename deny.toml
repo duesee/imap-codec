@@ -4,6 +4,8 @@ unknown-git = "deny"
 allow-git = [
     # Used in benchmarking
     "https://github.com/stalwartlabs/mail-server?rev=53f0222f308b3e844c158fc0e603d10361da3c63",
+    # Used for `pythonize` until PyO3 0.22 release is available
+    "https://github.com/HenningHolmDE/pythonize/?branch=update_to_pyo3_0.22",
 ]
 
 [licenses]

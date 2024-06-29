@@ -13,4 +13,6 @@ crate-type = ["cdylib"]
 doc = false
 
 [dependencies]
+imap-codec = { version = "2.0.0-alpha.1", features = ["serde"] }
 pyo3 = "0.22.0"
+pythonize = { git = "https://github.com/HenningHolmDE/pythonize/", branch = "update_to_pyo3_0.22" }

@@ -1210,8 +1210,6 @@ dependencies = [
  "imap-types",
  "log",
  "nom",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -1241,7 +1239,9 @@ dependencies = [
 name = "imap-codec-python"
 version = "0.1.0-dev1"
 dependencies = [
+ "imap-codec",
  "pyo3",
+ "pythonize",
 ]
 
 [[package]]
@@ -2201,6 +2201,15 @@ dependencies = [
  "pyo3-build-config",
  "quote",
  "syn 2.0.66",
+]
+
+[[package]]
+name = "pythonize"
+version = "0.21.1"
+source = "git+https://github.com/HenningHolmDE/pythonize/?branch=update_to_pyo3_0.22#c52204c1fcf7a719f424a70efe9992d55c8e2553"
+dependencies = [
+ "pyo3",
+ "serde",
 ]
 
 [[package]]

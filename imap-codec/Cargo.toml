@@ -17,6 +17,7 @@ default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"
 
 # <Forward to imap-types>
 bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
+serde = ["imap-types/serde"]
 
 # Expose internal parsers for fuzzing
 fuzz = []
@@ -67,8 +68,6 @@ bounded-static = { version = "0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { version = "2.0.0-alpha.1", default-features = false, features = ["unvalidated"] }
 nom = "7"
-serde = { version = "1", features = ["derive"], optional = true }
-thiserror = "1.0.61"
 log = "0.4.21"
 
 [package.metadata.docs.rs]
