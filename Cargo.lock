@@ -1206,7 +1206,7 @@ name = "imap-codec"
 version = "2.0.0-alpha.1"
 dependencies = [
  "abnf-core",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bounded-static",
  "chrono",
  "imap-types",
@@ -1260,7 +1260,7 @@ name = "imap-types"
 version = "2.0.0-alpha.1"
 dependencies = [
  "arbitrary",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bounded-static",
  "chrono",
  "criterion",
