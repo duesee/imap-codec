@@ -99,43 +99,43 @@
 //!
 //! # Supported IMAP extensions
 //!
-//! |Description                                                  |
-//! |-------------------------------------------------------------|
-//! |IMAP4 Non-synchronizing Literals ([RFC 2088], [RFC 7888])    |
-//! |IMAP MOVE Extension ([RFC 6851])                             |
-//! |IMAP UNSELECT command ([RFC 3691])                           |
-//! |IMAP Extension for SASL Initial Client Response ([RFC 4959]) |
-//! |The IMAP COMPRESS Extension ([RFC 4978])                     |
-//! |The IMAP ENABLE Extension ([RFC 5161])                       |
-//! |IMAP4 IDLE command ([RFC 2177])                              |
-//! |IMAP QUOTA Extension ([RFC 9208])                            |
+//! | Description                                                                                             |
+//! |---------------------------------------------------------------------------------------------------------|
+//! | IMAP4 non-synchronizing literals ([RFC 2088], [RFC 7888])                                               |
+//! | Internet Message Access Protocol (IMAP) - MOVE Extension ([RFC 6851])                                   |
+//! | Internet Message Access Protocol (IMAP) UNSELECT command ([RFC 3691])                                   |
+//! | IMAP Extension for Simple Authentication and Security Layer (SASL) Initial Client Response ([RFC 4959]) |
+//! | The IMAP COMPRESS Extension ([RFC 4978])                                                                |
+//! | The IMAP ENABLE Extension ([RFC 5161])                                                                  |
+//! | IMAP4 IDLE command ([RFC 2177])                                                                         |
+//! | IMAP QUOTA Extension ([RFC 9208])                                                                       |
 //!
 //! # Features
 //!
 //! This crate uses the following features to enable experimental IMAP extensions:
 //!
-//! |Feature              |Description                                                                            |Status    |
-//! |---------------------|---------------------------------------------------------------------------------------|----------|
-//! |ext_id               |IMAP4 ID extension ([RFC 2971])                                                        |Unfinished|
-//! |ext_sort_thread      |Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256] + [RFC 5957])|Unfinished|
-//! |ext_condstore_qresync|Quick Flag Changes Resynchronization and Quick Mailbox Resynchronization ([RFC 7162])  |Unfinished|
-//! |ext_login_referrals  |IMAP4 Login Referrals ([RFC 2221])                                                     |Unfinished|
-//! |ext_mailbox_referrals|IMAP4 Mailbox Referrals ([RFC 2193])                                                   |Unfinished|
-//! |ext_binary           |IMAP4 Binary Content Extension ([RFC 3516])                                            |Unfinished|
-//! |ext_metadata         |The IMAP METADATA Extension ([RFC 5464])                                               |Unfinished|
-//! |starttls             |IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                  |          |
+//! | Feature               | Description                                                                                                                  | Status     |
+//! |-----------------------|------------------------------------------------------------------------------------------------------------------------------|------------|
+//! | ext_id                | IMAP4 ID extension ([RFC 2971])                                                                                              | Unfinished |
+//! | ext_sort_thread       | Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256], [RFC 5957])                                       | Unfinished |
+//! | ext_condstore_qresync | IMAP Extensions: Quick Flag Changes Resynchronization (CONDSTORE) and Quick Mailbox Resynchronization (QRESYNC) ([RFC 7162]) | Unfinished |
+//! | ext_login_referrals   | IMAP4 Login Referrals ([RFC 2221])                                                                                           | Unfinished |
+//! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
+//! | ext_binary            | IMAP4 Binary Content Extension ([RFC 3516])                                                                                  | Unfinished |
+//! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
+//! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
 //!
 //! Furthermore, imap-types uses the following features to facilitate interoperability:
 //!
-//! | Feature          | Description                                                    | Enabled by default |
-//! |------------------|----------------------------------------------------------------|--------------------|
-//! | arbitrary        | Derive `Arbitrary` implementations.                            | No                 |
-//! | bounded-static   | Derive `ToStatic/IntoStatic` implementations.                  | No                 |
-//! | serde            | Derive `serde`s `Serialize` and `Deserialize` implementations. | No                 |
-//! | unvalidated      | Unlock `unvalidated` constructors.                             | No                 |
+//! | Feature          | Description                                                   | Enabled by default |
+//! |------------------|---------------------------------------------------------------|--------------------|
+//! | arbitrary        | Derive `Arbitrary` implementations                            | No                 |
+//! | bounded-static   | Derive `ToStatic/IntoStatic` implementations                  | No                 |
+//! | serde            | Derive `serde`s `Serialize` and `Deserialize` implementations | No                 |
+//! | unvalidated      | Unlock `unvalidated` constructors                             | No                 |
 //!
 //! When using `arbitrary`, all types defined in imap-types implement the [Arbitrary] trait to ease testing.
 //! This is used, for example, to generate instances during fuzz-testing.
