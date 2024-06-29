@@ -26,6 +26,9 @@ use crate::{
 };
 
 impl<'a> CommandBody<'a> {
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the COMPRESS* capability.
+    /// </div>
     pub fn compress(algorithm: CompressionAlgorithm) -> Self {
         CommandBody::Compress { algorithm }
     }
