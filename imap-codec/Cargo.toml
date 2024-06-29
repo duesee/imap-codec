@@ -69,7 +69,7 @@ imap-types = { version = "2.0.0-alpha.1", default-features = false, features = [
 nom = "7"
 serde = { version = "1", features = ["derive"], optional = true }
 thiserror = "1.0.61"
-log = "0.4.21"
+log = "0.4.22"
 
 [package.metadata.docs.rs]
 all-features = true
