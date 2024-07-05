@@ -4,8 +4,7 @@ use std::{borrow::Cow, str::from_utf8};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -16,10 +15,9 @@ use crate::{
     utils::indicators::is_list_char,
 };
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct ListCharString<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> ListCharString<'a> {
@@ -91,9 +89,8 @@ impl<'a> AsRef<[u8]> for ListCharString<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum ListMailbox<'a> {
     Token(ListCharString<'a>),
     String(IString<'a>),
@@ -174,9 +171,8 @@ impl<'a> TryFrom<String> for ListMailbox<'a> {
 ///    levels of hierarchy.
 /// 5) Two characters, "#" and "&", have meanings by convention, and should be avoided except
 ///    when used in that convention.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Mailbox<'a> {
     Inbox,
     Other(MailboxOther<'a>),
@@ -199,10 +195,9 @@ impl<'a> From<AString<'a>> for Mailbox<'a> {
 // We do not implement `AsRef<...>` for `Mailbox` because we want to enforce that a consumer
 // `match`es on `Mailbox::Inbox`/`Mailbox::Other`.
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "AString<'a>"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct MailboxOther<'a>(pub(crate) AString<'a>);
 
 impl<'a> MailboxOther<'a> {

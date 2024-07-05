@@ -15,12 +15,10 @@ exclude = [
 [features]
 default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"]
 
-# <Forward to imap-types>
-bounded-static = ["dep:bounded-static", "imap-types/bounded-static"]
-
 # Expose internal parsers for fuzzing
 fuzz = []
 
+# <Forward to imap-types>
 # IMAP
 starttls = ["imap-types/starttls"]
 
@@ -63,9 +61,8 @@ quirk_trailing_space = []
 [dependencies]
 abnf-core = "0.6.0"
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
-bounded-static = { version = "0.8.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
-imap-types = { version = "2.0.0-alpha.1", default-features = false, features = ["unvalidated"] }
+imap-types = { version = "2.0.0-alpha.1", path = "../imap-types", default-features = false, features = ["unvalidated"] }
 nom = { version = "7", default-features = false }
 log = { version = "0.4.22", default-features = false }
 

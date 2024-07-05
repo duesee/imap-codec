@@ -1,9 +1,9 @@
 #![no_main]
 
 use imap_types::{
-    bounded_static::IntoBoundedStatic,
     command::Command,
     response::{Greeting, Response},
+    IntoStatic,
 };
 use libfuzzer_sys::fuzz_target;
 

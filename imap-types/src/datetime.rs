@@ -2,7 +2,6 @@
 
 use std::fmt::{Debug, Formatter};
 
-#[cfg(feature = "bounded-static")]
 use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 use chrono::{Datelike, FixedOffset};
 #[cfg(feature = "serde")]
@@ -78,7 +77,6 @@ impl AsRef<chrono::DateTime<FixedOffset>> for DateTime {
     }
 }
 
-#[cfg(feature = "bounded-static")]
 impl IntoBoundedStatic for DateTime {
     type Static = Self;
 
@@ -87,7 +85,6 @@ impl IntoBoundedStatic for DateTime {
     }
 }
 
-#[cfg(feature = "bounded-static")]
 impl ToBoundedStatic for DateTime {
     type Static = Self;
 
@@ -152,7 +149,6 @@ impl AsRef<chrono::NaiveDate> for NaiveDate {
     }
 }
 
-#[cfg(feature = "bounded-static")]
 impl IntoBoundedStatic for NaiveDate {
     type Static = Self;
 
@@ -161,7 +157,6 @@ impl IntoBoundedStatic for NaiveDate {
     }
 }
 
-#[cfg(feature = "bounded-static")]
 impl ToBoundedStatic for NaiveDate {
     type Static = Self;
 

@@ -206,7 +206,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = GreetingCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -257,7 +256,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = CommandCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -302,7 +300,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = ResponseCodec::default().decode_static(test);
                 assert_eq!(expected, got);

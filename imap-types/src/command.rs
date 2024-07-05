@@ -6,8 +6,7 @@ use std::borrow::Cow;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -36,9 +35,8 @@ use crate::{
 
 /// Command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Command<'a> {
     /// Tag.
     pub tag: Tag<'a>,
@@ -68,9 +66,8 @@ impl<'a> Command<'a> {
 ///
 /// This enum is used to encode all the different commands.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum CommandBody<'a> {
     // ----- Any State (see https://tools.ietf.org/html/rfc3501#section-6.1) -----
     /// ### 6.1.1.  CAPABILITY Command

@@ -1,6 +1,5 @@
 use std::io::{Error as IoError, Write};
 
-use bounded_static::IntoBoundedStatic;
 use bytes::{Buf, BufMut, BytesMut};
 use imap_codec::{
     decode::{Decoder, GreetingDecodeError, ResponseDecodeError},
@@ -9,6 +8,7 @@ use imap_codec::{
         command::Command,
         response::{Greeting, Response},
         state::{State as ImapState, State},
+        IntoStatic,
     },
     CommandCodec, GreetingCodec, ResponseCodec,
 };

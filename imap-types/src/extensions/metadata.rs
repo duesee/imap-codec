@@ -1,7 +1,6 @@
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -11,9 +10,8 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub struct EntryValue<'a> {
     pub entry: Entry<'a>,
     pub value: NString8<'a>,
@@ -21,9 +19,8 @@ pub struct EntryValue<'a> {
 
 /// Slash-separated path to entry.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub struct Entry<'a>(AString<'a>);
 
 impl<'a> Entry<'a> {
@@ -49,9 +46,8 @@ impl AsRef<[u8]> for Entry<'_> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum GetMetadataOption {
     /// Only return values that are less than or equal in octet size to the specified limit.
     ///
@@ -66,9 +62,8 @@ pub enum GetMetadataOption {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum Depth {
     /// No entries below the specified entry are returned
     Null,
@@ -79,9 +74,8 @@ pub enum Depth {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum MetadataCode {
     LongEntries(u32),
     MaxSize(u32),
@@ -90,9 +84,8 @@ pub enum MetadataCode {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum MetadataResponse<'a> {
     WithValues(Vec1<EntryValue<'a>>),
     WithoutValues(Vec1<Entry<'a>>),

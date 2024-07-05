@@ -8,8 +8,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -20,9 +19,8 @@ use crate::{
 };
 
 /// Authentication mechanism.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum AuthMechanism<'a> {
     /// The PLAIN SASL mechanism.
@@ -198,18 +196,16 @@ impl FromStr for AuthMechanism<'static> {
 /// An (unknown) authentication mechanism.
 ///
 /// It's guaranteed that this type can't represent any mechanism from [`AuthMechanism`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct AuthMechanismOther<'a>(Atom<'a>);
 
 /// Data line used, e.g., during AUTHENTICATE.
 ///
 /// Holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum AuthenticateData<'a> {
     /// Continue SASL authentication.
     Continue(Secret<Cow<'a, [u8]>>),

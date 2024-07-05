@@ -2,8 +2,7 @@
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -14,9 +13,8 @@ use crate::{
 
 /// Inner part of [`BodyStructure`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Body<'a> {
     /// Basic fields
     pub basic: BasicFields<'a>,
@@ -26,9 +24,8 @@ pub struct Body<'a> {
 
 /// Basic fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct BasicFields<'a> {
     /// List of attribute/value pairs ([MIME-IMB].)
     pub parameter_list: Vec<(IString<'a>, IString<'a>)>,
@@ -51,9 +48,8 @@ pub struct BasicFields<'a> {
 
 /// Specific fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SpecificFields<'a> {
     /// # Example (not in RFC)
     ///
@@ -169,9 +165,8 @@ pub enum SpecificFields<'a> {
 }
 
 /// The BODY(STRUCTURE).
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum BodyStructure<'a> {
     /// For example, a simple text message of 48 lines and 2279 octets
     /// can have a body structure of:
@@ -253,9 +248,8 @@ pub enum BodyStructure<'a> {
 
 /// The extension data of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct SinglePartExtensionData<'a> {
     /// A string giving the body MD5 value as defined in \[MD5\].
     pub md5: NString<'a>,
@@ -279,9 +273,8 @@ pub struct SinglePartExtensionData<'a> {
 /// )
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct MultiPartExtensionData<'a> {
     /// A parenthesized list of attribute/value pairs [e.g., ("foo"
     /// "bar" "baz" "rag") where "bar" is the value of "foo", and
@@ -294,9 +287,8 @@ pub struct MultiPartExtensionData<'a> {
 
 /// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Disposition<'a> {
     /// A parenthesized list, consisting of a disposition type
     /// string, followed by a parenthesized list of disposition
@@ -309,9 +301,8 @@ pub struct Disposition<'a> {
 
 /// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Language<'a> {
     /// A string or parenthesized list giving the body language
     /// value as defined in [LANGUAGE-TAGS].
@@ -323,9 +314,8 @@ pub struct Language<'a> {
 
 /// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Location<'a> {
     /// A string list giving the body content URI as defined in \[LOCATION\].
     pub location: NString<'a>,
@@ -335,9 +325,8 @@ pub struct Location<'a> {
 }
 
 /// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum BodyExtension<'a> {
     /// NString.
     NString(NString<'a>),
