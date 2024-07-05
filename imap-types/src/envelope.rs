@@ -2,17 +2,15 @@
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::core::NString;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Envelope<'a> {
     pub date: NString<'a>,
     pub subject: NString<'a>,
@@ -28,9 +26,8 @@ pub struct Envelope<'a> {
 
 /// An address structure describes an electronic mail address.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 /// TODO(misuse):
 ///
 ///   Here are many invariants ...

@@ -5,8 +5,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::{Arbitrary, Unstructured};
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -14,9 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::arbitrary::impl_arbitrary_try_from;
 use crate::core::{Atom, Vec1, Vec2};
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Thread {
     Members {
         prefix: Vec1<NonZeroU32>,
@@ -140,9 +138,8 @@ fn arbitrary_thread_leaf(u: &mut Unstructured) -> arbitrary::Result<Thread> {
     })
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum ThreadingAlgorithm<'a> {
     OrderedSubject,
     References,
@@ -172,9 +169,8 @@ impl Display for ThreadingAlgorithm<'_> {
 #[cfg(feature = "arbitrary")]
 impl_arbitrary_try_from! { ThreadingAlgorithm<'a>, Atom<'a> }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct ThreadingAlgorithmOther<'a>(Atom<'a>);
 
 impl<'a> AsRef<str> for ThreadingAlgorithmOther<'a> {

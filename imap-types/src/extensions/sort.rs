@@ -2,8 +2,7 @@ use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::{Arbitrary, Unstructured};
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -11,9 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::arbitrary::impl_arbitrary_try_from;
 use crate::core::Atom;
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SortAlgorithm<'a> {
     Display,
     Other(SortAlgorithmOther<'a>),
@@ -40,9 +38,8 @@ impl Display for SortAlgorithm<'_> {
 #[cfg(feature = "arbitrary")]
 impl_arbitrary_try_from! { SortAlgorithm<'a>, Atom<'a> }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct SortAlgorithmOther<'a>(Atom<'a>);
 
 impl AsRef<str> for SortAlgorithmOther<'_> {
@@ -52,18 +49,16 @@ impl AsRef<str> for SortAlgorithmOther<'_> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct SortCriterion {
     pub reverse: bool,
     pub key: SortKey,
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SortKey {
     Arrival,
     Cc,

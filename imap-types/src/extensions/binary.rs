@@ -7,8 +7,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -16,9 +15,8 @@ use crate::core::{Literal, LiteralMode};
 
 /// Either a [`Literal`] or [`Literal8`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ToStatic)]
 pub enum LiteralOrLiteral8<'a> {
     Literal(Literal<'a>),
     Literal8(Literal8<'a>),
@@ -26,9 +24,8 @@ pub enum LiteralOrLiteral8<'a> {
 
 /// String that might contain NULs.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Literal8<'a> {
     pub data: Cow<'a, [u8]>,
     /// Specifies whether this is a synchronizing or non-synchronizing literal.

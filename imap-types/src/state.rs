@@ -50,17 +50,15 @@
 //! (7) LOGOUT command, server shutdown, or connection closed
 //! ```
 
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{core::Tag, mailbox::Mailbox};
 
 /// State of the IMAP4rev1 connection.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ToStatic)]
 pub enum State<'a> {
     Greeting,
 
@@ -95,11 +93,8 @@ pub enum State<'a> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "bounded-static")]
-    use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
-
     use super::*;
-    use crate::{core::Tag, mailbox::Mailbox};
+    use crate::{core::Tag, mailbox::Mailbox, IntoStatic, ToStatic};
 
     #[test]
     fn test_conversion() {
@@ -114,7 +109,6 @@ mod tests {
         ];
 
         for _test in tests {
-            #[cfg(feature = "bounded-static")]
             {
                 let test_to_static = _test.to_static();
                 assert_eq!(_test, test_to_static);

@@ -4,8 +4,7 @@ use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -23,9 +22,8 @@ use crate::{core::Atom, error::ValidationError};
 /// in the mailbox by sending the `\*` flag ([`FlagPerm::Asterisk`]) in the PERMANENTFLAGS response..
 ///
 /// Note that a flag of either type can be permanent or session-only.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Flag<'a> {
     /// Message has been answered (`\Answered`).
     Answered,
@@ -46,9 +44,8 @@ pub enum Flag<'a> {
 /// An (extension) flag.
 ///
 /// It's guaranteed that this type can't represent any flag from [`Flag`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct FlagExtension<'a>(Atom<'a>);
 
 impl<'a> Flag<'a> {
@@ -95,9 +92,8 @@ impl<'a> Display for Flag<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagFetch<'a> {
     Flag(Flag<'a>),
 
@@ -111,9 +107,8 @@ pub enum FlagFetch<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagPerm<'a> {
     Flag(Flag<'a>),
 
@@ -123,9 +118,8 @@ pub enum FlagPerm<'a> {
 }
 
 /// Four name attributes are defined.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagNameAttribute<'a> {
     /// It is not possible for any child levels of hierarchy to exist
     /// under this name; no child levels exist now and none can be
@@ -149,9 +143,8 @@ pub enum FlagNameAttribute<'a> {
 }
 
 /// An extension flag.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct FlagNameAttributeExtension<'a>(Atom<'a>);
 
 impl<'a> FlagNameAttribute<'a> {
@@ -188,9 +181,8 @@ impl<'a> Display for FlagNameAttribute<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
 pub enum StoreType {
     Replace,
     Add,
@@ -198,9 +190,8 @@ pub enum StoreType {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
 pub enum StoreResponse {
     Answer,
     Silent,

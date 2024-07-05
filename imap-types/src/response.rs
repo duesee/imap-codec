@@ -9,8 +9,7 @@ use std::{
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -44,9 +43,8 @@ use crate::{
 ///
 /// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
 /// We could fix this but the fix would make this type unconformable to use.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Greeting<'a> {
     pub kind: GreetingKind,
     pub code: Option<Code<'a>>,
@@ -92,9 +90,8 @@ impl<'a> Greeting<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
 /// IMAP4rev1 defines three possible greetings at connection startup.
 pub enum GreetingKind {
     /// The connection is not yet authenticated.
@@ -113,9 +110,8 @@ pub enum GreetingKind {
 
 /// Response.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Response<'a> {
     /// Command continuation request responses use the token "+" instead of a
     /// tag.  These responses are sent by the server to indicate acceptance
@@ -134,9 +130,8 @@ pub enum Response<'a> {
 }
 
 /// Status response.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Status<'a> {
     Untagged(StatusBody<'a>),
     Tagged(Tagged<'a>),
@@ -147,9 +142,8 @@ pub enum Status<'a> {
 ///
 /// Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
 /// We could fix this but the fix would make this type unconformable to use.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct StatusBody<'a> {
     /// Status kind.
     pub kind: StatusKind,
@@ -163,9 +157,8 @@ pub struct StatusBody<'a> {
 
 /// Status kind.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
 pub enum StatusKind {
     /// Indicates an information from the server.
     ///
@@ -184,9 +177,8 @@ pub enum StatusKind {
     Bad,
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Tagged<'a> {
     pub tag: Tag<'a>,
     pub body: StatusBody<'a>,
@@ -218,9 +210,8 @@ pub struct Tagged<'a> {
 /// continue to read response data from the server until the
 /// connection is closed; this will ensure that any pending untagged
 /// or completion responses are read and processed.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Bye<'a> {
     pub code: Option<Code<'a>>,
     pub text: Text<'a>,
@@ -316,9 +307,8 @@ impl<'a> Status<'a> {
 
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Data<'a> {
     // ## 7.2. Server Responses - Server and Mailbox Status
     //
@@ -653,9 +643,8 @@ impl<'a> Data<'a> {
 /// additional command arguments, the literal octets are followed by a
 /// space and those arguments.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "Continue")]
 #[doc(alias = "Continuation")]
 #[doc(alias = "ContinuationRequest")]
@@ -682,13 +671,12 @@ impl<'a> CommandContinuationRequest<'a> {
     }
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "serde",
     serde(try_from = "CommandContinuationRequestBasicShadow")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct CommandContinuationRequestBasic<'a> {
     code: Option<Code<'a>>,
     text: Text<'a>,
@@ -758,9 +746,8 @@ impl<'a> CommandContinuationRequestBasic<'a> {
 ///
 /// The currently defined response codes are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Code<'a> {
     /// `ALERT`
     ///
@@ -946,9 +933,8 @@ impl<'a> Code<'a> {
 /// An (unknown) code.
 ///
 /// It's guaranteed that this type can't represent any code from [`Code`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 // We want a more readable `Debug` implementation.
@@ -992,9 +978,8 @@ impl<'a> CodeOther<'a> {
     }
 }
 
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum Capability<'a> {
     Imap4Rev1,
@@ -1212,9 +1197,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 /// An (unknown) capability.
 ///
 /// It's guaranteed that this type can't represent any capability from [`Capability`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct CapabilityOther<'a>(Atom<'a>);
 
 /// Error-related types.

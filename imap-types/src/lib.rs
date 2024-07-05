@@ -134,15 +134,12 @@
 //! | Feature          | Description                                                   | Enabled by default |
 //! |------------------|---------------------------------------------------------------|--------------------|
 //! | arbitrary        | Derive `Arbitrary` implementations                            | No                 |
-//! | bounded-static   | Derive `ToStatic/IntoStatic` implementations                  | No                 |
 //! | serde            | Derive `serde`s `Serialize` and `Deserialize` implementations | No                 |
 //! | unvalidated      | Unlock `unvalidated` constructors                             | No                 |
 //!
 //! When using `arbitrary`, all types defined in imap-types implement the [Arbitrary] trait to ease testing.
 //! This is used, for example, to generate instances during fuzz-testing.
 //! (See, e.g., `imap-types/fuzz/fuzz_targets/to_static.rs`)
-//! When using `bounded-static`, all types provide a `to_static` and `into_static` method that converts a type into its "owned" variant.
-//! This is useful when you want to pass objects around, e.g., into other threads, a vector, etc.
 //! When the `serde` feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
 //! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits. (Try running `cargo run --example serde_json`.)
 //!
@@ -175,6 +172,8 @@
 // #![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
+
 // Test examples from imap-types' README.
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
@@ -201,5 +200,36 @@ pub mod state;
 pub mod status;
 pub mod utils;
 
-#[cfg(feature = "bounded-static")]
-pub use bounded_static;
+pub trait ToStatic {
+    type Static: 'static;
+
+    fn to_static(&self) -> Self::Static;
+}
+
+impl<T> ToStatic for T
+where
+    T: ToBoundedStatic,
+{
+    type Static = <T as ToBoundedStatic>::Static;
+
+    fn to_static(&self) -> Self::Static {
+        ToBoundedStatic::to_static(self)
+    }
+}
+
+pub trait IntoStatic {
+    type Static: 'static;
+
+    fn into_static(self) -> Self::Static;
+}
+
+impl<T> IntoStatic for T
+where
+    T: IntoBoundedStatic,
+{
+    type Static = <T as IntoBoundedStatic>::Static;
+
+    fn into_static(self) -> Self::Static {
+        IntoBoundedStatic::into_static(self)
+    }
+}

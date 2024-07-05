@@ -480,13 +480,12 @@ impl<'a> Arbitrary<'a> for NaiveDate {
 #[cfg(test)]
 mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
-    #[cfg(feature = "bounded-static")]
-    use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
     use rand::{rngs::SmallRng, Rng, SeedableRng};
 
     use crate::{
         command::Command,
         response::{Greeting, Response},
+        IntoStatic, ToStatic,
     };
 
     /// Note: We could encode/decode/etc. here but only want to exercise the arbitrary logic itself.
@@ -505,7 +504,6 @@ mod tests {
                     Ok(_out) => {
                         count += 1;
 
-                        #[cfg(feature = "bounded-static")]
                         {
                             let out_to_static = _out.to_static();
                             assert_eq!(_out, out_to_static);

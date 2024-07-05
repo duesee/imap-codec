@@ -11,14 +11,13 @@
 
 use std::num::{ParseIntError, TryFromIntError};
 
-#[cfg(feature = "bounded-static")]
-use bounded_static::{IntoBoundedStatic, ToStatic};
 use imap_types::{
     auth::AuthenticateData,
     command::Command,
     core::{LiteralMode, Tag},
     extensions::idle::IdleDone,
     response::{Greeting, Response},
+    IntoStatic,
 };
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
@@ -110,23 +109,20 @@ pub trait Decoder {
     fn decode<'a>(&self, input: &'a [u8])
         -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
 
-    #[cfg(feature = "bounded-static")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "bounded-static")))]
     fn decode_static<'a>(
         &self,
         input: &'a [u8],
     ) -> Result<(&'a [u8], Self::Message<'static>), Self::Error<'static>>
     where
-        Self::Message<'a>: IntoBoundedStatic<Static = Self::Message<'static>>,
-        Self::Error<'a>: IntoBoundedStatic<Static = Self::Error<'static>>,
+        Self::Message<'a>: IntoStatic<Static = Self::Message<'static>>,
+        Self::Error<'a>: IntoStatic<Static = Self::Error<'static>>,
     {
-        let (remaining, value) = self.decode(input).map_err(IntoBoundedStatic::into_static)?;
+        let (remaining, value) = self.decode(input).map_err(IntoStatic::into_static)?;
         Ok((remaining, value.into_static()))
     }
 }
 
 /// Error during greeting decoding.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GreetingDecodeError {
     /// More data is needed.
@@ -136,8 +132,15 @@ pub enum GreetingDecodeError {
     Failed,
 }
 
+impl IntoStatic for GreetingDecodeError {
+    type Static = Self;
+
+    fn into_static(self) -> Self::Static {
+        self
+    }
+}
+
 /// Error during command decoding.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CommandDecodeError<'a> {
     /// More data is needed.
@@ -196,8 +199,25 @@ pub enum CommandDecodeError<'a> {
     Failed,
 }
 
+impl<'a> IntoStatic for CommandDecodeError<'a> {
+    type Static = CommandDecodeError<'static>;
+
+    fn into_static(self) -> Self::Static {
+        match self {
+            CommandDecodeError::Incomplete => CommandDecodeError::Incomplete,
+            CommandDecodeError::LiteralFound { tag, length, mode } => {
+                CommandDecodeError::LiteralFound {
+                    tag: tag.into_static(),
+                    length,
+                    mode,
+                }
+            }
+            CommandDecodeError::Failed => CommandDecodeError::Failed,
+        }
+    }
+}
+
 /// Error during authenticate data line decoding.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AuthenticateDataDecodeError {
     /// More data is needed.
@@ -207,8 +227,15 @@ pub enum AuthenticateDataDecodeError {
     Failed,
 }
 
+impl IntoStatic for AuthenticateDataDecodeError {
+    type Static = Self;
+
+    fn into_static(self) -> Self::Static {
+        self
+    }
+}
+
 /// Error during response decoding.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ResponseDecodeError {
     /// More data is needed.
@@ -231,8 +258,15 @@ pub enum ResponseDecodeError {
     Failed,
 }
 
+impl IntoStatic for ResponseDecodeError {
+    type Static = Self;
+
+    fn into_static(self) -> Self::Static {
+        self
+    }
+}
+
 /// Error during idle done decoding.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum IdleDoneDecodeError {
     /// More data is needed.
@@ -240,6 +274,14 @@ pub enum IdleDoneDecodeError {
 
     /// Decoding failed.
     Failed,
+}
+
+impl IntoStatic for IdleDoneDecodeError {
+    type Static = Self;
+
+    fn into_static(self) -> Self::Static {
+        self
+    }
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -402,7 +444,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = GreetingCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -483,7 +524,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = CommandCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -573,7 +613,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = AuthenticateDataCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -605,7 +644,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = IdleDoneCodec::default().decode_static(test);
                 assert_eq!(expected, got);
@@ -676,7 +714,6 @@ mod tests {
             dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
-            #[cfg(feature = "bounded-static")]
             {
                 let got = ResponseCodec::default().decode_static(test);
                 assert_eq!(expected, got);

@@ -42,7 +42,7 @@ debug = []
 
 [dependencies]
 libfuzzer-sys = "0.4"
-imap-types = { path = "..", default-features = false, features = ["arbitrary", "bounded-static", "unvalidated"] }
+imap-types = { path = "..", default-features = false, features = ["arbitrary", "unvalidated"] }
 
 [[bin]]
 name = "into_static"

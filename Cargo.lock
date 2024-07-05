@@ -329,11 +329,6 @@ name = "bounded-static"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0beb903daa49b43bcafb5d5eebe633f9ad638d8b16cd08f95fb05ee7bd099321"
-dependencies = [
- "ahash",
- "bounded-static-derive",
- "chrono",
-]
 
 [[package]]
 name = "bounded-static-derive"
@@ -1207,7 +1202,6 @@ version = "2.0.0-alpha.1"
 dependencies = [
  "abnf-core",
  "base64 0.22.1",
- "bounded-static",
  "chrono",
  "imap-types",
  "log",
@@ -1260,6 +1254,7 @@ dependencies = [
  "arbitrary",
  "base64 0.22.1",
  "bounded-static",
+ "bounded-static-derive",
  "chrono",
  "criterion",
  "rand",
@@ -3071,7 +3066,6 @@ dependencies = [
 name = "tokio-support"
 version = "0.1.0"
 dependencies = [
- "bounded-static",
  "bytes",
  "imap-codec",
  "thiserror",

@@ -7,8 +7,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -24,9 +23,8 @@ use crate::{
 
 /// Shorthands for commonly-used message data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum Macro {
     /// Shorthand for `(FLAGS INTERNALDATE RFC822.SIZE)`.
@@ -63,9 +61,8 @@ impl Display for Macro {
 ///
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum MacroOrMessageDataItemNames<'a> {
     Macro(Macro),
     MessageDataItemNames(Vec<MessageDataItemName<'a>>),
@@ -85,9 +82,8 @@ impl<'a> From<Vec<MessageDataItemName<'a>>> for MacroOrMessageDataItemNames<'a> 
 
 /// Message data item name used to request a message data item.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "FetchAttribute")]
 pub enum MessageDataItemName<'a> {
     /// Non-extensible form of `BODYSTRUCTURE`.
@@ -245,9 +241,8 @@ pub enum MessageDataItemName<'a> {
 
 /// Message data item.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "FetchAttributeValue")]
 pub enum MessageDataItem<'a> {
     /// A form of `BODYSTRUCTURE` without extension data.
@@ -424,9 +419,8 @@ pub enum MessageDataItem<'a> {
 /// 4.2.2.2    TEXT/RICHTEXT
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Section<'a> {
     Part(Part),
 
@@ -449,9 +443,8 @@ pub enum Section<'a> {
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Part(pub Vec1<NonZeroU32>);
 
 /// A part specifier is either a part number or one of the following:
@@ -469,9 +462,8 @@ pub struct Part(pub Vec1<NonZeroU32>);
 /// and the body; the blank line is included in all header fetches,
 /// except in the case of a message which has no body and no blank
 /// line.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum PartSpecifier<'a> {
     PartNumber(u32),
     Header,

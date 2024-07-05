@@ -40,8 +40,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -123,9 +122,8 @@ impl<'a> Data<'a> {
 /// A resource type for use in IMAP's QUOTA extension.
 ///
 /// Supported resource names MUST be advertised as a capability by prepending the resource name with "QUOTA=RES-".
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Resource<'a> {
     /// The physical space estimate, in units of 1024 octets, of the mailboxes governed by the quota
     /// root.
@@ -185,9 +183,8 @@ pub enum Resource<'a> {
 /// An (unknown) resource.
 ///
 /// It's guaranteed that this type can't represent any resource from [`Resource`].
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct ResourceOther<'a>(Atom<'a>);
 
 impl_try_from!(Atom<'a>, 'a, &'a [u8], Resource<'a>);
@@ -223,9 +220,8 @@ impl<'a> Display for Resource<'a> {
 /// A type that holds a resource name, usage, and limit.
 /// Used in the response of the GETQUOTA command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct QuotaGet<'a> {
     pub resource: Resource<'a>,
     pub usage: u64,
@@ -245,9 +241,8 @@ impl<'a> QuotaGet<'a> {
 /// A type that holds a resource name and limit.
 /// Used in the SETQUOTA command.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(ToStatic, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QuotaSet<'a> {
     pub resource: Resource<'a>,
     pub limit: u64,

@@ -43,8 +43,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-#[cfg(feature = "bounded-static")]
-use bounded_static::ToStatic;
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -96,10 +95,9 @@ use crate::extensions::binary::Literal8;
 ///                    ; " (Double Quote)
 /// resp-specials   = "]"
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Hash, ToStatic)]
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
@@ -249,10 +247,9 @@ impl<'a> Display for Atom<'a> {
 /// ;              |           Additionally allowed in `AtomExt`
 /// ;              See `Atom`
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
@@ -384,9 +381,8 @@ impl<'a> AsRef<str> for AtomExt<'a> {
 /// ;        See `Quoted`
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum IString<'a> {
     /// Literal, see [`Literal`].
     Literal(Literal<'a>),
@@ -500,9 +496,8 @@ impl<'a> AsRef<[u8]> for IString<'a> {
 /// CHAR8   = %x01-ff
 ///           ; any OCTET except NUL, %x00
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Literal<'a> {
     #[cfg_attr(
         feature = "serde",
@@ -714,9 +709,8 @@ impl<'a> AsRef<[u8]> for Literal<'a> {
 
 /// Literal mode, i.e., sync or non-sync.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
 pub enum LiteralMode {
     /// A synchronizing literal, i.e., `{<n>}\r\n<data>`.
     Sync,
@@ -750,10 +744,9 @@ pub enum LiteralMode {
 ///                   ; linefeed
 /// quoted-specials = DQUOTE / "\"
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
 impl<'a> Debug for Quoted<'a> {
@@ -871,9 +864,8 @@ impl<'a> AsRef<str> for Quoted<'a> {
 /// nil     = "NIL"
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct NString<'a>(
     // This wrapper is merely used for formatting.
     // The inner value can be public.
@@ -926,9 +918,8 @@ impl<'a> From<Quoted<'a>> for NString<'a> {
 /// ;         See `AtomExt`
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum AString<'a> {
     // `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
     Atom(AtomExt<'a>),   // 1*ASTRING-CHAR /
@@ -1041,10 +1032,9 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 ///                    ; " (Double Quote)
 /// resp-specials   = "]"
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, ToStatic)]
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
@@ -1171,10 +1161,9 @@ impl<'a> AsRef<str> for Tag<'a> {
 /// CR        = %x0D                        ; carriage return
 /// LF        = %x0A                        ; linefeed
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "String"))]
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, ToStatic)]
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
@@ -1301,10 +1290,9 @@ impl<'a> AsRef<str> for Text<'a> {
 /// quoted-specials = DQUOTE / "\"
 /// DQUOTE          =  %x22                       ; " (Double Quote)
 /// ```
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "char"))]
-#[derive(Copy, Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Copy, Debug, PartialEq, Eq, Hash, Clone, ToStatic)]
 pub struct QuotedChar(char);
 
 impl QuotedChar {
@@ -1379,9 +1367,8 @@ impl TryFrom<char> for QuotedChar {
 /// DIGIT              = "0".."9" ; Numeric digit
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Charset<'a> {
     Atom(Atom<'a>),
     Quoted(Quoted<'a>),
@@ -1460,9 +1447,8 @@ impl<'a> AsRef<str> for Charset<'a> {
 
 #[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum NString8<'a> {
     NString(NString<'a>),
     Literal8(Literal8<'a>),
@@ -1477,10 +1463,9 @@ pub enum NString8<'a> {
 ///
 /// * `Vec<T, 0>` must not be used. Please use the standard [`Vec`] instead.
 /// * `Vec<T, 1>` must not be used. Please use the alias [`Vec1<T>`] instead.
-#[cfg_attr(feature = "bounded-static", derive(ToStatic))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "Vec<T>"))]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct VecN<T, const N: usize>(pub(crate) Vec<T>);
 
 impl<T, const N: usize> Debug for VecN<T, N>
