@@ -13,4 +13,4 @@ crate-type = ["cdylib"]
 doc = false
 
 [dependencies]
-pyo3 = "0.22.0"
+pyo3 = "0.22.1"
