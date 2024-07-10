@@ -200,6 +200,9 @@ pub mod state;
 pub mod status;
 pub mod utils;
 
+/// Create owned variant of object.
+///
+/// Useful, e.g., if you want to pass the object to another thread or executor.
 pub trait ToStatic {
     type Static: 'static;
 
@@ -217,6 +220,9 @@ where
     }
 }
 
+/// Create owned variant of object (consuming it).
+///
+/// Useful, e.g., if you want to pass the object to another thread or executor.
 pub trait IntoStatic {
     type Static: 'static;
 
