@@ -18,7 +18,7 @@ default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"
 fuzz = []
 
 # <Forward to imap-types>
-serde = ["imap-types/serde"]
+serde = ["dep:serde", "imap-types/serde"]
 
 # IMAP
 starttls = ["imap-types/starttls"]
@@ -66,6 +66,10 @@ chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { version = "2.0.0-alpha.2", path = "../imap-types", default-features = false, features = ["unvalidated"] }
 nom = { version = "7", default-features = false }
 log = { version = "0.4.22", default-features = false }
+serde = { version = "1.0.203", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = { version = "1.0.119" }
 
 [package.metadata.docs.rs]
 all-features = true
