@@ -1,0 +1,48 @@
+#![no_main]
+
+use imap_codec::fragmentizer::{Fragmentizer, MaxMessageSize};
+use libfuzzer_sys::fuzz_target;
+
+fuzz_target!(|input: (MaxMessageSize, Vec<&[u8]>)| {
+    let (mms, data) = input;
+
+    #[cfg(feature = "debug")]
+    println!("input: {mms:?}, {data:?}");
+
+    let mut fragmentizer = Fragmentizer::new(mms);
+
+    // Ensure `Fragmentizer` recreates input data (when smaller than `mms`).
+    let mut emitted_bytes = Vec::new();
+    let check_recreation = match mms {
+        MaxMessageSize::Unlimited => true,
+        MaxMessageSize::Limited(limit) => {
+            data.iter().map(|s| s.len()).sum::<usize>() <= limit as usize
+        }
+    };
+
+    for chunk in &data {
+        loop {
+            match fragmentizer.progress() {
+                Some(fragment_info) => {
+                    #[cfg(feature = "debug")]
+                    println!("{fragment_info:?}");
+
+                    if check_recreation {
+                        // Collect emitted bytes.
+                        emitted_bytes.extend_from_slice(fragmentizer.fragment_bytes(fragment_info));
+                    }
+                }
+                None => {
+                    fragmentizer.enqueue_bytes(chunk);
+                    break;
+                }
+            }
+        }
+    }
+
+    if check_recreation {
+        // Ensure emitted bytes are prefix of fuzzing input data.
+        let input = data.into_iter().flat_map(Vec::from).collect::<Vec<u8>>();
+        assert_eq!(input[..emitted_bytes.len()], emitted_bytes);
+    }
+});

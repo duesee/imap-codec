@@ -51,60 +51,76 @@ split = []
 
 [dependencies]
 arbitrary = "1.3.2"
-imap-codec = { path = "..", features = ["fuzz"] }
+imap-codec = { path = "..", features = ["arbitrary", "fuzz"] }
 imap-types = { path = "../../imap-types", features = ["arbitrary"] }
 libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "fragmentizer"
+path = "fuzz_targets/fragmentizer.rs"
+test = false
+doc = false
+bench = false
 
 [[bin]]
 name = "greeting"
 path = "fuzz_targets/greeting.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "command"
 path = "fuzz_targets/command.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "response"
 path = "fuzz_targets/response.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "authenticate_data"
 path = "fuzz_targets/authenticate_data.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "greeting_to_bytes_and_back"
 path = "fuzz_targets/greeting_to_bytes_and_back.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "command_to_bytes_and_back"
 path = "fuzz_targets/command_to_bytes_and_back.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "response_to_bytes_and_back"
 path = "fuzz_targets/response_to_bytes_and_back.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "authenticate_data_to_bytes_and_back"
 path = "fuzz_targets/authenticate_data_to_bytes_and_back.rs"
 test = false
 doc = false
+bench = false
 
 [[bin]]
 name = "tags_structured"
 path = "fuzz_targets/tags_structured.rs"
 test = false
 doc = false
+bench = false
