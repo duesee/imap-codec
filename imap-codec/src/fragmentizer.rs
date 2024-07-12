@@ -527,7 +527,7 @@ impl LiteralParser {
     }
 }
 
-pub fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
+fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
     let mut bytes = message_bytes.iter().enumerate();
     let sp = loop {
         let (i, byte) = bytes.next()?;
