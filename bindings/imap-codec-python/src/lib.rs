@@ -1,5 +1,6 @@
 use imap_codec::{
     decode::{self, Decoder},
+    encode::{Encoded, Encoder},
     AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
 use pyo3::{create_exception, exceptions::PyException, prelude::*, types::PyBytes};
@@ -9,6 +10,42 @@ create_exception!(imap_codec, DecodeError, PyException);
 create_exception!(imap_codec, DecodeFailed, DecodeError);
 create_exception!(imap_codec, DecodeIncomplete, DecodeError);
 create_exception!(imap_codec, DecodeLiteralFound, DecodeError);
+
+/// Wrapper for `Encoded`
+///
+/// This implements a Python iterator over the containing fragments.
+#[derive(Debug, Clone)]
+#[pyclass(name = "Encoded")]
+struct PyEncoded(Option<Encoded>);
+
+#[pymethods]
+impl PyEncoded {
+    /// Initialize iterator
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    /// Return next fragment
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> PyResult<Option<Bound<PyAny>>> {
+        let Some(encoded) = &mut slf.0 else {
+            return Ok(None);
+        };
+        Ok(encoded
+            .next()
+            .map(|value| serde_pyobject::to_pyobject(slf.py(), &value))
+            .transpose()?)
+    }
+
+    /// Dump remaining fragment data
+    fn dump(mut slf: PyRefMut<'_, Self>) -> PyResult<Bound<PyBytes>> {
+        let encoded = slf.0.take();
+        let dump = match encoded {
+            Some(encoded) => encoded.dump(),
+            None => Vec::new(),
+        };
+        Ok(PyBytes::new_bound(slf.py(), &dump))
+    }
+}
 
 /// Wrapper for `GreetingCodec`
 #[derive(Debug, Clone, PartialEq)]
@@ -32,6 +69,14 @@ impl PyGreetingCodec {
             PyBytes::new_bound(py, remaining),
             serde_pyobject::to_pyobject(py, &greeting)?,
         ))
+    }
+
+    /// Encode greeting into fragments
+    #[staticmethod]
+    fn encode(greeting: Bound<PyAny>) -> PyResult<PyEncoded> {
+        let greeting = serde_pyobject::from_pyobject(greeting)?;
+        let encoded = GreetingCodec::default().encode(&greeting);
+        Ok(PyEncoded(Some(encoded)))
     }
 }
 
@@ -64,6 +109,14 @@ impl PyCommandCodec {
             }),
         }
     }
+
+    /// Encode command into fragments
+    #[staticmethod]
+    fn encode(command: Bound<PyAny>) -> PyResult<PyEncoded> {
+        let command = serde_pyobject::from_pyobject(command)?;
+        let encoded = CommandCodec::default().encode(&command);
+        Ok(PyEncoded(Some(encoded)))
+    }
 }
 
 /// Wrapper for `AuthenticateDataCodec`
@@ -87,6 +140,14 @@ impl PyAuthenticateDataCodec {
                 decode::AuthenticateDataDecodeError::Failed => DecodeFailed::new_err(()),
             }),
         }
+    }
+
+    /// Encode authenticate data line into fragments
+    #[staticmethod]
+    fn encode(authenticate_data: Bound<PyAny>) -> PyResult<PyEncoded> {
+        let authenticate_data = serde_pyobject::from_pyobject(authenticate_data)?;
+        let encoded = AuthenticateDataCodec::default().encode(&authenticate_data);
+        Ok(PyEncoded(Some(encoded)))
     }
 }
 
@@ -117,6 +178,14 @@ impl PyResponseCodec {
             }),
         }
     }
+
+    /// Encode response into fragments
+    #[staticmethod]
+    fn encode(response: Bound<PyAny>) -> PyResult<PyEncoded> {
+        let response = serde_pyobject::from_pyobject(response)?;
+        let encoded = ResponseCodec::default().encode(&response);
+        Ok(PyEncoded(Some(encoded)))
+    }
 }
 
 /// Wrapper for `IdleDoneCodec`
@@ -141,6 +210,14 @@ impl PyIdleDoneCodec {
             }),
         }
     }
+
+    /// Encode idle done into fragments
+    #[staticmethod]
+    fn encode(idle_done: Bound<PyAny>) -> PyResult<PyEncoded> {
+        let idle_done = serde_pyobject::from_pyobject(idle_done)?;
+        let encoded = IdleDoneCodec::default().encode(&idle_done);
+        Ok(PyEncoded(Some(encoded)))
+    }
 }
 
 #[pymodule]
@@ -156,6 +233,7 @@ fn imap_codec_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
         "DecodeLiteralFound",
         m.py().get_type_bound::<DecodeLiteralFound>(),
     )?;
+    m.add_class::<PyEncoded>()?;
     m.add_class::<PyGreetingCodec>()?;
     m.add_class::<PyCommandCodec>()?;
     m.add_class::<PyAuthenticateDataCodec>()?;
