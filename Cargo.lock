@@ -1206,6 +1206,8 @@ dependencies = [
  "imap-types",
  "log",
  "nom",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

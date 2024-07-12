@@ -79,6 +79,8 @@ use imap_types::{
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
 
 use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
@@ -150,6 +152,7 @@ impl Iterator for Encoded {
 }
 
 /// The intended action of a client or server.
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Fragment {
     /// A line that is ready to be send.
@@ -2125,5 +2128,32 @@ mod tests {
 
             assert_eq!(encoder.collect::<Vec<_>>(), actions);
         }
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serialize_fragment() {
+        let fragments = [
+            Fragment::Line {
+                data: b"A LOGIN alice {2}\r\n".to_vec(),
+            },
+            Fragment::Literal {
+                data: b"\xCA\xFE".to_vec(),
+                mode: LiteralMode::Sync,
+            },
+            Fragment::Line {
+                data: b"\r\n".to_vec(),
+            },
+        ];
+
+        let json = serde_json::to_string(&fragments).unwrap();
+        assert_eq!(
+            json,
+            r#"[{"Line":{"data":[65,32,76,79,71,73,78,32,97,108,105,99,101,32,123,50,125,13,10]}},{"Literal":{"data":[202,254],"mode":"Sync"}},{"Line":{"data":[13,10]}}]"#
+        );
+        assert_eq!(
+            serde_json::from_str::<[Fragment; 3]>(&json).unwrap(),
+            fragments
+        );
     }
 }
