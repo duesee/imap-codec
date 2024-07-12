@@ -130,6 +130,7 @@ mod status;
 #[cfg(test)]
 mod testing;
 
+pub mod fragmentizer;
 #[cfg(feature = "fuzz")]
 pub mod fuzz {
     pub use crate::core::fuzz_tag_imap;
