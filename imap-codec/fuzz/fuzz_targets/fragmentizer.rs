@@ -11,7 +11,7 @@ fuzz_target!(|input: (MaxMessageSize, Vec<Vec<u8>>)| {
 
     // Ensure `Fragmentizer` recreates input data (when smaller than `mms`).
     let mut emitted_bytes = Vec::new();
-    let data_flat = data.iter().flatten().copied().collect::<Vec<u8>>();
+    let data_flat = data.concat();
 
     let mut fragmentizer = Fragmentizer::new(mms);
 
