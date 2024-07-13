@@ -1,9 +1,9 @@
 #![no_main]
 
-use imap_codec::fragmentizer::{Fragmentizer, MaxMessageSize};
+use imap_codec::fragmentizer::Fragmentizer;
 use libfuzzer_sys::fuzz_target;
 
-fuzz_target!(|input: (MaxMessageSize, Vec<Vec<u8>>)| {
+fuzz_target!(|input: (Option<u32>, Vec<Vec<u8>>)| {
     let (mms, data) = input;
 
     #[cfg(feature = "debug")]
@@ -13,7 +13,8 @@ fuzz_target!(|input: (MaxMessageSize, Vec<Vec<u8>>)| {
     let mut emitted_bytes = Vec::new();
     let data_flat = data.concat();
 
-    let mut fragmentizer = Fragmentizer::new(mms);
+    let mut fragmentizer =
+        mms.map_or_else(Fragmentizer::without_max_message_size, Fragmentizer::new);
 
     for chunk in &data {
         loop {
@@ -36,8 +37,8 @@ fuzz_target!(|input: (MaxMessageSize, Vec<Vec<u8>>)| {
     assert!(emitted_bytes.len() <= data_flat.len());
 
     let check_prefix = match mms {
-        MaxMessageSize::Unlimited => true,
-        MaxMessageSize::Limited(limit) => data_flat.len() <= limit as usize,
+        Some(max_message_size) => data_flat.len() <= max_message_size as usize,
+        None => true,
     };
 
     if check_prefix {

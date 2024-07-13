@@ -1,9 +1,6 @@
 use std::{io::Read, net::TcpStream};
 
-use imap_codec::{
-    fragmentizer::{Fragmentizer, MaxMessageSize},
-    GreetingCodec, ResponseCodec,
-};
+use imap_codec::{fragmentizer::Fragmentizer, GreetingCodec, ResponseCodec};
 
 enum State {
     Greeting,
@@ -12,7 +9,7 @@ enum State {
 
 fn main() {
     let mut stream = TcpStream::connect("127.0.0.1:12345").unwrap();
-    let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Limited(1024));
+    let mut fragmentizer = Fragmentizer::new(1024);
 
     let mut state = State::Greeting;
 

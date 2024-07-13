@@ -1201,7 +1201,6 @@ name = "imap-codec"
 version = "2.0.0-alpha.2"
 dependencies = [
  "abnf-core",
- "arbitrary",
  "base64 0.22.1",
  "chrono",
  "imap-types",
