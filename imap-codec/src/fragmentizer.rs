@@ -111,7 +111,7 @@ pub struct Fragmentizer {
 }
 
 impl Fragmentizer {
-    /// Create `Fragmentizer`.
+    /// Creates a `Fragmentizer` with maximum message size.
     ///
     /// The maximum message size is bounded by `max_message_size` preventing excessive memory allocation.
     ///
@@ -129,7 +129,7 @@ impl Fragmentizer {
         }
     }
 
-    /// Create `Fragmentizer` without maximum message size.
+    /// Creates a `Fragmentizer` without maximum message size.
     ///
     /// <div class="warning">
     /// This is dangerous because it allows an attacker to allocate an excessive amount of memory

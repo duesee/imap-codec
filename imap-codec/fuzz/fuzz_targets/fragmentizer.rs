@@ -13,10 +13,8 @@ fuzz_target!(|input: (Option<u32>, Vec<Vec<u8>>)| {
     let mut emitted_bytes = Vec::new();
     let data_flat = data.concat();
 
-    let mut fragmentizer = match mms {
-        Some(max_message_size) => Fragmentizer::new(max_message_size),
-        None => Fragmentizer::without_max_message_size(),
-    };
+    let mut fragmentizer =
+        mms.map_or_else(Fragmentizer::without_max_message_size, Fragmentizer::new);
 
     for chunk in &data {
         loop {
