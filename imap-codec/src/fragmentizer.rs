@@ -9,77 +9,6 @@ use imap_types::{
 
 use crate::decode::Decoder;
 
-/// The character sequence used for ending a line.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum LineEnding {
-    /// The line ends with the character `\n`.
-    Lf,
-    /// The line ends with the character sequence `\r\n`.
-    CrLf,
-}
-
-/// Used by a line to announce a literal following the line.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct LiteralAnnouncement {
-    /// The mode of the announced literal.
-    pub mode: LiteralMode,
-    /// The length of the announced literal in bytes.
-    pub length: u32,
-}
-
-/// Describes a fragment of the current message found by [`Fragmentizer::progress`].
-///
-/// The corresponding bytes can be retrieved via [`Fragmentizer::fragment_bytes`]
-/// until [`Fragmentizer::is_message_complete`] returns true. After that the
-/// next call of [`Fragmentizer::progress`] will start the next message.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FragmentInfo {
-    /// The fragment is a line.
-    Line {
-        /// Inclusive start index relative to the current message.
-        start: usize,
-        /// Exclusive end index relative to the current message.
-        end: usize,
-        /// Whether the next fragment will be a literal.
-        announcement: Option<LiteralAnnouncement>,
-        /// The detected ending sequence for this line.
-        ending: LineEnding,
-    },
-    /// The fragment is a literal.
-    Literal {
-        /// Inclusive start index relative to the current message.
-        start: usize,
-        /// Exclusive end index relative to the current message.
-        end: usize,
-    },
-}
-
-impl FragmentInfo {
-    /// The index range relative to the current message.
-    pub fn range(self) -> Range<usize> {
-        match self {
-            FragmentInfo::Line { start, end, .. } => start..end,
-            FragmentInfo::Literal { start, end } => start..end,
-        }
-    }
-}
-
-/// An error returned by [`Fragmentizer::decode_message`].
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DecodeMessageError<'a, C: Decoder> {
-    /// The decoder failed decoding the message.
-    DecodingFailure(C::Error<'a>),
-    /// Not all bytes of the message were used when decoding the message.
-    DecodingRemainder {
-        /// The decoded message.
-        message: C::Message<'a>,
-        /// The unused bytes.
-        remainder: Secret<&'a [u8]>,
-    },
-    /// Max message size was exceeded and bytes were dropped.
-    MessageTooLong { initial: Secret<&'a [u8]> },
-}
-
 /// Parser for IMAP message fragments.
 ///
 /// A fragment is either a line or a literal. A single IMAP message may consist of multiple
@@ -145,65 +74,6 @@ impl Fragmentizer {
         }
     }
 
-    /// Enqueues more byte that can be parsed by [`Fragmentizer::progress`].
-    ///
-    /// Note that the message size limit is not enforced on the enqueued bytes. You can control
-    /// the size of the enqueued bytes by only calling this function if more bytes are necessary.
-    /// More bytes are necessary if [`Fragmentizer::progress`] returns `None`.
-    pub fn enqueue_bytes(&mut self, bytes: &[u8]) {
-        self.unparsed_buffer.extend(bytes);
-    }
-
-    /// Returns whether the size limit is exceeded for the current message.
-    pub fn is_max_message_size_exceeded(&self) -> bool {
-        self.max_message_size_exceeded
-    }
-
-    /// Returns whether the current message was fully parsed.
-    ///
-    /// If it returns true then it makes sense to call [`Fragmentizer::decode_message`]
-    /// to decode the message. Alternatively, you can access all bytes of the message via
-    /// [`Fragmentizer::message_bytes`].
-    pub fn is_message_complete(&self) -> bool {
-        self.parser.is_none()
-    }
-
-    /// Returns the bytes of the current message.
-    ///
-    /// Note that the bytes might be incomplete:
-    /// - The message might not be fully parsed yet and [`Fragmentizer::progress`] need to be
-    ///   called. You can check whether the message is complete via
-    ///   [`Fragmentizer::is_message_complete`].
-    /// - The size limit might be exceeded and bytes might be dropped. You can check this
-    ///   via [`Fragmentizer::is_max_message_size_exceeded`]
-    pub fn message_bytes(&self) -> &[u8] {
-        &self.message_buffer
-    }
-
-    /// Returns the bytes for a fragment of the current message.
-    pub fn fragment_bytes(&self, fragment_info: FragmentInfo) -> &[u8] {
-        let (start, end) = match fragment_info {
-            FragmentInfo::Line { start, end, .. } => (start, end),
-            FragmentInfo::Literal { start, end } => (start, end),
-        };
-        let start = start.min(self.message_buffer.len());
-        let end = end.min(self.message_buffer.len());
-        &self.message_buffer[start..end]
-    }
-
-    /// Skips the current message and starts the next message immediately.
-    ///
-    /// Warning: Using this method might be dangerous. If client and server don't
-    /// agree at which point a message is skipped, then the client or server might
-    /// treat untrusted bytes (e.g. literal bytes) as IMAP messages. Currently the
-    /// only valid use-case is a server that rejects synchronizing literals from the
-    /// client.
-    pub fn skip_message(&mut self) {
-        self.max_message_size_exceeded = false;
-        self.message_buffer.clear();
-        self.parser = Some(Parser::Line(LineParser::new(0)));
-    }
-
     /// Continue parsing the current message until the next fragment is detected.
     ///
     /// Returns `None` if more bytes need to be enqueued via [`Fragmentizer::enqueue_bytes`].
@@ -249,6 +119,65 @@ impl Fragmentizer {
         }
 
         fragment
+    }
+
+    /// Enqueues more byte that can be parsed by [`Fragmentizer::progress`].
+    ///
+    /// Note that the message size limit is not enforced on the enqueued bytes. You can control
+    /// the size of the enqueued bytes by only calling this function if more bytes are necessary.
+    /// More bytes are necessary if [`Fragmentizer::progress`] returns `None`.
+    pub fn enqueue_bytes(&mut self, bytes: &[u8]) {
+        self.unparsed_buffer.extend(bytes);
+    }
+
+    /// Returns the bytes for a fragment of the current message.
+    pub fn fragment_bytes(&self, fragment_info: FragmentInfo) -> &[u8] {
+        let (start, end) = match fragment_info {
+            FragmentInfo::Line { start, end, .. } => (start, end),
+            FragmentInfo::Literal { start, end } => (start, end),
+        };
+        let start = start.min(self.message_buffer.len());
+        let end = end.min(self.message_buffer.len());
+        &self.message_buffer[start..end]
+    }
+
+    /// Returns whether the current message was fully parsed.
+    ///
+    /// If it returns true then it makes sense to call [`Fragmentizer::decode_message`]
+    /// to decode the message. Alternatively, you can access all bytes of the message via
+    /// [`Fragmentizer::message_bytes`].
+    pub fn is_message_complete(&self) -> bool {
+        self.parser.is_none()
+    }
+
+    /// Returns the bytes of the current message.
+    ///
+    /// Note that the bytes might be incomplete:
+    /// - The message might not be fully parsed yet and [`Fragmentizer::progress`] need to be
+    ///   called. You can check whether the message is complete via
+    ///   [`Fragmentizer::is_message_complete`].
+    /// - The size limit might be exceeded and bytes might be dropped. You can check this
+    ///   via [`Fragmentizer::is_max_message_size_exceeded`]
+    pub fn message_bytes(&self) -> &[u8] {
+        &self.message_buffer
+    }
+
+    /// Returns whether the size limit is exceeded for the current message.
+    pub fn is_max_message_size_exceeded(&self) -> bool {
+        self.max_message_size_exceeded
+    }
+
+    /// Skips the current message and starts the next message immediately.
+    ///
+    /// Warning: Using this method might be dangerous. If client and server don't
+    /// agree at which point a message is skipped, then the client or server might
+    /// treat untrusted bytes (e.g. literal bytes) as IMAP messages. Currently the
+    /// only valid use-case is a server that rejects synchronizing literals from the
+    /// client.
+    pub fn skip_message(&mut self) {
+        self.max_message_size_exceeded = false;
+        self.message_buffer.clear();
+        self.parser = Some(Parser::Line(LineParser::new(0)));
     }
 
     /// Tries to decode the [`Tag`] for the current message.
@@ -531,6 +460,77 @@ impl LiteralParser {
             (parsed_byte_count, Some(parsed_literal))
         }
     }
+}
+
+/// Describes a fragment of the current message found by [`Fragmentizer::progress`].
+///
+/// The corresponding bytes can be retrieved via [`Fragmentizer::fragment_bytes`]
+/// until [`Fragmentizer::is_message_complete`] returns true. After that the
+/// next call of [`Fragmentizer::progress`] will start the next message.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FragmentInfo {
+    /// The fragment is a line.
+    Line {
+        /// Inclusive start index relative to the current message.
+        start: usize,
+        /// Exclusive end index relative to the current message.
+        end: usize,
+        /// Whether the next fragment will be a literal.
+        announcement: Option<LiteralAnnouncement>,
+        /// The detected ending sequence for this line.
+        ending: LineEnding,
+    },
+    /// The fragment is a literal.
+    Literal {
+        /// Inclusive start index relative to the current message.
+        start: usize,
+        /// Exclusive end index relative to the current message.
+        end: usize,
+    },
+}
+
+impl FragmentInfo {
+    /// The index range relative to the current message.
+    pub fn range(self) -> Range<usize> {
+        match self {
+            FragmentInfo::Line { start, end, .. } => start..end,
+            FragmentInfo::Literal { start, end } => start..end,
+        }
+    }
+}
+
+/// Used by a line to announce a literal following the line.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct LiteralAnnouncement {
+    /// The mode of the announced literal.
+    pub mode: LiteralMode,
+    /// The length of the announced literal in bytes.
+    pub length: u32,
+}
+
+/// The character sequence used for ending a line.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LineEnding {
+    /// The line ends with the character `\n`.
+    Lf,
+    /// The line ends with the character sequence `\r\n`.
+    CrLf,
+}
+
+/// An error returned by [`Fragmentizer::decode_message`].
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DecodeMessageError<'a, C: Decoder> {
+    /// The decoder failed decoding the message.
+    DecodingFailure(C::Error<'a>),
+    /// Not all bytes of the message were used when decoding the message.
+    DecodingRemainder {
+        /// The decoded message.
+        message: C::Message<'a>,
+        /// The unused bytes.
+        remainder: Secret<&'a [u8]>,
+    },
+    /// Max message size was exceeded and bytes were dropped.
+    MessageTooLong { initial: Secret<&'a [u8]> },
 }
 
 fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
@@ -1221,27 +1221,17 @@ mod tests {
     #[test]
     fn parse_line_examples() {
         assert_not_line(b"");
-
         assert_not_line(b"foo");
 
         assert_is_line(b"\n", 1, None, LineEnding::Lf);
-
         assert_is_line(b"\r\n", 2, None, LineEnding::CrLf);
-
         assert_is_line(b"\n\r", 1, None, LineEnding::Lf);
-
         assert_is_line(b"foo\n", 4, None, LineEnding::Lf);
-
         assert_is_line(b"foo\r\n", 5, None, LineEnding::CrLf);
-
         assert_is_line(b"foo\n\r", 4, None, LineEnding::Lf);
-
         assert_is_line(b"foo\nbar\n", 4, None, LineEnding::Lf);
-
         assert_is_line(b"foo\r\nbar\r\n", 5, None, LineEnding::CrLf);
-
         assert_is_line(b"\r\nfoo\r\n", 2, None, LineEnding::CrLf);
-
         assert_is_line(
             b"{1}\r\n",
             5,
@@ -1251,7 +1241,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(
             b"{1}\n",
             4,
@@ -1261,7 +1250,6 @@ mod tests {
             }),
             LineEnding::Lf,
         );
-
         assert_is_line(
             b"foo {1}\r\n",
             9,
@@ -1271,7 +1259,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(
             b"foo {2} {1}\r\n",
             13,
@@ -1281,19 +1268,12 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(b"foo {1} \r\n", 10, None, LineEnding::CrLf);
-
         assert_is_line(b"foo \n {1}\r\n", 5, None, LineEnding::Lf);
-
         assert_is_line(b"foo {1} foo\r\n", 13, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {1\r\n", 8, None, LineEnding::CrLf);
-
         assert_is_line(b"foo 1}\r\n", 8, None, LineEnding::CrLf);
-
         assert_is_line(b"foo { 1}\r\n", 10, None, LineEnding::CrLf);
-
         assert_is_line(
             b"foo {{1}\r\n",
             10,
@@ -1303,7 +1283,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(
             b"foo {42}\r\n",
             10,
@@ -1313,7 +1292,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(
             b"foo {42+}\r\n",
             11,
@@ -1323,7 +1301,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(
             b"foo +{42}\r\n",
             11,
@@ -1333,21 +1310,13 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(b"foo {+}\r\n", 9, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {42++}\r\n", 12, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {+42+}\r\n", 12, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {+42}\r\n", 11, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {42}+\r\n", 11, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {-42}\r\n", 11, None, LineEnding::CrLf);
-
         assert_is_line(b"foo {42-}\r\n", 11, None, LineEnding::CrLf);
-
         assert_is_line(
             b"foo {4294967295}\r\n",
             18,
@@ -1357,7 +1326,6 @@ mod tests {
             }),
             LineEnding::CrLf,
         );
-
         assert_is_line(b"foo {4294967296}\r\n", 18, None, LineEnding::CrLf);
     }
 
