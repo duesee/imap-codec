@@ -22,11 +22,13 @@
 //! ### Example
 //!
 //! ```rust
-//! // Run 'cargo add imap-types' in your project's root directory.
-//! use imap_codec::{decode::Decoder, GreetingCodec};
-//! use imap_types::{
-//!     core::Text,
-//!     response::{Code, Greeting, GreetingKind},
+//! use imap_codec::{
+//!     decode::Decoder,
+//!     imap_types::{
+//!         core::Text,
+//!         response::{Code, Greeting, GreetingKind},
+//!     },
+//!     GreetingCodec,
 //! };
 //!
 //! let (remaining, greeting) = GreetingCodec::default()
@@ -54,11 +56,13 @@
 //! ### Example
 //!
 //! ```rust
-//! // Run 'cargo add imap-types' in your project's root directory.
-//! use imap_codec::{encode::Encoder, GreetingCodec};
-//! use imap_types::{
-//!     core::Text,
-//!     response::{Code, Greeting, GreetingKind},
+//! use imap_codec::{
+//!     encode::Encoder,
+//!     imap_types::{
+//!         core::Text,
+//!         response::{Code, Greeting, GreetingKind},
+//!     },
+//!     GreetingCodec,
 //! };
 //!
 //! let greeting = Greeting {
