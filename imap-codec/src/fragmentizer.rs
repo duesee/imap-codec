@@ -1,5 +1,47 @@
-//! Parser for IMAP message fragments.
-
+//! Utilities to split IMAP bytes into line and literal fragments.
+//!
+//! These utilities can be used to fragment a stream of IMAP bytes into lines (with metadata) and
+//! literals (before actually doing detailed IMAP parsing).
+//!
+//! This approach has multiple advantages: It separates literal handling from IMAP parsing and sets
+//! clear message boundaries even in the presence of malformed messages. Consequently, malformed
+//! messages can be reliably discarded. (A naive implementation of byte discardment may lead to
+//! adventurous (security) issues, such as, literal data being interpreted as command or response.)
+//! Further, this two-layered approach allows to more easily guard against excessive memory
+//! allocation by malevolant actors.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! # use std::io::{stdin, Read};
+//! #
+//! # use imap_codec::{
+//! #     fragmentizer::Fragmentizer,
+//! #     imap_types::utils::escape_byte_string,
+//! # };
+//! #
+//! # fn read_bytes() -> &'static [u8] { b"" }
+//! #
+//! # fn main() {
+//! let mut fragmentizer = Fragmentizer::new(1024);
+//!
+//! loop {
+//!     match fragmentizer.progress() {
+//!         Some(fragment_info) => {
+//!             let fragment_bytes = fragmentizer.fragment_bytes(fragment_info);
+//!
+//!             if fragmentizer.is_message_complete() {
+//!                 let message_bytes = fragmentizer.message_bytes();
+//!             }
+//!         }
+//!         None => {
+//!             let received = read_bytes();
+//!             fragmentizer.enqueue_bytes(received);
+//!         }
+//!     }
+//! }
+//! # }
+//! ```
 use std::{collections::VecDeque, ops::Range};
 
 use imap_types::{
@@ -9,20 +51,15 @@ use imap_types::{
 
 use crate::decode::Decoder;
 
-/// Parser for IMAP message fragments.
+/// Splits IMAP bytes into line and literal fragments.
 ///
-/// A fragment is either a line or a literal. A single IMAP message may consist of multiple
-/// fragments.
+/// The `Fragmentizer` prevents excessive memory allocation through a configurable maximum message size.
+/// Correct fragmentation is ensured even for messages exceeding the allowed message size.
 ///
-/// Using this fragment parser has the following benefits:
-/// - It can reliable detect when all fragments of a message were received. Only then it makes
-/// sense to decode the actual message. This allows us to decode large messages efficiently.
-/// - Even if the message is malformed it allows us to drop the right number of bytes. This
-/// prevents us from treating untrusted bytes (e.g. literal bytes) as IMAP messages.
-/// - It has support for max message length. Any exceeding bytes will be dropped. This
-/// prevents an attacker from allocating indefinite amount of memory.
-/// - It allows us to handle literals before the message is complete. This is important for IMAP
-/// servers because they need to accept or reject literals from the client.
+/// If the message size is exceeded,
+/// [`Fragmentizer::decode_message`] will fail and
+/// [`Fragmentizer::message_bytes`] will emit truncated message bytes.
+/// However, fragmentation will seamlessly continue with the following message.
 #[derive(Clone, Debug)]
 pub struct Fragmentizer {
     /// Enqueued bytes that are not parsed by [`Fragmentizer::progress`] yet.
@@ -40,14 +77,9 @@ pub struct Fragmentizer {
 }
 
 impl Fragmentizer {
-    /// Creates a `Fragmentizer` with maximum message size.
+    /// Creates a `Fragmentizer` with a maximum message size.
     ///
-    /// The maximum message size is bounded by `max_message_size` preventing excessive memory allocation.
-    ///
-    /// Correct fragmentation is ensured even for messages exceeding the allowed maximum message size.
-    /// If the message size is exceeded,
-    /// [`Fragmentizer::decode_message`] will fail and
-    /// [`Fragmentizer::message_bytes`] will contain truncated message bytes.
+    /// The maximum message size is bounded by `max_message_size` to prevent excessive memory allocation.
     pub fn new(max_message_size: u32) -> Self {
         Self {
             unparsed_buffer: VecDeque::new(),
@@ -58,7 +90,7 @@ impl Fragmentizer {
         }
     }
 
-    /// Creates a `Fragmentizer` without maximum message size.
+    /// Creates a `Fragmentizer` without a maximum message size.
     ///
     /// <div class="warning">
     /// This is dangerous because it allows an attacker to allocate an excessive amount of memory
