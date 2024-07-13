@@ -2,6 +2,8 @@
 
 use std::{collections::VecDeque, ops::Range};
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 use imap_types::{
     core::{LiteralMode, Tag},
     secret::Secret,
@@ -10,6 +12,7 @@ use imap_types::{
 use crate::decode::Decoder;
 
 /// Limits the size of messages that can be decoded by [`Fragmentizer`].
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum MaxMessageSize {
     /// Message size is not limited.
