@@ -54,6 +54,28 @@ $ cargo run --example=parse_command
 
 ... to parse some IMAP messages.
 
+### Robust parsing
+
+Real-world implementations need to handle invalid messages.
+Thus, `imap-codec` provides a `Fragmentizer` (see `fragmentizer*` examples) for "two-stage parsing".
+
+The idea is to detect message boundaries (consuming raw lines and literals) first, and to apply an IMAP message parser
+second.
+If the message parser errors out, we can safely discard the erroneous message w/o affecting other messages because we
+know the message boundaries.
+
+You can try this out by running ...
+
+```sh
+$ cargo run --example=fragmentizer_server
+```
+
+... and connecting via ...
+
+```sh
+$ netcat -C 127.0.0.1 12345
+```
+
 ### Tokio demo
 
 You can also start the [demo server] with ...
