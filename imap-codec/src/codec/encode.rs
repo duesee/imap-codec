@@ -45,7 +45,7 @@
 //! C: Pa²²W0rD
 //! ```
 
-use std::{borrow::Borrow, io::Write, num::NonZeroU32};
+use std::{borrow::Borrow, collections::VecDeque, io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
@@ -122,7 +122,7 @@ pub trait Encoder {
 /// ```
 #[derive(Clone, Debug)]
 pub struct Encoded {
-    items: Vec<Fragment>,
+    items: VecDeque<Fragment>,
 }
 
 impl Encoded {
@@ -145,11 +145,7 @@ impl Iterator for Encoded {
     type Item = Fragment;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.items.is_empty() {
-            Some(self.items.remove(0))
-        } else {
-            None
-        }
+        self.items.pop_front()
     }
 }
 
@@ -168,7 +164,7 @@ pub enum Fragment {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct EncodeContext {
     accumulator: Vec<u8>,
-    items: Vec<Fragment>,
+    items: VecDeque<Fragment>,
 }
 
 impl EncodeContext {
@@ -177,26 +173,26 @@ impl EncodeContext {
     }
 
     pub fn push_line(&mut self) {
-        self.items.push(Fragment::Line {
+        self.items.push_back(Fragment::Line {
             data: std::mem::take(&mut self.accumulator),
         })
     }
 
     pub fn push_literal(&mut self, mode: LiteralMode) {
-        self.items.push(Fragment::Literal {
+        self.items.push_back(Fragment::Literal {
             data: std::mem::take(&mut self.accumulator),
             mode,
         })
     }
 
-    pub fn into_items(self) -> Vec<Fragment> {
+    pub fn into_items(self) -> VecDeque<Fragment> {
         let Self {
             accumulator,
             mut items,
         } = self;
 
         if !accumulator.is_empty() {
-            items.push(Fragment::Line { data: accumulator });
+            items.push_back(Fragment::Line { data: accumulator });
         }
 
         items
