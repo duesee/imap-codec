@@ -1,9 +1,6 @@
 use std::{io::Read, net::TcpListener};
 
-use imap_codec::{
-    fragmentizer::{Fragmentizer, MaxMessageSize},
-    AuthenticateDataCodec, CommandCodec, IdleDoneCodec,
-};
+use imap_codec::{fragmentizer::Fragmentizer, AuthenticateDataCodec, CommandCodec, IdleDoneCodec};
 use imap_types::command::CommandBody;
 
 enum State {
@@ -18,7 +15,7 @@ fn main() {
         listener.accept().unwrap().0
     };
 
-    let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Limited(1024));
+    let mut fragmentizer = Fragmentizer::new(1024);
 
     let mut state = State::Command;
 

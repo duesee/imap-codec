@@ -2,32 +2,12 @@
 
 use std::{collections::VecDeque, ops::Range};
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
 use imap_types::{
     core::{LiteralMode, Tag},
     secret::Secret,
 };
 
 use crate::decode::Decoder;
-
-/// Limits the size of messages that can be decoded by [`Fragmentizer`].
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum MaxMessageSize {
-    /// Message size is not limited.
-    ///
-    /// Using this might be dangerous because a buffer with the size of the message is
-    /// necessary. This allows an attacker to allocate an arbitrary amount of memory by
-    /// sending a large message.
-    Unlimited,
-    /// Message size is limited by the given value.
-    ///
-    /// If the size limit is exceeded then any following bytes of the current message will be
-    /// dropped. However, the fragments will still be parsed so that the end of the message can
-    /// be detected. Decoding the message with the exceeding size will fail.
-    Limited(u32),
-}
 
 /// The character sequence used for ending a line.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -119,7 +99,7 @@ pub struct Fragmentizer {
     /// Enqueued bytes that are not parsed by [`Fragmentizer::progress`] yet.
     unparsed_buffer: VecDeque<u8>,
     /// Upper limit for the size of parsed messages.
-    max_message_size: MaxMessageSize,
+    max_message_size: Option<u32>,
     /// Whether the size limit is exceeded for the current message.
     max_message_size_exceeded: bool,
     /// Parsed bytes of the current messages. The length is limited by
@@ -131,10 +111,34 @@ pub struct Fragmentizer {
 }
 
 impl Fragmentizer {
-    pub fn new(max_message_size: MaxMessageSize) -> Self {
+    /// Create `Fragmentizer`.
+    ///
+    /// The maximum message size is bounded by `max_message_size` preventing excessive memory allocation.
+    ///
+    /// Correct fragmentation is ensured even for messages exceeding the allowed maximum message size.
+    /// If the message size is exceeded,
+    /// [`Fragmentizer::decode_message`] will fail and
+    /// [`Fragmentizer::message_bytes`] will contain truncated message bytes.
+    pub fn new(max_message_size: u32) -> Self {
         Self {
             unparsed_buffer: VecDeque::new(),
-            max_message_size,
+            max_message_size: Some(max_message_size),
+            max_message_size_exceeded: false,
+            message_buffer: Vec::new(),
+            parser: Some(Parser::Line(LineParser::new(0))),
+        }
+    }
+
+    /// Create `Fragmentizer` without maximum message size.
+    ///
+    /// <div class="warning">
+    /// This is dangerous because it allows an attacker to allocate an excessive amount of memory
+    /// by sending a huge message.
+    /// </div>
+    pub fn without_max_message_size() -> Self {
+        Self {
+            unparsed_buffer: VecDeque::new(),
+            max_message_size: None,
             max_message_size_exceeded: false,
             message_buffer: Vec::new(),
             parser: Some(Parser::Line(LineParser::new(0))),
@@ -291,10 +295,9 @@ impl Fragmentizer {
         // This will remove the parsed bytes even if we don't add them to the message buffer
         let parsed_bytes = self.unparsed_buffer.drain(..parsed_byte_count);
         // How many bytes can we add to the message buffer?
-        let remaining_size = match self.max_message_size {
-            MaxMessageSize::Unlimited => None,
-            MaxMessageSize::Limited(size) => Some(size as usize - self.message_buffer.len()),
-        };
+        let remaining_size = self
+            .max_message_size
+            .map(|size| size as usize - self.message_buffer.len());
 
         // Add bytes to the message buffer
         match remaining_size {
@@ -560,7 +563,6 @@ mod tests {
 
     use super::{
         parse_tag, FragmentInfo, Fragmentizer, LineEnding, LineParser, LiteralAnnouncement,
-        MaxMessageSize,
     };
     use crate::{
         decode::ResponseDecodeError, fragmentizer::DecodeMessageError, CommandCodec, ResponseCodec,
@@ -568,7 +570,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_nothing() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
 
         let fragment_info = fragmentizer.progress();
 
@@ -586,7 +588,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_single_message() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         fragmentizer.enqueue_bytes(b"* OK ...\r\n");
 
         let fragment_info = fragmentizer.progress().unwrap();
@@ -612,7 +614,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_multiple_messages() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         fragmentizer.enqueue_bytes(b"A1 OK ...\r\n");
         fragmentizer.enqueue_bytes(b"A2 BAD ...\r\n");
 
@@ -656,7 +658,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_multiple_messages_with_lf() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         fragmentizer.enqueue_bytes(b"A1 NOOP\n");
         fragmentizer.enqueue_bytes(b"A2 LOGIN {5}\n");
         fragmentizer.enqueue_bytes(b"ABCDE");
@@ -725,7 +727,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_message_with_multiple_literals() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         fragmentizer.enqueue_bytes(b"A1 LOGIN {5}\r\n");
         fragmentizer.enqueue_bytes(b"ABCDE");
         fragmentizer.enqueue_bytes(b" {5}\r\n");
@@ -804,7 +806,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_message_and_skip_after_literal_announcement() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         fragmentizer.enqueue_bytes(b"A1 LOGIN {5}\r\n");
         fragmentizer.enqueue_bytes(b"A2 NOOP\r\n");
 
@@ -853,7 +855,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_message_byte_by_byte() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Unlimited);
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
         let mut bytes = VecDeque::new();
         bytes.extend(b"A1 LOGIN {5}\r\n");
         bytes.extend(b"ABCDE");
@@ -965,7 +967,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_multiple_messages_longer_than_max_size() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Limited(17));
+        let mut fragmentizer = Fragmentizer::new(17);
         fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
         fragmentizer.enqueue_bytes(b"A2 LOGIN ABCDE EFGIJ\r\n");
         fragmentizer.enqueue_bytes(b"A3 LOGIN {5}\r\n");
@@ -1084,7 +1086,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_progress_messages_with_zero_max_size() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Limited(0));
+        let mut fragmentizer = Fragmentizer::new(0);
         fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
         fragmentizer.enqueue_bytes(b"A2 LOGIN ABCDE EFGIJ\r\n");
         fragmentizer.enqueue_bytes(b"A3 LOGIN {5}\r\n");
@@ -1177,7 +1179,7 @@ mod tests {
 
     #[test]
     fn fragmentizer_decode_message() {
-        let mut fragmentizer = Fragmentizer::new(MaxMessageSize::Limited(10));
+        let mut fragmentizer = Fragmentizer::new(10);
         fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
         fragmentizer.enqueue_bytes(b"A2 LOGIN ABCDE EFGIJ\r\n");
 

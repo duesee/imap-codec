@@ -14,7 +14,6 @@ exclude = [
 
 [features]
 default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"]
-arbitrary = ["dep:arbitrary"]
 # Expose internal parsers for fuzzing
 fuzz = []
 
@@ -59,7 +58,6 @@ quirk_id_empty_to_nil = []
 quirk_trailing_space = []
 
 [dependencies]
-arbitrary = { version = "1.3.2", optional = true, default-features = false, features = ["derive"] }
 abnf-core = "0.6.0"
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
