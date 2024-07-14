@@ -197,13 +197,13 @@ impl TokioEncoder<&Response<'_>> for ImapServerCodec {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
+    #[cfg(feature = "quirk_crlf_relaxed")]
+    use imap_codec::imap_types::core::Tag;
     use imap_codec::imap_types::{
         command::{Command, CommandBody},
         core::{AString, AtomExt, IString, Literal},
         secret::Secret,
     };
-    #[cfg(feature = "quirk_crlf_relaxed")]
-    use imap_types::core::Tag;
     use tokio_util::codec::Decoder;
 
     use super::*;
