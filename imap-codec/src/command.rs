@@ -29,8 +29,6 @@ use crate::extensions::binary::literal8;
 use crate::extensions::id::id;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{getmetadata, setmetadata};
-#[cfg(feature = "ext_uidplus")]
-use crate::extensions::uidplus::uid_expunge;
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::{sort::sort, thread::thread};
 use crate::{
@@ -44,6 +42,7 @@ use crate::{
         idle::idle,
         quota::{getquota, getquotaroot, setquota},
         r#move::r#move,
+        uidplus::uid_expunge,
     },
     fetch::fetch_att,
     flag::{flag, flag_list},
@@ -418,7 +417,6 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         value(CommandBody::Check, tag_no_case(b"CHECK")),
         value(CommandBody::Close, tag_no_case(b"CLOSE")),
         value(CommandBody::Expunge, tag_no_case(b"EXPUNGE")),
-        #[cfg(feature = "ext_uidplus")]
         uid_expunge,
         copy,
         fetch,

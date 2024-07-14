@@ -1006,7 +1006,6 @@ pub enum CommandBody<'a> {
     ///
     /// Alternatively, the client may fall back to using just the EXPUNGE
     /// command, risking the unintended removal of some messages.
-    #[cfg(feature = "ext_uidplus")]
     ExpungeUid { sequence_set: SequenceSet },
 
     /// ### 6.4.4.  SEARCH Command
@@ -1815,7 +1814,6 @@ impl<'a> CommandBody<'a> {
             Self::Check => "CHECK",
             Self::Close => "CLOSE",
             Self::Expunge => "EXPUNGE",
-            #[cfg(feature = "ext_uidplus")]
             Self::ExpungeUid { .. } => "EXPUNGE",
             Self::Search { .. } => "SEARCH",
             Self::Fetch { .. } => "FETCH",

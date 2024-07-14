@@ -109,6 +109,7 @@
 //! | The IMAP ENABLE Extension ([RFC 5161])                                                                  |
 //! | IMAP4 IDLE command ([RFC 2177])                                                                         |
 //! | IMAP QUOTA Extension ([RFC 9208])                                                                       |
+//! | IMAP4 UIDPLUS extension ([RFC 2359], [RFC 4315])                                                        |
 //!
 //! # Features
 //!
@@ -124,7 +125,6 @@
 //! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
 //! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
 //! | ext_sort_thread       | Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256], [RFC 5957])                                       | Unfinished |
-//! | ext_uidplus           | IMAP4 UIDPLUS extension ([RFC 2359], [RFC 4315])                                                                             | Unfinished |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
