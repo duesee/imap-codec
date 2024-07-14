@@ -124,35 +124,31 @@ alice password
 Also, you can use Rust literals and resort to `unvalidated` constructors when you are certain that your input is correct:
 
 ```rust
-// Note: "unvalidated" feature must be activated.
-#[cfg(feature = "unvalidated")]
-{
-  use imap_types::{
-      command::{Command, CommandBody},
-      core::{AString, Atom, Tag},
-      secret::Secret,
-  };
+use imap_types::{
+    command::{Command, CommandBody},
+    core::{AString, Atom, Tag},
+    secret::Secret,
+};
 
-  // This could be provided by the email application.
-  struct TagGenerator;
+// This could be provided by the email application.
+struct TagGenerator;
 
-  impl TagGenerator {
-      fn random() -> Tag<'static> {
-          // Make this random :-)
-          Tag::unvalidated("A1")
-      }
-  }
-
-  let tag = TagGenerator::random();
-
-  let cmd = Command {
-      tag,
-      body: CommandBody::Login {
-          username: AString::from(Atom::unvalidated("alice")),
-          password: Secret::new(AString::from(Atom::unvalidated("password"))),
-      },
-  };
+impl TagGenerator {
+    fn random() -> Tag<'static> {
+        // Make this random :-)
+        Tag::unvalidated("A1")
+    }
 }
+
+let tag = TagGenerator::random();
+
+let cmd = Command {
+    tag,
+    body: CommandBody::Login {
+        username: AString::from(Atom::unvalidated("alice")),
+        password: Secret::new(AString::from(Atom::unvalidated("password"))),
+    },
+};
 ```
 
 In this case, imap-codec won't stand in your way.

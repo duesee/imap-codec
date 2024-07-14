@@ -145,8 +145,6 @@ impl<'a> Atom<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -297,8 +295,6 @@ impl<'a> AtomExt<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -601,8 +597,6 @@ impl<'a> Literal<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
@@ -631,8 +625,6 @@ impl<'a> Literal<'a> {
     /// <div class="warning">
     /// This extension must only be used when the server advertised support for it sending the LITERAL+ or LITERAL- capability.
     /// </div>
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated_non_sync<D>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
@@ -786,8 +778,6 @@ impl<'a> Quoted<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -1078,8 +1068,6 @@ impl<'a> Tag<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -1214,8 +1202,6 @@ impl<'a> Text<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -1321,8 +1307,6 @@ impl QuotedChar {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: char) -> Self {
         #[cfg(debug_assertions)]
         Self::validate(inner).unwrap();
@@ -1502,8 +1486,6 @@ impl<T, const N: usize> VecN<T, N> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(inner: Vec<T>) -> Self {
         #[cfg(debug_assertions)]
         Self::validate(&inner).unwrap();

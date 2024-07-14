@@ -47,8 +47,6 @@ impl<'a> ListCharString<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<C>(inner: C) -> Self
     where
         C: Into<Cow<'a, str>>,
@@ -222,8 +220,6 @@ impl<'a> MailboxOther<'a> {
     /// Do not call this constructor with untrusted data.
     ///
     /// Note: This method will `panic!` on wrong input in debug builds.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated(value: AString<'a>) -> Self {
         #[cfg(debug_assertions)]
         Self::validate(&value).unwrap();

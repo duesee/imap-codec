@@ -135,7 +135,6 @@
 //! |------------------|---------------------------------------------------------------|--------------------|
 //! | arbitrary        | Derive `Arbitrary` implementations                            | No                 |
 //! | serde            | Derive `serde`s `Serialize` and `Deserialize` implementations | No                 |
-//! | unvalidated      | Unlock `unvalidated` constructors                             | No                 |
 //!
 //! When using `arbitrary`, all types defined in imap-types implement the [Arbitrary] trait to ease testing.
 //! This is used, for example, to generate instances during fuzz-testing.
