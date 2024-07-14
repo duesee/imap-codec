@@ -11,11 +11,8 @@ use imap_types::{
 macro_rules! test_conversions {
     // Unvalidated
     (y, $try_from:tt, $from:tt, $as_ref:tt, $object:ty, $sample:expr) => {{
-        #[cfg(feature = "unvalidated")]
-        {
-            let object = <$object>::unvalidated($sample);
-            let _ = object.as_ref();
-        }
+        let object = <$object>::unvalidated($sample);
+        let _ = object.as_ref();
 
         test_conversions!($try_from, $from, $as_ref, $object, $sample);
     }};

@@ -13,7 +13,7 @@ exclude = [
 ]
 
 [features]
-arbitrary = ["dep:arbitrary", "unvalidated", "chrono/arbitrary", "chrono/std"]
+arbitrary = ["dep:arbitrary", "chrono/arbitrary", "chrono/std"]
 arbitrary_simplified = ["arbitrary"]
 serde = ["dep:serde", "chrono/serde"]
 
@@ -29,9 +29,6 @@ ext_mailbox_referrals = []
 ext_metadata = ["ext_binary"]
 ext_sort_thread = []
 ext_uidplus = []
-
-# Unlock `unvalidated` constructors.
-unvalidated = []
 
 [dependencies]
 arbitrary = { version = "1.3.2", optional = true, default-features = false, features = ["derive"] }

@@ -964,8 +964,6 @@ impl<'a> CodeOther<'a> {
     /// The caller must ensure that `data` is valid. Failing to do so may create invalid/unparsable
     /// IMAP messages, or even produce unintended protocol flows. Do not call this constructor with
     /// untrusted data.
-    #[cfg(feature = "unvalidated")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unvalidated")))]
     pub fn unvalidated<D>(data: D) -> Self
     where
         D: Into<Cow<'a, [u8]>>,
