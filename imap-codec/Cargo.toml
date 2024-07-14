@@ -13,7 +13,7 @@ exclude = [
 ]
 
 [features]
-default = ["quirk_rectify_numbers", "quirk_missing_text", "quirk_trailing_space"]
+default = ["quirk"]
 # Expose internal parsers for fuzzing
 fuzz = []
 
@@ -37,23 +37,29 @@ ext_uidplus = ["imap-types/ext_uidplus"]
 # IMAP quirks
 #
 # These features bypass interoperability issues to allow safe processing of *almost* correct message.
-# 
+quirk = [
+    #"quirk_crlf_relaxed",
+    #"quirk_id_empty_to_nil",
+    "quirk_missing_text",
+    "quirk_rectify_numbers",
+    "quirk_trailing_space"
+]
+
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
-# 
-# Rectify (invalid) numbers.
-# Observed in ...
-# * Dovecot (`-1`)
-quirk_rectify_numbers = []
-# Add missing `text` by adding [" "] "<missing text>".
-# Observed in ...
-# * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
-quirk_missing_text = []
 # Encode `A ID ()` as `A ID NIL
 # Observed in ...
 # * GMX
 # * Microsoft Exchange
 quirk_id_empty_to_nil = []
+# Add missing `text` by adding [" "] "<missing text>".
+# Observed in ...
+# * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
+quirk_missing_text = []
+# Rectify (invalid) numbers.
+# Observed in ...
+# * Dovecot (`-1`)
+quirk_rectify_numbers = []
 # Accept a trailing space in `STATUS` data response.
 # Observed in ...
 # * Microsoft Exchange `* STATUS INBOX (MESSAGES 100 UNSEEN 0) \n\n`
