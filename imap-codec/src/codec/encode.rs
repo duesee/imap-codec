@@ -427,7 +427,6 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
             CommandBody::Check => ctx.write_all(b"CHECK"),
             CommandBody::Close => ctx.write_all(b"CLOSE"),
             CommandBody::Expunge => ctx.write_all(b"EXPUNGE"),
-            #[cfg(feature = "ext_uidplus")]
             CommandBody::ExpungeUid { sequence_set } => {
                 ctx.write_all(b"UID EXPUNGE ")?;
                 sequence_set.encode_ctx(ctx)
@@ -1258,14 +1257,12 @@ impl<'a> EncodeIntoContext for Code<'a> {
             }
             #[cfg(feature = "ext_binary")]
             Code::UnknownCte => ctx.write_all(b"UNKNOWN-CTE"),
-            #[cfg(feature = "ext_uidplus")]
             Code::AppendUid { uid_validity, uid } => {
                 ctx.write_all(b"APPENDUID ")?;
                 uid_validity.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 uid.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_uidplus")]
             Code::CopyUid {
                 uid_validity,
                 source,
@@ -1278,7 +1275,6 @@ impl<'a> EncodeIntoContext for Code<'a> {
                 ctx.write_all(b" ")?;
                 destination.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_uidplus")]
             Code::UidNotSticky => ctx.write_all(b"UIDNOTSTICKY"),
             Code::Other(unknown) => unknown.encode_ctx(ctx),
         }

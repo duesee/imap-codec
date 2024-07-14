@@ -21,8 +21,6 @@ use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 use crate::extensions::sort::SortAlgorithm;
 #[cfg(feature = "ext_sort_thread")]
 use crate::extensions::thread::{Thread, ThreadingAlgorithm};
-#[cfg(feature = "ext_uidplus")]
-use crate::extensions::uidplus::UidSet;
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
@@ -31,6 +29,7 @@ use crate::{
         compress::CompressionAlgorithm,
         enable::CapabilityEnable,
         quota::{QuotaGet, Resource},
+        uidplus::UidSet,
     },
     fetch::MessageDataItem,
     flag::{Flag, FlagNameAttribute, FlagPerm},
@@ -862,7 +861,6 @@ pub enum Code<'a> {
     /// Server does not know how to decode the section's CTE.
     UnknownCte,
 
-    #[cfg(feature = "ext_uidplus")]
     /// Message has been appended to destination mailbox with that UID
     AppendUid {
         /// UIDVALIDITY of destination mailbox
@@ -871,7 +869,6 @@ pub enum Code<'a> {
         uid: NonZeroU32,
     },
 
-    #[cfg(feature = "ext_uidplus")]
     /// Message(s) have been copied to destination mailbox with stated UID(s)
     CopyUid {
         /// UIDVALIDITY of destination mailbox
@@ -882,7 +879,6 @@ pub enum Code<'a> {
         destination: UidSet,
     },
 
-    #[cfg(feature = "ext_uidplus")]
     UidNotSticky,
 
     /// Additional response codes defined by particular client or server
@@ -1031,7 +1027,6 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_binary")]
     /// IMAP4 Binary Content Extension
     Binary,
-    #[cfg(feature = "ext_uidplus")]
     /// UIDPLUS extension (RFC 4351)
     UidPlus,
     /// Other/Unknown
@@ -1075,7 +1070,6 @@ impl<'a> Display for Capability<'a> {
             Self::MetadataServer => write!(f, "METADATA-SERVER"),
             #[cfg(feature = "ext_binary")]
             Self::Binary => write!(f, "BINARY"),
-            #[cfg(feature = "ext_uidplus")]
             Self::UidPlus => write!(f, "UIDPLUS"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
@@ -1142,7 +1136,6 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             #[cfg(feature = "ext_binary")]
             "binary" => Self::Binary,
             "unselect" => Self::Unselect,
-            #[cfg(feature = "ext_uidplus")]
             "uidplus" => Self::UidPlus,
             _ => {
                 // TODO(efficiency)
