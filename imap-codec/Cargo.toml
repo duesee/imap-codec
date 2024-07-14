@@ -24,13 +24,13 @@ serde = ["dep:serde", "imap-types/serde"]
 starttls = ["imap-types/starttls"]
 
 # IMAP Extensions
+ext_binary = ["imap-types/ext_binary"]
 ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
+ext_id = ["imap-types/ext_id"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
-ext_id = ["imap-types/ext_id"]
-ext_sort_thread = ["imap-types/ext_sort_thread"]
-ext_binary = ["imap-types/ext_binary"]
 ext_metadata = ["ext_binary", "imap-types/ext_metadata"]
+ext_sort_thread = ["imap-types/ext_sort_thread"]
 ext_uidplus = ["imap-types/ext_uidplus"]
 # </Forward to imap-types>
 

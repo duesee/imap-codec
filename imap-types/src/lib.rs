@@ -116,15 +116,15 @@
 //!
 //! | Feature               | Description                                                                                                                  | Status     |
 //! |-----------------------|------------------------------------------------------------------------------------------------------------------------------|------------|
-//! | ext_id                | IMAP4 ID extension ([RFC 2971])                                                                                              | Unfinished |
-//! | ext_sort_thread       | Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256], [RFC 5957])                                       | Unfinished |
+//! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
+//! | ext_binary            | IMAP4 Binary Content Extension ([RFC 3516])                                                                                  | Unfinished |
 //! | ext_condstore_qresync | IMAP Extensions: Quick Flag Changes Resynchronization (CONDSTORE) and Quick Mailbox Resynchronization (QRESYNC) ([RFC 7162]) | Unfinished |
+//! | ext_id                | IMAP4 ID extension ([RFC 2971])                                                                                              | Unfinished |
 //! | ext_login_referrals   | IMAP4 Login Referrals ([RFC 2221])                                                                                           | Unfinished |
 //! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
-//! | ext_binary            | IMAP4 Binary Content Extension ([RFC 3516])                                                                                  | Unfinished |
 //! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
+//! | ext_sort_thread       | Internet Message Access Protocol - SORT and THREAD Extensions ([RFC 5256], [RFC 5957])                                       | Unfinished |
 //! | ext_uidplus           | IMAP4 UIDPLUS extension ([RFC 2359], [RFC 4315])                                                                             | Unfinished |
-//! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
