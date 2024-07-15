@@ -40,7 +40,7 @@ bounded-static = { version = "0.8.0", default-features = false, features = ["all
 bounded-static-derive = { version = "0.8.0", default-features = false }
 chrono = { version = "0.4", default-features = false }
 serde = { version = "1.0.204", features = ["derive"], optional = true }
-thiserror = "1.0.61"
+thiserror = "1.0.62"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
