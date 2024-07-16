@@ -11,11 +11,9 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ext_binary")]
-use crate::core::NString8;
 use crate::{
     body::BodyStructure,
-    core::{AString, NString, Vec1},
+    core::{AString, NString, NString8, Vec1},
     datetime::DateTime,
     envelope::Envelope,
     flag::FlagFetch,
@@ -228,15 +226,15 @@ pub enum MessageDataItemName<'a> {
     /// ```
     Uid,
 
-    #[cfg(feature = "ext_binary")]
     Binary {
         section: Vec<NonZeroU32>,
         partial: Option<(u32, NonZeroU32)>,
         peek: bool,
     },
 
-    #[cfg(feature = "ext_binary")]
-    BinarySize { section: Vec<NonZeroU32> },
+    BinarySize {
+        section: Vec<NonZeroU32>,
+    },
 }
 
 /// Message data item.
@@ -364,14 +362,15 @@ pub enum MessageDataItem<'a> {
     /// ```
     Uid(NonZeroU32),
 
-    #[cfg(feature = "ext_binary")]
     Binary {
         section: Vec<NonZeroU32>,
         value: NString8<'a>,
     },
 
-    #[cfg(feature = "ext_binary")]
-    BinarySize { section: Vec<NonZeroU32>, size: u32 },
+    BinarySize {
+        section: Vec<NonZeroU32>,
+        size: u32,
+    },
 }
 
 /// A part specifier is either a part number or one of the following:

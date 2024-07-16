@@ -21,12 +21,11 @@ serde = ["dep:serde", "chrono/serde"]
 starttls = []
 
 # IMAP Extensions
-ext_binary = []
 ext_condstore_qresync = []
 ext_id = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
-ext_metadata = ["ext_binary"]
+ext_metadata = []
 ext_sort_thread = []
 
 [dependencies]

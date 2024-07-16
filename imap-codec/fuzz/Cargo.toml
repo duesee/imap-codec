@@ -19,12 +19,11 @@ arbitrary_simplified = ["imap-types/arbitrary_simplified"]
 starttls = ["imap-codec/starttls"]
 
 # IMAP Extensions
-ext_binary = ["imap-codec/ext_binary"]
 ext_condstore_qresync = ["imap-codec/ext_condstore_qresync"]
 ext_id = ["imap-codec/ext_id"]
 ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
-ext_metadata = ["ext_binary", "imap-codec/ext_metadata"]
+ext_metadata = ["imap-codec/ext_metadata"]
 ext_sort_thread = ["imap-codec/ext_sort_thread"]
 
 # IMAP quirks
@@ -34,7 +33,6 @@ quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
 # Use (most) IMAP extensions.
 ext = [
     "starttls",
-    "ext_binary",
     "ext_condstore_qresync",
     "ext_id",
     #"ext_login_referrals",

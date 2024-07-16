@@ -67,9 +67,10 @@ macro_rules! impl_try_from {
 
 pub(crate) use impl_try_from;
 
-use crate::error::{ValidationError, ValidationErrorKind};
-#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
-use crate::extensions::binary::Literal8;
+use crate::{
+    error::{ValidationError, ValidationErrorKind},
+    extensions::binary::Literal8,
+};
 
 /// A string subset to model IMAP's `atom`s.
 ///
@@ -1429,7 +1430,6 @@ impl<'a> AsRef<str> for Charset<'a> {
     }
 }
 
-#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
