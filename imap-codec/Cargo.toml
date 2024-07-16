@@ -44,7 +44,7 @@ quirk = [
 
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
-# Encode `A ID ()` as `A ID NIL
+# Encode `A ID ()` as `A ID NIL`
 # Observed in ...
 # * GMX
 # * Microsoft Exchange
