@@ -14,6 +14,20 @@ crate-type = ["cdylib"]
 doc = false
 
 [dependencies]
-imap-codec = { version = "2.0.0-alpha.2", path = "../../imap-codec", features = ["serde"] }
 pyo3 = "0.22.1"
 serde-pyobject = "0.4.0"
+
+[dependencies.imap-codec]
+version = "2.0.0-alpha.2"
+path = "../../imap-codec"
+features = [
+    "serde",
+    "quirk_crlf_relaxed",
+    "starttls",
+    #"ext_condstore_qresync",
+    "ext_id",
+    #"ext_login_referrals",
+    #"ext_mailbox_referrals",
+    "ext_metadata",
+    "ext_sort_thread",
+]
