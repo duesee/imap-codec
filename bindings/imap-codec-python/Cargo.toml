@@ -29,5 +29,4 @@ features = [
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
     "ext_metadata",
-    "ext_sort_thread",
 ]

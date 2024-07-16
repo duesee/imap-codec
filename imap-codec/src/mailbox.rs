@@ -16,12 +16,13 @@ use nom::{
 
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::metadata_resp;
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::thread::thread_data;
 use crate::{
     core::{astring, nil, number, nz_number, quoted_char, string},
     decode::IMAPResult,
-    extensions::quota::{quota_response, quotaroot_response},
+    extensions::{
+        quota::{quota_response, quotaroot_response},
+        thread::thread_data,
+    },
     flag::{flag_list, mbx_list_flags},
     status::status_att_list,
 };
@@ -89,12 +90,10 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
             tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
-        #[cfg(feature = "ext_sort_thread")]
         map(
             preceded(tag_no_case(b"SORT"), many0(preceded(sp, nz_number))),
             Data::Sort,
         ),
-        #[cfg(feature = "ext_sort_thread")]
         thread_data,
         map(
             tuple((

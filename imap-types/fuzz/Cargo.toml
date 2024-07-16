@@ -20,7 +20,6 @@ ext_id = ["imap-types/ext_id"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_metadata = ["imap-types/ext_metadata"]
-ext_sort_thread = ["imap-types/ext_sort_thread"]
 # </Forward to imap-types>
 
 # Use (most) IMAP extensions.
@@ -31,7 +30,6 @@ ext = [
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
     "ext_metadata",
-    "ext_sort_thread",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []
