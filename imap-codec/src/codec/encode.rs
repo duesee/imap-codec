@@ -49,8 +49,6 @@ use std::{borrow::Borrow, collections::VecDeque, io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
-#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
-use imap_types::core::NString8;
 use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     body::{
@@ -59,7 +57,7 @@ use imap_types::{
     },
     command::{Command, CommandBody},
     core::{
-        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
+        AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, NString8, Quoted,
         QuotedChar, Tag, Text,
     },
     datetime::{DateTime, NaiveDate},
@@ -1015,7 +1013,6 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
             Self::Rfc822Size => ctx.write_all(b"RFC822.SIZE"),
             Self::Rfc822Text => ctx.write_all(b"RFC822.TEXT"),
             Self::Uid => ctx.write_all(b"UID"),
-            #[cfg(feature = "ext_binary")]
             MessageDataItemName::Binary {
                 section,
                 partial,
@@ -1040,7 +1037,6 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
 
                 Ok(())
             }
-            #[cfg(feature = "ext_binary")]
             MessageDataItemName::BinarySize { section } => {
                 ctx.write_all(b"BINARY.SIZE")?;
 
@@ -1255,7 +1251,6 @@ impl<'a> EncodeIntoContext for Code<'a> {
                 ctx.write_all(b"METADATA ")?;
                 code.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_binary")]
             Code::UnknownCte => ctx.write_all(b"UNKNOWN-CTE"),
             Code::AppendUid { uid_validity, uid } => {
                 ctx.write_all(b"APPENDUID ")?;
@@ -1565,14 +1560,12 @@ impl<'a> EncodeIntoContext for MessageDataItem<'a> {
                 nstring.encode_ctx(ctx)
             }
             Self::Uid(uid) => write!(ctx, "UID {uid}"),
-            #[cfg(feature = "ext_binary")]
             Self::Binary { section, value } => {
                 ctx.write_all(b"BINARY[")?;
                 join_serializable(section, b".", ctx)?;
                 ctx.write_all(b"] ")?;
                 value.encode_ctx(ctx)
             }
-            #[cfg(feature = "ext_binary")]
             Self::BinarySize { section, size } => {
                 ctx.write_all(b"BINARY.SIZE[")?;
                 join_serializable(section, b".", ctx)?;
@@ -1592,7 +1585,6 @@ impl<'a> EncodeIntoContext for NString<'a> {
     }
 }
 
-#[cfg(any(feature = "ext_binary", feature = "ext_metadata"))]
 impl<'a> EncodeIntoContext for NString8<'a> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {

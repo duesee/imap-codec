@@ -1,6 +1,5 @@
 //! IMAP extensions.
 
-#[cfg(feature = "ext_binary")]
 pub mod binary;
 pub mod compress;
 pub mod enable;

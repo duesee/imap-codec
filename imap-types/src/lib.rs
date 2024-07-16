@@ -110,6 +110,7 @@
 //! | IMAP4 IDLE command ([RFC 2177])                                                                         |
 //! | IMAP QUOTA Extension ([RFC 9208])                                                                       |
 //! | IMAP4 UIDPLUS extension ([RFC 2359], [RFC 4315])                                                        |
+//! | IMAP4 Binary Content Extension ([RFC 3516])                                                             |
 //!
 //! # Features
 //!
@@ -118,7 +119,6 @@
 //! | Feature               | Description                                                                                                                  | Status     |
 //! |-----------------------|------------------------------------------------------------------------------------------------------------------------------|------------|
 //! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
-//! | ext_binary            | IMAP4 Binary Content Extension ([RFC 3516])                                                                                  | Unfinished |
 //! | ext_condstore_qresync | IMAP Extensions: Quick Flag Changes Resynchronization (CONDSTORE) and Quick Mailbox Resynchronization (QRESYNC) ([RFC 7162]) | Unfinished |
 //! | ext_id                | IMAP4 ID extension ([RFC 2971])                                                                                              | Unfinished |
 //! | ext_login_referrals   | IMAP4 Login Referrals ([RFC 2221])                                                                                           | Unfinished |

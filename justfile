@@ -51,7 +51,6 @@ cargo_hack mode: install_cargo_hack
         ext_mailbox_referrals,\
         ext_id,\
         ext_sort_thread,\
-        ext_binary,\
         ext_metadata \
         --group-features \
         quirk_crlf_relaxed,\
@@ -74,7 +73,6 @@ cargo_hack mode: install_cargo_hack
         ext_mailbox_referrals,\
         ext_id,\
         ext_sort_thread,\
-        ext_binary,\
         ext_metadata\
         {{ mode }}
 	

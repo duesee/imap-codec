@@ -190,7 +190,6 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
             preceded(tag_no_case("METADATA "), metadata_code),
             Code::Metadata,
         ),
-        #[cfg(feature = "ext_binary")]
         value(Code::UnknownCte, tag_no_case(b"UNKNOWN-CTE")),
         resp_code_apnd,
         resp_code_copy,

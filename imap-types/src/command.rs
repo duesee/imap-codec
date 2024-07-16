@@ -12,8 +12,6 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ext_id")]
 use crate::core::{IString, NString};
-#[cfg(feature = "ext_binary")]
-use crate::extensions::binary::LiteralOrLiteral8;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
 #[cfg(feature = "ext_sort_thread")]
@@ -23,7 +21,10 @@ use crate::{
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
     core::{AString, Charset, Literal, Tag, Vec1},
     datetime::DateTime,
-    extensions::{compress::CompressionAlgorithm, enable::CapabilityEnable, quota::QuotaSet},
+    extensions::{
+        binary::LiteralOrLiteral8, compress::CompressionAlgorithm, enable::CapabilityEnable,
+        quota::QuotaSet,
+    },
     fetch::MacroOrMessageDataItemNames,
     flag::{Flag, StoreResponse, StoreType},
     mailbox::{ListMailbox, Mailbox},
@@ -900,10 +901,6 @@ pub enum CommandBody<'a> {
         flags: Vec<Flag<'a>>,
         /// Datetime.
         date: Option<DateTime>,
-        #[cfg(not(feature = "ext_binary"))]
-        /// Message to append.
-        message: Literal<'a>,
-        #[cfg(feature = "ext_binary")]
         /// Message to append.
         ///
         /// <div class="warning">
@@ -1715,9 +1712,6 @@ impl<'a> CommandBody<'a> {
             mailbox: mailbox.try_into().map_err(AppendError::Mailbox)?,
             flags,
             date,
-            #[cfg(not(feature = "ext_binary"))]
-            message: message.try_into().map_err(AppendError::Data)?,
-            #[cfg(feature = "ext_binary")]
             message: LiteralOrLiteral8::Literal(message.try_into().map_err(AppendError::Data)?),
         })
     }
@@ -1888,9 +1882,10 @@ mod tests {
     use super::*;
     use crate::{
         auth::AuthMechanism,
-        core::{AString, Charset, IString, Literal, Vec1},
+        core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
         datetime::DateTime,
         extensions::{
+            binary::Literal8,
             compress::CompressionAlgorithm,
             enable::{CapabilityEnable, Utf8Kind},
         },
@@ -1902,8 +1897,6 @@ mod tests {
         sequence::{SeqOrUid, Sequence, SequenceSet},
         status::StatusDataItemName,
     };
-    #[cfg(feature = "ext_binary")]
-    use crate::{core::LiteralMode, extensions::binary::Literal8};
 
     #[test]
     fn test_conversion_command_body() {
@@ -2176,14 +2169,10 @@ mod tests {
                     mailbox: Mailbox::Inbox,
                     flags: vec![],
                     date: None,
-                    #[cfg(not(feature = "ext_binary"))]
-                    message: Literal::try_from("").unwrap(),
-                    #[cfg(feature = "ext_binary")]
                     message: LiteralOrLiteral8::Literal(Literal::try_from("").unwrap()),
                 },
                 "APPEND",
             ),
-            #[cfg(feature = "ext_binary")]
             (
                 CommandBody::Append {
                     mailbox: Mailbox::Inbox,
