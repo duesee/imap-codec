@@ -99,10 +99,7 @@ impl<'a> Arbitrary<'a> for Thread {
 }
 
 #[cfg(all(feature = "arbitrary", not(feature = "arbitrary_simplified")))]
-fn arbitrary_thread_limited<'a>(
-    u: &mut Unstructured<'a>,
-    depth: usize,
-) -> arbitrary::Result<Thread> {
+fn arbitrary_thread_limited(u: &mut Unstructured, depth: usize) -> arbitrary::Result<Thread> {
     // We cheat a bit: Start from a leaf ...
     let mut current = arbitrary_thread_leaf(u)?;
 
