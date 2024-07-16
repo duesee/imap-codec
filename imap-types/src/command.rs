@@ -14,8 +14,6 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::{sort::SortCriterion, thread::ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
@@ -23,7 +21,7 @@ use crate::{
     datetime::DateTime,
     extensions::{
         binary::LiteralOrLiteral8, compress::CompressionAlgorithm, enable::CapabilityEnable,
-        quota::QuotaSet,
+        quota::QuotaSet, sort::SortCriterion, thread::ThreadingAlgorithm,
     },
     fetch::MacroOrMessageDataItemNames,
     flag::{Flag, StoreResponse, StoreType},
@@ -1066,7 +1064,6 @@ pub enum CommandBody<'a> {
         uid: bool,
     },
 
-    #[cfg(feature = "ext_sort_thread")]
     /// SORT command.
     ///
     /// The SORT command is a variant of SEARCH with sorting semantics for the results.
@@ -1093,7 +1090,6 @@ pub enum CommandBody<'a> {
         uid: bool,
     },
 
-    #[cfg(feature = "ext_sort_thread")]
     /// THREAD command.
     ///
     /// The THREAD command is a variant of SEARCH with threading semantics for the results.
@@ -1790,9 +1786,7 @@ impl<'a> CommandBody<'a> {
             Self::Authenticate { .. } => "AUTHENTICATE",
             Self::Login { .. } => "LOGIN",
             Self::Select { .. } => "SELECT",
-            #[cfg(feature = "ext_sort_thread")]
             Self::Sort { .. } => "SORT",
-            #[cfg(feature = "ext_sort_thread")]
             Self::Thread { .. } => "THREAD",
             Self::Unselect => "UNSELECT",
             Self::Examine { .. } => "EXAMINE",

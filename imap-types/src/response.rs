@@ -17,10 +17,6 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::sort::SortAlgorithm;
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::thread::{Thread, ThreadingAlgorithm};
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
@@ -29,6 +25,8 @@ use crate::{
         compress::CompressionAlgorithm,
         enable::CapabilityEnable,
         quota::{QuotaGet, Resource},
+        sort::SortAlgorithm,
+        thread::{Thread, ThreadingAlgorithm},
         uidplus::UidSet,
     },
     fetch::MessageDataItem,
@@ -425,10 +423,8 @@ pub enum Data<'a> {
     /// delimited by a space.
     Search(Vec<NonZeroU32>),
 
-    #[cfg(feature = "ext_sort_thread")]
     Sort(Vec<NonZeroU32>),
 
-    #[cfg(feature = "ext_sort_thread")]
     Thread(Vec<Thread>),
 
     /// ### 7.2.6.  FLAGS Response
@@ -1013,9 +1009,7 @@ pub enum Capability<'a> {
     Id,
     /// See RFC 3691.
     Unselect,
-    #[cfg(feature = "ext_sort_thread")]
     Sort(Option<SortAlgorithm<'a>>),
-    #[cfg(feature = "ext_sort_thread")]
     Thread(ThreadingAlgorithm<'a>),
     #[cfg(feature = "ext_metadata")]
     /// Server supports (both) server annotations and mailbox annotations.
@@ -1056,11 +1050,8 @@ impl<'a> Display for Capability<'a> {
             #[cfg(feature = "ext_id")]
             Self::Id => write!(f, "ID"),
             Self::Unselect => write!(f, "UNSELECT"),
-            #[cfg(feature = "ext_sort_thread")]
             Self::Sort(None) => write!(f, "SORT"),
-            #[cfg(feature = "ext_sort_thread")]
             Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
-            #[cfg(feature = "ext_sort_thread")]
             Self::Thread(algorithm) => write!(f, "THREAD={}", algorithm),
             #[cfg(feature = "ext_metadata")]
             Self::Metadata => write!(f, "METADATA"),
@@ -1124,7 +1115,6 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "move" => Self::Move,
             #[cfg(feature = "ext_id")]
             "id" => Self::Id,
-            #[cfg(feature = "ext_sort_thread")]
             "sort" => Self::Sort(None),
             #[cfg(feature = "ext_metadata")]
             "metadata" => Self::Metadata,
@@ -1159,13 +1149,11 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
                                 }
                             }
                         }
-                        #[cfg(feature = "ext_sort_thread")]
                         "sort" => {
                             if let Ok(atom) = Atom::try_from(right) {
                                 return Self::Sort(Some(SortAlgorithm::from(atom)));
                             }
                         }
-                        #[cfg(feature = "ext_sort_thread")]
                         "thread" => {
                             if let Ok(atom) = Atom::try_from(right) {
                                 return Self::Thread(ThreadingAlgorithm::from(atom));

@@ -26,8 +26,6 @@ use nom::{
 use crate::extensions::id::id;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{getmetadata, setmetadata};
-#[cfg(feature = "ext_sort_thread")]
-use crate::extensions::{sort::sort, thread::thread};
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},
@@ -40,6 +38,8 @@ use crate::{
         idle::idle,
         quota::{getquota, getquotaroot, setquota},
         r#move::r#move,
+        sort::sort,
+        thread::thread,
         uidplus::uid_expunge,
     },
     fetch::fetch_att,
@@ -418,9 +418,7 @@ pub(crate) fn command_select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         store,
         uid,
         search,
-        #[cfg(feature = "ext_sort_thread")]
         sort,
-        #[cfg(feature = "ext_sort_thread")]
         thread,
         value(CommandBody::Unselect, tag_no_case(b"UNSELECT")),
         r#move,

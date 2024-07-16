@@ -1402,7 +1402,6 @@ fn test_trace_rfc2088() {
     })
 }
 
-#[cfg(feature = "ext_sort_thread")]
 #[test]
 fn test_trace_sort() {
     let trace = br#"C: A282 SORT (SUBJECT) UTF-8 SINCE 1-Feb-1994
@@ -1419,7 +1418,6 @@ S: A284 OK SORT completed
     test_lines_of_trace(trace);
 }
 
-#[cfg(feature = "ext_sort_thread")]
 #[test]
 fn test_trace_thread() {
     let trace = br#"C: A283 THREAD ORDEREDSUBJECT UTF-8 SINCE 5-MAR-2000

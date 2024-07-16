@@ -26,7 +26,6 @@ ext_id = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
 ext_metadata = []
-ext_sort_thread = []
 
 [dependencies]
 arbitrary = { version = "1.3.2", optional = true, default-features = false, features = ["derive"] }

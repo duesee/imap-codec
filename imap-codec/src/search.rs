@@ -1,15 +1,15 @@
 use abnf_core::streaming::sp;
-#[cfg(feature = "ext_sort_thread")]
-use imap_types::core::Charset;
-use imap_types::{command::CommandBody, core::Vec1, search::SearchKey};
-#[cfg(feature = "ext_sort_thread")]
-use nom::sequence::separated_pair;
+use imap_types::{
+    command::CommandBody,
+    core::{Charset, Vec1},
+    search::SearchKey,
+};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, map_opt, opt, value},
     multi::separated_list1,
-    sequence::{delimited, tuple},
+    sequence::{delimited, separated_pair, tuple},
 };
 
 use crate::{
@@ -220,8 +220,6 @@ fn search_key_limited<'a>(
     ))(input)
 }
 
-// Used by both, SORT and THREAD.
-#[cfg(feature = "ext_sort_thread")]
 /// ```abnf
 /// search-criteria = charset 1*(SP search-key)
 /// ```

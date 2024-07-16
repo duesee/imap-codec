@@ -446,7 +446,6 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 join_serializable(criteria.as_ref(), b" ", ctx)
             }
-            #[cfg(feature = "ext_sort_thread")]
             CommandBody::Sort {
                 sort_criteria,
                 charset,
@@ -464,7 +463,6 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
                 ctx.write_all(b" ")?;
                 join_serializable(search_criteria.as_ref(), b" ", ctx)
             }
-            #[cfg(feature = "ext_sort_thread")]
             CommandBody::Thread {
                 algorithm,
                 charset,
@@ -1348,7 +1346,6 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     join_serializable(seqs, b" ", ctx)?;
                 }
             }
-            #[cfg(feature = "ext_sort_thread")]
             Data::Sort(seqs) => {
                 if seqs.is_empty() {
                     ctx.write_all(b"* SORT")?;
@@ -1357,7 +1354,6 @@ impl<'a> EncodeIntoContext for Data<'a> {
                     join_serializable(seqs, b" ", ctx)?;
                 }
             }
-            #[cfg(feature = "ext_sort_thread")]
             Data::Thread(threads) => {
                 if threads.is_empty() {
                     ctx.write_all(b"* THREAD")?;
