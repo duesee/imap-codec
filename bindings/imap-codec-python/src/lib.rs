@@ -47,10 +47,10 @@ impl PyEncoded {
     }
 }
 
-/// Wrapper for `GreetingCodec`
+/// Python class for using `GreetingCodec`
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "GreetingCodec")]
-struct PyGreetingCodec(GreetingCodec);
+struct PyGreetingCodec;
 
 #[pymethods]
 impl PyGreetingCodec {
@@ -80,10 +80,10 @@ impl PyGreetingCodec {
     }
 }
 
-/// Wrapper for `CommandCodec`
+/// Python class for using `CommandCodec`
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "CommandCodec")]
-struct PyCommandCodec(CommandCodec);
+struct PyCommandCodec;
 
 #[pymethods]
 impl PyCommandCodec {
@@ -119,10 +119,10 @@ impl PyCommandCodec {
     }
 }
 
-/// Wrapper for `AuthenticateDataCodec`
+/// Python class for using `AuthenticateDataCodec`
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "AuthenticateDataCodec")]
-struct PyAuthenticateDataCodec(AuthenticateDataCodec);
+struct PyAuthenticateDataCodec;
 
 #[pymethods]
 impl PyAuthenticateDataCodec {
@@ -151,10 +151,10 @@ impl PyAuthenticateDataCodec {
     }
 }
 
-/// Wrapper for `ResponseCodec`
+/// Python class for using `ResponseCodec`
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "ResponseCodec")]
-struct PyResponseCodec(ResponseCodec);
+struct PyResponseCodec;
 
 #[pymethods]
 impl PyResponseCodec {
@@ -188,10 +188,10 @@ impl PyResponseCodec {
     }
 }
 
-/// Wrapper for `IdleDoneCodec`
+/// Python class for using `IdleDoneCodec`
 #[derive(Debug, Clone, PartialEq)]
 #[pyclass(name = "IdleDoneCodec")]
-struct PyIdleDoneCodec(IdleDoneCodec);
+struct PyIdleDoneCodec;
 
 #[pymethods]
 impl PyIdleDoneCodec {
