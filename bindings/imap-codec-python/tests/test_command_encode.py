@@ -1,6 +1,6 @@
 import unittest
 
-from imap_codec import CommandCodec, Encoded
+from imap_codec import CommandCodec, Encoded, LineFragment, LiteralFragment, LiteralMode
 
 
 class TestCommandEncode(unittest.TestCase):
@@ -9,7 +9,7 @@ class TestCommandEncode(unittest.TestCase):
         encoded = CommandCodec.encode(command)
         self.assertIsInstance(encoded, Encoded)
         fragments = list(encoded)
-        self.assertEqual(fragments, [{"Line": {"data": list(b"a NOOP\r\n")}}])
+        self.assertEqual(fragments, [LineFragment(b"a NOOP\r\n")])
 
     def test_simple_command_dump(self):
         command = {"tag": "a", "body": "Noop"}
@@ -36,9 +36,9 @@ class TestCommandEncode(unittest.TestCase):
         self.assertEqual(
             fragments,
             [
-                {"Line": {"data": list(b"A LOGIN alice {2}\r\n")}},
-                {"Literal": {"data": list(b"\xCA\xFE"), "mode": "Sync"}},
-                {"Line": {"data": list(b"\r\n")}},
+                LineFragment(b"A LOGIN alice {2}\r\n"),
+                LiteralFragment(b"\xCA\xFE", LiteralMode.Sync),
+                LineFragment(b"\r\n"),
             ],
         )
 
@@ -50,7 +50,5 @@ class TestCommandEncode(unittest.TestCase):
     def test_multi_fragment_command_dump_remaining(self):
         encoded = CommandCodec.encode(self._MULTI_FRAGMENT_COMMAND)
         self.assertIsInstance(encoded, Encoded)
-        self.assertEqual(
-            next(encoded), {"Line": {"data": list(b"A LOGIN alice {2}\r\n")}}
-        )
+        self.assertEqual(next(encoded), LineFragment(b"A LOGIN alice {2}\r\n"))
         self.assertEqual(encoded.dump(), b"\xCA\xFE\r\n")

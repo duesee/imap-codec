@@ -1,6 +1,6 @@
 import unittest
 
-from imap_codec import Encoded, IdleDoneCodec
+from imap_codec import Encoded, IdleDoneCodec, LineFragment
 
 
 class TestIdleDoneEncode(unittest.TestCase):
@@ -9,7 +9,7 @@ class TestIdleDoneEncode(unittest.TestCase):
         encoded = IdleDoneCodec.encode(idle_done)
         self.assertIsInstance(encoded, Encoded)
         fragments = list(encoded)
-        self.assertEqual(fragments, [{"Line": {"data": list(b"DONE\r\n")}}])
+        self.assertEqual(fragments, [LineFragment(b"DONE\r\n")])
 
     def test_idle_done_dump(self):
         idle_done = ()

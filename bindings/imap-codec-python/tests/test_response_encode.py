@@ -1,6 +1,12 @@
 import unittest
 
-from imap_codec import Encoded, ResponseCodec
+from imap_codec import (
+    Encoded,
+    LineFragment,
+    LiteralFragment,
+    LiteralMode,
+    ResponseCodec,
+)
 
 
 class TestResponseEncode(unittest.TestCase):
@@ -9,7 +15,7 @@ class TestResponseEncode(unittest.TestCase):
         encoded = ResponseCodec.encode(response)
         self.assertIsInstance(encoded, Encoded)
         fragments = list(encoded)
-        self.assertEqual(fragments, [{"Line": {"data": list(b"* SEARCH 1\r\n")}}])
+        self.assertEqual(fragments, [LineFragment(b"* SEARCH 1\r\n")])
 
     def test_simple_response_dump(self):
         response = {"Data": {"Search": [1]}}
@@ -46,9 +52,9 @@ class TestResponseEncode(unittest.TestCase):
         self.assertEqual(
             fragments,
             [
-                {"Line": {"data": list(b"* 12345 FETCH (BODY[] {5+}\r\n")}},
-                {"Literal": {"data": list(b"ABCDE"), "mode": "NonSync"}},
-                {"Line": {"data": list(b")\r\n")}},
+                LineFragment(b"* 12345 FETCH (BODY[] {5+}\r\n"),
+                LiteralFragment(b"ABCDE", LiteralMode.NonSync),
+                LineFragment(b")\r\n"),
             ],
         )
 
@@ -63,9 +69,7 @@ class TestResponseEncode(unittest.TestCase):
     def test_multi_fragment_response_dump_remaining(self):
         encoded = ResponseCodec.encode(self._MULTI_FRAGMENT_RESPONSE)
         self.assertIsInstance(encoded, Encoded)
-        self.assertEqual(
-            next(encoded), {"Line": {"data": list(b"* 12345 FETCH (BODY[] {5+}\r\n")}}
-        )
+        self.assertEqual(next(encoded), LineFragment(b"* 12345 FETCH (BODY[] {5+}\r\n"))
         self.assertEqual(
             encoded.dump(),
             b"ABCDE)\r\n",

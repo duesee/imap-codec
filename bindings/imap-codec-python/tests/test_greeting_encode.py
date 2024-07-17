@@ -1,6 +1,6 @@
 import unittest
 
-from imap_codec import Encoded, GreetingCodec
+from imap_codec import Encoded, GreetingCodec, LineFragment
 
 
 class TestGreetingEncode(unittest.TestCase):
@@ -9,9 +9,7 @@ class TestGreetingEncode(unittest.TestCase):
         encoded = GreetingCodec.encode(greeting)
         self.assertIsInstance(encoded, Encoded)
         fragments = list(encoded)
-        self.assertEqual(
-            fragments, [{"Line": {"data": list(b"* OK Hello, World!\r\n")}}]
-        )
+        self.assertEqual(fragments, [LineFragment(b"* OK Hello, World!\r\n")])
 
     def test_simple_greeting_dump(self):
         greeting = {"code": None, "kind": "Ok", "text": "Hello, World!"}
