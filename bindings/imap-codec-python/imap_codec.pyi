@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Union
 
 class DecodeError(Exception):
     """
@@ -25,6 +25,72 @@ class DecodeLiteralFound(DecodeError):
     The decoder stopped at the beginning of literal data.
     """
 
+class LiteralMode:
+    """
+    Literal mode, i.e., sync or non-sync.
+
+    - Sync: A synchronizing literal, i.e., `{<n>}\r\n<data>`.
+    - NonSync: A non-synchronizing literal according to RFC 7888, i.e., `{<n>+}\r\n<data>`.
+
+    Warning: The non-sync literal extension must only be used when the server advertised support
+             for it sending the LITERAL+ or LITERAL- capability.
+    """
+
+    Sync: LiteralMode
+    NonSync: LiteralMode
+
+class LineFragment:
+    """
+    Fragment of a line that is ready to be send.
+    """
+
+    def __init__(self, data: bytes):
+        """
+        Create a line fragment from data bytes
+
+        :param data: Data bytes of fragment
+        :raises TypeError: `data` is not byte-like
+        """
+
+    @property
+    def data(self) -> bytes:
+        """
+        Get line fragment data bytes
+
+        :return: Data bytes of fragment
+        """
+
+class LiteralFragment:
+    """
+    Fragment of a literal that may require an action before it should be send.
+    """
+
+    def __init__(self, data: bytes, mode: LiteralMode):
+        """
+        Create a literal fragment from data bytes and literal mode
+
+        :param data: Data bytes of fragment
+        :param mode: Literal mode
+        :raises TypeError: `data` is not byte-like
+        :raises TypeError: `mode` is invalid
+        """
+
+    @property
+    def data(self) -> bytes:
+        """
+        Get literal fragment data bytes
+
+        :return: Data bytes of fragment
+        """
+
+    @property
+    def mode(self) -> LiteralMode:
+        """
+        Get literal fragment literal mode
+
+        :return: Literal mode
+        """
+
 class Encoded:
     """
     An encoded message.
@@ -36,7 +102,7 @@ class Encoded:
     """
 
     def __iter__(self) -> Encoded: ...
-    def __next__(self) -> dict: ...
+    def __next__(self) -> Union[LineFragment, LiteralFragment]: ...
     def dump(self) -> bytes:
         """
         Dump the (remaining) encoded data without being guided by fragments.

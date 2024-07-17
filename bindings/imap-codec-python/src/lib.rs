@@ -200,6 +200,9 @@ fn imap_codec_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
         "DecodeLiteralFound",
         m.py().get_type_bound::<DecodeLiteralFound>(),
     )?;
+    m.add_class::<encoded::PyLiteralMode>()?;
+    m.add_class::<encoded::PyLineFragment>()?;
+    m.add_class::<encoded::PyLiteralFragment>()?;
     m.add_class::<PyEncoded>()?;
     m.add_class::<PyGreetingCodec>()?;
     m.add_class::<PyCommandCodec>()?;
