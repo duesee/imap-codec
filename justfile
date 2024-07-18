@@ -64,7 +64,8 @@ cargo_hack mode: install_cargo_hack
         --group-features \
         arbitrary,\
         arbitrary_simplified,\
-        serde \
+        serde,\
+        tag_generator \
         --group-features \
         starttls,\
         ext_condstore_qresync,\

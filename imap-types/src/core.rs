@@ -34,6 +34,8 @@
 //!             └───────┘ └──────┘
 //! ```
 
+#[cfg(feature = "tag_generator")]
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::{
     borrow::Cow,
     fmt::{Debug, Display, Formatter},
@@ -44,12 +46,18 @@ use std::{
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 use bounded_static_derive::ToStatic;
+#[cfg(feature = "tag_generator")]
+#[cfg(not(debug_assertions))]
+use rand::distributions::{Alphanumeric, DistString};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
 };
+
+#[cfg(feature = "tag_generator")]
+static GLOBAL_TAG_GENERATOR_COUNT: AtomicU64 = AtomicU64::new(0);
 
 macro_rules! impl_try_from {
     ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
@@ -1130,6 +1138,52 @@ impl<'a> AsRef<str> for Tag<'a> {
     }
 }
 
+#[cfg(feature = "tag_generator")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tag_generator")))]
+#[derive(Debug)]
+pub struct TagGenerator {
+    global: u64,
+    counter: u64,
+}
+
+#[cfg(feature = "tag_generator")]
+impl TagGenerator {
+    /// Generate an instance of a `TagGenerator`
+    ///
+    /// Returns a `TagGenerator` generating tags with a unique prefix.
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> TagGenerator {
+        // There is no synchronization required and we only care about each thread seeing a unique value.
+        let global = GLOBAL_TAG_GENERATOR_COUNT.fetch_add(1, Ordering::Relaxed);
+        let counter = 0;
+
+        TagGenerator { global, counter }
+    }
+
+    /// Generate a unique `Tag`
+    ///
+    /// The tag has the form `<Instance>.<Counter>.<Random>`, and is guaranteed to be unique and not
+    /// guessable ("forward-secure").
+    ///
+    /// Rational: `Instance` and `Counter` improve IMAP trace readability.
+    /// The non-guessable `Random` hampers protocol-confusion attacks (to a limiting extend).
+    pub fn generate(&mut self) -> Tag<'static> {
+        #[cfg(not(debug_assertions))]
+        let inner = {
+            let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+            format!("{}.{}.{token}", self.global, self.counter)
+        };
+
+        // Minimize randomness lending the library for security analysis.
+        #[cfg(debug_assertions)]
+        let inner = format!("{}.{}", self.global, self.counter);
+
+        let tag = Tag::unvalidated(inner);
+        self.counter = self.counter.wrapping_add(1);
+        tag
+    }
+}
+
 /// A human-readable text string used in some server responses.
 ///
 /// # Example
@@ -1554,6 +1608,11 @@ impl<T> From<(T, T)> for Vec2<T> {
 #[cfg(test)]
 mod tests {
     use std::str::from_utf8;
+    #[cfg(feature = "tag_generator")]
+    use std::{collections::BTreeSet, thread, time::Duration};
+
+    #[cfg(feature = "tag_generator")]
+    use rand::random;
 
     use super::*;
 
@@ -2105,5 +2164,45 @@ mod tests {
             err.to_string(),
             r"Validation failed: Must have at least 3 elements"
         );
+    }
+
+    #[cfg(feature = "tag_generator")]
+    #[test]
+    fn test_generator_generator() {
+        const THREADS: usize = 1000;
+        const INVOCATIONS: usize = 5;
+
+        thread::scope(|s| {
+            let mut handles = Vec::with_capacity(THREADS);
+
+            for _ in 1..=THREADS {
+                let handle = s.spawn(move || {
+                    let mut tags = Vec::with_capacity(INVOCATIONS);
+
+                    let mut generator = TagGenerator::new();
+                    thread::sleep(Duration::from_millis(random::<u8>() as u64));
+
+                    for _ in 1..=INVOCATIONS {
+                        tags.push(generator.generate());
+                    }
+
+                    tags
+                });
+
+                handles.push(handle);
+            }
+
+            let mut set = BTreeSet::new();
+
+            for handle in handles {
+                let tags = handle.join().unwrap();
+
+                for tag in tags {
+                    // Make sure insertion worked, i.e., no duplicate was found.
+                    // Note: `Tag` doesn't implement `Ord` so we insert a `String`.
+                    assert!(set.insert(tag.as_ref().to_owned()), "duplicate tag found");
+                }
+            }
+        });
     }
 }
