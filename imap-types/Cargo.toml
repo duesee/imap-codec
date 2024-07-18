@@ -16,6 +16,7 @@ exclude = [
 arbitrary = ["dep:arbitrary", "chrono/arbitrary", "chrono/std"]
 arbitrary_simplified = ["arbitrary"]
 serde = ["dep:serde", "chrono/serde"]
+tag_generator = ["dep:rand"]
 
 # IMAP
 starttls = []
@@ -30,9 +31,10 @@ ext_metadata = []
 [dependencies]
 arbitrary = { version = "1.3.2", optional = true, default-features = false, features = ["derive"] }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
-bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
 bounded-static-derive = { version = "0.8.0", default-features = false }
+bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["std", "std_rng"], optional = true }
 serde = { version = "1.0.204", features = ["derive"], optional = true }
 thiserror = "1.0.62"
 
