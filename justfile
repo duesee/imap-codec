@@ -154,24 +154,25 @@ bindings_python: install_python_black install_python_maturin install_python_mypy
 # Measure test coverage
 coverage: install_rust_llvm_tools_preview install_cargo_grcov
     # Old build artifacts seem to be able to mess up coverage data (see #508),
-    # removing everything in `target` seems to be the easiest fix for this.
-    rm -rf target/*
+    # removing everything in `target/coverage` seems to be the easiest fix for this.
+    rm -rf target/coverage/*
     # Run instrumented tests to generate coverage information
-    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="$PWD/target/coverage/coverage-%m-%p.profraw" cargo test -p imap-codec -p imap-types --all-features
+    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="$PWD/target/coverage/coverage-%m-%p.profraw" CARGO_TARGET_DIR="$PWD/target/coverage" cargo test -p imap-codec -p imap-types --all-features
     # Generate coverage reports
     # - LCOV info report for coveralls.io
     # - HTML report for local use
     grcov target/coverage \
         --source-dir . \
-        --binary-path target/debug \
+        --binary-path target/coverage/debug \
         --branch \
         --keep-only '{imap-codec/src/**,imap-types/src/**}' \
         --llvm \
         --output-types "html,lcov" \
         --output-path target/coverage/
     mv target/coverage/lcov target/coverage/coverage.lcov
-    # Remove profiling information to prevent wasting disk space
+    # Remove profiling information and build artifacts to prevent wasting disk space
     rm target/coverage/*.profraw
+    rm -rf target/coverage/debug
 
 # Fuzz all targets
 [linux]
