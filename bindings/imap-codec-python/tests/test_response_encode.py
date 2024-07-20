@@ -5,45 +5,48 @@ from imap_codec import (
     LineFragment,
     LiteralFragment,
     LiteralMode,
+    Response,
     ResponseCodec,
 )
 
 
 class TestResponseEncode(unittest.TestCase):
     def test_simple_response(self):
-        response = {"Data": {"Search": [1]}}
+        response = Response.from_dict({"Data": {"Search": [1]}})
         encoded = ResponseCodec.encode(response)
         self.assertIsInstance(encoded, Encoded)
         fragments = list(encoded)
         self.assertEqual(fragments, [LineFragment(b"* SEARCH 1\r\n")])
 
     def test_simple_response_dump(self):
-        response = {"Data": {"Search": [1]}}
+        response = Response.from_dict({"Data": {"Search": [1]}})
         encoded = ResponseCodec.encode(response)
         self.assertIsInstance(encoded, Encoded)
         self.assertEqual(encoded.dump(), b"* SEARCH 1\r\n")
 
-    _MULTI_FRAGMENT_RESPONSE = {
-        "Data": {
-            "Fetch": {
-                "seq": 12345,
-                "items": [
-                    {
-                        "BodyExt": {
-                            "section": None,
-                            "origin": None,
-                            "data": {
-                                "Literal": {
-                                    "data": list(b"ABCDE"),
-                                    "mode": "NonSync",
-                                }
-                            },
+    _MULTI_FRAGMENT_RESPONSE = Response.from_dict(
+        {
+            "Data": {
+                "Fetch": {
+                    "seq": 12345,
+                    "items": [
+                        {
+                            "BodyExt": {
+                                "section": None,
+                                "origin": None,
+                                "data": {
+                                    "Literal": {
+                                        "data": list(b"ABCDE"),
+                                        "mode": "NonSync",
+                                    }
+                                },
+                            }
                         }
-                    }
-                ],
-            }
-        },
-    }
+                    ],
+                }
+            },
+        }
+    )
 
     def test_multi_fragment_response(self):
         encoded = ResponseCodec.encode(self._MULTI_FRAGMENT_RESPONSE)

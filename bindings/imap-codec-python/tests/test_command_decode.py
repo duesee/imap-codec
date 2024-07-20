@@ -1,19 +1,25 @@
 import unittest
 
-from imap_codec import CommandCodec, DecodeFailed, DecodeIncomplete, DecodeLiteralFound
+from imap_codec import (
+    Command,
+    CommandCodec,
+    DecodeFailed,
+    DecodeIncomplete,
+    DecodeLiteralFound,
+)
 
 
 class TestCommandDecode(unittest.TestCase):
     def test_command(self):
         buffer = b"a NOOP\r\n<remaining>"
         remaining, command = CommandCodec.decode(buffer)
-        self.assertEqual(command, {"tag": "a", "body": "Noop"})
+        self.assertEqual(command, Command.from_dict({"tag": "a", "body": "Noop"}))
         self.assertEqual(remaining, b"<remaining>")
 
     def test_command_without_remaining(self):
         buffer = b"a NOOP\r\n"
         remaining, command = CommandCodec.decode(buffer)
-        self.assertEqual(command, {"tag": "a", "body": "Noop"})
+        self.assertEqual(command, Command.from_dict({"tag": "a", "body": "Noop"}))
         self.assertEqual(remaining, b"")
 
     def test_command_error_incomplete(self):
