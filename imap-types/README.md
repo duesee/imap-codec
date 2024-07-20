@@ -5,7 +5,7 @@
 flowchart LR
     imap-types -.-> imap-codec
     imap-codec -.-> imap-next
-    imap-next -.-> proxy
+    imap-next -.-> imap-proxy
     imap-next -.-> imap-client
     
     style imap-types stroke-width:4px
@@ -13,7 +13,7 @@ flowchart LR
     click imap-types href "https://github.com/duesee/imap-codec/tree/main/imap-types"
     click imap-codec href "https://github.com/duesee/imap-codec"
     click imap-next href "https://github.com/duesee/imap-next"
-    click proxy href "https://github.com/duesee/imap-next/tree/main/proxy"
+    click imap-proxy href "https://github.com/duesee/imap-proxy"
     click imap-client href "https://github.com/soywod/imap-client"
 ```
 
