@@ -1,6 +1,6 @@
 import unittest
 
-from imap_codec import DecodeFailed, DecodeIncomplete, GreetingCodec
+from imap_codec import DecodeFailed, DecodeIncomplete, Greeting, GreetingCodec
 
 
 class TestGreetingDecode(unittest.TestCase):
@@ -8,7 +8,8 @@ class TestGreetingDecode(unittest.TestCase):
         buffer = b"* OK Hello, World!\r\n<remaining>"
         remaining, greeting = GreetingCodec.decode(buffer)
         self.assertEqual(
-            greeting, {"code": None, "kind": "Ok", "text": "Hello, World!"}
+            greeting,
+            Greeting.from_dict({"code": None, "kind": "Ok", "text": "Hello, World!"}),
         )
         self.assertEqual(remaining, b"<remaining>")
 
@@ -16,7 +17,10 @@ class TestGreetingDecode(unittest.TestCase):
         buffer = b"* OK [ALERT] Hello, World!\r\n<remaining>"
         remaining, greeting = GreetingCodec.decode(buffer)
         self.assertEqual(
-            greeting, {"code": "Alert", "kind": "Ok", "text": "Hello, World!"}
+            greeting,
+            Greeting.from_dict(
+                {"code": "Alert", "kind": "Ok", "text": "Hello, World!"}
+            ),
         )
         self.assertEqual(remaining, b"<remaining>")
 
@@ -24,7 +28,8 @@ class TestGreetingDecode(unittest.TestCase):
         buffer = b"* OK Hello, World!\r\n"
         remaining, greeting = GreetingCodec.decode(buffer)
         self.assertEqual(
-            greeting, {"code": None, "kind": "Ok", "text": "Hello, World!"}
+            greeting,
+            Greeting.from_dict({"code": None, "kind": "Ok", "text": "Hello, World!"}),
         )
         self.assertEqual(remaining, b"")
 

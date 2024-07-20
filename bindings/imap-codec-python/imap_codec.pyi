@@ -108,13 +108,37 @@ class Encoded:
         Dump the (remaining) encoded data without being guided by fragments.
         """
 
+class Greeting:
+    """
+    Greeting.
+
+    Note: Don't use `code: None` *and* a `text` that starts with "[" as this would be ambiguous in IMAP.
+    We could fix this but the fix would make this type unconformable to use.
+    """
+
+    @staticmethod
+    def from_dict(greeting: dict) -> Greeting:
+        """
+        Create greeting from `dict`
+
+        :param greeting: Dictionary representation of greeting
+        :raises RuntimeError: Dictionary could not be deserialized into greeting
+        """
+
+    def as_dict(self) -> dict:
+        """
+        Return greeting as `dict`
+
+        :return: Dictionary representation of greeting
+        """
+
 class GreetingCodec:
     """
     Codec for greetings.
     """
 
     @staticmethod
-    def decode(bytes: bytes) -> Tuple[bytes, dict]:
+    def decode(bytes: bytes) -> Tuple[bytes, Greeting]:
         """
         Decode greeting from given bytes.
 
@@ -125,12 +149,33 @@ class GreetingCodec:
         """
 
     @staticmethod
-    def encode(greeting: dict) -> Encoded:
+    def encode(greeting: Greeting) -> Encoded:
         """
         Encode greeting into fragments.
 
-        :param bytes: Given greeting
+        :param greeting: Given greeting
         :return: `Encoded` type holding fragments of encoded greeting
+        """
+
+class Command:
+    """
+    Command.
+    """
+
+    @staticmethod
+    def from_dict(command: dict) -> Command:
+        """
+        Create command from `dict`
+
+        :param command: Dictionary representation of command
+        :raises RuntimeError: Dictionary could not be deserialized into command
+        """
+
+    def as_dict(self) -> dict:
+        """
+        Return command as `dict`
+
+        :return: Dictionary representation of command
         """
 
 class CommandCodec:
@@ -139,7 +184,7 @@ class CommandCodec:
     """
 
     @staticmethod
-    def decode(bytes: bytes) -> Tuple[bytes, dict]:
+    def decode(bytes: bytes) -> Tuple[bytes, Command]:
         """
         Decode command from given bytes.
 
@@ -151,12 +196,35 @@ class CommandCodec:
         """
 
     @staticmethod
-    def encode(command: dict) -> Encoded:
+    def encode(command: Command) -> Encoded:
         """
         Encode command into fragments.
 
-        :param bytes: Given command
+        :param command: Given command
         :return: `Encoded` type holding fragments of encoded command
+        """
+
+class AuthenticateData:
+    """
+    Authenticate data line
+
+    Data line used, e.g., during AUTHENTICATE.
+    """
+
+    @staticmethod
+    def from_dict(authenticate_data: dict) -> AuthenticateData:
+        """
+        Create authenticate data line from `dict`
+
+        :param authenticate_data: Dictionary representation of authenticate data line
+        :raises RuntimeError: Dictionary could not be deserialized into authenticate data line
+        """
+
+    def as_dict(self) -> dict:
+        """
+        Return authenticate data line as `dict`
+
+        :return: Dictionary representation of authenticate data line
         """
 
 class AuthenticateDataCodec:
@@ -165,7 +233,7 @@ class AuthenticateDataCodec:
     """
 
     @staticmethod
-    def decode(bytes: bytes) -> Tuple[bytes, dict]:
+    def decode(bytes: bytes) -> Tuple[bytes, AuthenticateData]:
         """
         Decode authenticate data line from given bytes.
 
@@ -176,12 +244,33 @@ class AuthenticateDataCodec:
         """
 
     @staticmethod
-    def encode(authenticate_data: dict) -> Encoded:
+    def encode(authenticate_data: AuthenticateData) -> Encoded:
         """
         Encode authenticate data line into fragments.
 
-        :param bytes: Given authenticate data line
+        :param authenticate_data: Given authenticate data line
         :return: `Encoded` type holding fragments of encoded authenticate data line
+        """
+
+class Response:
+    """
+    Response.
+    """
+
+    @staticmethod
+    def from_dict(response: dict) -> Response:
+        """
+        Create response from `dict`
+
+        :param response: Dictionary representation of response
+        :raises RuntimeError: Dictionary could not be deserialized into response
+        """
+
+    def as_dict(self) -> dict:
+        """
+        Return response as `dict`
+
+        :return: Dictionary representation of response
         """
 
 class ResponseCodec:
@@ -190,7 +279,7 @@ class ResponseCodec:
     """
 
     @staticmethod
-    def decode(bytes: bytes) -> Tuple[bytes, dict]:
+    def decode(bytes: bytes) -> Tuple[bytes, Response]:
         """
         Decode response from given bytes.
 
@@ -202,12 +291,22 @@ class ResponseCodec:
         """
 
     @staticmethod
-    def encode(response: dict) -> Encoded:
+    def encode(response: Response) -> Encoded:
         """
         Encode response into fragments.
 
-        :param bytes: Given response
+        :param response: Given response
         :return: `Encoded` type holding fragments of encoded response
+        """
+
+class IdleDone:
+    """
+    Denotes the continuation data message "DONE\r\n" to end the IDLE command.
+    """
+
+    def __new__(cls) -> IdleDone:
+        """
+        Create idle done
         """
 
 class IdleDoneCodec:
@@ -216,7 +315,7 @@ class IdleDoneCodec:
     """
 
     @staticmethod
-    def decode(bytes: bytes) -> Tuple[bytes, Tuple[()]]:
+    def decode(bytes: bytes) -> Tuple[bytes, IdleDone]:
         """
         Decode idle done from given bytes.
 
@@ -228,10 +327,10 @@ class IdleDoneCodec:
         """
 
     @staticmethod
-    def encode(idle_done: Tuple[()]) -> Encoded:
+    def encode(idle_done: IdleDone) -> Encoded:
         """
         Encode idle done into fragments.
 
-        :param bytes: Given idle done
+        :param idle_done: Given idle done
         :return: `Encoded` type holding fragments of encoded idle done
         """

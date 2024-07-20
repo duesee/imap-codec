@@ -1,11 +1,14 @@
 mod encoded;
+mod messages;
 
 use encoded::PyEncoded;
 use imap_codec::{
     decode::{self, Decoder},
     encode::Encoder,
+    imap_types::IntoStatic,
     AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
+use messages::{PyAuthenticateData, PyCommand, PyGreeting, PyIdleDone, PyResponse};
 use pyo3::{create_exception, exceptions::PyException, prelude::*, types::PyBytes};
 
 // Create exception types for decode errors
@@ -23,7 +26,7 @@ struct PyGreetingCodec;
 impl PyGreetingCodec {
     /// Decode greeting from given bytes
     #[staticmethod]
-    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, Bound<PyAny>)> {
+    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, PyGreeting)> {
         let py = bytes.py();
         let (remaining, greeting) =
             GreetingCodec::default()
@@ -34,16 +37,15 @@ impl PyGreetingCodec {
                 })?;
         Ok((
             PyBytes::new_bound(py, remaining),
-            serde_pyobject::to_pyobject(py, &greeting)?,
+            PyGreeting(greeting.into_static()),
         ))
     }
 
     /// Encode greeting into fragments
     #[staticmethod]
-    fn encode(greeting: Bound<PyAny>) -> PyResult<PyEncoded> {
-        let greeting = serde_pyobject::from_pyobject(greeting)?;
-        let encoded = GreetingCodec::default().encode(&greeting);
-        Ok(PyEncoded(Some(encoded)))
+    fn encode(greeting: &PyGreeting) -> PyEncoded {
+        let encoded = GreetingCodec::default().encode(&greeting.0);
+        PyEncoded(Some(encoded))
     }
 }
 
@@ -56,12 +58,12 @@ struct PyCommandCodec;
 impl PyCommandCodec {
     /// Decode command from given bytes
     #[staticmethod]
-    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, Bound<PyAny>)> {
+    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, PyCommand)> {
         let py = bytes.py();
         match CommandCodec::default().decode(bytes.as_bytes()) {
             Ok((remaining, command)) => Ok((
                 PyBytes::new_bound(py, remaining),
-                serde_pyobject::to_pyobject(py, &command)?,
+                PyCommand(command.into_static()),
             )),
             Err(err) => Err(match err {
                 decode::CommandDecodeError::Incomplete => DecodeIncomplete::new_err(()),
@@ -79,10 +81,9 @@ impl PyCommandCodec {
 
     /// Encode command into fragments
     #[staticmethod]
-    fn encode(command: Bound<PyAny>) -> PyResult<PyEncoded> {
-        let command = serde_pyobject::from_pyobject(command)?;
-        let encoded = CommandCodec::default().encode(&command);
-        Ok(PyEncoded(Some(encoded)))
+    fn encode(command: &PyCommand) -> PyEncoded {
+        let encoded = CommandCodec::default().encode(&command.0);
+        PyEncoded(Some(encoded))
     }
 }
 
@@ -95,12 +96,12 @@ struct PyAuthenticateDataCodec;
 impl PyAuthenticateDataCodec {
     /// Decode authenticate data line from given bytes
     #[staticmethod]
-    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, Bound<PyAny>)> {
+    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, PyAuthenticateData)> {
         let py = bytes.py();
         match AuthenticateDataCodec::default().decode(bytes.as_bytes()) {
             Ok((remaining, authenticate_data)) => Ok((
                 PyBytes::new_bound(py, remaining),
-                serde_pyobject::to_pyobject(py, &authenticate_data)?,
+                PyAuthenticateData(authenticate_data.into_static()),
             )),
             Err(err) => Err(match err {
                 decode::AuthenticateDataDecodeError::Incomplete => DecodeIncomplete::new_err(()),
@@ -111,10 +112,9 @@ impl PyAuthenticateDataCodec {
 
     /// Encode authenticate data line into fragments
     #[staticmethod]
-    fn encode(authenticate_data: Bound<PyAny>) -> PyResult<PyEncoded> {
-        let authenticate_data = serde_pyobject::from_pyobject(authenticate_data)?;
-        let encoded = AuthenticateDataCodec::default().encode(&authenticate_data);
-        Ok(PyEncoded(Some(encoded)))
+    fn encode(authenticate_data: &PyAuthenticateData) -> PyEncoded {
+        let encoded = AuthenticateDataCodec::default().encode(&authenticate_data.0);
+        PyEncoded(Some(encoded))
     }
 }
 
@@ -127,12 +127,12 @@ struct PyResponseCodec;
 impl PyResponseCodec {
     /// Decode response from given bytes
     #[staticmethod]
-    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, Bound<PyAny>)> {
+    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, PyResponse)> {
         let py = bytes.py();
         match ResponseCodec::default().decode(bytes.as_bytes()) {
             Ok((remaining, response)) => Ok((
                 PyBytes::new_bound(py, remaining),
-                serde_pyobject::to_pyobject(py, &response)?,
+                PyResponse(response.into_static()),
             )),
             Err(err) => Err(match err {
                 decode::ResponseDecodeError::Incomplete => DecodeIncomplete::new_err(()),
@@ -148,10 +148,9 @@ impl PyResponseCodec {
 
     /// Encode response into fragments
     #[staticmethod]
-    fn encode(response: Bound<PyAny>) -> PyResult<PyEncoded> {
-        let response = serde_pyobject::from_pyobject(response)?;
-        let encoded = ResponseCodec::default().encode(&response);
-        Ok(PyEncoded(Some(encoded)))
+    fn encode(response: &PyResponse) -> PyEncoded {
+        let encoded = ResponseCodec::default().encode(&response.0);
+        PyEncoded(Some(encoded))
     }
 }
 
@@ -164,12 +163,12 @@ struct PyIdleDoneCodec;
 impl PyIdleDoneCodec {
     /// Decode idle done from given bytes
     #[staticmethod]
-    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, Bound<PyAny>)> {
+    fn decode(bytes: Bound<PyBytes>) -> PyResult<(Bound<PyBytes>, PyIdleDone)> {
         let py = bytes.py();
         match IdleDoneCodec::default().decode(bytes.as_bytes()) {
             Ok((remaining, idle_done)) => Ok((
                 PyBytes::new_bound(py, remaining),
-                serde_pyobject::to_pyobject(py, &idle_done)?,
+                PyIdleDone(idle_done.into_static()),
             )),
             Err(err) => Err(match err {
                 decode::IdleDoneDecodeError::Incomplete => DecodeIncomplete::new_err(()),
@@ -180,10 +179,9 @@ impl PyIdleDoneCodec {
 
     /// Encode idle done into fragments
     #[staticmethod]
-    fn encode(idle_done: Bound<PyAny>) -> PyResult<PyEncoded> {
-        let idle_done = serde_pyobject::from_pyobject(idle_done)?;
-        let encoded = IdleDoneCodec::default().encode(&idle_done);
-        Ok(PyEncoded(Some(encoded)))
+    fn encode(idle_done: &PyIdleDone) -> PyEncoded {
+        let encoded = IdleDoneCodec::default().encode(&idle_done.0);
+        PyEncoded(Some(encoded))
     }
 }
 
@@ -204,10 +202,15 @@ fn imap_codec_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<encoded::PyLineFragment>()?;
     m.add_class::<encoded::PyLiteralFragment>()?;
     m.add_class::<PyEncoded>()?;
+    m.add_class::<PyGreeting>()?;
     m.add_class::<PyGreetingCodec>()?;
+    m.add_class::<PyCommand>()?;
     m.add_class::<PyCommandCodec>()?;
+    m.add_class::<PyAuthenticateData>()?;
     m.add_class::<PyAuthenticateDataCodec>()?;
+    m.add_class::<PyResponse>()?;
     m.add_class::<PyResponseCodec>()?;
+    m.add_class::<PyIdleDone>()?;
     m.add_class::<PyIdleDoneCodec>()?;
 
     Ok(())
