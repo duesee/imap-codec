@@ -20,8 +20,6 @@ tag_generator = ["dep:rand"]
 
 # IMAP
 starttls = []
-
-# IMAP Extensions
 ext_condstore_qresync = []
 ext_id = []
 ext_login_referrals = []

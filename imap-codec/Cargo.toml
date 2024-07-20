@@ -14,22 +14,9 @@ exclude = [
 
 [features]
 default = ["quirk"]
+
 # Expose internal parsers for fuzzing
 fuzz = []
-
-# <Forward to imap-types>
-serde = ["imap-types/serde"]
-
-# IMAP
-starttls = ["imap-types/starttls"]
-
-# IMAP Extensions
-ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
-ext_id = ["imap-types/ext_id"]
-ext_login_referrals = ["imap-types/ext_login_referrals"]
-ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
-ext_metadata = ["imap-types/ext_metadata"]
-# </Forward to imap-types>
 
 # IMAP quirks
 #
@@ -41,26 +28,31 @@ quirk = [
     "quirk_rectify_numbers",
     "quirk_trailing_space"
 ]
-
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
 # Encode `A ID ()` as `A ID NIL`
-# Observed in ...
-# * GMX
-# * Microsoft Exchange
 quirk_id_empty_to_nil = []
 # Add missing `text` by adding [" "] "<missing text>".
-# Observed in ...
-# * Gmail `* OK [HIGHESTMODSEQ <n>]\r\n`
 quirk_missing_text = []
 # Rectify (invalid) numbers.
-# Observed in ...
-# * Dovecot (`-1`)
 quirk_rectify_numbers = []
 # Accept a trailing space in `STATUS` data response.
-# Observed in ...
-# * Microsoft Exchange `* STATUS INBOX (MESSAGES 100 UNSEEN 0) \n\n`
 quirk_trailing_space = []
+
+# <Forward to imap-types>
+arbitrary = ["imap-types/arbitrary"]
+arbitrary_simplified = ["imap-types/arbitrary_simplified"]
+serde = ["imap-types/serde"]
+tag_generator = ["imap-types/tag_generator"]
+
+# IMAP
+starttls = ["imap-types/starttls"]
+ext_condstore_qresync = ["imap-types/ext_condstore_qresync"]
+ext_id = ["imap-types/ext_id"]
+ext_login_referrals = ["imap-types/ext_login_referrals"]
+ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
+ext_metadata = ["imap-types/ext_metadata"]
+# </Forward to imap-types>
 
 [dependencies]
 abnf-core = "0.6.0"
