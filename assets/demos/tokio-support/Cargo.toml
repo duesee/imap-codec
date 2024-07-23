@@ -11,7 +11,7 @@ quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
 
 [dependencies]
 bytes = "1.6.1"
-thiserror = "1.0.62"
+thiserror = "1.0.63"
 tokio-util = { version = "0.7.11", features = ["codec"] }
 
 imap-codec = { path = "../../../imap-codec" }

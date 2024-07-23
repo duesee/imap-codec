@@ -36,7 +36,7 @@ bounded-static = { version = "0.8.0", default-features = false, features = ["all
 chrono = { version = "0.4", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["std", "std_rng"], optional = true }
 serde = { version = "1.0.204", features = ["derive"], optional = true }
-thiserror = "1.0.62"
+thiserror = "1.0.63"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }

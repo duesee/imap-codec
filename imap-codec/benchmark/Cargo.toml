@@ -19,7 +19,7 @@ imap-proto-stalwart = { package = "imap_proto", git = "https://github.com/stalwa
 # 526 |     pub mod signal;
 #     |             ^^^^^^
 #     = note: the item is gated behind the `signal` feature
-tokio = { version = "1.38.0", features = ["signal"] }
+tokio = { version = "1.39.1", features = ["signal"] }
 # Make `cargo +nightly -Z minimal-versions update` work.
 regex = "1.10.5"
 
