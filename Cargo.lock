@@ -1216,8 +1216,6 @@ dependencies = [
  "imap-proto",
  "imap-types",
  "imap_proto",
- "regex",
- "tokio",
 ]
 
 [[package]]

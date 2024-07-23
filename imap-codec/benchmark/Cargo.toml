@@ -11,17 +11,6 @@ imap-codec = { path = "../../imap-codec" }
 criterion = "0.5.1"
 imap-proto = "0.16.5"
 imap-proto-stalwart = { package = "imap_proto", git = "https://github.com/stalwartlabs/mail-server", rev = "53f0222f308b3e844c158fc0e603d10361da3c63" }
-# We import `tokio` here to bypass this error:
-#
-# note: found an item that was configured out
-#    --> /home/duesee/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.37.0/src/lib.rs:526:13
-#     |
-# 526 |     pub mod signal;
-#     |             ^^^^^^
-#     = note: the item is gated behind the `signal` feature
-tokio = { version = "1.39.1", features = ["signal"] }
-# Make `cargo +nightly -Z minimal-versions update` work.
-regex = "1.10.5"
 
 [[bench]]
 name = "greeting"
