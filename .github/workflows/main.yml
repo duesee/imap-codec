@@ -2,18 +2,8 @@ name: main
 on:
   push:
     branches: [ main ]
-    paths:
-      - "**.rs"
-      - "**.toml"
-      - ".github/workflows/**"
-      - "justfile"
   pull_request:
     branches: [ main ]
-    paths:
-      - "**.rs"
-      - "**.toml"
-      - ".github/workflows/**"
-      - "justfile"
   workflow_dispatch:
 
 concurrency:
