@@ -18,7 +18,6 @@ pyo3 = "0.22.2"
 serde-pyobject = "0.4.0"
 
 [dependencies.imap-codec]
-version = "2.0.0-alpha.2"
 path = "../../imap-codec"
 features = [
     "serde",
