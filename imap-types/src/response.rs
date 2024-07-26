@@ -701,8 +701,9 @@ impl<'a> CommandContinuationRequestBasic<'a> {
     /// Create a basic continuation request.
     ///
     /// Note: To avoid ambiguities in the IMAP standard, this constructor ensures that:
-    /// * iff `code` is `None`, `text` must not start with `[`.
-    /// * iff `code` is `None`, `text` must *not* be valid according to base64.
+    /// * if `code` is `None`, `text` must not start with `[`.
+    /// * if `code` is `None`, `text` must *not* be valid according to base64.
+    ///
     /// Otherwise, we could send a `Continue::Basic` that is interpreted as `Continue::Base64`.
     pub fn new<T>(code: Option<Code<'a>>, text: T) -> Result<Self, ContinueError<T::Error>>
     where

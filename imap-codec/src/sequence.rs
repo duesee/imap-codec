@@ -66,7 +66,7 @@ pub(crate) fn seq_range(input: &[u8]) -> IMAPResult<&[u8], (SeqOrUid, SeqOrUid)>
 /// Message sequence number (COPY, FETCH, STORE commands) or unique
 /// identifier (UID COPY, UID FETCH, UID STORE commands).
 ///
-/// * represents the largest number in use.
+/// "*" represents the largest number in use.
 /// In the case of message sequence numbers, it is the number of messages in a non-empty mailbox.
 /// In the case of unique identifiers, it is the unique identifier of the last message in the mailbox or,
 /// if the mailbox is empty, the mailbox's current UIDNEXT value.
