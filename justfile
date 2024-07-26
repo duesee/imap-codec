@@ -143,8 +143,8 @@ bindings_python: install_python_black install_python_maturin install_python_mypy
     # Lint Python code using Black and Ruff
     python -m black --check bindings/imap-codec-python
     python -m ruff check bindings/imap-codec-python
-    # Build Python extension for all available interpreter version
-    cd bindings/imap-codec-python; maturin build --release --find-interpreter
+    # Build Python extension
+    cd bindings/imap-codec-python; maturin build --release
     # Install extension and run unit tests
     pip install --force-reinstall --find-links=target/wheels/ imap_codec
     cd bindings/imap-codec-python; python -m unittest -v
