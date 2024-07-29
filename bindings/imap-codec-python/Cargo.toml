@@ -1,7 +1,12 @@
 [package]
 name = "imap-codec-python"
-description = "Python bindings for imap-codec"
+description = "Python bindings for imap-codec Rust crate"
+keywords = ["email", "imap", "codec", "parser"]
 version = "0.1.0-dev1"
+authors = [
+    "Damian Poddebniak <poddebniak@mailbox.org>",
+    "Henning Holm <git@henningholm.de>",
+]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 publish = false

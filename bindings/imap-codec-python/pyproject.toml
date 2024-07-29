@@ -6,10 +6,24 @@ build-backend = "maturin"
 name = "imap-codec"
 requires-python = ">=3.8"
 classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Communications :: Email :: Post-Office :: IMAP",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
 ]
 dynamic = ["version"]
+
+[project.urls]
+source = "https://github.com/duesee/imap-codec"
+tracker = "https://github.com/duesee/imap-codec/issues"
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
