@@ -2,7 +2,7 @@
 name = "imap-codec-python"
 description = "Python bindings for imap-codec Rust crate"
 keywords = ["email", "imap", "codec", "parser"]
-version = "0.1.0-dev1"
+version = "0.1.0"
 authors = [
     "Damian Poddebniak <poddebniak@mailbox.org>",
     "Henning Holm <git@henningholm.de>",

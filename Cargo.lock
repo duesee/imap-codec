@@ -1230,7 +1230,7 @@ dependencies = [
 
 [[package]]
 name = "imap-codec-python"
-version = "0.1.0-dev1"
+version = "0.1.0"
 dependencies = [
  "imap-codec",
  "pyo3",
