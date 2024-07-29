@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'imap-codec/v*'
+      - 'imap-types/v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract crate name from Git tag
+        run: |
+          set -euo pipefail
+          tag_name=${GITHUB_REF#refs/tags/}
+          crate_name=${tag_name%/v*}
+          echo "Extracted crate name: $crate_name"
+          echo "CRATE_NAME=$crate_name" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+
+      - name: Assert release version matches crate version
+        run: |
+          set -euo pipefail
+  
+          # Get release version from Git tag
+          tag_version=${GITHUB_REF#refs/tags/$CRATE_NAME/v}
+  
+          # Get crate version from Cargo.toml
+          cd $CRATE_NAME
+          crate_version=$(cargo read-manifest | jq -r .version)
+            
+          if [ "$tag_version" != "$crate_version" ]; then
+            echo "Error: Release version in Git tag (${tag_version}) does not match crate version in Cargo.toml (${crate_version}) for crate $CRATE_NAME."
+            exit 1
+          fi
+
+      - name: Publish crate to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish -p $CRATE_NAME
