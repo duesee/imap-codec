@@ -17,7 +17,7 @@ flowchart LR
     click imap-client href "https://github.com/soywod/imap-client"
 ```
 
-This library provides parsing and serialization for [IMAP4rev1] implementations.
+This library provides parsing and serialization for [IMAP4rev1].
 It is based on [`imap-types`] and a [rock-solid] and [well-documented] building block for IMAP client and server implementations in Rust.
 The complete [formal syntax] of IMAP4rev1 and several IMAP [extensions] are implemented.
 
