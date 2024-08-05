@@ -11,7 +11,7 @@ publish = false
 quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
 
 [dependencies]
-bytes = "1.6.1"
+bytes = "1.7.1"
 thiserror = "1.0.63"
 tokio-util = { version = "0.7.11", features = ["codec"] }
 
