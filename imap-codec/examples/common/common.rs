@@ -12,8 +12,8 @@ pub enum Role {
     Server,
 }
 
-pub fn read_more(buffer: &mut Vec<u8>, role: Role) {
-    let prompt = if buffer.is_empty() {
+pub fn read_more(role: Role, message_begin: bool) -> Vec<u8> {
+    let prompt = if message_begin {
         match role {
             Role::Client => "C: ",
             Role::Server => "S: ",
@@ -30,7 +30,7 @@ pub fn read_more(buffer: &mut Vec<u8>, role: Role) {
         std::process::exit(0);
     }
 
-    buffer.extend_from_slice(line.as_bytes());
+    line.into_bytes()
 }
 
 fn read_line(prompt: &str, role: Role) -> String {
