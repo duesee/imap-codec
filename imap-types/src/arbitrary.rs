@@ -30,6 +30,8 @@ macro_rules! impl_arbitrary_try_from {
             fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
                 match <$target>::try_from(<$from>::arbitrary(u)?) {
                     Ok(passed) => Ok(passed),
+                    // TODO(590)
+                    #[allow(unreachable_patterns)]
                     Err(_) => Err(arbitrary::Error::IncorrectFormat),
                 }
             }
