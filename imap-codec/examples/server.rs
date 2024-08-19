@@ -82,6 +82,13 @@ fn main() {
 
                 // ... and continue with the next message.
                 continue;
+            } else {
+                // The partially received message is malformed. It's unclear what will follow.
+                // To be on the safe side, prevent the message from being decoded ...
+                fragmentizer.poison_message();
+
+                // ... but continue parsing the message.
+                continue;
             }
         }
 
