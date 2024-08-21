@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "bindings/imap-codec-python",
     "imap-codec",
     "imap-codec/benchmark",
     "imap-codec/fuzz",
