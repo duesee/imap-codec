@@ -229,7 +229,7 @@ impl Fragmentizer {
     /// When this function is called the fragments of the current message are parsed normally, but
     /// [`Fragmentizer::decode_message`] is guaranteed to fail and return
     /// [`DecodeMessageError::MessagePoisoned`]. This allows to skip malformed messages (e.g.
-    /// a message with a unexpected line ending) safely without the risk of treating untrusted
+    /// a message with an unexpected line ending) safely without the risk of treating untrusted
     /// bytes (e.g. literal bytes) as IMAP messages
     pub fn poison_message(&mut self) {
         self.message_poisoned = true;
