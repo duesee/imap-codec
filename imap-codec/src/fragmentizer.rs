@@ -262,7 +262,7 @@ impl Fragmentizer {
 
         if self.message_poisoned {
             return Err(DecodeMessageError::MessagePoisoned {
-                undecoded: Secret::new(&self.message_buffer),
+                discarded: Secret::new(&self.message_buffer),
             });
         }
 
@@ -593,7 +593,7 @@ pub enum DecodeMessageError<'a, C: Decoder> {
     /// Max message size was exceeded and bytes were dropped.
     MessageTooLong { initial: Secret<&'a [u8]> },
     /// The message was explicitly poisoned to prevent decoding.
-    MessagePoisoned { undecoded: Secret<&'a [u8]> },
+    MessagePoisoned { discarded: Secret<&'a [u8]> },
 }
 
 fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
@@ -1307,7 +1307,7 @@ mod tests {
         assert_eq!(
             decode_err,
             DecodeMessageError::MessagePoisoned {
-                undecoded: Secret::new(fragmentizer.message_bytes())
+                discarded: Secret::new(fragmentizer.message_bytes())
             }
         );
 
@@ -1368,7 +1368,7 @@ mod tests {
         assert_eq!(
             decode_err,
             DecodeMessageError::MessagePoisoned {
-                undecoded: Secret::new(fragmentizer.message_bytes())
+                discarded: Secret::new(fragmentizer.message_bytes())
             }
         );
 
