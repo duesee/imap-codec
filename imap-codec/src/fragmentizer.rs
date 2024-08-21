@@ -68,6 +68,9 @@ pub struct Fragmentizer {
     max_message_size: Option<u32>,
     /// Whether the size limit is exceeded for the current message.
     max_message_size_exceeded: bool,
+    /// The current message was poisoned. The message will still be parsed, but the decoding
+    /// will fail.
+    message_poisoned: bool,
     /// Parsed bytes of the current messages. The length is limited by
     /// [`Fragmentizer::max_message_size`].
     message_buffer: Vec<u8>,
@@ -85,6 +88,7 @@ impl Fragmentizer {
             unparsed_buffer: VecDeque::new(),
             max_message_size: Some(max_message_size),
             max_message_size_exceeded: false,
+            message_poisoned: false,
             message_buffer: Vec::new(),
             parser: Some(Parser::Line(LineParser::new(0))),
         }
@@ -101,6 +105,7 @@ impl Fragmentizer {
             unparsed_buffer: VecDeque::new(),
             max_message_size: None,
             max_message_size_exceeded: false,
+            message_poisoned: false,
             message_buffer: Vec::new(),
             parser: Some(Parser::Line(LineParser::new(0))),
         }
@@ -121,6 +126,7 @@ impl Fragmentizer {
             None => {
                 // Start next message
                 self.max_message_size_exceeded = false;
+                self.message_poisoned = false;
                 self.message_buffer.clear();
                 self.parser.insert(Parser::Line(LineParser::new(0)))
             }
@@ -199,17 +205,34 @@ impl Fragmentizer {
         self.max_message_size_exceeded
     }
 
+    /// Returns whether the current message was explicitly poisoned to prevent decoding.
+    pub fn is_message_poisoned(&self) -> bool {
+        self.message_poisoned
+    }
+
     /// Skips the current message and starts the next message immediately.
     ///
     /// Warning: Using this method might be dangerous. If client and server don't
     /// agree at which point a message is skipped, then the client or server might
     /// treat untrusted bytes (e.g. literal bytes) as IMAP messages. Currently the
     /// only valid use-case is a server that rejects synchronizing literals from the
-    /// client.
+    /// client. Otherwise consider using [`Fragmentizer::poison_message`].
     pub fn skip_message(&mut self) {
         self.max_message_size_exceeded = false;
+        self.message_poisoned = false;
         self.message_buffer.clear();
         self.parser = Some(Parser::Line(LineParser::new(0)));
+    }
+
+    /// Poisons the current message to prevent its decoding.
+    ///
+    /// When this function is called the fragments of the current message are parsed normally, but
+    /// [`Fragmentizer::decode_message`] is guaranteed to fail and return
+    /// [`DecodeMessageError::MessagePoisoned`]. This allows to skip malformed messages (e.g.
+    /// a message with an unexpected line ending) safely without the risk of treating untrusted
+    /// bytes (e.g. literal bytes) as IMAP messages
+    pub fn poison_message(&mut self) {
+        self.message_poisoned = true;
     }
 
     /// Tries to decode the [`Tag`] for the current message.
@@ -234,6 +257,12 @@ impl Fragmentizer {
         if self.max_message_size_exceeded {
             return Err(DecodeMessageError::MessageTooLong {
                 initial: Secret::new(&self.message_buffer),
+            });
+        }
+
+        if self.message_poisoned {
+            return Err(DecodeMessageError::MessagePoisoned {
+                discarded: Secret::new(&self.message_buffer),
             });
         }
 
@@ -563,6 +592,8 @@ pub enum DecodeMessageError<'a, C: Decoder> {
     },
     /// Max message size was exceeded and bytes were dropped.
     MessageTooLong { initial: Secret<&'a [u8]> },
+    /// The message was explicitly poisoned to prevent decoding.
+    MessagePoisoned { discarded: Secret<&'a [u8]> },
 }
 
 fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
@@ -1211,12 +1242,12 @@ mod tests {
 
     #[test]
     fn fragmentizer_decode_message() {
+        let command_codec = CommandCodec::new();
+        let response_codec = ResponseCodec::new();
+
         let mut fragmentizer = Fragmentizer::new(10);
         fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
         fragmentizer.enqueue_bytes(b"A2 LOGIN ABCDE EFGIJ\r\n");
-
-        let command_codec = CommandCodec::new();
-        let response_codec = ResponseCodec::new();
 
         fragmentizer.progress();
         assert_eq!(
@@ -1237,6 +1268,166 @@ mod tests {
                 initial: Secret::new(b"A2 LOGIN A"),
             }),
         );
+    }
+
+    #[test]
+    fn fragmentizer_poison_message() {
+        let command_codec = CommandCodec::new();
+
+        let mut fragmentizer = Fragmentizer::without_max_message_size();
+        fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
+        fragmentizer.enqueue_bytes(b"A2 LOGIN {5}\r\n");
+        fragmentizer.enqueue_bytes(b"ABCDE");
+        fragmentizer.enqueue_bytes(b" EFGIJ\r\n");
+
+        assert!(!fragmentizer.is_message_poisoned());
+
+        fragmentizer.poison_message();
+
+        assert!(fragmentizer.is_message_poisoned());
+
+        let fragment_info = fragmentizer.progress().unwrap();
+
+        assert_eq!(
+            fragment_info,
+            FragmentInfo::Line {
+                start: 0,
+                end: 9,
+                announcement: None,
+                ending: LineEnding::CrLf,
+            }
+        );
+        assert_eq!(fragmentizer.fragment_bytes(fragment_info), b"A1 NOOP\r\n");
+        assert_eq!(fragmentizer.message_bytes(), b"A1 NOOP\r\n");
+        assert!(fragmentizer.is_message_complete());
+        assert!(fragmentizer.is_message_poisoned());
+
+        let decode_err = fragmentizer.decode_message(&command_codec).unwrap_err();
+
+        assert_eq!(
+            decode_err,
+            DecodeMessageError::MessagePoisoned {
+                discarded: Secret::new(fragmentizer.message_bytes())
+            }
+        );
+
+        let fragment_info = fragmentizer.progress().unwrap();
+
+        assert_eq!(
+            fragment_info,
+            FragmentInfo::Line {
+                start: 0,
+                end: 14,
+                announcement: Some(LiteralAnnouncement {
+                    mode: LiteralMode::Sync,
+                    length: 5
+                }),
+                ending: LineEnding::CrLf,
+            }
+        );
+        assert_eq!(
+            fragmentizer.fragment_bytes(fragment_info),
+            b"A2 LOGIN {5}\r\n"
+        );
+        assert_eq!(fragmentizer.message_bytes(), b"A2 LOGIN {5}\r\n");
+        assert!(!fragmentizer.is_message_complete());
+        assert!(!fragmentizer.is_message_poisoned());
+
+        let fragment_info = fragmentizer.progress().unwrap();
+
+        assert_eq!(fragment_info, FragmentInfo::Literal { start: 14, end: 19 });
+        assert_eq!(fragmentizer.fragment_bytes(fragment_info), b"ABCDE");
+        assert_eq!(fragmentizer.message_bytes(), b"A2 LOGIN {5}\r\nABCDE");
+        assert!(!fragmentizer.is_message_complete());
+        assert!(!fragmentizer.is_message_poisoned());
+
+        fragmentizer.poison_message();
+        assert!(fragmentizer.is_message_poisoned());
+
+        let fragment_info = fragmentizer.progress().unwrap();
+
+        assert_eq!(
+            fragment_info,
+            FragmentInfo::Line {
+                start: 19,
+                end: 27,
+                announcement: None,
+                ending: LineEnding::CrLf,
+            }
+        );
+        assert_eq!(fragmentizer.fragment_bytes(fragment_info), b" EFGIJ\r\n");
+        assert_eq!(
+            fragmentizer.message_bytes(),
+            b"A2 LOGIN {5}\r\nABCDE EFGIJ\r\n"
+        );
+        assert!(fragmentizer.is_message_complete());
+        assert!(fragmentizer.is_message_poisoned());
+
+        let decode_err = fragmentizer.decode_message(&command_codec).unwrap_err();
+
+        assert_eq!(
+            decode_err,
+            DecodeMessageError::MessagePoisoned {
+                discarded: Secret::new(fragmentizer.message_bytes())
+            }
+        );
+
+        let fragment_info = fragmentizer.progress();
+
+        assert_eq!(fragment_info, None);
+        assert_eq!(fragmentizer.message_bytes(), b"");
+        assert_eq!(fragmentizer.message_bytes(), b"");
+        assert!(!fragmentizer.is_message_complete());
+        assert!(!fragmentizer.is_message_poisoned());
+    }
+
+    #[test]
+    fn fragmentizer_poison_too_long_message() {
+        let command_codec = CommandCodec::new();
+
+        let mut fragmentizer = Fragmentizer::new(5);
+        fragmentizer.enqueue_bytes(b"A1 NOOP\r\n");
+
+        assert!(!fragmentizer.is_message_poisoned());
+
+        fragmentizer.poison_message();
+
+        assert!(fragmentizer.is_message_poisoned());
+
+        let fragment_info = fragmentizer.progress().unwrap();
+
+        assert_eq!(
+            fragment_info,
+            FragmentInfo::Line {
+                start: 0,
+                end: 9,
+                announcement: None,
+                ending: LineEnding::CrLf,
+            }
+        );
+        assert_eq!(fragmentizer.fragment_bytes(fragment_info), b"A1 NO");
+        assert_eq!(fragmentizer.message_bytes(), b"A1 NO");
+        assert!(fragmentizer.is_message_complete());
+        assert!(fragmentizer.is_max_message_size_exceeded());
+        assert!(fragmentizer.is_message_poisoned());
+
+        let decode_err = fragmentizer.decode_message(&command_codec).unwrap_err();
+
+        assert_eq!(
+            decode_err,
+            DecodeMessageError::MessageTooLong {
+                initial: Secret::new(b"A1 NO")
+            }
+        );
+
+        let fragment_info = fragmentizer.progress();
+
+        assert_eq!(fragment_info, None);
+        assert_eq!(fragmentizer.message_bytes(), b"");
+        assert_eq!(fragmentizer.message_bytes(), b"");
+        assert!(!fragmentizer.is_message_complete());
+        assert!(!fragmentizer.is_max_message_size_exceeded());
+        assert!(!fragmentizer.is_message_poisoned());
     }
 
     #[track_caller]
