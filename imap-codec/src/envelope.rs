@@ -178,11 +178,15 @@ pub(crate) fn env_message_id(input: &[u8]) -> IMAPResult<&[u8], NString> {
 ///             addr-host
 ///             ")"`
 pub(crate) fn address(input: &[u8]) -> IMAPResult<&[u8], Address> {
+    #[cfg_attr(feature = "quirk_spaces_between_addresses", allow(unused_mut))]
     let mut parser = delimited(
         tag(b"("),
         tuple((addr_name, sp, addr_adl, sp, addr_mailbox, sp, addr_host)),
         tag(b")"),
     );
+
+    #[cfg(feature = "quirk_spaces_between_addresses")]
+    let mut parser = nom::sequence::preceded(nom::multi::many0(sp), parser);
 
     let (remaining, (name, _, adl, _, mailbox, _, host)) = parser(input)?;
 
