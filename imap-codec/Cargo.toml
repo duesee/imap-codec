@@ -26,7 +26,8 @@ quirk = [
     #"quirk_id_empty_to_nil",
     "quirk_missing_text",
     "quirk_rectify_numbers",
-    "quirk_trailing_space"
+    "quirk_trailing_space",
+    "quirk_spaces_between_addresses",
 ]
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
@@ -38,6 +39,8 @@ quirk_missing_text = []
 quirk_rectify_numbers = []
 # Accept a trailing space in `STATUS` data response.
 quirk_trailing_space = []
+# Accept spaces between envelope addresses in `FETCH` data response.
+quirk_spaces_between_addresses = []
 
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
