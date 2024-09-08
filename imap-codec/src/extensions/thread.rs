@@ -115,10 +115,10 @@ pub(crate) fn thread_list(
 ///                 )
 ///               ")"
 /// ```
-pub(crate) fn thread_list_limited<'a>(
-    input: &'a [u8],
+pub(crate) fn thread_list_limited(
+    input: &[u8],
     remaining_recursion: usize,
-) -> IMAPResult<&'a [u8], Thread> {
+) -> IMAPResult<&[u8], Thread> {
     if remaining_recursion == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -126,8 +126,7 @@ pub(crate) fn thread_list_limited<'a>(
         }));
     }
 
-    let thread_list =
-        move |input: &'a [u8]| thread_list_limited(input, remaining_recursion.saturating_sub(1));
+    let thread_list = |input| thread_list_limited(input, remaining_recursion.saturating_sub(1));
 
     let mut parser = delimited(
         tag("("),

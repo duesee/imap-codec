@@ -95,10 +95,7 @@ pub(crate) fn search_key(
     move |input: &[u8]| search_key_limited(input, remaining_recursions)
 }
 
-fn search_key_limited<'a>(
-    input: &'a [u8],
-    remaining_recursion: usize,
-) -> IMAPResult<&'a [u8], SearchKey> {
+fn search_key_limited(input: &[u8], remaining_recursion: usize) -> IMAPResult<&[u8], SearchKey> {
     if remaining_recursion == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -106,8 +103,7 @@ fn search_key_limited<'a>(
         }));
     }
 
-    let search_key =
-        move |input: &'a [u8]| search_key_limited(input, remaining_recursion.saturating_sub(1));
+    let search_key = |input| search_key_limited(input, remaining_recursion.saturating_sub(1));
 
     alt((
         alt((
