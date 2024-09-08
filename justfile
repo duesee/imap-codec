@@ -45,6 +45,11 @@ cargo_hack mode: install_cargo_hack
         --exclude-features default \
         --feature-powerset \
         --group-features \
+        arbitrary,\
+        arbitrary_simplified,\
+        serde,\
+        tag_generator \
+        --group-features \
         starttls,\
         ext_condstore_qresync,\
         ext_login_referrals,\
@@ -53,9 +58,10 @@ cargo_hack mode: install_cargo_hack
         ext_metadata \
         --group-features \
         quirk_crlf_relaxed,\
-        quirk_rectify_numbers,\
-        quirk_missing_text,\
         quirk_id_empty_to_nil,\
+        quirk_missing_text,\
+        quirk_rectify_numbers,\
+        quirk_spaces_between_addresses,\
         quirk_trailing_space\
         {{ mode }}
     cargo hack check -p imap-types \

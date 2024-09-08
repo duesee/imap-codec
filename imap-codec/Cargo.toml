@@ -37,10 +37,10 @@ quirk_id_empty_to_nil = []
 quirk_missing_text = []
 # Rectify (invalid) numbers.
 quirk_rectify_numbers = []
-# Accept a trailing space in `STATUS` data response.
-quirk_trailing_space = []
 # Accept spaces between envelope addresses in `FETCH` data response.
 quirk_spaces_between_addresses = []
+# Accept a trailing space in `STATUS` data response.
+quirk_trailing_space = []
 
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
