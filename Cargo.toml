@@ -6,7 +6,4 @@ members = [
     "imap-codec/fuzz",
     "imap-types",
     "imap-types/fuzz",
-    "assets/demos/tokio-support",
-    "assets/demos/tokio-client",
-    "assets/demos/tokio-server",
 ]

@@ -178,10 +178,10 @@ fuzz runs="25000": install_cargo_fuzz
 minimal_versions: install_rust_1_65 install_rust_nightly
     cargo +nightly update -Z minimal-versions
     cargo +1.65 check \
-      --workspace --exclude tokio-client --exclude tokio-server --exclude imap-codec-bench \
+      --workspace --exclude imap-codec-bench \
       --all-targets --all-features 
     cargo +1.65 test \
-      --workspace --exclude tokio-client --exclude tokio-server --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
+      --workspace --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
       --all-targets --all-features
     cargo update
 
