@@ -1170,7 +1170,7 @@ dependencies = [
 
 [[package]]
 name = "imap-codec"
-version = "2.0.0-alpha.4"
+version = "2.0.0-alpha.5"
 dependencies = [
  "abnf-core",
  "base64 0.22.1",
@@ -1212,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "imap-types"
-version = "2.0.0-alpha.3"
+version = "2.0.0-alpha.4"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
