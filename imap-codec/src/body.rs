@@ -30,10 +30,7 @@ pub(crate) fn body(
     move |input: &[u8]| body_limited(input, remaining_recursions)
 }
 
-fn body_limited<'a>(
-    input: &'a [u8],
-    remaining_recursions: usize,
-) -> IMAPResult<&'a [u8], BodyStructure> {
+fn body_limited(input: &[u8], remaining_recursions: usize) -> IMAPResult<&[u8], BodyStructure> {
     if remaining_recursions == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -41,12 +38,10 @@ fn body_limited<'a>(
         }));
     }
 
-    let body_type_1part = move |input: &'a [u8]| {
-        body_type_1part_limited(input, remaining_recursions.saturating_sub(1))
-    };
-    let body_type_mpart = move |input: &'a [u8]| {
-        body_type_mpart_limited(input, remaining_recursions.saturating_sub(1))
-    };
+    let body_type_1part =
+        |input| body_type_1part_limited(input, remaining_recursions.saturating_sub(1));
+    let body_type_mpart =
+        |input| body_type_mpart_limited(input, remaining_recursions.saturating_sub(1));
 
     delimited(
         tag(b"("),
@@ -64,10 +59,10 @@ fn body_limited<'a>(
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed.
-fn body_type_1part_limited<'a>(
-    input: &'a [u8],
+fn body_type_1part_limited(
+    input: &[u8],
     remaining_recursions: usize,
-) -> IMAPResult<&'a [u8], BodyStructure> {
+) -> IMAPResult<&[u8], BodyStructure> {
     if remaining_recursions == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -75,7 +70,7 @@ fn body_type_1part_limited<'a>(
         }));
     }
 
-    let body_type_msg = move |input: &'a [u8]| body_type_msg_limited(input, 8);
+    let body_type_msg = |input| body_type_msg_limited(input, 8);
 
     let mut parser = tuple((
         alt((body_type_msg, body_type_text, body_type_basic)),
@@ -121,10 +116,10 @@ pub(crate) fn body_type_basic(input: &[u8]) -> IMAPResult<&[u8], (BasicFields, S
 ///
 /// Note: This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
-fn body_type_msg_limited<'a>(
-    input: &'a [u8],
+fn body_type_msg_limited(
+    input: &[u8],
     remaining_recursions: usize,
-) -> IMAPResult<&'a [u8], (BasicFields, SpecificFields)> {
+) -> IMAPResult<&[u8], (BasicFields, SpecificFields)> {
     if remaining_recursions == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -132,7 +127,7 @@ fn body_type_msg_limited<'a>(
         }));
     }
 
-    let body = move |input: &'a [u8]| body_limited(input, remaining_recursions.saturating_sub(1));
+    let body = |input| body_limited(input, remaining_recursions.saturating_sub(1));
 
     let mut parser = tuple((
         media_message,
@@ -405,10 +400,10 @@ pub(crate) fn body_extension(
     move |input: &[u8]| body_extension_limited(input, remaining_recursions)
 }
 
-fn body_extension_limited<'a>(
-    input: &'a [u8],
+fn body_extension_limited(
+    input: &[u8],
     remaining_recursion: usize,
-) -> IMAPResult<&'a [u8], BodyExtension> {
+) -> IMAPResult<&[u8], BodyExtension> {
     if remaining_recursion == 0 {
         return Err(nom::Err::Failure(IMAPParseError {
             input,
@@ -417,7 +412,7 @@ fn body_extension_limited<'a>(
     }
 
     let body_extension =
-        move |input: &'a [u8]| body_extension_limited(input, remaining_recursion.saturating_sub(1));
+        |input| body_extension_limited(input, remaining_recursion.saturating_sub(1));
 
     alt((
         map(nstring, BodyExtension::NString),
