@@ -10,7 +10,8 @@ imap-types = { path = "../../imap-types" }
 imap-codec = { path = "../../imap-codec" }
 criterion = "0.5.1"
 imap-proto = "0.16.5"
-imap-proto-stalwart = { package = "imap_proto", git = "https://github.com/stalwartlabs/mail-server", rev = "53f0222f308b3e844c158fc0e603d10361da3c63" }
+imap-proto-stalwart = { package = "imap_proto", git = "https://github.com/stalwartlabs/mail-server", rev = "3b950cecec01b4b1083cc900d6742c11a665afab" }
+tokio = { version = "*", features = ["signal"] }
 
 [[bench]]
 name = "greeting"
