@@ -33,7 +33,7 @@ Breaking API changes (w/o a corresponding version bump) are detected in CI using
 
 ### MSRV
 
-The Minimum Supported Rust Version (MSRV) is 1.65 and [checked in CI](https://github.com/duesee/imap-codec/blob/main/.github/workflows/build_and_test.yml#L116C36-L116C40).
+The Minimum Supported Rust Version (MSRV) is 1.74 and checked in CI.
 
 ### IMAP extensions
 

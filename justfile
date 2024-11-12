@@ -175,11 +175,11 @@ fuzz runs="25000": install_cargo_fuzz
     done
 
 # Check MSRV
-check_msrv: install_rust_1_65
-    cargo +1.65 check --locked \
+check_msrv: install_rust_1_74
+    cargo +1.74 check --locked \
       --workspace --exclude imap-codec-bench \
       --all-targets --all-features 
-    cargo +1.65 test --locked \
+    cargo +1.74 test --locked \
       --workspace --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
       --all-targets --all-features
 
@@ -199,7 +199,7 @@ check_minimal_dependency_versions: install_rust_nightly
 ###############
 
 # Install required tooling (ahead of time)
-install: install_rust_1_65 \
+install: install_rust_1_74 \
          install_rust_nightly \
          install_rust_nightly_fmt \
          install_rust_llvm_tools_preview \
@@ -211,8 +211,8 @@ install: install_rust_1_65 \
          install_cargo_semver_checks
 
 [private]
-install_rust_1_65:
-    rustup toolchain install 1.65 --profile minimal
+install_rust_1_74:
+    rustup toolchain install 1.74 --profile minimal
 
 [private]
 install_rust_nightly:
