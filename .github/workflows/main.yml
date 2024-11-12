@@ -71,7 +71,7 @@ jobs:
       - run: just fuzz
       - uses: ./.github/actions/cache_save
 
-  minimal_versions:
+  check_msrv:
     runs-on: ubuntu-latest
 
     steps:
@@ -79,6 +79,17 @@ jobs:
 
       - uses: ./.github/actions/cache_restore
       - run: cargo install just
-      - run: just minimal_versions
+      - run: just check_msrv
+      - uses: ./.github/actions/cache_save
+
+  check_minimal_dependency_versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache_restore
+      - run: cargo install just
+      - run: just check_minimal_dependency_versions
       - uses: ./.github/actions/cache_save
 
