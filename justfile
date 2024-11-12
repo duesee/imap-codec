@@ -174,13 +174,22 @@ fuzz runs="25000": install_cargo_fuzz
         cargo +nightly fuzz run --features=ext,arbitrary_simplified ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs={{ runs }};
     done
 
-# Check minimal dependency versions and MSRV
-minimal_versions: install_rust_1_65 install_rust_nightly
-    cargo +nightly update -Z minimal-versions
-    cargo +1.65 check \
+# Check MSRV
+check_msrv: install_rust_1_65
+    cargo +1.65 check --locked \
       --workspace --exclude imap-codec-bench \
       --all-targets --all-features 
-    cargo +1.65 test \
+    cargo +1.65 test --locked \
+      --workspace --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
+      --all-targets --all-features
+
+# Check minimal dependency versions
+check_minimal_dependency_versions: install_rust_nightly
+    cargo +nightly update -Z minimal-versions
+    cargo check \
+      --workspace --exclude imap-codec-bench \
+      --all-targets --all-features 
+    cargo test \
       --workspace --exclude imap-codec-bench --exclude imap-codec-fuzz --exclude imap-types-fuzz \
       --all-targets --all-features
     cargo update
