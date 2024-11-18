@@ -35,7 +35,7 @@
 //! ```
 
 #[cfg(feature = "tag_generator")]
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     borrow::Cow,
     fmt::{Debug, Display, Formatter},
@@ -57,7 +57,7 @@ use crate::utils::indicators::{
 };
 
 #[cfg(feature = "tag_generator")]
-static GLOBAL_TAG_GENERATOR_COUNT: AtomicU64 = AtomicU64::new(0);
+static GLOBAL_TAG_GENERATOR_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 macro_rules! impl_try_from {
     ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
@@ -1142,7 +1142,7 @@ impl<'a> AsRef<str> for Tag<'a> {
 #[cfg_attr(docsrs, doc(cfg(feature = "tag_generator")))]
 #[derive(Debug)]
 pub struct TagGenerator {
-    global: u64,
+    global: usize,
     counter: u64,
 }
 
