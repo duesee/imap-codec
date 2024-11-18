@@ -39,7 +39,7 @@ thiserror = "2.0.3"
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
-serde_json = { version = "1.0.132", default-features = false }
+serde_json = { version = "1.0.133", default-features = false }
 
 [[example]]
 name = "serde_json"
