@@ -930,11 +930,11 @@ impl<'a> Code<'a> {
 pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 // We want a more readable `Debug` implementation.
-impl<'a> Debug for CodeOther<'a> {
+impl Debug for CodeOther<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
-        impl<'a> Debug for BStr<'a> {
+        impl Debug for BStr<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 write!(
                     f,
@@ -1026,7 +1026,7 @@ pub enum Capability<'a> {
     Other(CapabilityOther<'a>),
 }
 
-impl<'a> Display for Capability<'a> {
+impl Display for Capability<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::Imap4Rev1 => write!(f, "IMAP4REV1"),

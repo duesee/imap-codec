@@ -75,7 +75,7 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
     }
 }
 
-impl<'a> Display for CapabilityEnable<'a> {
+impl Display for CapabilityEnable<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::Utf8(kind) => write!(f, "UTF8={}", kind),

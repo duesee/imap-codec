@@ -205,7 +205,7 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
     }
 }
 
-impl<'a> Display for Resource<'a> {
+impl Display for Resource<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::Storage => "STORAGE",

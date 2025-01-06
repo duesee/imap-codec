@@ -66,7 +66,7 @@ pub enum MacroOrMessageDataItemNames<'a> {
     MessageDataItemNames(Vec<MessageDataItemName<'a>>),
 }
 
-impl<'a> From<Macro> for MacroOrMessageDataItemNames<'a> {
+impl From<Macro> for MacroOrMessageDataItemNames<'_> {
     fn from(m: Macro) -> Self {
         MacroOrMessageDataItemNames::Macro(m)
     }

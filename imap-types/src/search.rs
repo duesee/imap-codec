@@ -160,7 +160,7 @@ pub enum SearchKey<'a> {
     Unseen,
 }
 
-impl<'a> SearchKey<'a> {
+impl SearchKey<'_> {
     pub fn uid<S>(sequence_set: S) -> Self
     where
         S: Into<SequenceSet>,

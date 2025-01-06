@@ -161,13 +161,13 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
     }
 }
 
-impl<'a> Display for AuthMechanism<'a> {
+impl Display for AuthMechanism<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_ref())
     }
 }
 
-impl<'a> AsRef<str> for AuthMechanism<'a> {
+impl AsRef<str> for AuthMechanism<'_> {
     fn as_ref(&self) -> &str {
         match self {
             Self::Plain => "PLAIN",

@@ -77,7 +77,7 @@ impl<'a> TryFrom<&'a str> for Flag<'a> {
     }
 }
 
-impl<'a> Display for Flag<'a> {
+impl Display for Flag<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Flag::Answered => f.write_str("\\Answered"),
@@ -147,7 +147,7 @@ pub enum FlagNameAttribute<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct FlagNameAttributeExtension<'a>(Atom<'a>);
 
-impl<'a> FlagNameAttribute<'a> {
+impl FlagNameAttribute<'_> {
     pub fn is_selectability(&self) -> bool {
         matches!(
             self,
@@ -168,7 +168,7 @@ impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
     }
 }
 
-impl<'a> Display for FlagNameAttribute<'a> {
+impl Display for FlagNameAttribute<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::Noinferiors => f.write_str("\\Noinferiors"),
