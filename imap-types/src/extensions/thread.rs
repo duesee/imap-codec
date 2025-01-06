@@ -170,7 +170,7 @@ impl_arbitrary_try_from! { ThreadingAlgorithm<'a>, Atom<'a> }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct ThreadingAlgorithmOther<'a>(Atom<'a>);
 
-impl<'a> AsRef<str> for ThreadingAlgorithmOther<'a> {
+impl AsRef<str> for ThreadingAlgorithmOther<'_> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }

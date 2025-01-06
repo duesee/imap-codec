@@ -39,11 +39,11 @@ pub struct Literal8<'a> {
 }
 
 // We want a more readable `Debug` implementation.
-impl<'a> Debug for Literal8<'a> {
+impl Debug for Literal8<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
-        impl<'a> Debug for BStr<'a> {
+        impl Debug for BStr<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 write!(
                     f,

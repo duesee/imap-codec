@@ -110,7 +110,7 @@ use crate::{
 pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
-impl<'a> Debug for Atom<'a> {
+impl Debug for Atom<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Atom({:?})", self.0)
     }
@@ -178,7 +178,7 @@ impl<'a> TryFrom<&'a [u8]> for Atom<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for Atom<'a> {
+impl TryFrom<Vec<u8>> for Atom<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -199,7 +199,7 @@ impl<'a> TryFrom<&'a str> for Atom<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Atom<'a> {
+impl TryFrom<String> for Atom<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -219,13 +219,13 @@ impl<'a> TryFrom<Cow<'a, str>> for Atom<'a> {
     }
 }
 
-impl<'a> AsRef<str> for Atom<'a> {
+impl AsRef<str> for Atom<'_> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
 }
 
-impl<'a> Display for Atom<'a> {
+impl Display for Atom<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -260,7 +260,7 @@ impl<'a> Display for Atom<'a> {
 pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
-impl<'a> Debug for AtomExt<'a> {
+impl Debug for AtomExt<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "AtomExt({:?})", self.0)
     }
@@ -328,7 +328,7 @@ impl<'a> TryFrom<&'a [u8]> for AtomExt<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for AtomExt<'a> {
+impl TryFrom<Vec<u8>> for AtomExt<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -349,7 +349,7 @@ impl<'a> TryFrom<&'a str> for AtomExt<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for AtomExt<'a> {
+impl TryFrom<String> for AtomExt<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -365,7 +365,7 @@ impl<'a> From<Atom<'a>> for AtomExt<'a> {
     }
 }
 
-impl<'a> AsRef<str> for AtomExt<'a> {
+impl AsRef<str> for AtomExt<'_> {
     fn as_ref(&self) -> &str {
         &self.0
     }
@@ -444,7 +444,7 @@ impl<'a> TryFrom<&'a str> for IString<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for IString<'a> {
+impl TryFrom<String> for IString<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -469,7 +469,7 @@ impl<'a> From<Quoted<'a>> for IString<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for IString<'a> {
+impl AsRef<[u8]> for IString<'_> {
     fn as_ref(&self) -> &[u8] {
         match self {
             Self::Quoted(quoted) => quoted.as_ref().as_bytes(),
@@ -530,11 +530,11 @@ where
 }
 
 // We want a more readable `Debug` implementation.
-impl<'a> Debug for Literal<'a> {
+impl Debug for Literal<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
-        impl<'a> Debug for BStr<'a> {
+        impl Debug for BStr<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 write!(
                     f,
@@ -663,7 +663,7 @@ impl<'a> TryFrom<&'a [u8]> for Literal<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for Literal<'a> {
+impl TryFrom<Vec<u8>> for Literal<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -689,7 +689,7 @@ impl<'a> TryFrom<&'a str> for Literal<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Literal<'a> {
+impl TryFrom<String> for Literal<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -702,7 +702,7 @@ impl<'a> TryFrom<String> for Literal<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Literal<'a> {
+impl AsRef<[u8]> for Literal<'_> {
     fn as_ref(&self) -> &[u8] {
         &self.data
     }
@@ -750,7 +750,7 @@ pub enum LiteralMode {
 #[derive(Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
-impl<'a> Debug for Quoted<'a> {
+impl Debug for Quoted<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Quoted({:?})", self.0)
     }
@@ -832,7 +832,7 @@ impl<'a> TryFrom<&'a str> for Quoted<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Quoted<'a> {
+impl TryFrom<String> for Quoted<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -842,7 +842,7 @@ impl<'a> TryFrom<String> for Quoted<'a> {
     }
 }
 
-impl<'a> AsRef<str> for Quoted<'a> {
+impl AsRef<str> for Quoted<'_> {
     fn as_ref(&self) -> &str {
         &self.0
     }
@@ -962,7 +962,7 @@ impl<'a> TryFrom<&'a str> for AString<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for AString<'a> {
+impl TryFrom<String> for AString<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -999,7 +999,7 @@ impl<'a> From<Literal<'a>> for AString<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for AString<'a> {
+impl AsRef<[u8]> for AString<'_> {
     fn as_ref(&self) -> &[u8] {
         match self {
             Self::Atom(atom_ext) => atom_ext.as_ref().as_bytes(),
@@ -1037,7 +1037,7 @@ impl<'a> AsRef<[u8]> for AString<'a> {
 pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
-impl<'a> Debug for Tag<'a> {
+impl Debug for Tag<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Tag({:?})", self.0)
     }
@@ -1101,7 +1101,7 @@ impl<'a> TryFrom<&'a [u8]> for Tag<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for Tag<'a> {
+impl TryFrom<Vec<u8>> for Tag<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -1122,7 +1122,7 @@ impl<'a> TryFrom<&'a str> for Tag<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Tag<'a> {
+impl TryFrom<String> for Tag<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -1132,7 +1132,7 @@ impl<'a> TryFrom<String> for Tag<'a> {
     }
 }
 
-impl<'a> AsRef<str> for Tag<'a> {
+impl AsRef<str> for Tag<'_> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
@@ -1210,13 +1210,13 @@ impl TagGenerator {
 pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
-impl<'a> Debug for Text<'a> {
+impl Debug for Text<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Text({:?})", self.0)
     }
 }
 
-impl<'a> Display for Text<'a> {
+impl Display for Text<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0.as_ref())
     }
@@ -1281,7 +1281,7 @@ impl<'a> TryFrom<&'a [u8]> for Text<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for Text<'a> {
+impl TryFrom<Vec<u8>> for Text<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -1302,7 +1302,7 @@ impl<'a> TryFrom<&'a str> for Text<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Text<'a> {
+impl TryFrom<String> for Text<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -1312,7 +1312,7 @@ impl<'a> TryFrom<String> for Text<'a> {
     }
 }
 
-impl<'a> AsRef<str> for Text<'a> {
+impl AsRef<str> for Text<'_> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
@@ -1437,7 +1437,7 @@ impl<'a> TryFrom<&'a [u8]> for Charset<'a> {
     }
 }
 
-impl<'a> TryFrom<Vec<u8>> for Charset<'a> {
+impl TryFrom<Vec<u8>> for Charset<'_> {
     type Error = ValidationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -1462,7 +1462,7 @@ impl<'a> TryFrom<&'a str> for Charset<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for Charset<'a> {
+impl TryFrom<String> for Charset<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -1475,7 +1475,7 @@ impl<'a> TryFrom<String> for Charset<'a> {
     }
 }
 
-impl<'a> AsRef<str> for Charset<'a> {
+impl AsRef<str> for Charset<'_> {
     fn as_ref(&self) -> &str {
         match self {
             Self::Atom(atom) => atom.as_ref(),

@@ -70,7 +70,7 @@ impl<'a> TryFrom<&'a str> for ListCharString<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for ListCharString<'a> {
+impl TryFrom<String> for ListCharString<'_> {
     type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -80,7 +80,7 @@ impl<'a> TryFrom<String> for ListCharString<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for ListCharString<'a> {
+impl AsRef<[u8]> for ListCharString<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -111,7 +111,7 @@ impl<'a> TryFrom<&'a str> for ListMailbox<'a> {
     }
 }
 
-impl<'a> TryFrom<String> for ListMailbox<'a> {
+impl TryFrom<String> for ListMailbox<'_> {
     type Error = ValidationError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
@@ -259,7 +259,7 @@ impl<'a> TryFrom<AString<'a>> for MailboxOther<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for MailboxOther<'a> {
+impl AsRef<[u8]> for MailboxOther<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }

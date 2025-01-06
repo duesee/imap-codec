@@ -24,7 +24,7 @@ use crate::{
     error::{ValidationError, ValidationErrorKind},
 };
 
-impl<'a> CommandBody<'a> {
+impl CommandBody<'_> {
     /// <div class="warning">
     /// This extension must only be used when the server advertised support for it sending the COMPRESS* capability.
     /// </div>
@@ -49,7 +49,7 @@ impl Display for CompressionAlgorithm {
     }
 }
 
-impl<'a> TryFrom<&'a str> for CompressionAlgorithm {
+impl TryFrom<&str> for CompressionAlgorithm {
     type Error = ValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -60,7 +60,7 @@ impl<'a> TryFrom<&'a str> for CompressionAlgorithm {
     }
 }
 
-impl<'a> TryFrom<&'a [u8]> for CompressionAlgorithm {
+impl TryFrom<&[u8]> for CompressionAlgorithm {
     type Error = ValidationError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
