@@ -217,7 +217,7 @@ pub(crate) fn entry_list(input: &[u8]) -> IMAPResult<&[u8], Vec1<Entry>> {
     map(separated_list1(sp, entry), Vec1::unvalidated)(input)
 }
 
-impl<'a> EncodeIntoContext for MetadataResponse<'a> {
+impl EncodeIntoContext for MetadataResponse<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             MetadataResponse::WithValues(list) => {
@@ -268,7 +268,7 @@ impl EncodeIntoContext for MetadataCode {
     }
 }
 
-impl<'a> EncodeIntoContext for Entry<'a> {
+impl EncodeIntoContext for Entry<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.inner().encode_ctx(ctx)
     }
@@ -299,7 +299,7 @@ impl EncodeIntoContext for Depth {
     }
 }
 
-impl<'a> EncodeIntoContext for EntryValue<'a> {
+impl EncodeIntoContext for EntryValue<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.entry.encode_ctx(ctx)?;
         ctx.write_all(b" ")?;

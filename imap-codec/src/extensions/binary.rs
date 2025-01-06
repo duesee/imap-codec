@@ -69,7 +69,7 @@ pub(crate) fn literal8(input: &[u8]) -> IMAPResult<&[u8], Literal8> {
     ))
 }
 
-impl<'a> EncodeIntoContext for LiteralOrLiteral8<'a> {
+impl EncodeIntoContext for LiteralOrLiteral8<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             LiteralOrLiteral8::Literal(lit) => lit.encode_ctx(ctx),
@@ -78,7 +78,7 @@ impl<'a> EncodeIntoContext for LiteralOrLiteral8<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Literal8<'a> {
+impl EncodeIntoContext for Literal8<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self.mode {
             LiteralMode::Sync => write!(ctx, "~{{{}}}\r\n", self.data.len())?,
