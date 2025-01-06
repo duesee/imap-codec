@@ -41,7 +41,7 @@ pub(crate) fn known_answer_test_parse<'a, O, P>(
     parser: P,
 ) where
     O: Debug + Eq + 'a,
-    P: Fn(&'a [u8]) -> IMAPResult<&'a [u8], O>,
+    P: Fn(&'a [u8]) -> IMAPResult<'a, &'a [u8], O>,
 {
     let (got_remainder, got_object) = parser(test).unwrap();
     assert_eq!(expected_remainder, got_remainder);
