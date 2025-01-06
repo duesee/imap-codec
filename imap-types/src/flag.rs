@@ -154,6 +154,12 @@ pub enum FlagNameAttribute<'a> {
     Extension(FlagNameAttributeExtension<'a>),
 }
 
+impl<'a> From<FlagNameAttributeExtension<'a>> for FlagNameAttribute<'a> {
+    fn from(extension: FlagNameAttributeExtension<'a>) -> Self {
+        Self::Extension(extension)
+    }
+}
+
 /// An extension flag.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
@@ -225,5 +231,12 @@ mod tests {
         let flag: Flag<'static> = Flag::Seen;
         let flag_perm: FlagPerm<'static> = flag.into();
         assert_eq!(flag_perm, FlagPerm::Flag(Flag::Seen));
+    }
+
+    #[test]
+    fn test_flagnameattribute() {
+        let atom = FlagNameAttributeExtension(Atom::try_from("Custom").unwrap());
+        let flag_name_attribute = FlagNameAttribute::from(atom.clone());
+        assert_eq!(flag_name_attribute, FlagNameAttribute::Extension(atom));
     }
 }
