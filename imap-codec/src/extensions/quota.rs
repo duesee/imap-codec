@@ -189,20 +189,20 @@ pub(crate) fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 //     Ok((remaining, Capability::QuotaRes(resource)))
 // }
 
-impl<'a> EncodeIntoContext for Resource<'a> {
+impl EncodeIntoContext for Resource<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.to_string().as_bytes())
     }
 }
 
-impl<'a> EncodeIntoContext for QuotaGet<'a> {
+impl EncodeIntoContext for QuotaGet<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {} {}", self.usage, self.limit)
     }
 }
 
-impl<'a> EncodeIntoContext for QuotaSet<'a> {
+impl EncodeIntoContext for QuotaSet<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {}", self.limit)

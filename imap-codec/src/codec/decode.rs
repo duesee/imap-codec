@@ -56,7 +56,7 @@ pub(crate) enum IMAPErrorKind<'a> {
     Nom(#[allow(dead_code)] ErrorKind),
 }
 
-impl<'a, I> ParseError<I> for IMAPParseError<'a, I> {
+impl<I> ParseError<I> for IMAPParseError<'_, I> {
     fn from_error_kind(input: I, kind: ErrorKind) -> Self {
         Self {
             input,
@@ -72,7 +72,7 @@ impl<'a, I> ParseError<I> for IMAPParseError<'a, I> {
     }
 }
 
-impl<'a, I> FromExternalError<I, ParseIntError> for IMAPParseError<'a, I> {
+impl<I> FromExternalError<I, ParseIntError> for IMAPParseError<'_, I> {
     fn from_external_error(input: I, _: ErrorKind, _: ParseIntError) -> Self {
         Self {
             input,
@@ -81,7 +81,7 @@ impl<'a, I> FromExternalError<I, ParseIntError> for IMAPParseError<'a, I> {
     }
 }
 
-impl<'a, I> FromExternalError<I, TryFromIntError> for IMAPParseError<'a, I> {
+impl<I> FromExternalError<I, TryFromIntError> for IMAPParseError<'_, I> {
     fn from_external_error(input: I, _: ErrorKind, _: TryFromIntError) -> Self {
         Self {
             input,
@@ -90,7 +90,7 @@ impl<'a, I> FromExternalError<I, TryFromIntError> for IMAPParseError<'a, I> {
     }
 }
 
-impl<'a, I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'a, I> {
+impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'_, I> {
     fn from_external_error(input: I, _: ErrorKind, _: base64::DecodeError) -> Self {
         Self {
             input,
@@ -199,7 +199,7 @@ pub enum CommandDecodeError<'a> {
     Failed,
 }
 
-impl<'a> IntoStatic for CommandDecodeError<'a> {
+impl IntoStatic for CommandDecodeError<'_> {
     type Static = CommandDecodeError<'static>;
 
     fn into_static(self) -> Self::Static {

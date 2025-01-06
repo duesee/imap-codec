@@ -268,7 +268,7 @@ impl EncodeIntoContext for u64 {
 
 // ----- Command -----------------------------------------------------------------------------------
 
-impl<'a> EncodeIntoContext for Command<'a> {
+impl EncodeIntoContext for Command<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.tag.encode_ctx(ctx)?;
         ctx.write_all(b" ")?;
@@ -277,13 +277,13 @@ impl<'a> EncodeIntoContext for Command<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Tag<'a> {
+impl EncodeIntoContext for Tag<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.inner().as_bytes())
     }
 }
 
-impl<'a> EncodeIntoContext for CommandBody<'a> {
+impl EncodeIntoContext for CommandBody<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             CommandBody::Capability => ctx.write_all(b"CAPABILITY"),
@@ -654,7 +654,7 @@ impl<'a> EncodeIntoContext for CommandBody<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for AuthMechanism<'a> {
+impl EncodeIntoContext for AuthMechanism<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }
@@ -673,7 +673,7 @@ impl EncodeIntoContext for AuthenticateData<'_> {
     }
 }
 
-impl<'a> EncodeIntoContext for AString<'a> {
+impl EncodeIntoContext for AString<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             AString::Atom(atom) => atom.encode_ctx(ctx),
@@ -682,19 +682,19 @@ impl<'a> EncodeIntoContext for AString<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Atom<'a> {
+impl EncodeIntoContext for Atom<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.inner().as_bytes())
     }
 }
 
-impl<'a> EncodeIntoContext for AtomExt<'a> {
+impl EncodeIntoContext for AtomExt<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.inner().as_bytes())
     }
 }
 
-impl<'a> EncodeIntoContext for IString<'a> {
+impl EncodeIntoContext for IString<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Literal(val) => val.encode_ctx(ctx),
@@ -703,7 +703,7 @@ impl<'a> EncodeIntoContext for IString<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Literal<'a> {
+impl EncodeIntoContext for Literal<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self.mode() {
             LiteralMode::Sync => write!(ctx, "{{{}}}\r\n", self.as_ref().len())?,
@@ -718,13 +718,13 @@ impl<'a> EncodeIntoContext for Literal<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Quoted<'a> {
+impl EncodeIntoContext for Quoted<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "\"{}\"", escape_quoted(self.inner()))
     }
 }
 
-impl<'a> EncodeIntoContext for Mailbox<'a> {
+impl EncodeIntoContext for Mailbox<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Mailbox::Inbox => ctx.write_all(b"INBOX"),
@@ -733,13 +733,13 @@ impl<'a> EncodeIntoContext for Mailbox<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for MailboxOther<'a> {
+impl EncodeIntoContext for MailboxOther<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.inner().encode_ctx(ctx)
     }
 }
 
-impl<'a> EncodeIntoContext for ListMailbox<'a> {
+impl EncodeIntoContext for ListMailbox<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             ListMailbox::Token(lcs) => lcs.encode_ctx(ctx),
@@ -748,7 +748,7 @@ impl<'a> EncodeIntoContext for ListMailbox<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for ListCharString<'a> {
+impl EncodeIntoContext for ListCharString<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.as_ref())
     }
@@ -770,13 +770,13 @@ impl EncodeIntoContext for StatusDataItemName {
     }
 }
 
-impl<'a> EncodeIntoContext for Flag<'a> {
+impl EncodeIntoContext for Flag<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }
 }
 
-impl<'a> EncodeIntoContext for FlagFetch<'a> {
+impl EncodeIntoContext for FlagFetch<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Flag(flag) => flag.encode_ctx(ctx),
@@ -785,7 +785,7 @@ impl<'a> EncodeIntoContext for FlagFetch<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for FlagPerm<'a> {
+impl EncodeIntoContext for FlagPerm<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Flag(flag) => flag.encode_ctx(ctx),
@@ -800,7 +800,7 @@ impl EncodeIntoContext for DateTime {
     }
 }
 
-impl<'a> EncodeIntoContext for Charset<'a> {
+impl EncodeIntoContext for Charset<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Charset::Atom(atom) => atom.encode_ctx(ctx),
@@ -809,7 +809,7 @@ impl<'a> EncodeIntoContext for Charset<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for SearchKey<'a> {
+impl EncodeIntoContext for SearchKey<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             SearchKey::All => ctx.write_all(b"ALL"),
@@ -952,7 +952,7 @@ impl EncodeIntoContext for NaiveDate {
     }
 }
 
-impl<'a> EncodeIntoContext for MacroOrMessageDataItemNames<'a> {
+impl EncodeIntoContext for MacroOrMessageDataItemNames<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Macro(m) => m.encode_ctx(ctx),
@@ -975,7 +975,7 @@ impl EncodeIntoContext for Macro {
     }
 }
 
-impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
+impl EncodeIntoContext for MessageDataItemName<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Body => ctx.write_all(b"BODY"),
@@ -1043,7 +1043,7 @@ impl<'a> EncodeIntoContext for MessageDataItemName<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Section<'a> {
+impl EncodeIntoContext for Section<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Section::Part(part) => part.encode_ctx(ctx),
@@ -1103,7 +1103,7 @@ impl EncodeIntoContext for NonZeroU32 {
     }
 }
 
-impl<'a> EncodeIntoContext for Capability<'a> {
+impl EncodeIntoContext for Capability<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }
@@ -1111,7 +1111,7 @@ impl<'a> EncodeIntoContext for Capability<'a> {
 
 // ----- Responses ---------------------------------------------------------------------------------
 
-impl<'a> EncodeIntoContext for Response<'a> {
+impl EncodeIntoContext for Response<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Response::Status(status) => status.encode_ctx(ctx),
@@ -1123,7 +1123,7 @@ impl<'a> EncodeIntoContext for Response<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Greeting<'a> {
+impl EncodeIntoContext for Greeting<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(b"* ")?;
         self.kind.encode_ctx(ctx)?;
@@ -1150,7 +1150,7 @@ impl EncodeIntoContext for GreetingKind {
     }
 }
 
-impl<'a> EncodeIntoContext for Status<'a> {
+impl EncodeIntoContext for Status<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         fn format_status(
             tag: Option<&Tag>,
@@ -1194,7 +1194,7 @@ impl<'a> EncodeIntoContext for Status<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Code<'a> {
+impl EncodeIntoContext for Code<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Code::Alert => ctx.write_all(b"ALERT"),
@@ -1271,19 +1271,19 @@ impl<'a> EncodeIntoContext for Code<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for CodeOther<'a> {
+impl EncodeIntoContext for CodeOther<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.inner())
     }
 }
 
-impl<'a> EncodeIntoContext for Text<'a> {
+impl EncodeIntoContext for Text<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.inner().as_bytes())
     }
 }
 
-impl<'a> EncodeIntoContext for Data<'a> {
+impl EncodeIntoContext for Data<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Data::Capability(caps) => {
@@ -1447,7 +1447,7 @@ impl<'a> EncodeIntoContext for Data<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for FlagNameAttribute<'a> {
+impl EncodeIntoContext for FlagNameAttribute<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         write!(ctx, "{}", self)
     }
@@ -1498,7 +1498,7 @@ impl EncodeIntoContext for StatusDataItem {
     }
 }
 
-impl<'a> EncodeIntoContext for MessageDataItem<'a> {
+impl EncodeIntoContext for MessageDataItem<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::BodyExt {
@@ -1569,7 +1569,7 @@ impl<'a> EncodeIntoContext for MessageDataItem<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for NString<'a> {
+impl EncodeIntoContext for NString<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match &self.0 {
             Some(imap_str) => imap_str.encode_ctx(ctx),
@@ -1578,7 +1578,7 @@ impl<'a> EncodeIntoContext for NString<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for NString8<'a> {
+impl EncodeIntoContext for NString8<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             NString8::NString(nstring) => nstring.encode_ctx(ctx),
@@ -1587,7 +1587,7 @@ impl<'a> EncodeIntoContext for NString8<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for BodyStructure<'a> {
+impl EncodeIntoContext for BodyStructure<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(b"(")?;
         match self {
@@ -1622,7 +1622,7 @@ impl<'a> EncodeIntoContext for BodyStructure<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Body<'a> {
+impl EncodeIntoContext for Body<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self.specific {
             SpecificFields::Basic {
@@ -1664,7 +1664,7 @@ impl<'a> EncodeIntoContext for Body<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for BasicFields<'a> {
+impl EncodeIntoContext for BasicFields<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         List1AttributeValueOrNil(&self.parameter_list).encode_ctx(ctx)?;
         ctx.write_all(b" ")?;
@@ -1678,7 +1678,7 @@ impl<'a> EncodeIntoContext for BasicFields<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Envelope<'a> {
+impl EncodeIntoContext for Envelope<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(b"(")?;
         self.date.encode_ctx(ctx)?;
@@ -1704,7 +1704,7 @@ impl<'a> EncodeIntoContext for Envelope<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Address<'a> {
+impl EncodeIntoContext for Address<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(b"(")?;
         self.name.encode_ctx(ctx)?;
@@ -1720,7 +1720,7 @@ impl<'a> EncodeIntoContext for Address<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for SinglePartExtensionData<'a> {
+impl EncodeIntoContext for SinglePartExtensionData<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.md5.encode_ctx(ctx)?;
 
@@ -1733,7 +1733,7 @@ impl<'a> EncodeIntoContext for SinglePartExtensionData<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for MultiPartExtensionData<'a> {
+impl EncodeIntoContext for MultiPartExtensionData<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         List1AttributeValueOrNil(&self.parameter_list).encode_ctx(ctx)?;
 
@@ -1746,7 +1746,7 @@ impl<'a> EncodeIntoContext for MultiPartExtensionData<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Disposition<'a> {
+impl EncodeIntoContext for Disposition<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match &self.disposition {
             Some((s, param)) => {
@@ -1768,7 +1768,7 @@ impl<'a> EncodeIntoContext for Disposition<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Language<'a> {
+impl EncodeIntoContext for Language<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         List1OrNil(&self.language, b" ").encode_ctx(ctx)?;
 
@@ -1781,7 +1781,7 @@ impl<'a> EncodeIntoContext for Language<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for Location<'a> {
+impl EncodeIntoContext for Location<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         self.location.encode_ctx(ctx)?;
 
@@ -1794,7 +1794,7 @@ impl<'a> EncodeIntoContext for Location<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for BodyExtension<'a> {
+impl EncodeIntoContext for BodyExtension<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             BodyExtension::NString(nstring) => nstring.encode_ctx(ctx),
@@ -1814,7 +1814,7 @@ impl EncodeIntoContext for ChronoDateTime<FixedOffset> {
     }
 }
 
-impl<'a> EncodeIntoContext for CommandContinuationRequest<'a> {
+impl EncodeIntoContext for CommandContinuationRequest<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             Self::Basic(continue_basic) => match continue_basic.code() {
@@ -1866,7 +1866,7 @@ pub(crate) mod utils {
         }
     }
 
-    impl<'a, T> EncodeIntoContext for List1OrNil<'a, T>
+    impl<T> EncodeIntoContext for List1OrNil<'_, T>
     where
         T: EncodeIntoContext,
     {
@@ -1888,7 +1888,7 @@ pub(crate) mod utils {
         }
     }
 
-    impl<'a, T> EncodeIntoContext for List1AttributeValueOrNil<'a, T>
+    impl<T> EncodeIntoContext for List1AttributeValueOrNil<'_, T>
     where
         T: EncodeIntoContext,
     {

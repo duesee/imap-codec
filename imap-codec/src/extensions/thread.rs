@@ -28,7 +28,7 @@ impl EncodeIntoContext for Thread {
     }
 }
 
-impl<'a> EncodeIntoContext for ThreadingAlgorithm<'a> {
+impl EncodeIntoContext for ThreadingAlgorithm<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         match self {
             ThreadingAlgorithm::OrderedSubject => ctx.write_all(b"ORDEREDSUBJECT"),
@@ -38,7 +38,7 @@ impl<'a> EncodeIntoContext for ThreadingAlgorithm<'a> {
     }
 }
 
-impl<'a> EncodeIntoContext for ThreadingAlgorithmOther<'a> {
+impl EncodeIntoContext for ThreadingAlgorithmOther<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
         ctx.write_all(self.as_ref().as_bytes())
     }
