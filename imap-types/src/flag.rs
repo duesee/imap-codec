@@ -106,6 +106,12 @@ pub enum FlagFetch<'a> {
     Recent,
 }
 
+impl<'a> From<Flag<'a>> for FlagFetch<'a> {
+    fn from(flag: Flag<'a>) -> Self {
+        Self::Flag(flag)
+    }
+}
+
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
@@ -195,4 +201,16 @@ pub enum StoreType {
 pub enum StoreResponse {
     Answer,
     Silent,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_flagfetch() {
+        let flag: Flag<'static> = Flag::Seen;
+        let flag_fetch: FlagFetch<'static> = flag.into();
+        assert_eq!(flag_fetch, FlagFetch::Flag(Flag::Seen));
+    }
 }
