@@ -123,6 +123,12 @@ pub enum FlagPerm<'a> {
     Asterisk,
 }
 
+impl<'a> From<Flag<'a>> for FlagPerm<'a> {
+    fn from(flag: Flag<'a>) -> Self {
+        Self::Flag(flag)
+    }
+}
+
 /// Four name attributes are defined.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
@@ -212,5 +218,12 @@ mod tests {
         let flag: Flag<'static> = Flag::Seen;
         let flag_fetch: FlagFetch<'static> = flag.into();
         assert_eq!(flag_fetch, FlagFetch::Flag(Flag::Seen));
+    }
+
+    #[test]
+    fn test_flagperm() {
+        let flag: Flag<'static> = Flag::Seen;
+        let flag_perm: FlagPerm<'static> = flag.into();
+        assert_eq!(flag_perm, FlagPerm::Flag(Flag::Seen));
     }
 }
