@@ -872,6 +872,9 @@ pub struct NString<'a>(
 );
 
 impl<'a> NString<'a> {
+    /// Convenience alias to `NString(None)` for any lifetime.
+    pub const NIL: NString<'a> = NString(None);
+
     pub fn into_option(self) -> Option<Cow<'a, [u8]>> {
         self.0.map(|inner| inner.into_inner())
     }
@@ -1997,6 +2000,12 @@ mod tests {
             IString::try_from("\"AAA").unwrap(),
             IString::Quoted("\\\"AAA".try_into().unwrap())
         );
+    }
+
+    #[test]
+    fn test_nstring() {
+        assert_eq!(NString::<'static>::NIL, NString(None));
+        assert_eq!(NString::<'static>::NIL.into_option(), None);
     }
 
     #[test]
