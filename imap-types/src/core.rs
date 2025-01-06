@@ -848,9 +848,9 @@ impl AsRef<str> for Quoted<'_> {
     }
 }
 
-/// Either NIL or a string.
+/// Either `NIL` or a string.
 ///
-/// This is modeled using Rust's `Option` type.
+/// This is modeled using Rust's [`Option`] type.
 ///
 /// # ABNF definition
 ///
