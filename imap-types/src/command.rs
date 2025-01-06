@@ -1247,70 +1247,70 @@ pub enum CommandBody<'a> {
         uid: bool,
     },
 
-    /// The UID mechanism was inlined into copy, fetch, store, and search.
-    /// as an additional parameter.
-    ///
-    /// ### 6.4.8.  UID Command
-    ///
-    /// * Arguments:
-    ///   * command name
-    ///   * command arguments
-    /// * Responses:  untagged responses: FETCH, SEARCH
-    /// * Result:
-    ///   * OK - UID command completed
-    ///   * NO - UID command error
-    ///   * BAD - command unknown or arguments invalid
-    ///
-    /// The UID command has two forms.  In the first form, it takes as its
-    /// arguments a COPY, FETCH, or STORE command with arguments
-    /// appropriate for the associated command.  However, the numbers in
-    /// the sequence set argument are unique identifiers instead of
-    /// message sequence numbers.  Sequence set ranges are permitted, but
-    /// there is no guarantee that unique identifiers will be contiguous.
-    ///
-    /// A non-existent unique identifier is ignored without any error
-    /// message generated.  Thus, it is possible for a UID FETCH command
-    /// to return an OK without any data or a UID COPY or UID STORE to
-    /// return an OK without performing any operations.
-    ///
-    /// In the second form, the UID command takes a SEARCH command with
-    /// SEARCH command arguments.  The interpretation of the arguments is
-    /// the same as with SEARCH; however, the numbers returned in a SEARCH
-    /// response for a UID SEARCH command are unique identifiers instead
-    /// of message sequence numbers.  For example, the command UID SEARCH
-    /// 1:100 UID 443:557 returns the unique identifiers corresponding to
-    /// the intersection of two sequence sets, the message sequence number
-    /// range 1:100 and the UID range 443:557.
-    ///
-    ///   Note: in the above example, the UID range 443:557
-    ///   appears.  The same comment about a non-existent unique
-    ///   identifier being ignored without any error message also
-    ///   applies here.  Hence, even if neither UID 443 or 557
-    ///   exist, this range is valid and would include an existing
-    ///   UID 495.
-    ///
-    ///   Also note that a UID range of 559:* always includes the
-    ///   UID of the last message in the mailbox, even if 559 is
-    ///   higher than any assigned UID value.  This is because the
-    ///   contents of a range are independent of the order of the
-    ///   range endpoints.  Thus, any UID range with * as one of
-    ///   the endpoints indicates at least one message (the
-    ///   message with the highest numbered UID), unless the
-    ///   mailbox is empty.
-    ///
-    ///   The number after the "*" in an untagged FETCH response is always a
-    ///   message sequence number, not a unique identifier, even for a UID
-    ///   command response.  However, server implementations MUST implicitly
-    ///   include the UID message data item as part of any FETCH response
-    ///   caused by a UID command, regardless of whether a UID was specified
-    ///   as a message data item to the FETCH.
-    ///
-    ///   Note: The rule about including the UID message data item as part
-    ///   of a FETCH response primarily applies to the UID FETCH and UID
-    ///   STORE commands, including a UID FETCH command that does not
-    ///   include UID as a message data item.  Although it is unlikely that
-    ///   the other UID commands will cause an untagged FETCH, this rule
-    ///   applies to these commands as well.
+    // The UID mechanism was inlined into copy, fetch, store, and search.
+    // as an additional parameter.
+    //
+    // ### 6.4.8.  UID Command
+    //
+    // * Arguments:
+    //   * command name
+    //   * command arguments
+    // * Responses:  untagged responses: FETCH, SEARCH
+    // * Result:
+    //   * OK - UID command completed
+    //   * NO - UID command error
+    //   * BAD - command unknown or arguments invalid
+    //
+    // The UID command has two forms.  In the first form, it takes as its
+    // arguments a COPY, FETCH, or STORE command with arguments
+    // appropriate for the associated command.  However, the numbers in
+    // the sequence set argument are unique identifiers instead of
+    // message sequence numbers.  Sequence set ranges are permitted, but
+    // there is no guarantee that unique identifiers will be contiguous.
+    //
+    // A non-existent unique identifier is ignored without any error
+    // message generated.  Thus, it is possible for a UID FETCH command
+    // to return an OK without any data or a UID COPY or UID STORE to
+    // return an OK without performing any operations.
+    //
+    // In the second form, the UID command takes a SEARCH command with
+    // SEARCH command arguments.  The interpretation of the arguments is
+    // the same as with SEARCH; however, the numbers returned in a SEARCH
+    // response for a UID SEARCH command are unique identifiers instead
+    // of message sequence numbers.  For example, the command UID SEARCH
+    // 1:100 UID 443:557 returns the unique identifiers corresponding to
+    // the intersection of two sequence sets, the message sequence number
+    // range 1:100 and the UID range 443:557.
+    //
+    //   Note: in the above example, the UID range 443:557
+    //   appears.  The same comment about a non-existent unique
+    //   identifier being ignored without any error message also
+    //   applies here.  Hence, even if neither UID 443 or 557
+    //   exist, this range is valid and would include an existing
+    //   UID 495.
+    //
+    //   Also note that a UID range of 559:* always includes the
+    //   UID of the last message in the mailbox, even if 559 is
+    //   higher than any assigned UID value.  This is because the
+    //   contents of a range are independent of the order of the
+    //   range endpoints.  Thus, any UID range with * as one of
+    //   the endpoints indicates at least one message (the
+    //   message with the highest numbered UID), unless the
+    //   mailbox is empty.
+    //
+    //   The number after the "*" in an untagged FETCH response is always a
+    //   message sequence number, not a unique identifier, even for a UID
+    //   command response.  However, server implementations MUST implicitly
+    //   include the UID message data item as part of any FETCH response
+    //   caused by a UID command, regardless of whether a UID was specified
+    //   as a message data item to the FETCH.
+    //
+    //   Note: The rule about including the UID message data item as part
+    //   of a FETCH response primarily applies to the UID FETCH and UID
+    //   STORE commands, including a UID FETCH command that does not
+    //   include UID as a message data item.  Although it is unlikely that
+    //   the other UID commands will cause an untagged FETCH, this rule
+    //   applies to these commands as well.
 
     // ----- Experimental/Expansion (https://tools.ietf.org/html/rfc3501#section-6.5) -----
 
