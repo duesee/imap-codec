@@ -1,10 +1,14 @@
+[graph]
+exclude = ["imap-codec-bench"]
+
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-git = [
-    # Used in benchmarking
-    "https://github.com/stalwartlabs/mail-server?rev=53f0222f308b3e844c158fc0e603d10361da3c63",
-]
+# Uncomment if imap-codec-bench is not excluded
+# allow-git = [
+#     # Used in benchmarking
+#     "https://github.com/stalwartlabs/mail-server?rev=53f0222f308b3e844c158fc0e603d10361da3c63",
+# ]
 
 [licenses]
 allow = [
@@ -13,8 +17,9 @@ allow = [
     "Unicode-DFS-2016",
 ]
 
-[advisories]
-ignore = ["RUSTSEC-2024-0379"]
+# Uncomment if imap-codec-bench is not excluded
+# [advisories]
+# ignore = ["RUSTSEC-2024-0379"]
 
 [licenses.private]
 ignore = true
