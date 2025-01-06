@@ -880,6 +880,13 @@ impl<'a> NString<'a> {
     }
 }
 
+impl Default for NString<'_> {
+    /// Returns [`Self::NIL`].
+    fn default() -> Self {
+        Self::NIL
+    }
+}
+
 macro_rules! impl_try_from_nstring {
     ($from:ty) => {
         impl<'a> TryFrom<$from> for NString<'a> {
@@ -2004,6 +2011,7 @@ mod tests {
 
     #[test]
     fn test_nstring() {
+        assert_eq!(NString::<'static>::default(), NString(None));
         assert_eq!(NString::<'static>::NIL, NString(None));
         assert_eq!(NString::<'static>::NIL.into_option(), None);
     }
