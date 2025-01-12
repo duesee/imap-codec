@@ -4,6 +4,13 @@ use nom::combinator::map_res;
 
 use crate::{core::number64, decode::IMAPResult};
 
+/// ```abnf
+/// mod-sequence-valzer = "0" / mod-sequence-value
+/// ```
+pub(crate) fn mod_sequence_valzer(input: &[u8]) -> IMAPResult<&[u8], u64> {
+    number64(input)
+}
+
 /// Positive unsigned 64-bit integer (mod-sequence) (1 <= n < 18,446,744,073,709,551,615)
 ///
 /// ```abnf
