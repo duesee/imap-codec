@@ -59,32 +59,32 @@ pub(crate) fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusDataI
 fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
     alt((
         map(
-            tuple((tag_no_case(b"MESSAGES"), sp, number)),
-            |(_, _, num)| StatusDataItem::Messages(num),
+            preceded(tag_no_case(b"MESSAGES "), number),
+            StatusDataItem::Messages,
         ),
         map(
-            tuple((tag_no_case(b"RECENT"), sp, number)),
-            |(_, _, num)| StatusDataItem::Recent(num),
+            preceded(tag_no_case(b"RECENT "), number),
+            StatusDataItem::Recent,
         ),
         map(
-            tuple((tag_no_case(b"UIDNEXT"), sp, nz_number)),
-            |(_, _, next)| StatusDataItem::UidNext(next),
+            preceded(tag_no_case(b"UIDNEXT "), nz_number),
+            StatusDataItem::UidNext,
         ),
         map(
-            tuple((tag_no_case(b"UIDVALIDITY"), sp, nz_number)),
-            |(_, _, val)| StatusDataItem::UidValidity(val),
+            preceded(tag_no_case(b"UIDVALIDITY "), nz_number),
+            StatusDataItem::UidValidity,
         ),
         map(
-            tuple((tag_no_case(b"UNSEEN"), sp, number)),
-            |(_, _, num)| StatusDataItem::Unseen(num),
+            preceded(tag_no_case(b"UNSEEN "), number),
+            StatusDataItem::Unseen,
         ),
         map(
-            tuple((tag_no_case(b"DELETED-STORAGE"), sp, number64)),
-            |(_, _, num)| StatusDataItem::DeletedStorage(num),
+            preceded(tag_no_case(b"DELETED-STORAGE "), number64),
+            StatusDataItem::DeletedStorage,
         ),
         map(
-            tuple((tag_no_case(b"DELETED"), sp, number)),
-            |(_, _, num)| StatusDataItem::Deleted(num),
+            preceded(tag_no_case(b"DELETED "), number),
+            StatusDataItem::Deleted,
         ),
         map(
             preceded(tag_no_case(b"HIGHESTMODSEQ "), mod_sequence_valzer),
