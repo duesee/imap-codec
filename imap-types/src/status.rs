@@ -66,4 +66,14 @@ pub enum StatusDataItem {
 
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     DeletedStorage(u64),
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
+    /// The highest mod-sequence value of all messages in the mailbox.
+    /// This is the same value that is returned by the server in the HIGHESTMODSEQ response code in
+    /// an OK untagged response (see Section 3.1.2.1).
+    ///
+    /// If the server doesn't support the persistent storage of mod-sequences for the mailbox (see
+    /// Section 3.1.2.2), the server MUST return 0 as the value of the HIGHESTMODSEQ status data item.
+    HighestModSeq(u64),
 }

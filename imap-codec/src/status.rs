@@ -5,12 +5,13 @@ use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},
     multi::separated_list1,
-    sequence::tuple,
+    sequence::{preceded, tuple},
 };
 
 use crate::{
     core::{number, number64, nz_number},
     decode::IMAPResult,
+    extensions::condstore_qresync::mod_sequence_valzer,
 };
 
 /// `status-att = "MESSAGES" /
@@ -45,11 +46,14 @@ pub(crate) fn status_att_list(input: &[u8]) -> IMAPResult<&[u8], Vec<StatusDataI
     separated_list1(sp, status_att_val)(input)
 }
 
-/// `status-att-val  = ("MESSAGES" SP number) /
-///                    ("RECENT" SP number) /
-///                    ("UIDNEXT" SP nz-number) /
-///                    ("UIDVALIDITY" SP nz-number) /
-///                    ("UNSEEN" SP number)`
+/// ```abnf
+/// status-att-val  = "MESSAGES" SP number /
+///                   "RECENT" SP number /
+///                   "UIDNEXT" SP nz-number /
+///                   "UIDVALIDITY" SP nz-number /
+///                   "UNSEEN" SP number /
+///                   "HIGHESTMODSEQ" SP mod-sequence-valzer
+/// ```
 ///
 /// Note: See errata id: 261
 fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
@@ -81,6 +85,10 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
         map(
             tuple((tag_no_case(b"DELETED"), sp, number)),
             |(_, _, num)| StatusDataItem::Deleted(num),
+        ),
+        map(
+            preceded(tag_no_case(b"HIGHESTMODSEQ "), mod_sequence_valzer),
+            StatusDataItem::HighestModSeq,
         ),
     ))(input)
 }
