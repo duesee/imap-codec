@@ -1054,6 +1054,12 @@ pub enum Capability<'a> {
     Binary,
     /// UIDPLUS extension (RFC 4351)
     UidPlus,
+    /// CONDSTORE extension (RFC 7162)
+    #[cfg(feature = "ext_condstore_qresync")]
+    CondStore,
+    /// QRESYNC extension (RFC 7162)
+    #[cfg(feature = "ext_condstore_qresync")]
+    QResync,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1092,6 +1098,10 @@ impl Display for Capability<'_> {
             Self::MetadataServer => write!(f, "METADATA-SERVER"),
             Self::Binary => write!(f, "BINARY"),
             Self::UidPlus => write!(f, "UIDPLUS"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::CondStore => write!(f, "CONDSTORE"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::QResync => write!(f, "QRESYNC"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1155,6 +1165,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "metadata-server" => Self::MetadataServer,
             "binary" => Self::Binary,
             "unselect" => Self::Unselect,
+            #[cfg(feature = "ext_condstore_qresync")]
+            "condstore" => Self::Unselect,
+            #[cfg(feature = "ext_condstore_qresync")]
+            "qresync" => Self::Unselect,
             "uidplus" => Self::UidPlus,
             _ => {
                 // TODO(efficiency)
