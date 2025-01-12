@@ -58,7 +58,7 @@ pub(crate) fn flag_list(input: &[u8]) -> IMAPResult<&[u8], Vec<Flag>> {
 /// `flag-fetch = flag / "\Recent"`
 pub(crate) fn flag_fetch(input: &[u8]) -> IMAPResult<&[u8], FlagFetch> {
     if let Ok((rem, peek)) = recognize(tuple((char('\\'), atom)))(input) {
-        if peek.to_ascii_lowercase() == b"\\recent" {
+        if peek.eq_ignore_ascii_case(b"\\recent") {
             return Ok((rem, FlagFetch::Recent));
         }
     }
