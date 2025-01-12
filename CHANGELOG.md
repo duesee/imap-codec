@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added `Vec2`
 * Added short `README.md` to `assets` folder
 * Added quirk for trailing space in STATUS. Thanks, @nbdd0121!
-* Increased MSRV to 1.74.
+* Increased MSRV to 1.78.
 
 ### Changed
 
