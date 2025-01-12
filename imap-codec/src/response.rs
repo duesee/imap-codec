@@ -140,9 +140,10 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                    "NOPRIVATE"
 ///                  ) /
 ///                  "UNKNOWN-CTE" /       ; RFC 3516
-///                  "HIGHESTMODSEQ" SP mod-sequence-value ; RFC4551 /
-///                  "NOMODSEQ"                            ; RFC4551 /
-///                  "MODIFIED" SP sequence-set            ; RFC4551 /
+///                  "HIGHESTMODSEQ" SP mod-sequence-value / ; RFC7162
+///                  "NOMODSEQ"                            / ; RFC7162
+///                  "MODIFIED" SP sequence-set            / ; RFC7162
+///                  "CLOSED"                              / ; RFC7162
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 /// ```
 ///
@@ -210,6 +211,7 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
                 preceded(tag_no_case(b"MODIFIED "), sequence_set),
                 Code::Modified,
             ),
+            value(Code::Closed, tag_no_case(b"UIDNOTSTICKY")),
         )),
     ))(input)
 }
