@@ -9,7 +9,6 @@ use crate::{core::number64, decode::IMAPResult};
 /// ```abnf
 /// mod-sequence-value  = 1*DIGIT
 /// ```
-#[cfg(feature = "ext_condstore_qresync")]
 pub(crate) fn mod_sequence_value(input: &[u8]) -> IMAPResult<&[u8], NonZeroU64> {
     map_res(number64, NonZeroU64::try_from)(input)
 }
