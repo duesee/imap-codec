@@ -142,7 +142,7 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                  "UNKNOWN-CTE" /       ; RFC 3516
 ///                  "HIGHESTMODSEQ" SP mod-sequence-value ; RFC4551 /
 ///                  "NOMODSEQ"                            ; RFC4551 /
-///                  "MODIFIED" SP set                     ; RFC4551 /
+///                  "MODIFIED" SP sequence-set            ; RFC4551 /
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 /// ```
 ///
