@@ -909,6 +909,23 @@ pub enum Code<'a> {
     #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     NoModSeq,
 
+    /// A server implementing the extension defined in this document MUST return the CLOSED
+    /// response code when the currently selected mailbox is closed implicitly using the
+    /// SELECT/EXAMINE command on another mailbox.  The CLOSED response code serves as a boundary
+    /// between responses for the previously opened mailbox (which was closed) and the newly
+    /// selected mailbox; all responses before the CLOSED response code relate to the mailbox that
+    /// was closed, and all subsequent responses relate to the newly opened mailbox.
+    ///
+    /// A server that advertises "QRESYNC" or "CONDSTORE" in the capability string must return the
+    /// CLOSED response code in this case, whether or not a CONDSTORE enabling command was issued.
+    ///
+    /// There is no need to return the CLOSED response code on completion of the CLOSE or the
+    /// UNSELECT [UNSELECT] command (or similar), whose purpose is to close the currently selected
+    /// mailbox without opening a new one.
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    Closed,
+
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are
     /// added to a revision of this protocol.  Client implementations
