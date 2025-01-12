@@ -200,7 +200,7 @@ pub struct MailboxOther<'a>(pub(crate) AString<'a>);
 
 impl<'a> MailboxOther<'a> {
     pub fn validate(value: impl AsRef<[u8]>) -> Result<(), MailboxOtherError> {
-        if value.as_ref().to_ascii_lowercase() == b"inbox" {
+        if value.as_ref().eq_ignore_ascii_case(b"inbox") {
             return Err(MailboxOtherError::Reserved);
         }
 
