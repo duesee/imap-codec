@@ -184,7 +184,7 @@ impl_try_from!(AString<'a>, 'a, String, Mailbox<'a>);
 impl<'a> From<AString<'a>> for Mailbox<'a> {
     fn from(value: AString<'a>) -> Self {
         match from_utf8(value.as_ref()) {
-            Ok(value) if value.to_ascii_lowercase() == "inbox" => Self::Inbox,
+            Ok(value) if value.eq_ignore_ascii_case("inbox") => Self::Inbox,
             _ => Self::Other(MailboxOther::try_from(value).unwrap()),
         }
     }
