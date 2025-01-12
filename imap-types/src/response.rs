@@ -1,5 +1,7 @@
 //! # 7. Server Responses
 
+#[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU64;
 use std::{
     borrow::Cow,
     fmt::{Debug, Display, Formatter},
@@ -17,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::sequence::SequenceSet;
 use crate::{
     auth::AuthMechanism,
     core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
@@ -876,6 +880,34 @@ pub enum Code<'a> {
     },
 
     UidNotSticky,
+
+    /// IMAP4 Extension for Conditional STORE Operation (RFC 4551)
+    /// A server supporting the persistent storage of mod-sequences for the mailbox
+    /// MUST send the OK untagged response including HIGHESTMODSEQ response
+    /// code with every successful SELECT or EXAMINE command
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    HighestModSeq(NonZeroU64),
+
+    /// IMAP4 Extension for Conditional STORE Operation (RFC 4551)
+    /// When the server finished performing the operation on all the
+    /// messages in the message set, it checks for a non-empty list of
+    /// messages that failed the UNCHANGESINCE test.  If this list is
+    /// non-empty, the server MUST return in the tagged response a
+    /// MODIFIED response code.  The MODIFIED response code includes the
+    /// message set (for STORE) or set of UIDs (for UID STORE) of all
+    /// messages that failed the UNCHANGESINCE test.
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    Modified(SequenceSet),
+
+    /// IMAP4 Extension for Conditional STORE Operation (RFC 4551)
+    /// A server that doesn't support the persistent storage of mod-sequences
+    /// for the mailbox MUST send the OK untagged response including NOMODSEQ
+    /// response code with every successful SELECT or EXAMINE command.
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    NoModSeq,
 
     /// Additional response codes defined by particular client or server
     /// implementations SHOULD be prefixed with an "X" until they are

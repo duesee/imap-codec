@@ -36,6 +36,8 @@ use crate::{
     flag::flag_perm,
     mailbox::mailbox_data,
 };
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::{extensions::condstore_qresync::mod_sequence_value, sequence::sequence_set};
 
 // ----- greeting -----
 
@@ -138,6 +140,9 @@ pub(crate) fn resp_text(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Text)>
 ///                    "NOPRIVATE"
 ///                  ) /
 ///                  "UNKNOWN-CTE" /       ; RFC 3516
+///                  "HIGHESTMODSEQ" SP mod-sequence-value ; RFC4551 /
+///                  "NOMODSEQ"                            ; RFC4551 /
+///                  "MODIFIED" SP set                     ; RFC4551 /
 ///                  atom [SP 1*<any TEXT-CHAR except "]">]
 /// ```
 ///
@@ -194,6 +199,18 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
         resp_code_apnd,
         resp_code_copy,
         value(Code::UidNotSticky, tag_no_case(b"UIDNOTSTICKY")),
+        #[cfg(feature = "ext_condstore_qresync")]
+        alt((
+            map(
+                preceded(tag_no_case(b"HIGHESTMODSEQ "), mod_sequence_value),
+                Code::HighestModSeq,
+            ),
+            value(Code::NoModSeq, tag_no_case(b"NOMODSEQ")),
+            map(
+                preceded(tag_no_case(b"MODIFIED "), sequence_set),
+                Code::Modified,
+            ),
+        )),
     ))(input)
 }
 

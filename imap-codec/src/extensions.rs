@@ -1,5 +1,7 @@
 pub mod binary;
 pub mod compress;
+#[cfg(feature = "ext_condstore_qresync")]
+pub mod condstore_qresync;
 pub mod enable;
 #[cfg(feature = "ext_id")]
 pub mod id;
