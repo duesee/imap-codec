@@ -1041,6 +1041,8 @@ impl EncodeIntoContext for MessageDataItemName<'_> {
                 join_serializable(section, b".", ctx)?;
                 ctx.write_all(b"]")
             }
+            #[cfg(feature = "ext_condstore_qresync")]
+            MessageDataItemName::ModSeq => ctx.write_all(b"MODSEQ"),
         }
     }
 }
@@ -1260,6 +1262,8 @@ impl EncodeIntoContext for Code<'_> {
                 ctx.write_all(b"MODIFIED ")?;
                 sequence_set.encode_ctx(ctx)
             }
+            #[cfg(feature = "ext_condstore_qresync")]
+            Code::Closed => ctx.write_all(b"CLOSED"),
             Code::CompressionActive => ctx.write_all(b"COMPRESSIONACTIVE"),
             Code::OverQuota => ctx.write_all(b"OVERQUOTA"),
             Code::TooBig => ctx.write_all(b"TOOBIG"),
@@ -1516,6 +1520,11 @@ impl EncodeIntoContext for StatusDataItem {
                 ctx.write_all(b"DELETED-STORAGE ")?;
                 count.encode_ctx(ctx)
             }
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::HighestModSeq(value) => {
+                ctx.write_all(b"HIGHESTMODSEQ ")?;
+                value.encode_ctx(ctx)
+            }
         }
     }
 }
@@ -1587,6 +1596,8 @@ impl EncodeIntoContext for MessageDataItem<'_> {
                 ctx.write_all(b"] ")?;
                 size.encode_ctx(ctx)
             }
+            #[cfg(feature = "ext_condstore_qresync")]
+            Self::ModSeq(value) => write!(ctx, "MODSEQ {value}"),
         }
     }
 }

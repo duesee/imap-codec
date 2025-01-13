@@ -1,5 +1,7 @@
 //! Fetch-related types.
 
+#[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU64;
 use std::{
     fmt::{Display, Formatter},
     num::NonZeroU32,
@@ -235,6 +237,10 @@ pub enum MessageDataItemName<'a> {
     BinarySize {
         section: Vec<NonZeroU32>,
     },
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    ModSeq,
 }
 
 /// Message data item.
@@ -371,6 +377,9 @@ pub enum MessageDataItem<'a> {
         section: Vec<NonZeroU32>,
         size: u32,
     },
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    ModSeq(NonZeroU64),
 }
 
 /// A part specifier is either a part number or one of the following:
