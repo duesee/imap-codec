@@ -157,36 +157,36 @@ pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem
 pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     alt((
         map(
-            tuple((tag_no_case(b"ENVELOPE"), sp, envelope)),
-            |(_, _, envelope)| MessageDataItem::Envelope(envelope),
+            preceded(tag_no_case(b"ENVELOPE "), envelope),
+            MessageDataItem::Envelope,
         ),
         map(
-            tuple((tag_no_case(b"INTERNALDATE"), sp, date_time)),
-            |(_, _, date_time)| MessageDataItem::InternalDate(date_time),
+            preceded(tag_no_case(b"INTERNALDATE "), date_time),
+            MessageDataItem::InternalDate,
         ),
         map(
-            tuple((tag_no_case(b"RFC822.HEADER"), sp, nstring)),
-            |(_, _, nstring)| MessageDataItem::Rfc822Header(nstring),
+            preceded(tag_no_case(b"RFC822.HEADER "), nstring),
+            MessageDataItem::Rfc822Header,
         ),
         map(
-            tuple((tag_no_case(b"RFC822.TEXT"), sp, nstring)),
-            |(_, _, nstring)| MessageDataItem::Rfc822Text(nstring),
+            preceded(tag_no_case(b"RFC822.TEXT "), nstring),
+            MessageDataItem::Rfc822Text,
         ),
         map(
-            tuple((tag_no_case(b"RFC822.SIZE"), sp, number)),
-            |(_, _, num)| MessageDataItem::Rfc822Size(num),
+            preceded(tag_no_case(b"RFC822.SIZE "), number),
+            MessageDataItem::Rfc822Size,
         ),
         map(
-            tuple((tag_no_case(b"RFC822"), sp, nstring)),
-            |(_, _, nstring)| MessageDataItem::Rfc822(nstring),
+            preceded(tag_no_case(b"RFC822 "), nstring),
+            MessageDataItem::Rfc822,
         ),
         map(
-            tuple((tag_no_case(b"BODYSTRUCTURE"), sp, body(8))),
-            |(_, _, body)| MessageDataItem::BodyStructure(body),
+            preceded(tag_no_case(b"BODYSTRUCTURE "), body(8)),
+            MessageDataItem::BodyStructure,
         ),
         map(
-            tuple((tag_no_case(b"BODY"), sp, body(8))),
-            |(_, _, body)| MessageDataItem::Body(body),
+            preceded(tag_no_case(b"BODY "), body(8)),
+            MessageDataItem::Body,
         ),
         map(
             tuple((
@@ -202,9 +202,10 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
                 data,
             },
         ),
-        map(tuple((tag_no_case(b"UID"), sp, uniqueid)), |(_, _, uid)| {
-            MessageDataItem::Uid(uid)
-        }),
+        map(
+            preceded(tag_no_case(b"UID "), uniqueid),
+            MessageDataItem::Uid,
+        ),
         map(
             tuple((
                 tag_no_case(b"BINARY"),
