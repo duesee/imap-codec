@@ -483,6 +483,8 @@ impl EncodeIntoContext for CommandBody<'_> {
                 sequence_set,
                 macro_or_item_names,
                 uid,
+                #[cfg(feature = "ext_condstore_qresync")]
+                changed_since,
             } => {
                 if *uid {
                     ctx.write_all(b"UID FETCH ")?;
@@ -492,7 +494,16 @@ impl EncodeIntoContext for CommandBody<'_> {
 
                 sequence_set.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
-                macro_or_item_names.encode_ctx(ctx)
+                macro_or_item_names.encode_ctx(ctx)?;
+
+                #[cfg(feature = "ext_condstore_qresync")]
+                if let Some(changed_since) = changed_since {
+                    ctx.write_all(b" (CHANGEDSINCE ")?;
+                    changed_since.encode_ctx(ctx)?;
+                    ctx.write_all(b" ")?;
+                }
+
+                Ok(())
             }
             CommandBody::Store {
                 sequence_set,
@@ -500,6 +511,8 @@ impl EncodeIntoContext for CommandBody<'_> {
                 response,
                 flags,
                 uid,
+                #[cfg(feature = "ext_condstore_qresync")]
+                unchanged_since,
             } => {
                 if *uid {
                     ctx.write_all(b"UID STORE ")?;
@@ -509,6 +522,13 @@ impl EncodeIntoContext for CommandBody<'_> {
 
                 sequence_set.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
+
+                #[cfg(feature = "ext_condstore_qresync")]
+                if let Some(unchanged_since) = unchanged_since {
+                    ctx.write_all(b"(UNCHANGEDSINCE ")?;
+                    unchanged_since.encode_ctx(ctx)?;
+                    ctx.write_all(b") ")?;
+                }
 
                 match kind {
                     StoreType::Add => ctx.write_all(b"+")?,

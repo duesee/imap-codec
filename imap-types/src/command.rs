@@ -3,6 +3,8 @@
 //! See <https://tools.ietf.org/html/rfc3501#section-6>.
 
 use std::borrow::Cow;
+#[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU64;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1147,6 +1149,8 @@ pub enum CommandBody<'a> {
         macro_or_item_names: MacroOrMessageDataItemNames<'a>,
         /// Use UID variant.
         uid: bool,
+        #[cfg(feature = "ext_condstore_qresync")]
+        changed_since: Option<NonZeroU64>,
     },
 
     /// ### 6.4.6.  STORE Command
@@ -1210,6 +1214,9 @@ pub enum CommandBody<'a> {
         flags: Vec<Flag<'a>>, // FIXME(misuse): must not accept "\*" or "\Recent"
         /// Use UID variant.
         uid: bool,
+        /// --- Modifiers ---
+        #[cfg(feature = "ext_condstore_qresync")]
+        unchanged_since: Option<u64>,
     },
 
     /// 6.4.7.  COPY Command
@@ -1733,6 +1740,8 @@ impl<'a> CommandBody<'a> {
             sequence_set,
             macro_or_item_names: macro_or_item_names.into(),
             uid,
+            #[cfg(feature = "ext_condstore_qresync")]
+            changed_since: None,
         })
     }
 
@@ -1755,6 +1764,8 @@ impl<'a> CommandBody<'a> {
             response,
             flags,
             uid,
+            #[cfg(feature = "ext_condstore_qresync")]
+            unchanged_since: None,
         })
     }
 
@@ -2195,6 +2206,8 @@ mod tests {
                     sequence_set: SequenceSet::try_from(1u32).unwrap(),
                     macro_or_item_names: MacroOrMessageDataItemNames::Macro(Macro::Full),
                     uid: true,
+                    #[cfg(feature = "ext_condstore_qresync")]
+                    changed_since: None,
                 },
                 "FETCH",
             ),
@@ -2205,6 +2218,8 @@ mod tests {
                     response: StoreResponse::Silent,
                     kind: StoreType::Add,
                     uid: true,
+                    #[cfg(feature = "ext_condstore_qresync")]
+                    unchanged_since: None,
                 },
                 "STORE",
             ),
