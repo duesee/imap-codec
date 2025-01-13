@@ -113,6 +113,8 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
         value(MessageDataItemName::Rfc822Size, tag_no_case(b"RFC822.SIZE")),
         value(MessageDataItemName::Rfc822Text, tag_no_case(b"RFC822.TEXT")),
         value(MessageDataItemName::Rfc822, tag_no_case(b"RFC822")),
+        #[cfg(feature = "ext_condstore_qresync")]
+        value(MessageDataItemName::ModSeq, tag_no_case(b"MODSEQ")),
     ))(input)
 }
 

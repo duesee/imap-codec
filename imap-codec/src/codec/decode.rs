@@ -474,6 +474,8 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
+                            #[cfg(feature = "ext_condstore_qresync")]
+                            parameters: Vec::default(),
                         },
                     )
                     .unwrap(),
@@ -487,6 +489,8 @@ mod tests {
                         "a",
                         CommandBody::Select {
                             mailbox: Mailbox::Inbox,
+                            #[cfg(feature = "ext_condstore_qresync")]
+                            parameters: Vec::default(),
                         },
                     )
                     .unwrap(),
@@ -675,14 +679,22 @@ mod tests {
                 b"* SEARCH 1\r\n".as_ref(),
                 Ok((
                     b"".as_ref(),
-                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+                    Response::Data(Data::Search(
+                        vec![NonZeroU32::new(1).unwrap()],
+                        #[cfg(feature = "ext_condstore_qresync")]
+                        None,
+                    )),
                 )),
             ),
             (
                 b"* SEARCH 1\r\n???".as_ref(),
                 Ok((
                     b"???".as_ref(),
-                    Response::Data(Data::Search(vec![NonZeroU32::new(1).unwrap()])),
+                    Response::Data(Data::Search(
+                        vec![NonZeroU32::new(1).unwrap()],
+                        #[cfg(feature = "ext_condstore_qresync")]
+                        None,
+                    )),
                 )),
             ),
             (

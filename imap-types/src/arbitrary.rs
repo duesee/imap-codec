@@ -1,6 +1,8 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::AttributeFlag;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -67,6 +69,8 @@ impl_arbitrary_try_from! { QuotedChar, char }
 impl_arbitrary_try_from! { Mailbox<'a>, &str }
 impl_arbitrary_try_from! { Capability<'a>, Atom<'a> }
 impl_arbitrary_try_from! { Flag<'a>, &str }
+#[cfg(feature = "ext_condstore_qresync")]
+impl_arbitrary_try_from! { AttributeFlag<'a>, &str }
 impl_arbitrary_try_from! { FlagNameAttribute<'a>, Atom<'a> }
 impl_arbitrary_try_from! { MailboxOther<'a>, AString<'a> }
 impl_arbitrary_try_from! { CapabilityEnable<'a>, &str }
@@ -198,7 +202,13 @@ fn arbitrary_search_key_limited<'a>(
         return arbitrary_search_key_leaf(u);
     }
 
-    Ok(match u.int_in_range(0u8..=36)? {
+    let till = if cfg!(feature = "ext_condstore_qresync") {
+        37
+    } else {
+        36
+    };
+
+    Ok(match u.int_in_range(0u8..=till)? {
         0 => SearchKey::And({
             let keys = {
                 let len = u.arbitrary_len::<SearchKey>()?;
@@ -256,6 +266,11 @@ fn arbitrary_search_key_limited<'a>(
         34 => SearchKey::Unflagged,
         35 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
         36 => SearchKey::Unseen,
+        #[cfg(feature = "ext_condstore_qresync")]
+        37 => SearchKey::ModSequence {
+            entry: Arbitrary::arbitrary(u)?,
+            modseq: Arbitrary::arbitrary(u)?,
+        },
         _ => unreachable!(),
     })
 }

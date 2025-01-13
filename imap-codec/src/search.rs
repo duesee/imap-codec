@@ -12,6 +12,8 @@ use nom::{
     sequence::{delimited, separated_pair, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::search_modsequence;
 use crate::{
     core::{astring, atom, charset, number},
     datetime::date,
@@ -48,44 +50,47 @@ pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     ))
 }
 
-/// `search-key = "ALL" /
-///               "ANSWERED" /
-///               "BCC" SP astring /
-///               "BEFORE" SP date /
-///               "BODY" SP astring /
-///               "CC" SP astring /
-///               "DELETED" /
-///               "FLAGGED" /
-///               "FROM" SP astring /
-///               "KEYWORD" SP flag-keyword /
-///               "NEW" /
-///               "OLD" /
-///               "ON" SP date /
-///               "RECENT" /
-///               "SEEN" /
-///               "SINCE" SP date /
-///               "SUBJECT" SP astring /
-///               "TEXT" SP astring /
-///               "TO" SP astring /
-///               "UNANSWERED" /
-///               "UNDELETED" /
-///               "UNFLAGGED" /
-///               "UNKEYWORD" SP flag-keyword /
-///               "UNSEEN" /
-///                 ; Above this line were in [IMAP2]
-///               "DRAFT" /
-///               "HEADER" SP header-fld-name SP astring /
-///               "LARGER" SP number /
-///               "NOT" SP search-key /
-///               "OR" SP search-key SP search-key /
-///               "SENTBEFORE" SP date /
-///               "SENTON" SP date /
-///               "SENTSINCE" SP date /
-///               "SMALLER" SP number /
-///               "UID" SP sequence-set /
-///               "UNDRAFT" /
-///               sequence-set /
-///               "(" search-key *(SP search-key) ")"`
+/// ```abnf
+/// search-key = "ALL" /
+///              "ANSWERED" /
+///              "BCC" SP astring /
+///              "BEFORE" SP date /
+///              "BODY" SP astring /
+///              "CC" SP astring /
+///              "DELETED" /
+///              "FLAGGED" /
+///              "FROM" SP astring /
+///              "KEYWORD" SP flag-keyword /
+///              "NEW" /
+///              "OLD" /
+///              "ON" SP date /
+///              "RECENT" /
+///              "SEEN" /
+///              "SINCE" SP date /
+///              "SUBJECT" SP astring /
+///              "TEXT" SP astring /
+///              "TO" SP astring /
+///              "UNANSWERED" /
+///              "UNDELETED" /
+///              "UNFLAGGED" /
+///              "UNKEYWORD" SP flag-keyword /
+///              "UNSEEN" /
+///                ; Above this line were in [IMAP2]
+///              "DRAFT" /
+///              "HEADER" SP header-fld-name SP astring /
+///              "LARGER" SP number /
+///              "NOT" SP search-key /
+///              "OR" SP search-key SP search-key /
+///              "SENTBEFORE" SP date /
+///              "SENTON" SP date /
+///              "SENTSINCE" SP date /
+///              "SMALLER" SP number /
+///              "UID" SP sequence-set /
+///              "UNDRAFT" /
+///              search-modsequence / ; RFC 7162
+///              sequence-set /
+///              "(" search-key *(SP search-key) ")"
+/// ```
 ///
 /// This parser is recursively defined. Thus, in order to not overflow the stack,
 /// it is needed to limit how may recursions are allowed. (8 should suffice).
@@ -207,6 +212,10 @@ fn search_key_limited(input: &[u8], remaining_recursion: usize) -> IMAPResult<&[
                 |(_, _, val)| SearchKey::Uid(val),
             ),
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
+            #[cfg(feature = "ext_condstore_qresync")]
+            map(search_modsequence, |(entry, modseq)| {
+                SearchKey::ModSequence { entry, modseq }
+            }),
             map(sequence_set, SearchKey::SequenceSet),
             map(
                 delimited(tag(b"("), separated_list1(sp, search_key), tag(b")")),

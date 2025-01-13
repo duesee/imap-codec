@@ -425,9 +425,20 @@ pub enum Data<'a> {
     /// search criteria.  For SEARCH, these are message sequence numbers;
     /// for UID SEARCH, these are unique identifiers.  Each number is
     /// delimited by a space.
-    Search(Vec<NonZeroU32>),
+    Search(
+        Vec<NonZeroU32>,
+        /// MODSEQ
+        #[cfg(feature = "ext_condstore_qresync")]
+        #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+        Option<NonZeroU64>,
+    ),
 
-    Sort(Vec<NonZeroU32>),
+    Sort(
+        Vec<NonZeroU32>,
+        #[cfg(feature = "ext_condstore_qresync")]
+        #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+        Option<NonZeroU64>,
+    ),
 
     Thread(Vec<Thread>),
 
@@ -571,6 +582,13 @@ pub enum Data<'a> {
     Metadata {
         mailbox: Mailbox<'a>,
         items: MetadataResponse<'a>,
+    },
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    Vanished {
+        earlier: bool,
+        known_uids: SequenceSet,
     },
 }
 

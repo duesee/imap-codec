@@ -4,8 +4,11 @@ use abnf_core::streaming::crlf;
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
 use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+#[cfg(feature = "ext_condstore_qresync")]
+use imap_types::sequence::SequenceSet;
 use imap_types::{
     core::{Text, Vec1},
+    fetch::MessageDataItem,
     response::{
         Bye, Capability, Code, CodeOther, CommandContinuationRequest, Data, Greeting, GreetingKind,
         Response, Status, StatusBody, StatusKind, Tagged,
@@ -385,16 +388,55 @@ pub(crate) fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
     Ok((remaining, Status::Bye(Bye { code, text })))
 }
 
-/// `message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))`
+/// ```abnf
+/// message-data = nz-number SP ("EXPUNGE" / ("FETCH" SP msg-att))
+/// ```
+///
+/// From RFC 7162:
+///
+/// ```abnf
+/// message-data =/ expunged-resp
+///
+/// expunged-resp = "VANISHED" [SP "(EARLIER)"] SP known-uids
+/// ```
 pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
-    let (remaining, seq) = terminated(nz_number, sp)(input)?;
+    #[derive(Clone)]
+    enum TmpData<'a> {
+        Expunge,
+        Fetch(Vec1<MessageDataItem<'a>>),
+        #[cfg(feature = "ext_condstore_qresync")]
+        Vanished(bool, SequenceSet),
+    }
 
-    alt((
-        map(tag_no_case(b"EXPUNGE"), move |_| Data::Expunge(seq)),
-        map(preceded(tag_no_case(b"FETCH "), msg_att), move |items| {
-            Data::Fetch { seq, items }
-        }),
-    ))(remaining)
+    let (remaining, (seq, tmp)) = tuple((
+        terminated(nz_number, sp),
+        alt((
+            value(TmpData::Expunge, tag_no_case(b"EXPUNGE")),
+            map(preceded(tag_no_case(b"FETCH "), msg_att), TmpData::Fetch),
+            #[cfg(feature = "ext_condstore_qresync")]
+            map(
+                tuple((
+                    tag_no_case("VANISHED"),
+                    opt(tag_no_case(" (EARLIER)")),
+                    preceded(sp, sequence_set),
+                )),
+                |(_, earlier, known_uids)| TmpData::Vanished(earlier.is_some(), known_uids),
+            ),
+        )),
+    ))(input)?;
+
+    Ok((
+        remaining,
+        match tmp {
+            TmpData::Expunge => Data::Expunge(seq),
+            TmpData::Fetch(items) => Data::Fetch { seq, items },
+            #[cfg(feature = "ext_condstore_qresync")]
+            TmpData::Vanished(earlier, known_uids) => Data::Vanished {
+                earlier,
+                known_uids,
+            },
+        },
+    ))
 }
 
 #[cfg(test)]
@@ -467,12 +509,16 @@ mod tests {
             (
                 b"* SEARCH 1 2 3 42\r\n",
                 b"",
-                Response::Data(Data::Search(vec![
-                    1.try_into().unwrap(),
-                    2.try_into().unwrap(),
-                    3.try_into().unwrap(),
-                    42.try_into().unwrap(),
-                ])),
+                Response::Data(Data::Search(
+                    vec![
+                        1.try_into().unwrap(),
+                        2.try_into().unwrap(),
+                        3.try_into().unwrap(),
+                        42.try_into().unwrap(),
+                    ],
+                    #[cfg(feature = "ext_condstore_qresync")]
+                    None,
+                )),
             ),
             (b"* 42 EXISTS\r\n", b"", Response::Data(Data::Exists(42))),
             (
@@ -675,12 +721,12 @@ mod tests {
                             disposition: None,
                             tail: Some(Language {
                                 language: vec![],
-                                tail: Some(Location{
+                                tail: Some(Location {
                                     location: NString(None),
                                     extensions: vec![BodyExtension::List(Vec1::from(BodyExtension::Number(1337)))],
-                                })
-                            })
-                        })
+                                }),
+                            }),
+                        }),
                     }),
                 },
                 b"(\"TEXT\" \"plain\" NIL NIL \"description\" \"cte\" 123 14 \"AABB\" NIL NIL NIL (1337))",
