@@ -51,6 +51,8 @@ use std::{borrow::Borrow, collections::VecDeque, io::Write, num::NonZeroU32};
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
+#[cfg(feature = "ext_condstore_qresync")]
+use imap_types::command::{FetchModifier, SelectParameter, StoreModifier};
 use imap_types::{
     auth::{AuthMechanism, AuthenticateData},
     body::{
@@ -323,16 +325,42 @@ impl EncodeIntoContext for CommandBody<'_> {
                 ctx.write_all(b" ")?;
                 password.declassify().encode_ctx(ctx)
             }
-            CommandBody::Select { mailbox } => {
+            CommandBody::Select {
+                mailbox,
+                #[cfg(feature = "ext_condstore_qresync")]
+                parameters,
+            } => {
                 ctx.write_all(b"SELECT")?;
                 ctx.write_all(b" ")?;
-                mailbox.encode_ctx(ctx)
+                mailbox.encode_ctx(ctx)?;
+
+                #[cfg(feature = "ext_condstore_qresync")]
+                if !parameters.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(parameters, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Unselect => ctx.write_all(b"UNSELECT"),
-            CommandBody::Examine { mailbox } => {
+            CommandBody::Examine {
+                mailbox,
+                #[cfg(feature = "ext_condstore_qresync")]
+                parameters,
+            } => {
                 ctx.write_all(b"EXAMINE")?;
                 ctx.write_all(b" ")?;
-                mailbox.encode_ctx(ctx)
+                mailbox.encode_ctx(ctx)?;
+
+                #[cfg(feature = "ext_condstore_qresync")]
+                if !parameters.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(parameters, b" ", ctx)?;
+                    ctx.write_all(b")")?;
+                }
+
+                Ok(())
             }
             CommandBody::Create { mailbox } => {
                 ctx.write_all(b"CREATE")?;
@@ -484,7 +512,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 macro_or_item_names,
                 uid,
                 #[cfg(feature = "ext_condstore_qresync")]
-                changed_since,
+                modifiers,
             } => {
                 if *uid {
                     ctx.write_all(b"UID FETCH ")?;
@@ -497,10 +525,10 @@ impl EncodeIntoContext for CommandBody<'_> {
                 macro_or_item_names.encode_ctx(ctx)?;
 
                 #[cfg(feature = "ext_condstore_qresync")]
-                if let Some(changed_since) = changed_since {
-                    ctx.write_all(b" (CHANGEDSINCE ")?;
-                    changed_since.encode_ctx(ctx)?;
-                    ctx.write_all(b" ")?;
+                if !modifiers.is_empty() {
+                    ctx.write_all(b" (")?;
+                    join_serializable(modifiers, b" ", ctx)?;
+                    ctx.write_all(b")")?;
                 }
 
                 Ok(())
@@ -512,7 +540,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 flags,
                 uid,
                 #[cfg(feature = "ext_condstore_qresync")]
-                unchanged_since,
+                modifiers,
             } => {
                 if *uid {
                     ctx.write_all(b"UID STORE ")?;
@@ -524,9 +552,9 @@ impl EncodeIntoContext for CommandBody<'_> {
                 ctx.write_all(b" ")?;
 
                 #[cfg(feature = "ext_condstore_qresync")]
-                if let Some(unchanged_since) = unchanged_since {
-                    ctx.write_all(b"(UNCHANGEDSINCE ")?;
-                    unchanged_since.encode_ctx(ctx)?;
+                if !modifiers.is_empty() {
+                    ctx.write_all(b"(")?;
+                    join_serializable(modifiers, b" ", ctx)?;
                     ctx.write_all(b") ")?;
                 }
 
@@ -671,6 +699,60 @@ impl EncodeIntoContext for CommandBody<'_> {
                     join_serializable(entries.as_ref(), b" ", ctx)?;
                     ctx.write_all(b")")
                 }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+impl EncodeIntoContext for FetchModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            FetchModifier::ChangedSince(since) => write!(ctx, "CHANGEDSINCE {since}"),
+            FetchModifier::Vanished => write!(ctx, "VANISHED"),
+        }
+    }
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+impl EncodeIntoContext for StoreModifier {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            StoreModifier::UnchangedSince(since) => write!(ctx, "UNCHANGEDSINCE {since}"),
+        }
+    }
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+impl EncodeIntoContext for SelectParameter {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        match self {
+            SelectParameter::CondStore => write!(ctx, "CONDSTORE"),
+            SelectParameter::QResync {
+                uid_validity,
+                mod_sequence_value,
+                known_uids,
+                seq_match_data,
+            } => {
+                write!(ctx, "QRESYNC (")?;
+                uid_validity.encode_ctx(ctx)?;
+                write!(ctx, " ")?;
+                mod_sequence_value.encode_ctx(ctx)?;
+
+                if let Some(known_uids) = known_uids {
+                    write!(ctx, " ")?;
+                    known_uids.encode_ctx(ctx)?;
+                }
+
+                if let Some((known_sequence_set, known_uid_set)) = seq_match_data {
+                    write!(ctx, " (")?;
+                    known_sequence_set.encode_ctx(ctx)?;
+                    write!(ctx, " ")?;
+                    known_uid_set.encode_ctx(ctx)?;
+                    write!(ctx, ")")?;
+                }
+
+                write!(ctx, ")")
             }
         }
     }
@@ -930,6 +1012,16 @@ impl EncodeIntoContext for SearchKey<'_> {
                 sequence_set.encode_ctx(ctx)
             }
             SearchKey::Undraft => ctx.write_all(b"UNDRAFT"),
+            #[cfg(feature = "ext_condstore_qresync")]
+            SearchKey::ModSequence { entry, modseq } => {
+                ctx.write_all(b"MODSEQ")?;
+                if let Some((attribute_flag, entry_type_req)) = entry {
+                    write!(ctx, " \"/flags/{attribute_flag}\"")?;
+                    write!(ctx, " {entry_type_req}")?;
+                }
+                ctx.write_all(b" ")?;
+                modseq.encode_ctx(ctx)
+            }
             SearchKey::SequenceSet(sequence_set) => sequence_set.encode_ctx(ctx),
             SearchKey::And(search_keys) => {
                 ctx.write_all(b"(")?;
@@ -1381,6 +1473,8 @@ impl EncodeIntoContext for Data<'_> {
                 join_serializable(items, b" ", ctx)?;
                 ctx.write_all(b")")?;
             }
+            // TODO: Exclude pattern via cfg?
+            #[cfg(not(feature = "ext_condstore_qresync"))]
             Data::Search(seqs) => {
                 if seqs.is_empty() {
                     ctx.write_all(b"* SEARCH")?;
@@ -1389,12 +1483,46 @@ impl EncodeIntoContext for Data<'_> {
                     join_serializable(seqs, b" ", ctx)?;
                 }
             }
+            // TODO: Exclude pattern via cfg?
+            #[cfg(feature = "ext_condstore_qresync")]
+            Data::Search(seqs, modseq) => {
+                if seqs.is_empty() {
+                    ctx.write_all(b"* SEARCH")?;
+                } else {
+                    ctx.write_all(b"* SEARCH ")?;
+                    join_serializable(seqs, b" ", ctx)?;
+                }
+
+                if let Some(modseq) = modseq {
+                    ctx.write_all(b" (MODSEQ ")?;
+                    modseq.encode_ctx(ctx)?;
+                    ctx.write_all(b")")?;
+                }
+            }
+            // TODO: Exclude pattern via cfg?
+            #[cfg(not(feature = "ext_condstore_qresync"))]
             Data::Sort(seqs) => {
                 if seqs.is_empty() {
                     ctx.write_all(b"* SORT")?;
                 } else {
                     ctx.write_all(b"* SORT ")?;
                     join_serializable(seqs, b" ", ctx)?;
+                }
+            }
+            // TODO: Exclude pattern via cfg?
+            #[cfg(feature = "ext_condstore_qresync")]
+            Data::Sort(seqs, modseq) => {
+                if seqs.is_empty() {
+                    ctx.write_all(b"* SORT")?;
+                } else {
+                    ctx.write_all(b"* SORT ")?;
+                    join_serializable(seqs, b" ", ctx)?;
+                }
+
+                if let Some(modseq) = modseq {
+                    ctx.write_all(b" (MODSEQ ")?;
+                    modseq.encode_ctx(ctx)?;
+                    ctx.write_all(b")")?;
                 }
             }
             Data::Thread(threads) => {
@@ -1486,6 +1614,18 @@ impl EncodeIntoContext for Data<'_> {
                 mailbox.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 items.encode_ctx(ctx)?;
+            }
+            #[cfg(feature = "ext_condstore_qresync")]
+            Data::Vanished {
+                earlier,
+                known_uids,
+            } => {
+                ctx.write_all(b"* VANISHED")?;
+                if *earlier {
+                    ctx.write_all(b" (EARLIER)")?;
+                }
+                ctx.write_all(b" ")?;
+                known_uids.encode_ctx(ctx)?;
             }
         }
 

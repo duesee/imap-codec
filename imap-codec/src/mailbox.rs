@@ -6,6 +6,8 @@ use imap_types::{
     response::Data,
     utils::indicators::is_list_char,
 };
+#[cfg(feature = "ext_condstore_qresync")]
+use nom::character::streaming::char;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1},
@@ -14,6 +16,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::search_sort_mod_seq;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::metadata_resp;
 use crate::{
@@ -61,11 +65,22 @@ pub(crate) fn mailbox(input: &[u8]) -> IMAPResult<&[u8], Mailbox> {
 /// mailbox-data = "FLAGS" SP flag-list /
 ///                "LIST" SP mailbox-list /
 ///                "LSUB" SP mailbox-list /
-///                "SEARCH" *(SP nz-number) /
+///                "SEARCH" *(SP nz-number) [SP search-sort-mod-seq] /
+///                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+///                                         |
+///                                         RFC 7162 (edited)
 ///                "STATUS" SP mailbox SP "(" [status-att-list] ")" /
 ///                "METADATA" SP mailbox SP (entry-values / entry-list) / ; RFC 5464
 ///                number SP "EXISTS" /
 ///                number SP "RECENT"
+/// ```
+///
+/// FROM RFC 7162 (CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// mailbox-data =/ "SEARCH" [1*(SP nz-number) SP search-sort-mod-seq]
+///
+/// search-sort-mod-seq = "(" "MODSEQ" SP mod-sequence-value ")"
 /// ```
 pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
     alt((
@@ -86,13 +101,33 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 delimiter,
             },
         ),
+        #[cfg(not(feature = "ext_condstore_qresync"))]
         map(
             tuple((tag_no_case(b"SEARCH"), many0(preceded(sp, nz_number)))),
             |(_, nums)| Data::Search(nums),
         ),
+        #[cfg(feature = "ext_condstore_qresync")]
+        map(
+            tuple((
+                tag_no_case(b"SEARCH"),
+                many0(preceded(sp, nz_number)),
+                opt(preceded(char(' '), search_sort_mod_seq)),
+            )),
+            |(_, nums, modseq)| Data::Search(nums, modseq),
+        ),
+        #[cfg(not(feature = "ext_condstore_qresync"))]
         map(
             preceded(tag_no_case(b"SORT"), many0(preceded(sp, nz_number))),
             Data::Sort,
+        ),
+        #[cfg(feature = "ext_condstore_qresync")]
+        map(
+            tuple((
+                tag_no_case(b"SORT"),
+                many0(preceded(sp, nz_number)),
+                opt(preceded(char(' '), search_sort_mod_seq)),
+            )),
+            |(_, nums, modseq)| Data::Sort(nums, modseq),
         ),
         thread_data,
         map(

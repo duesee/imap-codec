@@ -4,6 +4,8 @@
 
 use std::borrow::Cow;
 #[cfg(feature = "ext_condstore_qresync")]
+use std::num::NonZeroU32;
+#[cfg(feature = "ext_condstore_qresync")]
 use std::num::NonZeroU64;
 
 #[cfg(feature = "arbitrary")]
@@ -398,6 +400,8 @@ pub enum CommandBody<'a> {
     Select {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        #[cfg(feature = "ext_condstore_qresync")]
+        parameters: Vec<SelectParameter>,
     },
 
     /// Unselect a mailbox.
@@ -431,6 +435,8 @@ pub enum CommandBody<'a> {
     Examine {
         /// Mailbox.
         mailbox: Mailbox<'a>,
+        #[cfg(feature = "ext_condstore_qresync")]
+        parameters: Vec<SelectParameter>,
     },
 
     /// ### 6.3.3.  CREATE Command
@@ -1150,7 +1156,7 @@ pub enum CommandBody<'a> {
         /// Use UID variant.
         uid: bool,
         #[cfg(feature = "ext_condstore_qresync")]
-        changed_since: Option<NonZeroU64>,
+        modifiers: Vec<FetchModifier>,
     },
 
     /// ### 6.4.6.  STORE Command
@@ -1216,7 +1222,7 @@ pub enum CommandBody<'a> {
         uid: bool,
         /// --- Modifiers ---
         #[cfg(feature = "ext_condstore_qresync")]
-        unchanged_since: Option<u64>,
+        modifiers: Vec<StoreModifier>,
     },
 
     /// 6.4.7.  COPY Command
@@ -1591,6 +1597,8 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Select {
             mailbox: mailbox.try_into()?,
+            #[cfg(feature = "ext_condstore_qresync")]
+            parameters: Vec::default(),
         })
     }
 
@@ -1601,6 +1609,8 @@ impl<'a> CommandBody<'a> {
     {
         Ok(CommandBody::Examine {
             mailbox: mailbox.try_into()?,
+            #[cfg(feature = "ext_condstore_qresync")]
+            parameters: Vec::default(),
         })
     }
 
@@ -1741,7 +1751,7 @@ impl<'a> CommandBody<'a> {
             macro_or_item_names: macro_or_item_names.into(),
             uid,
             #[cfg(feature = "ext_condstore_qresync")]
-            changed_since: None,
+            modifiers: Vec::default(),
         })
     }
 
@@ -1765,7 +1775,7 @@ impl<'a> CommandBody<'a> {
             flags,
             uid,
             #[cfg(feature = "ext_condstore_qresync")]
-            unchanged_since: None,
+            modifiers: Vec::default(),
         })
     }
 
@@ -1833,6 +1843,40 @@ impl<'a> CommandBody<'a> {
             Self::GetMetadata { .. } => "GETMETADATA",
         }
     }
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
+pub enum SelectParameter {
+    CondStore,
+    QResync {
+        uid_validity: NonZeroU32,
+        mod_sequence_value: NonZeroU64,
+        known_uids: Option<SequenceSet>, // TODO(misuse): "*" is not allowed.
+        seq_match_data: Option<(SequenceSet, SequenceSet)>, // TODO(misuse): ensure both have the same length?
+    },
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
+pub enum FetchModifier {
+    ChangedSince(NonZeroU64),
+    Vanished,
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
+pub enum StoreModifier {
+    UnchangedSince(u64),
 }
 
 /// Error-related types.
@@ -2107,6 +2151,8 @@ mod tests {
             (
                 CommandBody::Select {
                     mailbox: Mailbox::Inbox,
+                    #[cfg(feature = "ext_condstore_qresync")]
+                    parameters: Vec::default(),
                 },
                 "SELECT",
             ),
@@ -2114,6 +2160,8 @@ mod tests {
             (
                 CommandBody::Examine {
                     mailbox: Mailbox::Inbox,
+                    #[cfg(feature = "ext_condstore_qresync")]
+                    parameters: Vec::default(),
                 },
                 "EXAMINE",
             ),
@@ -2207,7 +2255,7 @@ mod tests {
                     macro_or_item_names: MacroOrMessageDataItemNames::Macro(Macro::Full),
                     uid: true,
                     #[cfg(feature = "ext_condstore_qresync")]
-                    changed_since: None,
+                    modifiers: Vec::default(),
                 },
                 "FETCH",
             ),
@@ -2219,7 +2267,7 @@ mod tests {
                     kind: StoreType::Add,
                     uid: true,
                     #[cfg(feature = "ext_condstore_qresync")]
-                    unchanged_since: None,
+                    modifiers: Vec::default(),
                 },
                 "STORE",
             ),

@@ -4,6 +4,8 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::{AttributeFlag, EntryTypeReq};
 use crate::{
     core::{AString, Atom, Vec1},
     datetime::NaiveDate,
@@ -158,6 +160,13 @@ pub enum SearchKey<'a> {
 
     /// Messages that do not have the \Seen flag set.
     Unseen,
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
+    ModSequence {
+        entry: Option<(AttributeFlag<'a>, EntryTypeReq)>,
+        modseq: u64,
+    },
 }
 
 impl SearchKey<'_> {

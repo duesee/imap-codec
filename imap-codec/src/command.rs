@@ -5,6 +5,8 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_condstore_qresync")]
+use imap_types::command::{FetchModifier, SelectParameter, StoreModifier};
 use imap_types::{
     auth::AuthMechanism,
     command::{Command, CommandBody},
@@ -16,6 +18,8 @@ use imap_types::{
 };
 #[cfg(feature = "ext_condstore_qresync")]
 use nom::character::streaming::char;
+#[cfg(feature = "ext_condstore_qresync")]
+use nom::sequence::separated_pair;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -24,6 +28,8 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::core::nz_number;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::mod_sequence_value;
 #[cfg(feature = "ext_condstore_qresync")]
@@ -214,13 +220,29 @@ pub(crate) fn delete(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     Ok((remaining, CommandBody::Delete { mailbox }))
 }
 
-/// `examine = "EXAMINE" SP mailbox`
+/// ```abnf
+/// examine = "EXAMINE" SP mailbox [select-params]
+///                                ^^^^^^^^^^^^^^^
+///                                |
+///                                RFC 4466: modifies the original IMAP EXAMINE command to accept optional parameters
+/// ```
 pub(crate) fn examine(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = preceded(tag_no_case(b"EXAMINE "), mailbox);
 
     let (remaining, mailbox) = parser(input)?;
 
-    Ok((remaining, CommandBody::Examine { mailbox }))
+    #[cfg(feature = "ext_condstore_qresync")]
+    let (remaining, parameters) =
+        map(opt(select_params), |params| params.unwrap_or_default())(remaining)?;
+
+    Ok((
+        remaining,
+        CommandBody::Examine {
+            mailbox,
+            #[cfg(feature = "ext_condstore_qresync")]
+            parameters,
+        },
+    ))
 }
 
 /// `list = "LIST" SP mailbox SP list-mailbox`
@@ -270,13 +292,110 @@ pub(crate) fn rename(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     ))
 }
 
-/// `select = "SELECT" SP mailbox`
+/// ```abnf
+/// select = "SELECT" SP mailbox [select-params]
+///                              ^^^^^^^^^^^^^^^
+///                              |
+///                              RFC 4466: modifies the original IMAP SELECT command to accept optional parameters
+/// ```
 pub(crate) fn select(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = preceded(tag_no_case(b"SELECT "), mailbox);
 
     let (remaining, mailbox) = parser(input)?;
 
-    Ok((remaining, CommandBody::Select { mailbox }))
+    #[cfg(feature = "ext_condstore_qresync")]
+    let (remaining, parameters) =
+        map(opt(select_params), |params| params.unwrap_or_default())(remaining)?;
+
+    Ok((
+        remaining,
+        CommandBody::Select {
+            mailbox,
+            #[cfg(feature = "ext_condstore_qresync")]
+            parameters,
+        },
+    ))
+}
+
+/// FROM RFC4466:
+///
+/// ```abnf
+/// select-params = SP "(" select-param *(SP select-param) ")"
+/// ```
+#[cfg(feature = "ext_condstore_qresync")]
+pub(crate) fn select_params(input: &[u8]) -> IMAPResult<&[u8], Vec<SelectParameter>> {
+    delimited(tag(" ("), separated_list1(sp, select_param), tag(")"))(input)
+}
+
+/// FROM RFC4466:
+///
+/// ```abnf
+/// select-param = select-param-name [SP select-param-value]
+///                ;; a parameter to SELECT may contain one or more atoms and/or strings and/or lists.
+///
+/// select-param-name = tagged-ext-label
+///
+/// select-param-value = tagged-ext-val
+///                      ;; This non-terminal shows recommended syntax for future extensions.
+/// ```
+///
+/// FROM RFC 7162 (CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// select-param =/ condstore-param
+///              ;; Conforms to the generic "select-param" non-terminal syntax defined in [RFC4466].
+///
+/// condstore-param = "CONDSTORE"
+///
+/// select-param =/ "QRESYNC" SP "("
+///                   uidvalidity SP
+///                   mod-sequence-value [SP known-uids]
+///                   [SP seq-match-data]
+///                 ")"
+///                 ;; Conforms to the generic select-param syntax defined in [RFC4466].
+///
+/// uidvalidity = nz-number
+///
+/// known-uids = sequence-set
+///              ;; Sequence of UIDs; "*" is not allowed.
+///
+/// seq-match-data = "(" known-sequence-set SP known-uid-set ")"
+///
+/// known-sequence-set = sequence-set
+///                    ;; Set of message numbers corresponding to
+///                    ;; the UIDs in known-uid-set, in ascending order.
+///                    ;; * is not allowed.
+///
+/// known-uid-set = sequence-set
+///                 ;; Set of UIDs corresponding to the messages in
+///                 ;; known-sequence-set, in ascending order.
+///                 ;; * is not allowed.
+/// ```
+#[cfg(feature = "ext_condstore_qresync")]
+pub(crate) fn select_param(input: &[u8]) -> IMAPResult<&[u8], SelectParameter> {
+    alt((
+        value(SelectParameter::CondStore, tag_no_case("CONDSTORE")),
+        map(
+            delimited(
+                tag_no_case("QRESYNC ("),
+                tuple((
+                    terminated(nz_number, sp),
+                    mod_sequence_value,
+                    opt(preceded(sp, sequence_set)),
+                    opt(preceded(sp, separated_pair(sequence_set, sp, sequence_set))),
+                )),
+                char(')'),
+            ),
+            |(uid_validity, mod_sequence_value, known_uids, seq_match_data)| {
+                SelectParameter::QResync {
+                    uid_validity,
+                    mod_sequence_value,
+                    known_uids,
+                    seq_match_data,
+                }
+            },
+        ),
+    ))(input)
 }
 
 /// `status = "STATUS" SP mailbox SP "(" status-att *(SP status-att) ")"`
@@ -452,38 +571,7 @@ pub(crate) fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                                     "FULL" /
 ///                                     "FAST" /
 ///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
-/// ```
-///
-/// From RFC 4466:
-///
-/// ```abnf
-/// fetch = "FETCH" SP sequence-set SP ("ALL" /
-///                                     "FULL" /
-///                                     "FAST" /
-///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
-///                                     [fetch-modifiers]
-///                                     ;; modifies the original IMAP4 FETCH command to
-///                                     ;; accept optional modifiers
-///
-/// fetch-modifiers = SP "(" fetch-modifier *(SP fetch-modifier) ")"
-///
-/// fetch-modifier = fetch-modifier-name [ SP fetch-modif-params ]
-///
-/// fetch-modif-params = tagged-ext-val
-///                      ;; This non-terminal shows recommended syntax
-///                      ;; for future extensions.
-///
-/// fetch-modifier-name = tagged-ext-label
-/// ```
-///
-/// From RFC 7162 (CONDSTORE/QRESYNC):
-///
-/// ```abnf
-/// fetch-modifier =/ chgsince-fetch-mod
-///                   ;; Conforms to the generic "fetch-modifier" syntax defined in [RFC4466].
-///
-/// chgsince-fetch-mod = "CHANGEDSINCE" SP mod-sequence-value
-///                      ;; CHANGEDSINCE FETCH modifier conforms to the fetch-modifier syntax.
+///                                     [fetch-modifiers] ; FROM RFC 4466
 /// ```
 pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
@@ -514,18 +602,14 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             )),
         ),
         #[cfg(feature = "ext_condstore_qresync")]
-        opt(delimited(
-            tag(" ("),
-            preceded(tag_no_case("CHANGEDSINCE "), mod_sequence_value),
-            char(')'),
-        )),
+        map(opt(fetch_modifiers), Option::unwrap_or_default),
     ));
 
     #[cfg(not(feature = "ext_condstore_qresync"))]
     let (remaining, (_, sequence_set, macro_or_item_names)) = parser(input)?;
 
     #[cfg(feature = "ext_condstore_qresync")]
-    let (remaining, (_, sequence_set, macro_or_item_names, changed_since)) = parser(input)?;
+    let (remaining, (_, sequence_set, macro_or_item_names, modifiers)) = parser(input)?;
 
     Ok((
         remaining,
@@ -534,22 +618,106 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             macro_or_item_names,
             uid: false,
             #[cfg(feature = "ext_condstore_qresync")]
-            changed_since,
+            modifiers,
         },
     ))
 }
 
+#[cfg(feature = "ext_condstore_qresync")]
+/// From RFC 4466:
+///
 /// ```abnf
-/// store = "STORE" SP sequence-set SP store-att-flags
+/// fetch-modifiers = SP "(" fetch-modifier *(SP fetch-modifier) ")"
+/// ```
+pub(crate) fn fetch_modifiers(input: &[u8]) -> IMAPResult<&[u8], Vec<FetchModifier>> {
+    delimited(tag(" ("), separated_list1(sp, fetch_modifier), char(')'))(input)
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+/// From RFC 4466:
+///
+/// ```abnf
+/// fetch-modifier = fetch-modifier-name [ SP fetch-modif-params ]
+///
+/// fetch-modif-params = tagged-ext-val
+///                      ;; This non-terminal shows recommended syntax
+///                      ;; for future extensions.
+///
+/// fetch-modifier-name = tagged-ext-label
 /// ```
 ///
-/// With store-modifier from RFC 4466 (enabled by CONDSTORE/QRESYNC):
+/// From RFC 7162 (CONDSTORE/QRESYNC):
 ///
 /// ```abnf
+/// fetch-modifier =/ chgsince-fetch-mod
+///                   ;; Conforms to the generic "fetch-modifier" syntax defined in [RFC4466].
+///
+/// chgsince-fetch-mod = "CHANGEDSINCE" SP mod-sequence-value
+///                      ;; CHANGEDSINCE FETCH modifier conforms to the fetch-modifier syntax.
+///
+/// rexpunges-fetch-mod = "VANISHED"
+///                     ;; VANISHED UID FETCH modifier conforms to the fetch-modifier syntax defined in [RFC4466].
+///                     ;; It is only allowed in the UID FETCH command.
+/// ```
+pub(crate) fn fetch_modifier(input: &[u8]) -> IMAPResult<&[u8], FetchModifier> {
+    alt((
+        map(
+            preceded(tag_no_case("CHANGEDSINCE "), mod_sequence_value),
+            FetchModifier::ChangedSince,
+        ),
+        value(FetchModifier::Vanished, tag_no_case("VANISHED")),
+    ))(input)
+}
+
+/// ```abnf
 /// store = "STORE" SP sequence-set [store-modifiers] SP store-att-flags
+///                                 ^^^^^^^^^^^^^^^^^
+///                                 |
+///                                 RFC 4466
+/// ```
+pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
+    let mut parser = tuple((
+        tag_no_case(b"STORE"),
+        preceded(sp, sequence_set),
+        #[cfg(feature = "ext_condstore_qresync")]
+        map(opt(store_modifiers), Option::unwrap_or_default),
+        preceded(sp, store_att_flags),
+    ));
+
+    #[cfg(not(feature = "ext_condstore_qresync"))]
+    let (remaining, (_, sequence_set, (kind, response, flags))) = parser(input)?;
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    let (remaining, (_, sequence_set, modifiers, (kind, response, flags))) = parser(input)?;
+
+    Ok((
+        remaining,
+        CommandBody::Store {
+            sequence_set,
+            kind,
+            response,
+            flags,
+            uid: false,
+            #[cfg(feature = "ext_condstore_qresync")]
+            modifiers,
+        },
+    ))
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+/// From RFC 4466:
 ///
-/// store-modifiers =  SP "(" store-modifier *(SP store-modifier) ")"
+/// ```abnf
+/// store-modifiers = SP "(" store-modifier *(SP store-modifier) ")"
+/// ```
+pub(crate) fn store_modifiers(input: &[u8]) -> IMAPResult<&[u8], Vec<StoreModifier>> {
+    delimited(tag(" ("), separated_list1(sp, store_modifier), char(')'))(input)
+}
+
+#[cfg(feature = "ext_condstore_qresync")]
+/// From RFC 4466:
 ///
+/// ```abnf
 /// store-modifier = store-modifier-name [SP store-modif-params]
 ///
 /// store-modif-params = tagged-ext-val
@@ -563,44 +731,11 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// store-modifier =/ "UNCHANGEDSINCE" SP mod-sequence-valzer
 ///                ;; Only a single "UNCHANGEDSINCE" may be specified in a STORE operation.
 /// ```
-pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    #[cfg(not(feature = "ext_condstore_qresync"))]
-    let mut parser = tuple((
-        tag_no_case(b"STORE"),
-        preceded(sp, sequence_set),
-        preceded(sp, store_att_flags),
-    ));
-
-    #[cfg(feature = "ext_condstore_qresync")]
-    let mut parser = tuple((
-        tag_no_case(b"STORE"),
-        preceded(sp, sequence_set),
-        opt(delimited(
-            tag(" ("),
-            preceded(tag_no_case("UNCHANGEDSINCE "), mod_sequence_valzer),
-            char(')'),
-        )),
-        preceded(sp, store_att_flags),
-    ));
-
-    #[cfg(not(feature = "ext_condstore_qresync"))]
-    let (remaining, (_, sequence_set, (kind, response, flags))) = parser(input)?;
-
-    #[cfg(feature = "ext_condstore_qresync")]
-    let (remaining, (_, sequence_set, unchanged_since, (kind, response, flags))) = parser(input)?;
-
-    Ok((
-        remaining,
-        CommandBody::Store {
-            sequence_set,
-            kind,
-            response,
-            flags,
-            uid: false,
-            #[cfg(feature = "ext_condstore_qresync")]
-            unchanged_since,
-        },
-    ))
+pub(crate) fn store_modifier(input: &[u8]) -> IMAPResult<&[u8], StoreModifier> {
+    map(
+        preceded(tag_no_case(b"UNCHANGEDSINCE "), mod_sequence_valzer),
+        StoreModifier::UnchangedSince,
+    )(input)
 }
 
 /// `store-att-flags = (["+" / "-"] "FLAGS" [".SILENT"]) SP (flag-list / (flag *(SP flag)))`
