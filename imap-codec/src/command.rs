@@ -14,6 +14,8 @@ use imap_types::{
     flag::{Flag, StoreResponse, StoreType},
     secret::Secret,
 };
+#[cfg(feature = "ext_condstore_qresync")]
+use nom::character::streaming::char;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -22,6 +24,10 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::mod_sequence_value;
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::mod_sequence_valzer;
 #[cfg(feature = "ext_id")]
 use crate::extensions::id::id;
 #[cfg(feature = "ext_metadata")]
@@ -441,40 +447,85 @@ pub(crate) fn copy(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     ))
 }
 
-/// `fetch = "FETCH" SP sequence-set SP ("ALL" /
-///                                      "FULL" /
-///                                      "FAST" /
-///                                      fetch-att / "(" fetch-att *(SP fetch-att) ")")`
+/// ```abnf
+/// fetch = "FETCH" SP sequence-set SP ("ALL" /
+///                                     "FULL" /
+///                                     "FAST" /
+///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
+/// ```
+///
+/// From RFC 4466:
+///
+/// ```abnf
+/// fetch = "FETCH" SP sequence-set SP ("ALL" /
+///                                     "FULL" /
+///                                     "FAST" /
+///                                     fetch-att / "(" fetch-att *(SP fetch-att) ")")
+///                                     [fetch-modifiers]
+///                                     ;; modifies the original IMAP4 FETCH command to
+///                                     ;; accept optional modifiers
+///
+/// fetch-modifiers = SP "(" fetch-modifier *(SP fetch-modifier) ")"
+///
+/// fetch-modifier = fetch-modifier-name [ SP fetch-modif-params ]
+///
+/// fetch-modif-params = tagged-ext-val
+///                      ;; This non-terminal shows recommended syntax
+///                      ;; for future extensions.
+///
+/// fetch-modifier-name = tagged-ext-label
+/// ```
+///
+/// From RFC 7162 (CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// fetch-modifier =/ chgsince-fetch-mod
+///                   ;; Conforms to the generic "fetch-modifier" syntax defined in [RFC4466].
+///
+/// chgsince-fetch-mod = "CHANGEDSINCE" SP mod-sequence-value
+///                      ;; CHANGEDSINCE FETCH modifier conforms to the fetch-modifier syntax.
+/// ```
 pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tuple((
         tag_no_case(b"FETCH"),
-        sp,
-        sequence_set,
-        sp,
-        alt((
-            value(
-                MacroOrMessageDataItemNames::Macro(Macro::All),
-                tag_no_case(b"ALL"),
-            ),
-            value(
-                MacroOrMessageDataItemNames::Macro(Macro::Fast),
-                tag_no_case(b"FAST"),
-            ),
-            value(
-                MacroOrMessageDataItemNames::Macro(Macro::Full),
-                tag_no_case(b"FULL"),
-            ),
-            map(fetch_att, |fetch_att| {
-                MacroOrMessageDataItemNames::MessageDataItemNames(vec![fetch_att])
-            }),
-            map(
-                delimited(tag(b"("), separated_list0(sp, fetch_att), tag(b")")),
-                MacroOrMessageDataItemNames::MessageDataItemNames,
-            ),
+        preceded(sp, sequence_set),
+        preceded(
+            sp,
+            alt((
+                value(
+                    MacroOrMessageDataItemNames::Macro(Macro::All),
+                    tag_no_case(b"ALL"),
+                ),
+                value(
+                    MacroOrMessageDataItemNames::Macro(Macro::Fast),
+                    tag_no_case(b"FAST"),
+                ),
+                value(
+                    MacroOrMessageDataItemNames::Macro(Macro::Full),
+                    tag_no_case(b"FULL"),
+                ),
+                map(fetch_att, |fetch_att| {
+                    MacroOrMessageDataItemNames::MessageDataItemNames(vec![fetch_att])
+                }),
+                map(
+                    delimited(tag(b"("), separated_list0(sp, fetch_att), tag(b")")),
+                    MacroOrMessageDataItemNames::MessageDataItemNames,
+                ),
+            )),
+        ),
+        #[cfg(feature = "ext_condstore_qresync")]
+        opt(delimited(
+            tag(" ("),
+            preceded(tag_no_case("CHANGEDSINCE "), mod_sequence_value),
+            char(')'),
         )),
     ));
 
-    let (remaining, (_, _, sequence_set, _, macro_or_item_names)) = parser(input)?;
+    #[cfg(not(feature = "ext_condstore_qresync"))]
+    let (remaining, (_, sequence_set, macro_or_item_names)) = parser(input)?;
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    let (remaining, (_, sequence_set, macro_or_item_names, changed_since)) = parser(input)?;
 
     Ok((
         remaining,
@@ -482,15 +533,61 @@ pub(crate) fn fetch(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             sequence_set,
             macro_or_item_names,
             uid: false,
+            #[cfg(feature = "ext_condstore_qresync")]
+            changed_since,
         },
     ))
 }
 
-/// `store = "STORE" SP sequence-set SP store-att-flags`
+/// ```abnf
+/// store = "STORE" SP sequence-set SP store-att-flags
+/// ```
+///
+/// With store-modifier from RFC 4466 (enabled by CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// store = "STORE" SP sequence-set [store-modifiers] SP store-att-flags
+///
+/// store-modifiers =  SP "(" store-modifier *(SP store-modifier) ")"
+///
+/// store-modifier = store-modifier-name [SP store-modif-params]
+///
+/// store-modif-params = tagged-ext-val
+///
+/// store-modifier-name = tagged-ext-label
+/// ```
+///
+/// From RFC 7162 (CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// store-modifier =/ "UNCHANGEDSINCE" SP mod-sequence-valzer
+///                ;; Only a single "UNCHANGEDSINCE" may be specified in a STORE operation.
+/// ```
 pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
-    let mut parser = tuple((tag_no_case(b"STORE"), sp, sequence_set, sp, store_att_flags));
+    #[cfg(not(feature = "ext_condstore_qresync"))]
+    let mut parser = tuple((
+        tag_no_case(b"STORE"),
+        preceded(sp, sequence_set),
+        preceded(sp, store_att_flags),
+    ));
 
-    let (remaining, (_, _, sequence_set, _, (kind, response, flags))) = parser(input)?;
+    #[cfg(feature = "ext_condstore_qresync")]
+    let mut parser = tuple((
+        tag_no_case(b"STORE"),
+        preceded(sp, sequence_set),
+        opt(delimited(
+            tag(" ("),
+            preceded(tag_no_case("UNCHANGEDSINCE "), mod_sequence_valzer),
+            char(')'),
+        )),
+        preceded(sp, store_att_flags),
+    ));
+
+    #[cfg(not(feature = "ext_condstore_qresync"))]
+    let (remaining, (_, sequence_set, (kind, response, flags))) = parser(input)?;
+
+    #[cfg(feature = "ext_condstore_qresync")]
+    let (remaining, (_, sequence_set, unchanged_since, (kind, response, flags))) = parser(input)?;
 
     Ok((
         remaining,
@@ -500,6 +597,8 @@ pub(crate) fn store(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
             response,
             flags,
             uid: false,
+            #[cfg(feature = "ext_condstore_qresync")]
+            unchanged_since,
         },
     ))
 }
