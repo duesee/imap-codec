@@ -8,11 +8,14 @@ use imap_types::{
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
+    character::streaming::char,
     combinator::{map, opt, value},
     multi::separated_list1,
     sequence::{delimited, preceded, tuple},
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::mod_sequence_value;
 use crate::{
     body::body,
     core::{astring, nstring, number, nz_number},
@@ -34,7 +37,8 @@ use crate::{
 ///             "BODY.PEEK" section ["<" number "." nz-number ">"] /
 ///             "BINARY"      section-binary [partial] / ; RFC 3516
 ///             "BINARY.PEEK" section-binary [partial] / ; RFC 3516
-///             "BINARY.SIZE" section-binary             ; RFC 3516
+///             "BINARY.SIZE" section-binary           / ; RFC 3516
+///             "MODSEQ"                                 ; RFC 7162
 /// ```
 pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> {
     alt((
@@ -112,9 +116,11 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
     ))(input)
 }
 
-/// `msg-att = "("
-///            (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
-///            ")"`
+/// ```abnf
+/// msg-att = "("
+///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
+///           ")"
+/// ```
 pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> {
     delimited(
         tag(b"("),
@@ -126,19 +132,37 @@ pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> 
     )(input)
 }
 
-/// `msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"`
+/// ```abnf
+/// msg-att-dynamic = "FLAGS" SP "(" [flag-fetch *(SP flag-fetch)] ")"
+/// ```
 ///
 /// Note: MAY change for a message
 pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
-    let mut parser = tuple((
-        tag_no_case(b"FLAGS"),
-        sp,
-        delimited(tag(b"("), opt(separated_list1(sp, flag_fetch)), tag(b")")),
-    ));
+    let flags = map(
+        preceded(
+            tag_no_case(b"FLAGS "),
+            delimited(char('('), opt(separated_list1(sp, flag_fetch)), char(')')),
+        ),
+        |flags| MessageDataItem::Flags(flags.unwrap_or_default()),
+    );
+    #[cfg(feature = "ext_condstore_qresync")]
+    let modseq = map(
+        preceded(
+            tag_no_case("MODSEQ "),
+            delimited(char('('), mod_sequence_value, char(')')),
+        ),
+        MessageDataItem::ModSeq,
+    );
 
-    let (remaining, (_, _, flags)) = parser(input)?;
+    #[cfg(feature = "ext_condstore_qresync")]
+    let mut parser = alt((flags, modseq));
 
-    Ok((remaining, MessageDataItem::Flags(flags.unwrap_or_default())))
+    #[cfg(not(feature = "ext_condstore_qresync"))]
+    let mut parser = flags;
+
+    let (remaining, item) = parser(input)?;
+
+    Ok((remaining, item))
 }
 
 /// ```abnf

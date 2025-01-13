@@ -5,13 +5,14 @@ use nom::{
     bytes::streaming::tag_no_case,
     combinator::{map, value},
     multi::separated_list1,
-    sequence::{preceded, tuple},
+    sequence::preceded,
 };
 
+#[cfg(feature = "ext_condstore_qresync")]
+use crate::extensions::condstore_qresync::mod_sequence_valzer;
 use crate::{
     core::{number, number64, nz_number},
     decode::IMAPResult,
-    extensions::condstore_qresync::mod_sequence_valzer,
 };
 
 /// `status-att = "MESSAGES" /
@@ -86,6 +87,7 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
             preceded(tag_no_case(b"DELETED "), number),
             StatusDataItem::Deleted,
         ),
+        #[cfg(feature = "ext_condstore_qresync")]
         map(
             preceded(tag_no_case(b"HIGHESTMODSEQ "), mod_sequence_valzer),
             StatusDataItem::HighestModSeq,
