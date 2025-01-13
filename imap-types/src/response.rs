@@ -920,7 +920,7 @@ pub enum Code<'a> {
     /// CLOSED response code in this case, whether or not a CONDSTORE enabling command was issued.
     ///
     /// There is no need to return the CLOSED response code on completion of the CLOSE or the
-    /// UNSELECT [UNSELECT] command (or similar), whose purpose is to close the currently selected
+    /// UNSELECT \[UNSELECT\] command (or similar), whose purpose is to close the currently selected
     /// mailbox without opening a new one.
     #[cfg(feature = "ext_condstore_qresync")]
     #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
