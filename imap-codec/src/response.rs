@@ -271,7 +271,11 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
     }
 
     let mut parser = tuple((
-        tag(b"+ "),
+        tag(b"+"),
+        #[cfg(feature = "quirk_continue_req_space_relaxed")]
+        opt(sp),
+        #[cfg(not(feature = "quirk_continue_req_space_relaxed"))]
+        sp,
         alt((
             #[cfg(not(feature = "quirk_crlf_relaxed"))]
             map(
@@ -294,7 +298,7 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
         crlf,
     ));
 
-    let (remaining, (_, either, _)) = parser(input)?;
+    let (remaining, (_, _, either, _)) = parser(input)?;
 
     let continue_request = match either {
         Either::Base64(data) => CommandContinuationRequest::base64(data),
