@@ -28,6 +28,7 @@ quirk = [
     "quirk_rectify_numbers",
     "quirk_trailing_space",
     "quirk_spaces_between_addresses",
+    "quirk_continue_req_space_relaxed",
 ]
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
@@ -41,6 +42,8 @@ quirk_rectify_numbers = []
 quirk_spaces_between_addresses = []
 # Accept a trailing space in `STATUS` data response.
 quirk_trailing_space = []
+# Accept continuation request commands without required space `+\r\n`
+quirk_continue_req_space_relaxed = []
 
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]
