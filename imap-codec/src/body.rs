@@ -264,7 +264,14 @@ pub(crate) fn body_fld_desc(input: &[u8]) -> IMAPResult<&[u8], NString> {
 ///
 /// TODO: why the special case?
 pub(crate) fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
-    string(input)
+    #[cfg(not(feature = "quirk_body_fld_enc_nil_to_empty"))]
+    return string(input);
+
+    #[cfg(feature = "quirk_body_fld_enc_nil_to_empty")]
+    map(nstring, |enc| match enc.0 {
+        Some(enc) => enc,
+        None => IString::try_from("").unwrap(),
+    })(input)
 }
 
 #[inline]
