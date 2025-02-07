@@ -263,6 +263,12 @@ pub(crate) fn body_fld_desc(input: &[u8]) -> IMAPResult<&[u8], NString> {
 /// `body-fld-enc = string`
 ///
 /// TODO: why the special case?
+///
+/// # Quirks
+///
+/// The following erroneous content observed:
+///
+/// * A NIL value in maddy.
 pub(crate) fn body_fld_enc(input: &[u8]) -> IMAPResult<&[u8], IString> {
     #[cfg(not(feature = "quirk_body_fld_enc_nil_to_empty"))]
     return string(input);
