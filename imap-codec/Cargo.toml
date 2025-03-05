@@ -28,7 +28,7 @@ quirk = [
     "quirk_rectify_numbers",
     "quirk_trailing_space",
     "quirk_spaces_between_addresses",
-    "quirk_continue_req_space_relaxed",
+    "quirk_empty_continue_req",
     "quirk_body_fld_enc_nil_to_empty",
 ]
 # Make `\r` in `\r\n` optional.
@@ -44,7 +44,7 @@ quirk_spaces_between_addresses = []
 # Accept a trailing space in `STATUS` data response.
 quirk_trailing_space = []
 # Accept continuation request commands without required space `+\r\n`
-quirk_continue_req_space_relaxed = []
+quirk_empty_continue_req = []
 # Encode NIL `body-fld-enc` as empty string.
 quirk_body_fld_enc_nil_to_empty = []
 
