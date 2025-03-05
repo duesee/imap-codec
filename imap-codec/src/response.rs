@@ -252,10 +252,22 @@ pub(crate) fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
     //
     // However, I will keep it as it is for now.
     alt((
+        #[cfg(feature = "quirk_empty_continue_req")]
+        map(empty_continue_req, Response::CommandContinuationRequest),
         map(continue_req, Response::CommandContinuationRequest),
         response_data,
         map(response_done, Response::Status),
     ))(input)
+}
+
+/// Parser that allows a spaceless, empty continuation request `+\r\n`.
+#[cfg(feature = "quirk_empty_continue_req")]
+pub(crate) fn empty_continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuationRequest> {
+    let mut parser = tuple((tag(b"+"), crlf));
+    let (remaining, _) = parser(input)?;
+    let req = CommandContinuationRequest::basic(None, "").unwrap();
+
+    Ok((remaining, req))
 }
 
 /// `continue-req = "+" SP (resp-text / base64) CRLF`
@@ -271,11 +283,7 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
     }
 
     let mut parser = tuple((
-        tag(b"+"),
-        #[cfg(feature = "quirk_continue_req_space_relaxed")]
-        opt(sp),
-        #[cfg(not(feature = "quirk_continue_req_space_relaxed"))]
-        sp,
+        tag(b"+ "),
         alt((
             #[cfg(not(feature = "quirk_crlf_relaxed"))]
             map(
@@ -298,7 +306,7 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
         crlf,
     ));
 
-    let (remaining, (_, _, either, _)) = parser(input)?;
+    let (remaining, (_, either, _)) = parser(input)?;
 
     let continue_request = match either {
         Either::Base64(data) => CommandContinuationRequest::base64(data),
