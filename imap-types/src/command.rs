@@ -182,10 +182,8 @@ pub enum CommandBody<'a> {
     /// * Responses:  continuation data can be requested
     /// * Result:
     ///   * OK - authenticate completed, now in authenticated state
-    ///   * NO - authenticate failure: unsupported authentication
-    ///          mechanism, credentials rejected
-    ///   * BAD - command unknown or arguments invalid,
-    ///           authentication exchange cancelled
+    ///   * NO - authenticate failure: unsupported authentication  mechanism, credentials rejected
+    ///   * BAD - command unknown or arguments invalid, authentication exchange cancelled
     ///
     /// The AUTHENTICATE command indicates a \[SASL\] authentication
     /// mechanism to the server.  If the server supports the requested
@@ -940,28 +938,28 @@ pub enum CommandBody<'a> {
 
     /// ### 6.4.2.  CLOSE Command
     ///
-    ///    * Arguments:  none
-    ///    * Responses:  no specific responses for this command
-    ///    * Result:
-    ///      * OK - close completed, now in authenticated state
-    ///      * BAD - command unknown or arguments invalid
+    /// * Arguments: none
+    /// * Responses: no specific responses for this command
+    /// * Result:
+    ///   * OK - close completed, now in authenticated state
+    ///   * BAD - command unknown or arguments invalid
     ///
-    ///       The CLOSE command permanently removes all messages that have the
-    ///       \Deleted flag set from the currently selected mailbox, and returns
-    ///       to the authenticated state from the selected state.  No untagged
-    ///       EXPUNGE responses are sent.
+    /// The CLOSE command permanently removes all messages that have the
+    /// \Deleted flag set from the currently selected mailbox, and returns
+    /// to the authenticated state from the selected state.  No untagged
+    /// EXPUNGE responses are sent.
     ///
-    ///       No messages are removed, and no error is given, if the mailbox is
-    ///       selected by an EXAMINE command or is otherwise selected read-only.
+    /// No messages are removed, and no error is given, if the mailbox is
+    /// selected by an EXAMINE command or is otherwise selected read-only.
     ///
-    ///       Even if a mailbox is selected, a SELECT, EXAMINE, or LOGOUT
-    ///       command MAY be issued without previously issuing a CLOSE command.
-    ///       The SELECT, EXAMINE, and LOGOUT commands implicitly close the
-    ///       currently selected mailbox without doing an expunge.  However,
-    ///       when many messages are deleted, a CLOSE-LOGOUT or CLOSE-SELECT
-    ///       sequence is considerably faster than an EXPUNGE-LOGOUT or
-    ///       EXPUNGE-SELECT because no untagged EXPUNGE responses (which the
-    ///       client would probably ignore) are sent.
+    /// Even if a mailbox is selected, a SELECT, EXAMINE, or LOGOUT
+    /// command MAY be issued without previously issuing a CLOSE command.
+    /// The SELECT, EXAMINE, and LOGOUT commands implicitly close the
+    /// currently selected mailbox without doing an expunge.  However,
+    /// when many messages are deleted, a CLOSE-LOGOUT or CLOSE-SELECT
+    /// sequence is considerably faster than an EXPUNGE-LOGOUT or
+    /// EXPUNGE-SELECT because no untagged EXPUNGE responses (which the
+    /// client would probably ignore) are sent.
     Close,
 
     /// 6.4.3.  EXPUNGE Command
