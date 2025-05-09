@@ -61,8 +61,13 @@ cargo_hack mode: install_cargo_hack
         quirk_id_empty_to_nil,\
         quirk_missing_text,\
         quirk_rectify_numbers,\
+        quirk_trailing_space,\
+        quirk_trailing_space_capability,\
+        quirk_trailing_space_id,\
+        quirk_trailing_space_search,\
         quirk_spaces_between_addresses,\
-        quirk_trailing_space\
+        quirk_empty_continue_req,\
+        quirk_body_fld_enc_nil_to_empty\
         {{ mode }}
     cargo hack check -p imap-types \
         --no-dev-deps \
