@@ -27,6 +27,7 @@ quirk = [
     "quirk_missing_text",
     "quirk_rectify_numbers",
     "quirk_trailing_space", # TODO(#653): Rename to "_status".
+    "quirk_trailing_space_capability",
     "quirk_trailing_space_id",
     "quirk_trailing_space_search",
     "quirk_spaces_between_addresses",
@@ -45,6 +46,8 @@ quirk_rectify_numbers = []
 quirk_spaces_between_addresses = []
 # Accept a trailing space in `STATUS` data response.
 quirk_trailing_space = []
+# Accept a trailing space in `CAPABILITY` data response.
+quirk_trailing_space_capability = []
 # Accept a trailing space in `ID` data response.
 quirk_trailing_space_id = []
 # Accept a trailing space in `SEARCH` data response.
