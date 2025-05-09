@@ -118,12 +118,23 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
         ),
         #[cfg(feature = "ext_condstore_qresync")]
         map(
+            #[cfg(not(feature = "quirk_trailing_space_search"))]
             tuple((
                 tag_no_case(b"SEARCH"),
                 many0(preceded(sp, nz_number)),
                 opt(preceded(char(' '), search_sort_mod_seq)),
             )),
+            #[cfg(feature = "quirk_trailing_space_search")]
+            tuple((
+                tag_no_case(b"SEARCH"),
+                many0(preceded(sp, nz_number)),
+                opt(preceded(char(' '), search_sort_mod_seq)),
+                opt(sp),
+            )),
+            #[cfg(not(feature = "quirk_trailing_space_search"))]
             |(_, nums, modseq)| Data::Search(nums, modseq),
+            #[cfg(feature = "quirk_trailing_space_search")]
+            |(_, nums, modseq, _)| Data::Search(nums, modseq),
         ),
         #[cfg(not(feature = "ext_condstore_qresync"))]
         map(
