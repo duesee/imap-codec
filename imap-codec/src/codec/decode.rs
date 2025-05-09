@@ -686,6 +686,18 @@ mod tests {
                     )),
                 )),
             ),
+            #[cfg(feature = "quirk_trailing_space_search")]
+            (
+                b"* SEARCH \r\n".as_ref(),
+                Ok((
+                    b"".as_ref(),
+                    Response::Data(Data::Search(
+                        vec![],
+                        #[cfg(feature = "ext_condstore_qresync")]
+                        None,
+                    )),
+                )),
+            ),
             (
                 b"* SEARCH 1\r\n???".as_ref(),
                 Ok((
@@ -718,6 +730,8 @@ mod tests {
                 b"*  search 1 2 3\r\n".as_ref(),
                 Err(ResponseDecodeError::Failed),
             ),
+            #[cfg(not(feature = "quirk_trailing_space_search"))]
+            (b"* search \r\n".as_ref(), Err(ResponseDecodeError::Failed)),
             (b"A search\r\n".as_ref(), Err(ResponseDecodeError::Failed)),
         ];
 
