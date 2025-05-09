@@ -225,7 +225,13 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
 /// Servers which offer RFC 1730 compatibility MUST list "IMAP4" as the first capability.
 pub(crate) fn capability_data(input: &[u8]) -> IMAPResult<&[u8], Vec1<Capability>> {
     map(
+        #[cfg(not(feature = "quirk_trailing_space_capability"))]
         preceded(tag_no_case("CAPABILITY "), separated_list1(sp, capability)),
+        #[cfg(feature = "quirk_trailing_space_capability")]
+        terminated(
+            preceded(tag_no_case("CAPABILITY "), separated_list1(sp, capability)),
+            opt(sp),
+        ),
         Vec1::unvalidated,
     )(input)
 }
@@ -794,5 +800,17 @@ mod tests {
         {
             assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_ok());
         }
+    }
+
+    #[test]
+    fn test_quirk_trailing_space_capability() {
+        assert!(response_data(b"* CAPABILITY IMAP4REV1\r\n").is_ok());
+        assert!(response_data(b"* CAPABILITY IMAP4REV1  \r\n").is_err());
+
+        #[cfg(not(feature = "quirk_trailing_space_capability"))]
+        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n").is_err());
+
+        #[cfg(feature = "quirk_trailing_space_capability")]
+        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n").is_ok());
     }
 }
