@@ -271,7 +271,8 @@ pub(crate) fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
 pub(crate) fn empty_continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuationRequest> {
     let mut parser = tuple((tag(b"+"), crlf));
     let (remaining, _) = parser(input)?;
-    let req = CommandContinuationRequest::basic(None, "").unwrap();
+    log::warn!("Rectified faulty continuation request `+\r\n` to `+ ...\r\n`");
+    let req = CommandContinuationRequest::basic(None, "...").unwrap();
 
     Ok((remaining, req))
 }
