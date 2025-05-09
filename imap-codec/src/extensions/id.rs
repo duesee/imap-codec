@@ -14,6 +14,8 @@ use nom::{
     multi::separated_list0,
     sequence::{delimited, preceded, separated_pair},
 };
+#[cfg(feature = "quirk_trailing_space_id")]
+use nom::{combinator::opt, sequence::terminated};
 
 use crate::{
     core::{nil, nstring, string},
@@ -50,9 +52,19 @@ pub(crate) fn id_response(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString
 pub(crate) fn id_params_list(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IString, NString)>>> {
     alt((
         map(
+            #[cfg(not(feature = "quirk_trailing_space_id"))]
             delimited(
                 tag("("),
                 separated_list0(sp, separated_pair(string, sp, nstring)),
+                tag(")"),
+            ),
+            #[cfg(feature = "quirk_trailing_space_id")]
+            delimited(
+                tag("("),
+                terminated(
+                    separated_list0(sp, separated_pair(string, sp, nstring)),
+                    opt(sp),
+                ),
                 tag(")"),
             ),
             Some,
@@ -74,14 +86,28 @@ mod tests {
 
     #[test]
     fn test_parse_id() {
-        let got = id(b"id (\"name\" \"imap-codec\")\r\n").unwrap().1;
-        assert_eq!(
-            Some(vec![(
-                IString::try_from("name").unwrap(),
-                NString::try_from("imap-codec").unwrap()
-            )]),
-            got
-        );
+        let tests = [
+            (
+                b"id (\"name\" \"imap-codec\")\r\n".as_ref(),
+                Some(vec![(
+                    IString::try_from("name").unwrap(),
+                    NString::try_from("imap-codec").unwrap(),
+                )]),
+            ),
+            #[cfg(feature = "quirk_trailing_space_id")]
+            (
+                b"id (\"name\" \"imap-codec\" )\r\n".as_ref(),
+                Some(vec![(
+                    IString::try_from("name").unwrap(),
+                    NString::try_from("imap-codec").unwrap(),
+                )]),
+            ),
+        ];
+
+        for (test, expected) in tests {
+            let got = id(test).unwrap().1;
+            assert_eq!(expected, got,);
+        }
     }
 
     #[test]
