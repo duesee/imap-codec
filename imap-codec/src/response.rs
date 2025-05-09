@@ -792,14 +792,10 @@ mod tests {
         assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0)  \r\n").is_err());
 
         #[cfg(not(feature = "quirk_trailing_space"))]
-        {
-            assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_err());
-        }
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_err());
 
         #[cfg(feature = "quirk_trailing_space")]
-        {
-            assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_ok());
-        }
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_ok());
     }
 
     #[test]
