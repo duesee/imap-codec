@@ -26,6 +26,7 @@ quirk = [
     #"quirk_id_empty_to_nil",
     "quirk_missing_text",
     "quirk_rectify_numbers",
+    "quirk_excessive_space_quota_resource",
     "quirk_trailing_space", # TODO(#653): Rename to "_status".
     "quirk_trailing_space_capability",
     "quirk_trailing_space_id",
@@ -42,6 +43,8 @@ quirk_id_empty_to_nil = []
 quirk_missing_text = []
 # Rectify (invalid) numbers.
 quirk_rectify_numbers = []
+# Accept excessive space in quota-resource
+quirk_excessive_space_quota_resource = []
 # Accept spaces between envelope addresses in `FETCH` data response.
 quirk_spaces_between_addresses = []
 # Accept a trailing space in `STATUS` data response.

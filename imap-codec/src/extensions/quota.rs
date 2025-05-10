@@ -9,6 +9,8 @@ use imap_types::{
     extensions::quota::{QuotaGet, QuotaSet, Resource},
     response::Data,
 };
+#[cfg(feature = "quirk_excessive_space_quota_resource")]
+use nom::multi::many1;
 use nom::{
     bytes::streaming::{tag, tag_no_case},
     combinator::map,
@@ -64,7 +66,11 @@ pub(crate) fn getquotaroot(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 /// resource-limit = number64
 /// ```
 pub(crate) fn quota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaGet> {
+    #[cfg(not(feature = "quirk_excessive_space_quota_resource"))]
     let mut parser = tuple((resource_name, sp, number64, sp, number64));
+
+    #[cfg(feature = "quirk_excessive_space_quota_resource")]
+    let mut parser = tuple((resource_name, many1(sp), number64, many1(sp), number64));
 
     let (remaining, (resource, _, usage, _, limit)) = parser(input)?;
 
@@ -518,6 +524,21 @@ mod tests {
             ),
             (
                 b"* QUOTA \"#user/alice\" (STORAGE 54 111 MESSAGE 42 1000)\r\n",
+                b"",
+                Response::Data(
+                    Data::quota(
+                        AString::String(IString::try_from("#user/alice").unwrap()),
+                        vec![
+                            QuotaGet::new(Resource::Storage, 54, 111),
+                            QuotaGet::new(Resource::Message, 42, 1000),
+                        ],
+                    )
+                    .unwrap(),
+                ),
+            ),
+            #[cfg(feature = "quirk_excessive_space_quota_resource")]
+            (
+                b"* QUOTA \"#user/alice\" (STORAGE 54 111 MESSAGE 42  1000)\r\n",
                 b"",
                 Response::Data(
                     Data::quota(
