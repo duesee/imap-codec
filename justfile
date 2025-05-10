@@ -61,6 +61,7 @@ cargo_hack mode: install_cargo_hack
         quirk_id_empty_to_nil,\
         quirk_missing_text,\
         quirk_rectify_numbers,\
+        quirk_excessive_space_quota_resource,\
         quirk_trailing_space,\
         quirk_trailing_space_capability,\
         quirk_trailing_space_id,\
