@@ -1525,7 +1525,7 @@ where
         match N {
             0 => write!(f, "*"),
             1 => write!(f, "+"),
-            _ => write!(f, "{{{},}}", N),
+            _ => write!(f, "{{{N},}}"),
         }
     }
 }

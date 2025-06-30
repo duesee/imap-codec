@@ -424,7 +424,7 @@ mod tests {
 
         for (from, expected) in tests.iter() {
             let cs = Charset::try_from(*from).unwrap();
-            println!("{:?}", cs);
+            println!("{cs:?}");
 
             let mut ctx = EncodeContext::new();
             cs.encode_ctx(&mut ctx).unwrap();

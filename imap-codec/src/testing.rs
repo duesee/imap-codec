@@ -32,7 +32,7 @@ pub(crate) fn known_answer_test_encode(
             escape_byte_string(got_bytes),
         );
         println!("# Debug");
-        panic!("Left:  {:02x?}\nRight: {:02x?}", expected_bytes, got_bytes);
+        panic!("Left:  {expected_bytes:02x?}\nRight: {got_bytes:02x?}");
     }
 }
 

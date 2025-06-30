@@ -71,7 +71,7 @@ fn test_lines_of_trace(trace: &[u8]) {
                 println!("C:          {}", String::from_utf8_lossy(&line).trim());
                 let (rem, parsed) = CommandCodec::default().decode(&line).unwrap();
                 assert!(rem.is_empty());
-                println!("Parsed      {:?}", parsed);
+                println!("Parsed      {parsed:?}");
                 let serialized = CommandCodec::default().encode(&parsed).dump();
                 println!(
                     "Serialized: {}",
@@ -85,7 +85,7 @@ fn test_lines_of_trace(trace: &[u8]) {
             Who::Server => {
                 println!("S:          {}", String::from_utf8_lossy(&line).trim());
                 let (rem, parsed) = ResponseCodec::default().decode(&line).unwrap();
-                println!("Parsed:     {:?}", parsed);
+                println!("Parsed:     {parsed:?}");
                 assert!(rem.is_empty());
                 let serialized = ResponseCodec::default().encode(&parsed).dump();
                 println!(
@@ -109,7 +109,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 let (rem, got) = CommandCodec::default().decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
-                println!("{:?}", got);
+                println!("{got:?}");
                 let encoded = CommandCodec::default().encode(&got).dump();
                 println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
                 let (rem2, got2) = CommandCodec::default().decode(&encoded).unwrap();
@@ -120,7 +120,7 @@ fn test_trace_known_positive(tests: Vec<(&[u8], Message)>) {
                 let (rem, got) = ResponseCodec::default().decode(test).unwrap();
                 assert!(rem.is_empty());
                 assert_eq!(expected, got);
-                println!("{:?}", got);
+                println!("{got:?}");
                 let encoded = ResponseCodec::default().encode(&got).dump();
                 println!("// {}", String::from_utf8(encoded.clone()).unwrap().trim());
                 let (rem2, got2) = ResponseCodec::default().decode(&encoded).unwrap();
@@ -1268,7 +1268,7 @@ fn test_response_status_preauth() {
 
     println!("S:          {}", String::from_utf8_lossy(line).trim());
     let (rem, parsed) = GreetingCodec::default().decode(line).unwrap();
-    println!("Parsed:     {:?}", parsed);
+    println!("Parsed:     {parsed:?}");
     assert!(rem.is_empty());
     let serialized = GreetingCodec::default().encode(&parsed).dump();
     println!(

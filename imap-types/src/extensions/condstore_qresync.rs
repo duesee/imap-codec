@@ -60,7 +60,7 @@ impl Display for AttributeFlag<'_> {
             AttributeFlag::Deleted => f.write_str("\\\\Deleted"),
             AttributeFlag::Seen => f.write_str("\\\\Seen"),
             AttributeFlag::Draft => f.write_str("\\\\Draft"),
-            AttributeFlag::Keyword(atom) => write!(f, "{}", atom),
+            AttributeFlag::Keyword(atom) => write!(f, "{atom}"),
             AttributeFlag::Extension(other) => write!(f, "\\\\{}", other.0),
         }
     }

@@ -82,8 +82,8 @@ fn test_construction_of_command() {
     impl<T> DisplayDebug for T where T: Display + Debug {}
 
     match CommandBody::login("\x00", "") {
-        Err(LoginError::Username(e)) => println!("Oops, bad username: {}", e),
-        Err(LoginError::Password(e)) => println!("Oops, bad password: {:?}", e),
+        Err(LoginError::Username(e)) => println!("Oops, bad username: {e}"),
+        Err(LoginError::Password(e)) => println!("Oops, bad password: {e:?}"),
         _ => {}
     }
 

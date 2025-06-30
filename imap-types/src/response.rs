@@ -1103,7 +1103,7 @@ impl Display for Capability<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::Imap4Rev1 => write!(f, "IMAP4REV1"),
-            Self::Auth(mechanism) => write!(f, "AUTH={}", mechanism),
+            Self::Auth(mechanism) => write!(f, "AUTH={mechanism}"),
             Self::LoginDisabled => write!(f, "LOGINDISABLED"),
             #[cfg(feature = "starttls")]
             Self::StartTls => write!(f, "STARTTLS"),
@@ -1114,9 +1114,9 @@ impl Display for Capability<'_> {
             Self::SaslIr => write!(f, "SASL-IR"),
             Self::Idle => write!(f, "IDLE"),
             Self::Enable => write!(f, "ENABLE"),
-            Self::Compress { algorithm } => write!(f, "COMPRESS={}", algorithm),
+            Self::Compress { algorithm } => write!(f, "COMPRESS={algorithm}"),
             Self::Quota => write!(f, "QUOTA"),
-            Self::QuotaRes(resource) => write!(f, "QUOTA=RES-{}", resource),
+            Self::QuotaRes(resource) => write!(f, "QUOTA=RES-{resource}"),
             Self::QuotaSet => write!(f, "QUOTASET"),
             Self::LiteralPlus => write!(f, "LITERAL+"),
             Self::LiteralMinus => write!(f, "LITERAL-"),
@@ -1125,8 +1125,8 @@ impl Display for Capability<'_> {
             Self::Id => write!(f, "ID"),
             Self::Unselect => write!(f, "UNSELECT"),
             Self::Sort(None) => write!(f, "SORT"),
-            Self::Sort(Some(algorithm)) => write!(f, "SORT={}", algorithm),
-            Self::Thread(algorithm) => write!(f, "THREAD={}", algorithm),
+            Self::Sort(Some(algorithm)) => write!(f, "SORT={algorithm}"),
+            Self::Thread(algorithm) => write!(f, "THREAD={algorithm}"),
             #[cfg(feature = "ext_metadata")]
             Self::Metadata => write!(f, "METADATA"),
             #[cfg(feature = "ext_metadata")]
@@ -1297,7 +1297,7 @@ mod tests {
         ];
 
         for test in tests {
-            println!("{:?}", test);
+            println!("{test:?}");
             assert!(test.is_err());
         }
     }
