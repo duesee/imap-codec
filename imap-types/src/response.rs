@@ -1297,7 +1297,7 @@ mod tests {
         ];
 
         for test in tests {
-            println!("{:?}", test);
+            println!("{test:?}");
             assert!(test.is_err());
         }
     }

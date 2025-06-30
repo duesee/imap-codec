@@ -2118,9 +2118,9 @@ mod tests {
         ];
 
         for (no, cmd_body) in cmds.into_iter().enumerate() {
-            println!("Test: {}, {:?}", no, cmd_body);
+            println!("Test: {no}, {cmd_body:?}");
 
-            let _ = cmd_body.tag(format!("A{}", no)).unwrap();
+            let _ = cmd_body.tag(format!("A{no}")).unwrap();
         }
     }
 

@@ -634,7 +634,7 @@ mod tests {
         .iter()
         {
             let (rem, out) = body_ext_1part(test).unwrap();
-            println!("{:?}", out);
+            println!("{out:?}");
             assert_eq!(rem, b"|xxx");
         }
     }
@@ -663,7 +663,7 @@ mod tests {
             .iter()
         {
             let (rem, out) = body_ext_mpart(test).unwrap();
-            println!("{:?}", out);
+            println!("{out:?}");
             assert_eq!(rem, b"|xxx");
         }
     }

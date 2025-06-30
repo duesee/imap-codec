@@ -206,7 +206,7 @@ mod tests {
                     assert_eq!((byte as char).to_string(), got);
                 }
             } else {
-                assert_eq!(format!("\\x{:02x}", byte), got);
+                assert_eq!(format!("\\x{byte:02x}"), got);
             }
         }
 
