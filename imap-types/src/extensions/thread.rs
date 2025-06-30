@@ -80,9 +80,9 @@ impl Display for Thread {
 fn write_prefix(f: &mut Formatter, prefix: &Vec1<NonZeroU32>) -> std::fmt::Result {
     let (head, tail) = prefix.as_ref().split_first().unwrap();
 
-    write!(f, "{}", head)?;
+    write!(f, "{head}")?;
     for element in tail {
-        write!(f, " {}", element)?;
+        write!(f, " {element}")?;
     }
 
     Ok(())

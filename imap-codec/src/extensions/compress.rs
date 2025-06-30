@@ -34,7 +34,7 @@ pub(crate) fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 impl EncodeIntoContext for CompressionAlgorithm {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 

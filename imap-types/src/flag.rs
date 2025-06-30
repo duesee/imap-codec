@@ -86,7 +86,7 @@ impl Display for Flag<'_> {
             Flag::Flagged => f.write_str("\\Flagged"),
             Flag::Seen => f.write_str("\\Seen"),
             Flag::Extension(other) => write!(f, "\\{}", other.0),
-            Flag::Keyword(atom) => write!(f, "{}", atom),
+            Flag::Keyword(atom) => write!(f, "{atom}"),
         }
     }
 }
