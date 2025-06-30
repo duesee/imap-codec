@@ -380,11 +380,6 @@ mod tests {
         .unwrap();
 
         println!("{val:?} == \n{datetime:?}");
-        eprintln!("{val:?}");
-        eprintln!("{val:?}");
-        eprintln!("{val:?}");
-        eprintln!("{val:?}");
-        eprintln!("{val:?}");
 
         assert_eq!(val, datetime);
     }
