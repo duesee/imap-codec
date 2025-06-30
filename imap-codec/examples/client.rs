@@ -25,7 +25,7 @@ Enter intial IMAP greeting followed by IMAP responses (or "exit").
 "#;
 
 fn main() {
-    println!("{}", WELCOME);
+    println!("{WELCOME}");
 
     let mut fragmentizer = Fragmentizer::new(10 * 1024);
     let mut state = State::Greeting;
@@ -55,7 +55,7 @@ fn main() {
                 match fragmentizer.decode_message(&GreetingCodec::default()) {
                     Ok(greeting) => {
                         // Do something with the greeting ...
-                        println!("{:#?}", greeting);
+                        println!("{greeting:#?}");
 
                         // ... and proceed with reponses.
                         state = State::Response;
@@ -69,7 +69,7 @@ fn main() {
                 match fragmentizer.decode_message(&ResponseCodec::default()) {
                     Ok(response) => {
                         // Do something with the response.
-                        println!("{:#?}", response);
+                        println!("{response:#?}");
                     }
                     Err(err) => {
                         println!("Error parsing response: {err:?}");

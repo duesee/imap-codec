@@ -35,8 +35,8 @@ pub fn read_more(role: Role, message_begin: bool) -> Vec<u8> {
 
 fn read_line(prompt: &str, role: Role) -> String {
     match role {
-        Role::Client => print!("{}{COLOR_CLIENT}", prompt),
-        Role::Server => print!("{}{COLOR_SERVER}", prompt),
+        Role::Client => print!("{prompt}{COLOR_CLIENT}"),
+        Role::Server => print!("{prompt}{COLOR_SERVER}"),
     }
 
     std::io::stdout().flush().unwrap();

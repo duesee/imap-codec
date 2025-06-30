@@ -78,7 +78,7 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
 impl Display for CapabilityEnable<'_> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Self::Utf8(kind) => write!(f, "UTF8={}", kind),
+            Self::Utf8(kind) => write!(f, "UTF8={kind}"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => write!(f, "CONDSTORE"),
             #[cfg(feature = "ext_metadata")]

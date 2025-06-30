@@ -68,7 +68,7 @@ pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 
 impl EncodeIntoContext for CapabilityEnable<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 

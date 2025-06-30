@@ -379,7 +379,12 @@ mod tests {
         )
         .unwrap();
 
-        println!("{:?} == \n{:?}", val, datetime);
+        println!("{val:?} == \n{datetime:?}");
+        eprintln!("{val:?}");
+        eprintln!("{val:?}");
+        eprintln!("{val:?}");
+        eprintln!("{val:?}");
+        eprintln!("{val:?}");
 
         assert_eq!(val, datetime);
     }
@@ -415,27 +420,27 @@ mod tests {
     #[test]
     fn test_zone() {
         let (rem, val) = zone(b"+0000xxx").unwrap();
-        eprintln!("{:?}", val);
+        eprintln!("{val:?}");
         assert_eq!(rem, b"xxx");
         assert_eq!(val, FixedOffset::east_opt(0));
 
         let (rem, val) = zone(b"+0000").unwrap();
-        eprintln!("{:?}", val);
+        eprintln!("{val:?}");
         assert_eq!(rem, b"");
         assert_eq!(val, FixedOffset::east_opt(0));
 
         let (rem, val) = zone(b"-0205xxx").unwrap();
-        eprintln!("{:?}", val);
+        eprintln!("{val:?}");
         assert_eq!(rem, b"xxx");
         assert_eq!(val, FixedOffset::west_opt(2 * 3600 + 5 * 60));
 
         let (rem, val) = zone(b"-1159").unwrap();
-        eprintln!("{:?}", val);
+        eprintln!("{val:?}");
         assert_eq!(rem, b"");
         assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
 
         let (rem, val) = zone(b"-1159").unwrap();
-        eprintln!("{:?}", val);
+        eprintln!("{val:?}");
         assert_eq!(rem, b"");
         assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
     }

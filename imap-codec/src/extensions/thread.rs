@@ -319,8 +319,8 @@ mod tests {
         ];
 
         for (test, expected) in tests {
-            println!("test:     {}", test);
-            println!("expected: {}\n", expected);
+            println!("test:     {test}");
+            println!("expected: {expected}\n");
             assert_eq!(*test, expected.to_string().as_str());
 
             let (rem, _data) = thread_list(8)(test.as_bytes()).unwrap();
