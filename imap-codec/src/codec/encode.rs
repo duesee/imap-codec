@@ -260,13 +260,13 @@ pub(crate) trait EncodeIntoContext {
 
 impl EncodeIntoContext for u32 {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        ctx.write_all(self.to_string().as_bytes())
+        write!(ctx, "{self}")
     }
 }
 
 impl EncodeIntoContext for u64 {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        ctx.write_all(self.to_string().as_bytes())
+        write!(ctx, "{self}")
     }
 }
 
