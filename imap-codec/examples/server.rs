@@ -35,7 +35,7 @@ Enter IMAP commands (or "exit").
 "#;
 
 fn main() {
-    println!("{WELCOME}",);
+    println!("{WELCOME}");
 
     let mut fragmentizer = Fragmentizer::new(10 * 1024);
     let mut state = State::Command;
