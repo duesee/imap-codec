@@ -36,13 +36,13 @@
           # `rust-toolchain.toml` configuration file
           rust-toolchain = fenix.packages.${system}.fromToolchainFile {
             file = ./rust-toolchain.toml;
-            sha256 = "opUgs6ckUQCyDxcB9Wy51pqhd0MPGHUVbwRKKPGiwZU=";
+            sha256 = "Qxt8XAuaUR2OMdKbN4u8dBJOhSHxS+uS06Wl9+flVEk=";
           };
 
         in
         {
           default = pkgs.mkShell {
-            buildInputs = [ rust-toolchain ];
+            buildInputs = [ rust-toolchain pkgs.just ];
           };
         };
 
