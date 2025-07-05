@@ -112,10 +112,10 @@ mod tests {
     #[test]
     fn test_parse_sequence_set() {
         let (rem, val) = sequence_set(b"1:*?").unwrap();
-        println!("{:?}, {:?}", rem, val);
+        println!("{rem:?}, {val:?}");
 
         let (rem, val) = sequence_set(b"1:*,5?").unwrap();
-        println!("{:?}, {:?}", rem, val);
+        println!("{rem:?}, {val:?}");
     }
 
     #[test]
@@ -124,10 +124,10 @@ mod tests {
         assert!(seq_number(b"0?").is_err());
 
         let (rem, val) = seq_number(b"1?").unwrap();
-        println!("{:?}, {:?}", rem, val);
+        println!("{rem:?}, {val:?}");
 
         let (rem, val) = seq_number(b"*?").unwrap();
-        println!("{:?}, {:?}", rem, val);
+        println!("{rem:?}, {val:?}");
     }
 
     #[test]

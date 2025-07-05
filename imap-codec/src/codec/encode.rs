@@ -760,7 +760,7 @@ impl EncodeIntoContext for SelectParameter {
 
 impl EncodeIntoContext for AuthMechanism<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 
@@ -876,7 +876,7 @@ impl EncodeIntoContext for StatusDataItemName {
 
 impl EncodeIntoContext for Flag<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 
@@ -1085,7 +1085,7 @@ impl EncodeIntoContext for MacroOrMessageDataItemNames<'_> {
 
 impl EncodeIntoContext for Macro {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 
@@ -1228,7 +1228,7 @@ impl EncodeIntoContext for NonZeroU64 {
 
 impl EncodeIntoContext for Capability<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 
@@ -1635,7 +1635,7 @@ impl EncodeIntoContext for Data<'_> {
 
 impl EncodeIntoContext for FlagNameAttribute<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        write!(ctx, "{}", self)
+        write!(ctx, "{self}")
     }
 }
 
