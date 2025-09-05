@@ -109,7 +109,7 @@ pub mod indicators {
     }
 }
 
-pub fn escape_quoted(unescaped: &str) -> Cow<str> {
+pub fn escape_quoted(unescaped: &str) -> Cow<'_, str> {
     let mut escaped = Cow::Borrowed(unescaped);
 
     if escaped.contains('\\') {
@@ -123,7 +123,7 @@ pub fn escape_quoted(unescaped: &str) -> Cow<str> {
     escaped
 }
 
-pub fn unescape_quoted(escaped: &str) -> Cow<str> {
+pub fn unescape_quoted(escaped: &str) -> Cow<'_, str> {
     let mut unescaped = Cow::Borrowed(escaped);
 
     if unescaped.contains("\\\\") {

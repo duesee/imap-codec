@@ -276,14 +276,14 @@ impl<'a> Status<'a> {
 
     // ---------------------------------------------------------------------------------------------
 
-    pub fn tag(&self) -> Option<&Tag> {
+    pub fn tag(&self) -> Option<&Tag<'_>> {
         match self {
             Self::Tagged(Tagged { tag, .. }) => Some(tag),
             _ => None,
         }
     }
 
-    pub fn code(&self) -> Option<&Code> {
+    pub fn code(&self) -> Option<&Code<'_>> {
         match self {
             Self::Untagged(StatusBody { code, .. })
             | Self::Tagged(Tagged {
@@ -294,7 +294,7 @@ impl<'a> Status<'a> {
         }
     }
 
-    pub fn text(&self) -> &Text {
+    pub fn text(&self) -> &Text<'_> {
         match self {
             Self::Untagged(StatusBody { text, .. })
             | Self::Tagged(Tagged {

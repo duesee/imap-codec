@@ -36,7 +36,7 @@ pub enum Macro {
 }
 
 impl Macro {
-    pub fn expand(&self) -> Vec<MessageDataItemName> {
+    pub fn expand(&self) -> Vec<MessageDataItemName<'_>> {
         use MessageDataItemName::*;
 
         match self {
