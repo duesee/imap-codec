@@ -207,7 +207,7 @@ impl<'a> MailboxOther<'a> {
         Ok(())
     }
 
-    pub fn inner(&self) -> &AString {
+    pub fn inner(&self) -> &AString<'_> {
         &self.0
     }
 
