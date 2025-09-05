@@ -1,26 +1,12 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
-
-    # The rustup equivalent for Nix.
-    fenix = {
-      url = "github:nix-community/fenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Allows non-flakes users to still be able to `nix-shell` based on
-    # `shell.nix` instead of this `flake.nix`.
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05-small";
   };
 
-  outputs = { self, nixpkgs, fenix, ... }:
+  outputs =
+    { self, nixpkgs, ... }:
     let
-      inherit (nixpkgs) lib;
-
-      eachSupportedSystem = lib.genAttrs supportedSystems;
+      eachSupportedSystem = nixpkgs.lib.genAttrs supportedSystems;
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -28,24 +14,21 @@
         "aarch64-darwin"
       ];
 
-      mkDevShells = system:
+      mkDevShells =
+        system:
         let
           pkgs = import nixpkgs { inherit system; };
-
-          # get the rust toolchain from the rustup
-          # `rust-toolchain.toml` configuration file
-          rust-toolchain = fenix.packages.${system}.fromToolchainFile {
-            file = ./rust-toolchain.toml;
-            sha256 = "Qxt8XAuaUR2OMdKbN4u8dBJOhSHxS+uS06Wl9+flVEk=";
-          };
-
         in
         {
           default = pkgs.mkShell {
-            buildInputs = [ rust-toolchain pkgs.just ];
+            strictDeps = true;
+            buildInputs = with pkgs; [
+              just
+              rustup
+              rustPlatform.bindgenHook
+            ];
           };
         };
-
     in
     {
       devShells = eachSupportedSystem mkDevShells;
