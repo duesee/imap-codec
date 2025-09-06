@@ -168,6 +168,9 @@
 //! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
 //! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
+// TODO(#660)
+#![allow(unknown_lints)]
+#![allow(mismatched_lifetime_syntaxes)]
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 // TODO(#313)
