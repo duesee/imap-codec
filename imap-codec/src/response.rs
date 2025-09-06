@@ -3,7 +3,7 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
-use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as _base64};
 #[cfg(feature = "ext_condstore_qresync")]
 use imap_types::sequence::SequenceSet;
 use imap_types::{

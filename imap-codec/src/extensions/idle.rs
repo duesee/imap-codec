@@ -66,9 +66,9 @@ mod tests {
 
     use super::*;
     use crate::{
+        IdleDoneCodec,
         decode::{Decoder, IdleDoneDecodeError},
         testing::kat_inverse_command,
-        IdleDoneCodec,
     };
 
     #[test]

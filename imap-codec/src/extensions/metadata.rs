@@ -23,7 +23,7 @@ use nom::{
 use crate::{
     core::{astring, nstring, number},
     decode::{IMAPErrorKind, IMAPParseError, IMAPResult},
-    encode::{utils::join_serializable, EncodeContext, EncodeIntoContext},
+    encode::{EncodeContext, EncodeIntoContext, utils::join_serializable},
     extensions::binary::literal8,
     mailbox::mailbox,
 };

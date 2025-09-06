@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use imap_codec::{decode::Decoder, encode::Encoder, imap_types::response::Greeting, GreetingCodec};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use imap_codec::{GreetingCodec, decode::Decoder, encode::Encoder, imap_types::response::Greeting};
 use imap_types::{
     auth::AuthMechanism,
     core::{Text, Vec1},

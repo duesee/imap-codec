@@ -11,7 +11,7 @@ use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
     combinator::{map, opt},
-    multi::{many1, many_m_n, separated_list1},
+    multi::{many_m_n, many1, separated_list1},
     sequence::{delimited, preceded, tuple},
 };
 
@@ -159,7 +159,7 @@ mod tests {
 
     use imap_types::core::{Vec1, Vec2};
 
-    use super::{thread_list, Thread};
+    use super::{Thread, thread_list};
 
     #[test]
     fn test_thread_list() {

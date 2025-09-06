@@ -10,7 +10,7 @@ use std::{
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as _base64};
 use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 use crate::sequence::SequenceSet;
 use crate::{
     auth::AuthMechanism,
-    core::{impl_try_from, AString, Atom, Charset, QuotedChar, Tag, Text, Vec1},
+    core::{AString, Atom, Charset, QuotedChar, Tag, Text, Vec1, impl_try_from},
     error::ValidationError,
     extensions::{
         compress::CompressionAlgorithm,

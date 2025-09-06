@@ -1,4 +1,5 @@
 use imap_codec::{
+    CommandCodec, GreetingCodec, ResponseCodec,
     decode::Decoder,
     encode::Encoder,
     imap_types::{
@@ -13,7 +14,6 @@ use imap_codec::{
         response::{Capability, Code, Data, Response, Status},
         secret::Secret,
     },
-    CommandCodec, GreetingCodec, ResponseCodec,
 };
 
 enum Who {

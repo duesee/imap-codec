@@ -497,12 +497,12 @@ impl<'a> Arbitrary<'a> for NaiveDate {
 #[cfg(test)]
 mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
-    use rand::{rngs::SmallRng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::SmallRng};
 
     use crate::{
+        IntoStatic, ToStatic,
         command::Command,
         response::{Greeting, Response},
-        IntoStatic, ToStatic,
     };
 
     /// Note: We could encode/decode/etc. here but only want to exercise the arbitrary logic itself.

@@ -1,7 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use imap_codec::{decode::Decoder, encode::Encoder, imap_types::command::Command, CommandCodec};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use imap_codec::{CommandCodec, decode::Decoder, encode::Encoder, imap_types::command::Command};
 use imap_proto_stalwart::{
-    receiver::Receiver as ImapProtoStalwartReceiver, Command as ImapProtoStalwartCommand,
+    Command as ImapProtoStalwartCommand, receiver::Receiver as ImapProtoStalwartReceiver,
 };
 use imap_types::{
     command::CommandBody,

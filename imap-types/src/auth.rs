@@ -13,7 +13,7 @@ use bounded_static_derive::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{impl_try_from, Atom},
+    core::{Atom, impl_try_from},
     error::ValidationError,
     secret::Secret,
 };

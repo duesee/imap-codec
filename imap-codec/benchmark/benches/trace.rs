@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use imap_codec::{decode::Decoder, CommandCodec, GreetingCodec, ResponseCodec};
+use criterion::{Criterion, criterion_group, criterion_main};
+use imap_codec::{CommandCodec, GreetingCodec, ResponseCodec, decode::Decoder};
 use imap_types::{
     command::Command,
     response::{Greeting, Response},

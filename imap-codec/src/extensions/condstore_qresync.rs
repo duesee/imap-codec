@@ -145,10 +145,10 @@ mod tests {
     #[test]
     fn test_condstore_qresync_codes() {
         assert!(resp_text(b"[MODIFIED 7,9] Conditional STORE failed\r\n").is_ok());
-        assert!(resp_text(
-            b"[NOMODSEQ] Sorry, this mailbox format doesn't support modsequences\r\n"
-        )
-        .is_ok());
+        assert!(
+            resp_text(b"[NOMODSEQ] Sorry, this mailbox format doesn't support modsequences\r\n")
+                .is_ok()
+        );
         assert!(resp_text(b"[HIGHESTMODSEQ 715194045007] Highest\r\n").is_ok());
     }
 }

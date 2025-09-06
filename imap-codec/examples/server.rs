@@ -1,16 +1,16 @@
 use imap_codec::{
-    fragmentizer::{FragmentInfo, Fragmentizer, LiteralAnnouncement},
     AuthenticateDataCodec, CommandCodec, IdleDoneCodec,
+    fragmentizer::{FragmentInfo, Fragmentizer, LiteralAnnouncement},
 };
 
 #[path = "common/common.rs"]
 mod common;
 
-use common::{read_more, COLOR_SERVER, RESET};
+use common::{COLOR_SERVER, RESET, read_more};
 use imap_types::{
+    IntoStatic,
     command::{Command, CommandBody},
     core::{LiteralMode, Tag},
-    IntoStatic,
 };
 
 use crate::common::Role;

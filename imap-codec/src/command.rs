@@ -48,8 +48,8 @@ use crate::{
         compress::compress,
         enable::enable,
         idle::idle,
-        quota::{getquota, getquotaroot, setquota},
         r#move::r#move,
+        quota::{getquota, getquotaroot, setquota},
         sort::sort,
         thread::thread,
         uidplus::uid_expunge,
@@ -803,7 +803,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::{encode::Encoder, CommandCodec};
+    use crate::{CommandCodec, encode::Encoder};
 
     #[test]
     fn test_parse_fetch() {

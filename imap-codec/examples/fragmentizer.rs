@@ -1,4 +1,4 @@
-use std::io::{stdin, Read};
+use std::io::{Read, stdin};
 
 use imap_codec::{fragmentizer::Fragmentizer, imap_types::utils::escape_byte_string};
 

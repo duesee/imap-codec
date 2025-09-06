@@ -23,12 +23,12 @@
 //!
 //! ```rust
 //! use imap_codec::{
+//!     GreetingCodec,
 //!     decode::Decoder,
 //!     imap_types::{
 //!         core::Text,
 //!         response::{Code, Greeting, GreetingKind},
 //!     },
-//!     GreetingCodec,
 //! };
 //!
 //! let (remaining, greeting) = GreetingCodec::default()
@@ -57,12 +57,12 @@
 //!
 //! ```rust
 //! use imap_codec::{
+//!     GreetingCodec,
 //!     encode::Encoder,
 //!     imap_types::{
 //!         core::Text,
 //!         response::{Code, Greeting, GreetingKind},
 //!     },
-//!     GreetingCodec,
 //! };
 //!
 //! let greeting = Greeting {
