@@ -1,11 +1,11 @@
 use std::fmt::{Debug, Display};
 
 use imap_types::{
-    command::{error::LoginError, Command, CommandBody},
+    command::{Command, CommandBody, error::LoginError},
     core::{AString, Atom, AtomExt, Charset, IString, Literal, NString, Quoted, Tag, Text},
     mailbox::{Mailbox, MailboxOther},
     response::Data,
-    sequence::{SeqOrUid, Sequence, SequenceSet, MAX, MIN},
+    sequence::{MAX, MIN, SeqOrUid, Sequence, SequenceSet},
 };
 
 macro_rules! test_conversions {

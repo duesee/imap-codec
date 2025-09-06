@@ -9,9 +9,9 @@ use imap_types::{
 };
 
 use crate::{
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
     decode::{Decoder, IMAPResult},
     encode::{EncodeContext, EncodeIntoContext},
-    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
 
 pub(crate) fn known_answer_test_encode(

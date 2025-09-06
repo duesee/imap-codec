@@ -625,10 +625,10 @@ mod tests {
     };
 
     use super::{
-        parse_tag, FragmentInfo, Fragmentizer, LineEnding, LineParser, LiteralAnnouncement,
+        FragmentInfo, Fragmentizer, LineEnding, LineParser, LiteralAnnouncement, parse_tag,
     };
     use crate::{
-        decode::ResponseDecodeError, fragmentizer::DecodeMessageError, CommandCodec, ResponseCodec,
+        CommandCodec, ResponseCodec, decode::ResponseDecodeError, fragmentizer::DecodeMessageError,
     };
 
     #[test]

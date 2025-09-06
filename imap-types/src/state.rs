@@ -94,7 +94,7 @@ pub enum State<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{core::Tag, mailbox::Mailbox, IntoStatic, ToStatic};
+    use crate::{IntoStatic, ToStatic, core::Tag, mailbox::Mailbox};
 
     #[test]
     fn test_conversion() {

@@ -5,7 +5,7 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::{is_alpha, is_digit, streaming::dquote};
-use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as _base64};
 use imap_types::{
     core::{
         AString, Atom, AtomExt, Charset, IString, Literal, LiteralMode, NString, Quoted,
@@ -20,7 +20,7 @@ use imap_types::{
 use nom::IResult;
 use nom::{
     branch::alt,
-    bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while1, take_while_m_n},
+    bytes::streaming::{escaped, tag, tag_no_case, take, take_while, take_while_m_n, take_while1},
     character::streaming::{char, digit1, one_of},
     combinator::{map, map_res, opt, recognize},
     sequence::{delimited, terminated, tuple},

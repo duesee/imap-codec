@@ -12,21 +12,21 @@
 use std::num::{ParseIntError, TryFromIntError};
 
 use imap_types::{
+    IntoStatic,
     auth::AuthenticateData,
     command::Command,
     core::{LiteralMode, Tag},
     extensions::idle::IdleDone,
     response::{Greeting, Response},
-    IntoStatic,
 };
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 
 use crate::{
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
     auth::authenticate_data,
     command::command,
     extensions::idle::idle_done,
     response::{greeting, response},
-    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
 };
 
 /// An extended version of [`nom::IResult`].
@@ -107,7 +107,7 @@ pub trait Decoder {
     type Error<'a>;
 
     fn decode<'a>(&self, input: &'a [u8])
-        -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
+    -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
 
     fn decode_static<'a>(
         &self,

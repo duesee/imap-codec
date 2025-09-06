@@ -7,12 +7,12 @@
 //!
 //! ```rust
 //! use imap_codec::{
+//!     CommandCodec,
 //!     encode::{Encoder, Fragment},
 //!     imap_types::{
 //!         command::{Command, CommandBody},
 //!         core::LiteralMode,
 //!     },
-//!     CommandCodec,
 //! };
 //!
 //! let command = Command::new("A1", CommandBody::login("Alice", "Pa²²W0rD").unwrap()).unwrap();
@@ -49,7 +49,7 @@
 use std::num::NonZeroU64;
 use std::{borrow::Borrow, collections::VecDeque, io::Write, num::NonZeroU32};
 
-use base64::{engine::general_purpose::STANDARD as base64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as base64};
 use chrono::{DateTime as ChronoDateTime, FixedOffset};
 #[cfg(feature = "ext_condstore_qresync")]
 use imap_types::command::{FetchModifier, SelectParameter, StoreModifier};
@@ -81,7 +81,7 @@ use imap_types::{
     status::{StatusDataItem, StatusDataItemName},
     utils::escape_quoted,
 };
-use utils::{join_serializable, List1AttributeValueOrNil, List1OrNil};
+use utils::{List1AttributeValueOrNil, List1OrNil, join_serializable};
 
 use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
 
@@ -108,9 +108,9 @@ pub trait Encoder {
 ///
 /// ```rust
 /// use imap_codec::{
+///     CommandCodec,
 ///     encode::{Encoder, Fragment},
 ///     imap_types::command::{Command, CommandBody},
-///     CommandCodec,
 /// };
 ///
 /// let cmd = Command::new("A", CommandBody::login("alice", "pass").unwrap()).unwrap();

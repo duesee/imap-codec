@@ -9,7 +9,7 @@ use bounded_static_derive::ToStatic;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{impl_try_from, AString, IString},
+    core::{AString, IString, impl_try_from},
     error::{ValidationError, ValidationErrorKind},
     mailbox::error::MailboxOtherError,
     utils::indicators::is_list_char,

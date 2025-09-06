@@ -18,7 +18,7 @@ use nom::{
 use crate::{
     core::nz_number,
     decode::IMAPResult,
-    encode::{utils::join_serializable, EncodeContext, EncodeIntoContext},
+    encode::{EncodeContext, EncodeIntoContext, utils::join_serializable},
     sequence::sequence_set,
 };
 

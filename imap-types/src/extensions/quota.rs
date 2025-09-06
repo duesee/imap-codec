@@ -46,7 +46,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::CommandBody,
-    core::{impl_try_from, AString, Atom, Vec1},
+    core::{AString, Atom, Vec1, impl_try_from},
     extensions::quota::error::{QuotaError, QuotaRootError, SetQuotaError},
     mailbox::Mailbox,
     response::Data,

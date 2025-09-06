@@ -565,7 +565,7 @@ impl Iterator for Sorting {
 fn simplify(sequence_set: SequenceSet, largest: NonZeroU32, sort: bool) -> VecDeque<(u32, u32)> {
     sequence_set
         .0
-         .0
+        .0
         .into_iter()
         .map(|seq| match seq {
             Sequence::Single(a) => (u32::from(a.expand(largest)), u32::from(a.expand(largest))),
@@ -574,11 +574,7 @@ fn simplify(sequence_set: SequenceSet, largest: NonZeroU32, sort: bool) -> VecDe
                 let b = u32::from(b.expand(largest));
 
                 if sort {
-                    if a <= b {
-                        (a, b)
-                    } else {
-                        (b, a)
-                    }
+                    if a <= b { (a, b) } else { (b, a) }
                 } else {
                     (a, b)
                 }

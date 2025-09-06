@@ -1,4 +1,4 @@
-use imap_codec::{fragmentizer::Fragmentizer, GreetingCodec, ResponseCodec};
+use imap_codec::{GreetingCodec, ResponseCodec, fragmentizer::Fragmentizer};
 
 #[path = "common/common.rs"]
 mod common;
