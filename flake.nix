@@ -22,10 +22,11 @@
         {
           default = pkgs.mkShell {
             strictDeps = true;
-            buildInputs = with pkgs; [
+            nativeBuildInputs = with pkgs; [
+              jq
               just
-              rustup
               rustPlatform.bindgenHook
+              rustup
             ];
           };
         };
