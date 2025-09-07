@@ -224,7 +224,6 @@ macro_rules! impl_try_from_num {
             type Error = ValidationError;
 
             fn try_from(value: $num) -> Result<Self, Self::Error> {
-                // TODO(590)
                 #[allow(irrefutable_let_patterns)]
                 if let Ok(value) = u32::try_from(value) {
                     if let Ok(value) = NonZeroU32::try_from(value) {
