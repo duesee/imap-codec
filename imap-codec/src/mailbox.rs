@@ -156,9 +156,9 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
                 tag_no_case(b"STATUS "),
                 mailbox,
                 delimited(tag(b" ("), opt(status_att_list), tag(b")")),
-                #[cfg(feature = "quirk_trailing_space")]
+                #[cfg(feature = "quirk_trailing_space_status")]
                 opt(sp),
-                #[cfg(not(feature = "quirk_trailing_space"))]
+                #[cfg(not(feature = "quirk_trailing_space_status"))]
                 nom::combinator::success(()),
             )),
             |(_, mailbox, items, _)| Data::Status {
