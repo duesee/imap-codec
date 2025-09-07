@@ -64,10 +64,10 @@ cargo_hack mode: install_cargo_hack
         quirk_missing_text,\
         quirk_rectify_numbers,\
         quirk_excessive_space_quota_resource,\
-        quirk_trailing_space,\
         quirk_trailing_space_capability,\
         quirk_trailing_space_id,\
         quirk_trailing_space_search,\
+        quirk_trailing_space_status,\
         quirk_spaces_between_addresses,\
         quirk_empty_continue_req,\
         quirk_body_fld_enc_nil_to_empty\
