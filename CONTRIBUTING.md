@@ -33,7 +33,7 @@ Breaking API changes (w/o a corresponding version bump) are detected in CI using
 
 ### MSRV
 
-The Minimum Supported Rust Version (MSRV) is 1.78 and checked in CI.
+See `Cargo.toml` for the Minimum Supported Rust Version (MSRV). This version is checked during CI.
 
 ### IMAP extensions
 
