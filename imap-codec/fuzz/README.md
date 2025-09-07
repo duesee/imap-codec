@@ -2,31 +2,12 @@
 
 ## Setup
 
-Cargo fuzz requires a nightly compiler. You can install it via ...
+Cargo fuzz requires nightly and `cargo-fuzz`. Install via ...
 
 ```sh
 rustup install nightly
+cargo install cargo-fuzz
 ```
-
-... and invoke it by adding the "+nightly" flag to cargo like ...
-
-```sh
-cargo +nightly fuzz <target>
-```
-
-Alternatively, you can override the default toolchain for the current directory by using ...
-
-```sh
-rustup override set nightly
-```
-
-Don't forget to unset it with ...
-
-```sh
-rustup override unset
-```
-
-... as imap-codec should work with stable.
 
 ## Provided fuzz targets
 
