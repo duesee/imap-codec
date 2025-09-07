@@ -44,7 +44,7 @@ debug = []
 split = []
 
 [dependencies]
-arbitrary = "1.4.1"
+arbitrary = "1.4.2"
 imap-codec = { path = "..", features = ["fuzz"] }
 imap-types = { path = "../../imap-types", features = ["arbitrary"] }
 libfuzzer-sys = "0.4"

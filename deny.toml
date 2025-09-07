@@ -14,7 +14,8 @@ unknown-git = "deny"
 allow = [
     "Apache-2.0",
     "MIT",
-    "Unicode-DFS-2016",
+    "NCSA",
+    "Unicode-3.0"
 ]
 
 # Uncomment if imap-codec-bench is not excluded

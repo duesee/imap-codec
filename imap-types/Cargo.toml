@@ -28,19 +28,19 @@ ext_mailbox_referrals = []
 ext_metadata = []
 
 [dependencies]
-arbitrary = { version = "1.4.1", optional = true, default-features = false, features = ["derive"] }
+arbitrary = { version = "1.4.2", optional = true, default-features = false, features = ["derive"] }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 bounded-static-derive = { version = "0.8.0", default-features = false }
 bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["std", "std_rng"], optional = true }
-serde = { version = "1.0.215", features = ["derive"], optional = true }
-thiserror = "2.0.3"
+serde = { version = "1.0.219", features = ["derive"], optional = true }
+thiserror = "2.0.16"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
-serde_json = { version = "1.0.133", default-features = false }
+serde_json = { version = "1.0.143", default-features = false }
 
 [[example]]
 name = "serde_json"
