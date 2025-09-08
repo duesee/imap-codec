@@ -1,7 +1,7 @@
 export RUSTFLAGS := "-D warnings"
 export RUSTDOCFLAGS := "-D warnings"
 
-msrv := `cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "imap-codec") | .rust_version'`
+msrv := `sed -rn 's|^rust-version = \"(.*)\"$|\1|p' Cargo.toml`
 
 [private]
 default:
