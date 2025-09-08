@@ -7,3 +7,6 @@ members = [
     "imap-types",
     "imap-types/fuzz",
 ]
+
+[workspace.package]
+rust-version = "1.85"
