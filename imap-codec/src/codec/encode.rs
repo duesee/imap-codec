@@ -700,6 +700,10 @@ impl EncodeIntoContext for CommandBody<'_> {
                     ctx.write_all(b")")
                 }
             }
+            #[cfg(feature = "ext_namespace")]
+            &CommandBody::Namespace => {
+                ctx.write_all(b"NAMESPACE")
+            }
         }
     }
 }
@@ -1626,6 +1630,11 @@ impl EncodeIntoContext for Data<'_> {
                 }
                 ctx.write_all(b" ")?;
                 known_uids.encode_ctx(ctx)?;
+            }
+
+            #[cfg(feature = "ext_namespace")]
+            Data::Namespace { .. } => {
+                ctx.write_all(b"* NAMESPACE ((\"\" \"/\")) ((\"#shared/\" \"/\")) NIL")?;
             }
         }
 

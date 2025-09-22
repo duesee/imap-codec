@@ -26,6 +26,7 @@ ext_id = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
 ext_metadata = []
+ext_namespace = []
 
 [dependencies]
 arbitrary = { version = "1.4.2", optional = true, default-features = false, features = ["derive"] }

@@ -590,6 +590,9 @@ pub enum Data<'a> {
         earlier: bool,
         known_uids: SequenceSet,
     },
+
+    #[cfg(feature = "ext_namespace")]
+    Namespace,
 }
 
 impl<'a> Data<'a> {
@@ -1095,6 +1098,9 @@ pub enum Capability<'a> {
     /// QRESYNC extension (RFC 7162)
     #[cfg(feature = "ext_condstore_qresync")]
     QResync,
+    /// NAMESPACE extension (RFC 2342)
+    #[cfg(feature = "ext_condstore_qresync")]
+    Namespace,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1137,6 +1143,8 @@ impl Display for Capability<'_> {
             Self::CondStore => write!(f, "CONDSTORE"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::QResync => write!(f, "QRESYNC"),
+            #[cfg(feature = "ext_namespace")]
+            Self::Namespace => write!(f, "NAMESPACE"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
