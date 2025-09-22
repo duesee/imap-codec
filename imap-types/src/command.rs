@@ -1535,6 +1535,14 @@ pub enum CommandBody<'a> {
         mailbox: Mailbox<'a>,
         entries: Vec1<Entry<'a>>,
     },
+
+    #[cfg(feature = "ext_namespace")]
+    /// Retrieve the namespaces available to the client.
+    /// 
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the NAMESPACE capability.
+    /// </div>
+    Namespace,
 }
 
 impl<'a> CommandBody<'a> {
@@ -1839,6 +1847,8 @@ impl<'a> CommandBody<'a> {
             Self::SetMetadata { .. } => "SETMETADATA",
             #[cfg(feature = "ext_metadata")]
             Self::GetMetadata { .. } => "GETMETADATA",
+            #[cfg(feature = "ext_namespace")]
+            Self::Namespace => "NAMESPACE",
         }
     }
 }

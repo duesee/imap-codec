@@ -14,3 +14,5 @@ pub mod sort;
 pub mod thread;
 pub mod uidplus;
 pub mod unselect;
+#[cfg(feature = "ext_namespace")]
+pub mod namespace;
