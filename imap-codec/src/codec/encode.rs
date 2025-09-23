@@ -82,6 +82,8 @@ use imap_types::{
     utils::escape_quoted,
 };
 use utils::{List1AttributeValueOrNil, List1OrNil, join_serializable};
+#[cfg(feature = "ext_namespace")]
+use crate::extensions::namespace::encode_namespace_list;
 
 use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
 
@@ -1633,8 +1635,18 @@ impl EncodeIntoContext for Data<'_> {
             }
 
             #[cfg(feature = "ext_namespace")]
-            Data::Namespace { .. } => {
-                ctx.write_all(b"* NAMESPACE ((\"\" \"/\")) ((\"#shared/\" \"/\")) NIL")?;
+            Data::Namespace {
+                personal,
+                other,
+                shared,
+            } => {
+
+                ctx.write_all(b"* NAMESPACE ")?;
+                encode_namespace_list(ctx, personal)?;
+                ctx.write_all(b" ")?;
+                encode_namespace_list(ctx, other)?;
+                ctx.write_all(b" ")?;
+                encode_namespace_list(ctx, shared)?;
             }
         }
 
