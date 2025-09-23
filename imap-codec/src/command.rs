@@ -401,6 +401,10 @@ pub(crate) fn select_param(input: &[u8]) -> IMAPResult<&[u8], SelectParameter> {
 }
 
 /// FROM RFC 2342:
+/// 
+/// ```abnf
+/// namespace = "NAMESPACE"
+/// ```
 #[cfg(feature = "ext_namespace")]
 pub(crate) fn namespace(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
     let mut parser = tag_no_case(b"NAMESPACE");
