@@ -19,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
+#[cfg(feature = "ext_namespace")]
+use crate::extensions::namespace::NamespaceDescription;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::sequence::SequenceSet;
 use crate::{
@@ -592,7 +594,11 @@ pub enum Data<'a> {
     },
 
     #[cfg(feature = "ext_namespace")]
-    Namespace,
+    Namespace {
+        personal: Option<Vec<NamespaceDescription<'a>>>,
+        other: Option<Vec<NamespaceDescription<'a>>>,
+        shared: Option<Vec<NamespaceDescription<'a>>>,
+    },
 }
 
 impl<'a> Data<'a> {
