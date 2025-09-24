@@ -68,16 +68,21 @@ fn namespace_descriptor(input: &[u8]) -> IMAPResult<&[u8], NamespaceDescription>
 
 impl EncodeIntoContext for NamespaceDescription<'_> {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+        write!(ctx, "(")?;
         self.prefix.encode_ctx(ctx)?;
         write!(ctx, " ")?;
         match &self.delimiter {
             Some(delimiter_char) => {
-                let quoted_delimiter = Quoted::try_from(String::from(delimiter_char.inner()))
+                let as_string = String::from(delimiter_char.inner());
+                let quoted = Quoted::try_from(as_string)
                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-                quoted_delimiter.encode_ctx(ctx)
+                quoted.encode_ctx(ctx)?;
             }
-            None => ctx.write_all(b"NIL"),
+            None => {
+                ctx.write_all(b"NIL")?;
+            }
         }
+        write!(ctx, ")")
     }
 }
 
