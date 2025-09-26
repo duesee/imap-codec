@@ -595,9 +595,9 @@ pub enum Data<'a> {
 
     #[cfg(feature = "ext_namespace")]
     Namespace {
-        personal: Option<Vec<NamespaceDescription<'a>>>,
-        other: Option<Vec<NamespaceDescription<'a>>>,
-        shared: Option<Vec<NamespaceDescription<'a>>>,
+        personal: Vec<NamespaceDescription<'a>>,
+        other: Vec<NamespaceDescription<'a>>,
+        shared: Vec<NamespaceDescription<'a>>,
     },
 }
 

@@ -38,9 +38,9 @@ impl<'a> Data<'a> {
         shared: S,
     ) -> Result<Self, NamespaceError<P::Error, O::Error, S::Error>>
     where
-        P: TryInto<Option<Vec<NamespaceDescription<'a>>>>,
-        O: TryInto<Option<Vec<NamespaceDescription<'a>>>>,
-        S: TryInto<Option<Vec<NamespaceDescription<'a>>>>,
+        P: TryInto<Vec<NamespaceDescription<'a>>>,
+        O: TryInto<Vec<NamespaceDescription<'a>>>,
+        S: TryInto<Vec<NamespaceDescription<'a>>>,
     {
         Ok(Self::Namespace {
             personal: personal.try_into().map_err(NamespaceError::Personal)?,

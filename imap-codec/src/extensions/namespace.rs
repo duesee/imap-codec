@@ -44,17 +44,11 @@ pub(crate) fn namespace_response(input: &[u8]) -> IMAPResult<&[u8], Data> {
 ///
 /// namespace-descriptor = DQUOTE <namespace-prefix: string> DQUOTE SP <delimiter: nstring>
 /// ```
-fn namespace_list(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<NamespaceDescription>>> {
-    map(
-        alt((
-            map(
-                delimited(tag("("), many0(namespace_descriptor), tag(")")),
-                Some,
-            ),
-            map(tag_no_case("NIL"), |_| None),
-        )),
-        |opt| opt.filter(|v| !v.is_empty()),
-    )(input)
+fn namespace_list(input: &[u8]) -> IMAPResult<&[u8], Vec<NamespaceDescription>> {
+    alt((
+        delimited(tag("("), many0(namespace_descriptor), tag(")")),
+        map(tag_no_case("NIL"), |_| Vec::new()),
+    ))(input)
 }
 
 fn namespace_descriptor(input: &[u8]) -> IMAPResult<&[u8], NamespaceDescription> {
@@ -88,16 +82,15 @@ impl EncodeIntoContext for NamespaceDescription<'_> {
 
 pub fn encode_namespace_list(
     ctx: &mut EncodeContext,
-    list: &Option<Vec<NamespaceDescription<'_>>>,
+    list: &Vec<NamespaceDescription<'_>>,
 ) -> std::io::Result<()> {
-    match list {
-        Some(descriptions) => {
-            ctx.write_all(b"(")?;
-            for desc in descriptions {
-                desc.encode_ctx(ctx)?;
-            }
-            ctx.write_all(b")")
+    if list.is_empty() {
+        ctx.write_all(b"NIL")
+    } else {
+        ctx.write_all(b"(")?;
+        for desc in list {
+            desc.encode_ctx(ctx)?;
         }
-        None => ctx.write_all(b"NIL"),
+        ctx.write_all(b")")
     }
 }
