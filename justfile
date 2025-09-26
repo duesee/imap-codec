@@ -57,7 +57,7 @@ cargo_hack mode: install_cargo_hack
         ext_login_referrals,\
         ext_mailbox_referrals,\
         ext_id,\
-        ext_metadata, \
+        ext_metadata,\
         ext_namespace \
         --group-features \
         quirk_crlf_relaxed,\
