@@ -14,7 +14,6 @@
 //!
 //!     - [`Data::Namespace`]
 
-#[cfg(feature = "ext_namespace")]
 use crate::core::{AString, QuotedChar};
 use crate::{command::CommandBody, extensions::namespace::error::NamespaceError, response::Data};
 #[cfg(feature = "serde")]
