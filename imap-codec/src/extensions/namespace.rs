@@ -14,7 +14,7 @@ use nom::{
 use std::io::Write;
 
 use crate::{
-    core::{astring, quoted, quoted_char, string},
+    core::{astring, quoted_char},
     decode::IMAPResult,
     encode::{EncodeContext, EncodeIntoContext},
 };
