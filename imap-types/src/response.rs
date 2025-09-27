@@ -20,7 +20,7 @@ use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 #[cfg(feature = "ext_namespace")]
-use crate::extensions::namespace::NamespaceDescription;
+use crate::extensions::namespace::Namespaces;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::sequence::SequenceSet;
 use crate::{
@@ -595,9 +595,9 @@ pub enum Data<'a> {
 
     #[cfg(feature = "ext_namespace")]
     Namespace {
-        personal: Vec<NamespaceDescription<'a>>,
-        other: Vec<NamespaceDescription<'a>>,
-        shared: Vec<NamespaceDescription<'a>>,
+        personal: Namespaces<'a>,
+        other: Namespaces<'a>,
+        shared: Namespaces<'a>,
     },
 }
 
