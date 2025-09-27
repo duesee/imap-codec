@@ -1,7 +1,6 @@
 //! The IMAP NAMESPACE Extension
 
 use imap_types::{
-    core::{AString, Quoted},
     extensions::namespace::{Namespace, NamespaceResponseExtension, Namespaces},
     response::Data,
 };
