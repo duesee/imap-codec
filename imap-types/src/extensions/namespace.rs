@@ -14,6 +14,8 @@
 //!
 //!     - [`Data::Namespace`]
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
 use crate::core::{AString, QuotedChar};
 use crate::{command::CommandBody, extensions::namespace::error::NamespaceError, response::Data};
 #[cfg(feature = "serde")]
