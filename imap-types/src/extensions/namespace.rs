@@ -16,12 +16,16 @@
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
-use crate::core::{AString, QuotedChar};
-use crate::{command::CommandBody, extensions::namespace::error::NamespaceError, response::Data};
+use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use bounded_static_derive::ToStatic;
+use crate::{
+    command::CommandBody,
+    core::{AString, QuotedChar},
+    extensions::namespace::error::NamespaceError,
+    response::Data,
+};
 
 /// A list of `Namespace` definitions.
 ///

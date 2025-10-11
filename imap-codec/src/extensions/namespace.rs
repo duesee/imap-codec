@@ -1,17 +1,18 @@
 //! The IMAP NAMESPACE Extension
 
+use std::io::Write;
+
 use imap_types::{
     extensions::namespace::{Namespace, NamespaceResponseExtension, Namespaces},
     response::Data,
 };
 use nom::{
     branch::alt,
-    bytes::{complete::tag, complete::tag_no_case},
+    bytes::complete::{tag, tag_no_case},
     combinator::{map, value},
     multi::{many0, many1},
     sequence::{delimited, preceded, tuple},
 };
-use std::io::Write;
 
 use crate::{
     core::{astring, quoted_char},

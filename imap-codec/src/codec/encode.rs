@@ -82,9 +82,9 @@ use imap_types::{
     utils::escape_quoted,
 };
 use utils::{List1AttributeValueOrNil, List1OrNil, join_serializable};
+
 #[cfg(feature = "ext_namespace")]
 use crate::extensions::namespace::encode_namespaces;
-
 use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
 
 /// Encoder.
@@ -703,9 +703,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 }
             }
             #[cfg(feature = "ext_namespace")]
-            &CommandBody::Namespace => {
-                ctx.write_all(b"NAMESPACE")
-            }
+            &CommandBody::Namespace => ctx.write_all(b"NAMESPACE"),
         }
     }
 }

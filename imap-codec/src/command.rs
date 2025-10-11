@@ -401,7 +401,7 @@ pub(crate) fn select_param(input: &[u8]) -> IMAPResult<&[u8], SelectParameter> {
 }
 
 /// FROM RFC 2342:
-/// 
+///
 /// ```abnf
 /// namespace = "NAMESPACE"
 /// ```

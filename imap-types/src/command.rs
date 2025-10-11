@@ -1538,7 +1538,7 @@ pub enum CommandBody<'a> {
 
     #[cfg(feature = "ext_namespace")]
     /// Retrieve the namespaces available to the client.
-    /// 
+    ///
     /// <div class="warning">
     /// This extension must only be used when the server advertised support for it sending the NAMESPACE capability.
     /// </div>
