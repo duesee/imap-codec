@@ -382,7 +382,14 @@ pub(crate) fn select_param(input: &[u8]) -> IMAPResult<&[u8], SelectParameter> {
                     terminated(nz_number, sp),
                     mod_sequence_value,
                     opt(preceded(sp, sequence_set)),
-                    opt(preceded(sp, separated_pair(sequence_set, sp, sequence_set))),
+                    opt(preceded(
+                        sp,
+                        delimited(
+                            char('('),
+                            separated_pair(sequence_set, sp, sequence_set),
+                            char(')'),
+                        ),
+                    )),
                 )),
                 char(')'),
             ),
