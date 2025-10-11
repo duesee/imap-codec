@@ -788,6 +788,8 @@ impl EncodeIntoContext for IString<'_> {
         match self {
             Self::Literal(val) => val.encode_ctx(ctx),
             Self::Quoted(val) => val.encode_ctx(ctx),
+            #[cfg(feature = "ext_utf8")]
+            Self::QuotedUtf8(val) => val.encode_ctx(ctx),
         }
     }
 }

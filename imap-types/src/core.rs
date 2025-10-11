@@ -52,6 +52,8 @@ use rand::distributions::{Alphanumeric, DistString};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_utf8")]
+use crate::extensions::utf8::QuotedUtf8;
 use crate::utils::indicators::{
     is_any_text_char_except_quoted_specials, is_astring_char, is_atom_char, is_char8, is_text_char,
 };
@@ -385,7 +387,6 @@ impl AsRef<str> for AtomExt<'_> {
 /// ;        |        See `Literal`
 /// ;        See `Quoted`
 /// ```
-#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum IString<'a> {
@@ -393,6 +394,9 @@ pub enum IString<'a> {
     Literal(Literal<'a>),
     /// Quoted string, see[`Quoted`].
     Quoted(Quoted<'a>),
+    #[cfg(feature = "ext_utf8")]
+    /// Quoted string containing UTF-8, see[`QuotedUtf8`].
+    QuotedUtf8(QuotedUtf8<'a>),
 }
 
 impl<'a> IString<'a> {
@@ -400,6 +404,11 @@ impl<'a> IString<'a> {
         match self {
             Self::Literal(literal) => literal.into_inner(),
             Self::Quoted(quoted) => match quoted.into_inner() {
+                Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
+                Cow::Owned(s) => Cow::Owned(s.into_bytes()),
+            },
+            #[cfg(feature = "ext_utf8")]
+            Self::QuotedUtf8(quoted_utf8) => match quoted_utf8.0 {
                 Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
                 Cow::Owned(s) => Cow::Owned(s.into_bytes()),
             },
@@ -474,6 +483,8 @@ impl AsRef<[u8]> for IString<'_> {
         match self {
             Self::Quoted(quoted) => quoted.as_ref().as_bytes(),
             Self::Literal(literal) => literal.as_ref(),
+            #[cfg(feature = "ext_utf8")]
+            Self::QuotedUtf8(quoted_utf8) => quoted_utf8.0.as_bytes(),
         }
     }
 }

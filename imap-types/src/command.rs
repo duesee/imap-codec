@@ -1927,15 +1927,13 @@ mod tests {
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;
+    #[cfg(feature = "ext_utf8")]
+    use crate::extensions::{enable::CapabilityEnable, utf8::Utf8Kind};
     use crate::{
         auth::AuthMechanism,
         core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
         datetime::DateTime,
-        extensions::{
-            binary::Literal8,
-            compress::CompressionAlgorithm,
-            enable::{CapabilityEnable, Utf8Kind},
-        },
+        extensions::{binary::Literal8, compress::CompressionAlgorithm},
         fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName, Part, Section},
         flag::{Flag, StoreType},
         mailbox::{ListMailbox, Mailbox},
@@ -2278,6 +2276,7 @@ mod tests {
                 "COPY",
             ),
             (CommandBody::Idle, "IDLE"),
+            #[cfg(feature = "ext_utf8")]
             (
                 CommandBody::Enable {
                     capabilities: Vec1::from(CapabilityEnable::Utf8(Utf8Kind::Only)),
