@@ -87,7 +87,7 @@ pub(crate) fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
                 '\\',
                 one_of("\\\""),
             ),
-            // # Saftey
+            // # Safety
             //
             // `unwrap` is safe because val contains ASCII-only characters.
             |val| from_utf8(val).unwrap(),
@@ -211,7 +211,7 @@ pub(crate) fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    // # Saftey
+    // # Safety
     //
     // `unwrap` is safe, because `is_atom_char` enforces ...
     // * that the string is always UTF8, and ...
