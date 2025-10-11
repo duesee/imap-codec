@@ -19,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
+#[cfg(feature = "ext_utf8")]
+use crate::extensions::utf8::Utf8Kind;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::sequence::SequenceSet;
 use crate::{
@@ -1095,6 +1097,8 @@ pub enum Capability<'a> {
     /// QRESYNC extension (RFC 7162)
     #[cfg(feature = "ext_condstore_qresync")]
     QResync,
+    #[cfg(feature = "ext_utf8")]
+    Utf8(Utf8Kind),
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1137,6 +1141,8 @@ impl Display for Capability<'_> {
             Self::CondStore => write!(f, "CONDSTORE"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::QResync => write!(f, "QRESYNC"),
+            #[cfg(feature = "ext_utf8")]
+            Self::Utf8(kind) => write!(f, "UTF8={kind}"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1205,6 +1211,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             #[cfg(feature = "ext_condstore_qresync")]
             "qresync" => Self::Unselect,
             "uidplus" => Self::UidPlus,
+            #[cfg(feature = "ext_utf8")]
+            "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
+            #[cfg(feature = "ext_utf8")]
+            "utf8=only" => Self::Utf8(Utf8Kind::Only),
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {

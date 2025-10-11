@@ -74,15 +74,14 @@ impl EncodeIntoContext for CapabilityEnable<'_> {
 
 #[cfg(test)]
 mod tests {
-    use imap_types::{
-        command::Command,
-        core::Atom,
-        extensions::enable::{CapabilityEnable, Utf8Kind},
-    };
+    #[cfg(feature = "ext_utf8")]
+    use imap_types::extensions::utf8::Utf8Kind;
+    use imap_types::{command::Command, core::Atom, extensions::enable::CapabilityEnable};
 
     use super::*;
     use crate::testing::kat_inverse_command;
 
+    #[cfg(feature = "ext_utf8")]
     #[test]
     fn test_parse_enable() {
         let got = enable(b"enable UTF8=ACCEPT\r\n").unwrap().1;
@@ -95,6 +94,7 @@ mod tests {
     #[test]
     fn test_kat_inverse_command_enable() {
         kat_inverse_command(&[
+            #[cfg(feature = "ext_utf8")]
             (
                 b"A ENABLE UTF8=ONLY\r\n".as_ref(),
                 b"".as_ref(),
@@ -104,6 +104,7 @@ mod tests {
                 )
                 .unwrap(),
             ),
+            #[cfg(feature = "ext_utf8")]
             (
                 b"A ENABLE UTF8=ACCEPT\r\n?",
                 b"?".as_ref(),
