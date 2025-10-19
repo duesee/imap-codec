@@ -49,6 +49,7 @@ pub struct BasicFields<'a> {
 /// Specific fields of a non-multipart body part.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SpecificFields<'a> {
     /// # Example (not in RFC)
@@ -166,6 +167,7 @@ pub enum SpecificFields<'a> {
 
 /// The BODY(STRUCTURE).
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum BodyStructure<'a> {
     /// For example, a simple text message of 48 lines and 2279 octets
@@ -326,6 +328,7 @@ pub struct Location<'a> {
 
 /// Helper to enforce correct usage of [`SinglePartExtensionData`] and [`MultiPartExtensionData`].
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum BodyExtension<'a> {
     /// NString.

@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Check only explicit features for SemVer violations
 * Renamed `NonEmptyVec` to `Vec1`
 * Updated `CONTRIBUTING.md`
+* Changed serde representation for many `enum`s from externally to adjacently tagged
 
 ### Fixed
 

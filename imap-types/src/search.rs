@@ -14,6 +14,7 @@ use crate::{
 
 /// The defined search keys.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SearchKey<'a> {
     // <Not in RFC.>

@@ -11,6 +11,7 @@ use crate::arbitrary::impl_arbitrary_try_from;
 use crate::core::Atom;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum SortAlgorithm<'a> {
     Display,

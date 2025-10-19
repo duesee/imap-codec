@@ -20,6 +20,7 @@ use crate::{
 
 /// Authentication mechanism.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum AuthMechanism<'a> {
@@ -205,6 +206,7 @@ pub struct AuthMechanismOther<'a>(Atom<'a>);
 /// Holds the raw binary data, i.e., a `Vec<u8>`, *not* the BASE64 string.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum AuthenticateData<'a> {
     /// Continue SASL authentication.

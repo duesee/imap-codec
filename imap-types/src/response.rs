@@ -114,6 +114,7 @@ pub enum GreetingKind {
 /// Response.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Response<'a> {
     /// Command continuation request responses use the token "+" instead of a
@@ -134,6 +135,7 @@ pub enum Response<'a> {
 
 /// Status response.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Status<'a> {
     Untagged(StatusBody<'a>),
@@ -311,6 +313,7 @@ impl<'a> Status<'a> {
 /// ## 7.2 - 7.4 Server and Mailbox Status; Mailbox Size; Message Status
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Data<'a> {
     // ## 7.2. Server Responses - Server and Mailbox Status
@@ -663,6 +666,7 @@ impl<'a> Data<'a> {
 /// space and those arguments.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "Continue")]
 #[doc(alias = "Continuation")]
@@ -767,6 +771,7 @@ impl<'a> CommandContinuationRequestBasic<'a> {
 /// The currently defined response codes are:
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Code<'a> {
     /// `ALERT`
@@ -1038,6 +1043,7 @@ impl<'a> CodeOther<'a> {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum Capability<'a> {
