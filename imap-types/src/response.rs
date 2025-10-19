@@ -21,6 +21,8 @@ use crate::core::{IString, NString};
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 #[cfg(feature = "ext_namespace")]
 use crate::extensions::namespace::Namespaces;
+#[cfg(feature = "ext_utf8")]
+use crate::extensions::utf8::Utf8Kind;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::sequence::SequenceSet;
 use crate::{
@@ -1107,6 +1109,8 @@ pub enum Capability<'a> {
     /// NAMESPACE extension (RFC 2342)
     #[cfg(feature = "ext_namespace")]
     Namespace,
+    #[cfg(feature = "ext_utf8")]
+    Utf8(Utf8Kind),
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1151,6 +1155,8 @@ impl Display for Capability<'_> {
             Self::QResync => write!(f, "QRESYNC"),
             #[cfg(feature = "ext_namespace")]
             Self::Namespace => write!(f, "NAMESPACE"),
+            #[cfg(feature = "ext_utf8")]
+            Self::Utf8(kind) => write!(f, "UTF8={kind}"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1219,6 +1225,10 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             #[cfg(feature = "ext_condstore_qresync")]
             "qresync" => Self::Unselect,
             "uidplus" => Self::UidPlus,
+            #[cfg(feature = "ext_utf8")]
+            "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
+            #[cfg(feature = "ext_utf8")]
+            "utf8=only" => Self::Utf8(Utf8Kind::Only),
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {

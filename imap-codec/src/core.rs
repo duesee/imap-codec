@@ -27,6 +27,8 @@ use nom::{
 };
 
 use crate::decode::{IMAPErrorKind, IMAPParseError, IMAPResult};
+#[cfg(feature = "ext_utf8")]
+use crate::extensions::utf8::quoted_utf8;
 
 // ----- number -----
 
@@ -71,7 +73,13 @@ pub(crate) fn nz_number(input: &[u8]) -> IMAPResult<&[u8], NonZeroU32> {
 
 /// `string = quoted / literal`
 pub(crate) fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
-    alt((map(quoted, IString::Quoted), map(literal, IString::Literal)))(input)
+    alt((
+        map(quoted, IString::Quoted),
+        // quoted_utf8 must come after quoted but before literal.
+        #[cfg(feature = "ext_utf8")]
+        map(quoted_utf8, IString::QuotedUtf8),
+        map(literal, IString::Literal),
+    ))(input)
 }
 
 /// `quoted = DQUOTE *QUOTED-CHAR DQUOTE`
@@ -87,7 +95,7 @@ pub(crate) fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
                 '\\',
                 one_of("\\\""),
             ),
-            // # Saftey
+            // # Safety
             //
             // `unwrap` is safe because val contains ASCII-only characters.
             |val| from_utf8(val).unwrap(),
@@ -211,7 +219,7 @@ pub(crate) fn atom(input: &[u8]) -> IMAPResult<&[u8], Atom> {
 
     let (remaining, parsed_atom) = parser(input)?;
 
-    // # Saftey
+    // # Safety
     //
     // `unwrap` is safe, because `is_atom_char` enforces ...
     // * that the string is always UTF8, and ...

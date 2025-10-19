@@ -3,6 +3,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
+#[cfg(feature = "ext_utf8")]
+use crate::extensions::utf8::QuotedUtf8;
 use crate::{
     auth::AuthMechanism,
     body::{
@@ -161,6 +163,37 @@ impl<'a> Arbitrary<'a> for Status<'a> {
 
             _ => unreachable!(),
         })
+    }
+}
+
+impl<'a> Arbitrary<'a> for IString<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        #[cfg(not(feature = "ext_utf8"))]
+        return Ok(match u.int_in_range(0..=1)? {
+            0 => Self::Quoted(Quoted::arbitrary(u)?),
+            1 => Self::Literal(Literal::arbitrary(u)?),
+            _ => unreachable!(),
+        });
+
+        #[cfg(feature = "ext_utf8")]
+        return Ok(match u.int_in_range(0..=2)? {
+            0 => Self::Quoted(Quoted::arbitrary(u)?),
+            1 => {
+                // When the generated `QuotedUtf8` is also a valid
+                // `Quoted`, we use `Quoted` to avoid the case that
+                // a generated `QuotedUtf8` is reconstructed as `Quoted`
+                // and breaks our structured fuzz tests.
+                let arb = QuotedUtf8::arbitrary(u)?;
+
+                if Quoted::validate(arb.0.as_ref()).is_ok() {
+                    Self::Quoted(Quoted(arb.0))
+                } else {
+                    Self::QuotedUtf8(arb)
+                }
+            }
+            2 => Self::Literal(Literal::arbitrary(u)?),
+            _ => unreachable!(),
+        });
     }
 }
 

@@ -301,8 +301,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 mechanism,
                 initial_response,
             } => {
-                ctx.write_all(b"AUTHENTICATE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"AUTHENTICATE ")?;
                 mechanism.encode_ctx(ctx)?;
 
                 if let Some(ir) = initial_response {
@@ -321,8 +320,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 Ok(())
             }
             CommandBody::Login { username, password } => {
-                ctx.write_all(b"LOGIN")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"LOGIN ")?;
                 username.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 password.declassify().encode_ctx(ctx)
@@ -332,8 +330,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 #[cfg(feature = "ext_condstore_qresync")]
                 parameters,
             } => {
-                ctx.write_all(b"SELECT")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"SELECT ")?;
                 mailbox.encode_ctx(ctx)?;
 
                 #[cfg(feature = "ext_condstore_qresync")]
@@ -351,8 +348,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 #[cfg(feature = "ext_condstore_qresync")]
                 parameters,
             } => {
-                ctx.write_all(b"EXAMINE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"EXAMINE ")?;
                 mailbox.encode_ctx(ctx)?;
 
                 #[cfg(feature = "ext_condstore_qresync")]
@@ -365,41 +361,35 @@ impl EncodeIntoContext for CommandBody<'_> {
                 Ok(())
             }
             CommandBody::Create { mailbox } => {
-                ctx.write_all(b"CREATE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"CREATE ")?;
                 mailbox.encode_ctx(ctx)
             }
             CommandBody::Delete { mailbox } => {
-                ctx.write_all(b"DELETE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"DELETE ")?;
                 mailbox.encode_ctx(ctx)
             }
             CommandBody::Rename {
                 from: mailbox,
                 to: new_mailbox,
             } => {
-                ctx.write_all(b"RENAME")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"RENAME ")?;
                 mailbox.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 new_mailbox.encode_ctx(ctx)
             }
             CommandBody::Subscribe { mailbox } => {
-                ctx.write_all(b"SUBSCRIBE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"SUBSCRIBE ")?;
                 mailbox.encode_ctx(ctx)
             }
             CommandBody::Unsubscribe { mailbox } => {
-                ctx.write_all(b"UNSUBSCRIBE")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"UNSUBSCRIBE ")?;
                 mailbox.encode_ctx(ctx)
             }
             CommandBody::List {
                 reference,
                 mailbox_wildcard,
             } => {
-                ctx.write_all(b"LIST")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"LIST ")?;
                 reference.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 mailbox_wildcard.encode_ctx(ctx)
@@ -408,8 +398,7 @@ impl EncodeIntoContext for CommandBody<'_> {
                 reference,
                 mailbox_wildcard,
             } => {
-                ctx.write_all(b"LSUB")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"LSUB ")?;
                 reference.encode_ctx(ctx)?;
                 ctx.write_all(b" ")?;
                 mailbox_wildcard.encode_ctx(ctx)
@@ -418,11 +407,9 @@ impl EncodeIntoContext for CommandBody<'_> {
                 mailbox,
                 item_names,
             } => {
-                ctx.write_all(b"STATUS")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"STATUS ")?;
                 mailbox.encode_ctx(ctx)?;
-                ctx.write_all(b" ")?;
-                ctx.write_all(b"(")?;
+                ctx.write_all(b" (")?;
                 join_serializable(item_names, b" ", ctx)?;
                 ctx.write_all(b")")
             }
@@ -432,13 +419,11 @@ impl EncodeIntoContext for CommandBody<'_> {
                 date,
                 message,
             } => {
-                ctx.write_all(b"APPEND")?;
-                ctx.write_all(b" ")?;
+                ctx.write_all(b"APPEND ")?;
                 mailbox.encode_ctx(ctx)?;
 
                 if !flags.is_empty() {
-                    ctx.write_all(b" ")?;
-                    ctx.write_all(b"(")?;
+                    ctx.write_all(b" (")?;
                     join_serializable(flags, b" ", ctx)?;
                     ctx.write_all(b")")?;
                 }
@@ -807,6 +792,8 @@ impl EncodeIntoContext for IString<'_> {
         match self {
             Self::Literal(val) => val.encode_ctx(ctx),
             Self::Quoted(val) => val.encode_ctx(ctx),
+            #[cfg(feature = "ext_utf8")]
+            Self::QuotedUtf8(val) => val.encode_ctx(ctx),
         }
     }
 }

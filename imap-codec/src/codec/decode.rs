@@ -9,7 +9,10 @@
 //!
 //! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
 
-use std::num::{ParseIntError, TryFromIntError};
+use std::{
+    num::{ParseIntError, TryFromIntError},
+    str::Utf8Error,
+};
 
 use imap_types::{
     IntoStatic,
@@ -50,6 +53,7 @@ pub(crate) enum IMAPErrorKind<'a> {
     },
     BadNumber,
     BadBase64,
+    BadUtf8,
     BadDateTime,
     LiteralContainsNull,
     RecursionLimitExceeded,
@@ -95,6 +99,15 @@ impl<I> FromExternalError<I, base64::DecodeError> for IMAPParseError<'_, I> {
         Self {
             input,
             kind: IMAPErrorKind::BadBase64,
+        }
+    }
+}
+
+impl<I> FromExternalError<I, Utf8Error> for IMAPParseError<'_, I> {
+    fn from_external_error(input: I, _: ErrorKind, _: Utf8Error) -> Self {
+        Self {
+            input,
+            kind: IMAPErrorKind::BadUtf8,
         }
     }
 }
