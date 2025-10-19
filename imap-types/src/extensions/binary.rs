@@ -16,6 +16,7 @@ use crate::core::{Literal, LiteralMode};
 /// Either a [`Literal`] or [`Literal8`].
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Clone, Debug, PartialEq, Eq, Hash, ToStatic)]
 pub enum LiteralOrLiteral8<'a> {
     Literal(Literal<'a>),

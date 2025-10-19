@@ -23,6 +23,7 @@ use crate::{core::Atom, error::ValidationError};
 ///
 /// Note that a flag of either type can be permanent or session-only.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Flag<'a> {
     /// Message has been answered (`\Answered`).
@@ -93,6 +94,7 @@ impl Display for Flag<'_> {
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagFetch<'a> {
     Flag(Flag<'a>),
@@ -114,6 +116,7 @@ impl<'a> From<Flag<'a>> for FlagFetch<'a> {
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagPerm<'a> {
     Flag(Flag<'a>),
@@ -131,6 +134,7 @@ impl<'a> From<Flag<'a>> for FlagPerm<'a> {
 
 /// Four name attributes are defined.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum FlagNameAttribute<'a> {
     /// It is not possible for any child levels of hierarchy to exist

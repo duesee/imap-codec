@@ -24,6 +24,7 @@ use crate::{
 /// Shorthands for commonly-used message data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[non_exhaustive]
 pub enum Macro {
@@ -62,6 +63,7 @@ impl Display for Macro {
 /// A macro must be used by itself, and not in conjunction with other macros or data items.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum MacroOrMessageDataItemNames<'a> {
     Macro(Macro),
@@ -83,6 +85,7 @@ impl<'a> From<Vec<MessageDataItemName<'a>>> for MacroOrMessageDataItemNames<'a> 
 /// Message data item name used to request a message data item.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "FetchAttribute")]
 pub enum MessageDataItemName<'a> {
@@ -246,6 +249,7 @@ pub enum MessageDataItemName<'a> {
 /// Message data item.
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 #[doc(alias = "FetchAttributeValue")]
 pub enum MessageDataItem<'a> {
@@ -429,6 +433,7 @@ pub enum MessageDataItem<'a> {
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Section<'a> {
     Part(Part),
@@ -472,6 +477,7 @@ pub struct Part(pub Vec1<NonZeroU32>);
 /// except in the case of a message which has no body and no blank
 /// line.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum PartSpecifier<'a> {
     PartNumber(u32),

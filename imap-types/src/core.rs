@@ -388,6 +388,7 @@ impl AsRef<str> for AtomExt<'_> {
 /// ;        See `Quoted`
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum IString<'a> {
     /// Literal, see [`Literal`].
@@ -939,6 +940,7 @@ impl<'a> From<Quoted<'a>> for NString<'a> {
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum AString<'a> {
     // `1*ATOM-CHAR` does not allow resp-specials, but `1*ASTRING-CHAR` does ... :-/
@@ -1428,6 +1430,7 @@ impl TryFrom<char> for QuotedChar {
 /// ```
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Charset<'a> {
     Atom(Atom<'a>),
@@ -1507,6 +1510,7 @@ impl AsRef<str> for Charset<'_> {
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToStatic)]
 pub enum NString8<'a> {
     NString(NString<'a>),

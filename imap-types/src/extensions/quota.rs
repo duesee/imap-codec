@@ -123,6 +123,7 @@ impl<'a> Data<'a> {
 ///
 /// Supported resource names MUST be advertised as a capability by prepending the resource name with "QUOTA=RES-".
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub enum Resource<'a> {
     /// The physical space estimate, in units of 1024 octets, of the mailboxes governed by the quota
