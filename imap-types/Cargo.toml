@@ -26,6 +26,7 @@ ext_id = []
 ext_login_referrals = []
 ext_mailbox_referrals = []
 ext_metadata = []
+ext_namespace = []
 ext_utf8 = []
 
 [dependencies]

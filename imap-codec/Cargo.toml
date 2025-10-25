@@ -74,6 +74,7 @@ ext_id = ["imap-types/ext_id"]
 ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_metadata = ["imap-types/ext_metadata"]
+ext_namespace = ["imap-types/ext_namespace"]
 ext_utf8 = ["imap-types/ext_utf8"]
 # </Forward to imap-types>
 

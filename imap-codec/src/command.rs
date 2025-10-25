@@ -38,6 +38,8 @@ use crate::extensions::condstore_qresync::mod_sequence_valzer;
 use crate::extensions::id::id;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{getmetadata, setmetadata};
+#[cfg(feature = "ext_namespace")]
+use crate::extensions::namespace::namespace_command;
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},
@@ -168,6 +170,8 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         setmetadata,
         #[cfg(feature = "ext_metadata")]
         getmetadata,
+        #[cfg(feature = "ext_namespace")]
+        namespace_command,
     ))(input)
 }
 
