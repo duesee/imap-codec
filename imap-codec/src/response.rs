@@ -214,7 +214,7 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
                 preceded(tag_no_case(b"MODIFIED "), sequence_set),
                 Code::Modified,
             ),
-            value(Code::Closed, tag_no_case(b"UIDNOTSTICKY")),
+            value(Code::Closed, tag_no_case(b"CLOSED")),
         )),
     ))(input)
 }
