@@ -9,6 +9,8 @@ pub mod idle;
 #[cfg(feature = "ext_metadata")]
 pub mod metadata;
 pub mod r#move;
+#[cfg(feature = "ext_namespace")]
+pub mod namespace;
 pub mod quota;
 pub mod sort;
 pub mod thread;

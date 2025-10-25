@@ -19,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
+#[cfg(feature = "ext_namespace")]
+use crate::extensions::namespace::Namespaces;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::Utf8Kind;
 #[cfg(feature = "ext_condstore_qresync")]
@@ -595,6 +597,13 @@ pub enum Data<'a> {
         earlier: bool,
         known_uids: SequenceSet,
     },
+
+    #[cfg(feature = "ext_namespace")]
+    Namespace {
+        personal: Namespaces<'a>,
+        other: Namespaces<'a>,
+        shared: Namespaces<'a>,
+    },
 }
 
 impl<'a> Data<'a> {
@@ -1103,6 +1112,9 @@ pub enum Capability<'a> {
     /// QRESYNC extension (RFC 7162)
     #[cfg(feature = "ext_condstore_qresync")]
     QResync,
+    /// NAMESPACE extension (RFC 2342)
+    #[cfg(feature = "ext_namespace")]
+    Namespace,
     #[cfg(feature = "ext_utf8")]
     Utf8(Utf8Kind),
     /// Other/Unknown
@@ -1147,6 +1159,8 @@ impl Display for Capability<'_> {
             Self::CondStore => write!(f, "CONDSTORE"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::QResync => write!(f, "QRESYNC"),
+            #[cfg(feature = "ext_namespace")]
+            Self::Namespace => write!(f, "NAMESPACE"),
             #[cfg(feature = "ext_utf8")]
             Self::Utf8(kind) => write!(f, "UTF8={kind}"),
             Self::Other(other) => write!(f, "{}", other.0),

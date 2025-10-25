@@ -20,6 +20,8 @@ use nom::{
 use crate::extensions::condstore_qresync::search_sort_mod_seq;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::metadata_resp;
+#[cfg(feature = "ext_namespace")]
+use crate::extensions::namespace::namespace_response;
 use crate::{
     core::{astring, nil, number, nz_number, quoted_char, string},
     decode::IMAPResult,
@@ -168,6 +170,8 @@ pub(crate) fn mailbox_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
         ),
         #[cfg(feature = "ext_metadata")]
         metadata_resp,
+        #[cfg(feature = "ext_namespace")]
+        namespace_response,
         map(terminated(number, tag_no_case(b" EXISTS")), Data::Exists),
         map(terminated(number, tag_no_case(b" RECENT")), Data::Recent),
         quotaroot_response,
