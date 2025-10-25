@@ -33,7 +33,8 @@ quirk_crlf_relaxed = ["imap-codec/quirk_crlf_relaxed"]
 # Use (most) IMAP extensions.
 ext = [
     "starttls",
-    "ext_condstore_qresync",
+    # TODO: Disabled due to #633
+    #"ext_condstore_qresync",
     "ext_id",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
