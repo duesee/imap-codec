@@ -4,3 +4,5 @@ target
 # direnv (https://direnv.net/)
 .envrc
 .direnv
+
+nohup.out
