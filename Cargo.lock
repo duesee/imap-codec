@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "imap-types"
-version = "2.0.0-alpha.4"
+version = "2.0.0-alpha.5"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
