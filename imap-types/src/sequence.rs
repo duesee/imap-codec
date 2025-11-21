@@ -99,6 +99,14 @@ impl TryFrom<Vec<NonZeroU32>> for SequenceSet {
     }
 }
 
+impl TryFrom<&[NonZeroU32]> for SequenceSet {
+    type Error = ValidationError;
+
+    fn try_from(value: &[NonZeroU32]) -> Result<Self, Self::Error> {
+        SequenceSet::try_from(value.to_vec())
+    }
+}
+
 impl TryFrom<&str> for SequenceSet {
     type Error = ValidationError;
 
