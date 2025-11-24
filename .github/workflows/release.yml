@@ -18,7 +18,7 @@ jobs:
           echo "Extracted crate name: $crate_name"
           echo "CRATE_NAME=$crate_name" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Assert release version matches crate version
         run: |
