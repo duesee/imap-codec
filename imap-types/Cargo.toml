@@ -40,9 +40,9 @@ serde = { version = "1.0.228", features = ["derive"], optional = true }
 thiserror = "2.0.17"
 
 [dev-dependencies]
-criterion = { version = "0.7.0", default-features = false }
+criterion = { version = "0.8.1", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
-serde_json = { version = "1.0.145", default-features = false }
+serde_json = { version = "1.0.148", default-features = false }
 
 [[example]]
 name = "serde_json"
