@@ -298,7 +298,7 @@ pub(crate) fn body_fld_octets(input: &[u8]) -> IMAPResult<&[u8], u32> {
         return alt((
             number,
             map(tuple((tag("-"), number)), |(_, _)| {
-                log::warn!("Rectified negative number to 0");
+                log::debug!("Rectified negative number to 0");
                 0
             }),
         ))(input);
