@@ -1,5 +1,5 @@
 use std::{
-    cmp::max,
+    cmp::{Ordering, max},
     collections::VecDeque,
     fmt::Debug,
     iter::Rev,
@@ -140,6 +140,47 @@ pub enum Sequence {
     Range(SeqOrUid, SeqOrUid),
 }
 
+impl PartialOrd for Sequence {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Sequence::Single(a), Sequence::Single(b)) => a.partial_cmp(b),
+            (Sequence::Single(a), Sequence::Range(b1, b2)) => {
+                if a < b1.min(b2) {
+                    return Some(Ordering::Less);
+                }
+
+                if a > b1.max(b2) {
+                    return Some(Ordering::Greater);
+                }
+
+                None
+            }
+            (Sequence::Range(a1, a2), Sequence::Single(b)) => {
+                if b < a1.min(a2) {
+                    return Some(Ordering::Greater);
+                }
+
+                if b > a1.max(a2) {
+                    return Some(Ordering::Less);
+                }
+
+                None
+            }
+            (Sequence::Range(a1, a2), Sequence::Range(b1, b2)) => {
+                if a1.max(a2) < b1 && a1.max(a2) < b2 {
+                    return Some(Ordering::Less);
+                }
+
+                if a1.min(a2) > b1 && a1.min(a2) > b2 {
+                    return Some(Ordering::Greater);
+                }
+
+                None
+            }
+        }
+    }
+}
+
 impl From<SeqOrUid> for Sequence {
     fn from(value: SeqOrUid) -> Self {
         Self::Single(value)
@@ -190,6 +231,23 @@ impl FromStr for Sequence {
 pub enum SeqOrUid {
     Value(NonZeroU32),
     Asterisk,
+}
+
+impl Ord for SeqOrUid {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (SeqOrUid::Asterisk, SeqOrUid::Asterisk) => Ordering::Equal,
+            (_, SeqOrUid::Asterisk) => Ordering::Greater,
+            (SeqOrUid::Asterisk, _) => Ordering::Less,
+            (SeqOrUid::Value(a), SeqOrUid::Value(b)) => a.cmp(b),
+        }
+    }
+}
+
+impl PartialOrd for SeqOrUid {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl From<NonZeroU32> for SeqOrUid {
