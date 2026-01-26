@@ -3,6 +3,7 @@ use std::{
     collections::VecDeque,
     fmt::Debug,
     iter::Rev,
+    mem,
     num::NonZeroU32,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     str::FromStr,
@@ -33,6 +34,50 @@ pub const MAX: NonZeroU32 = match NonZeroU32::new(u32::MAX) {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct SequenceSet(pub Vec1<Sequence>);
+
+impl SequenceSet {
+    pub fn normalize(&mut self) -> &mut Self {
+        for seq in &mut self.0.0 {
+            seq.normalize();
+        }
+
+        let set = &mut self.0.0;
+
+        if set.len() == 1 {
+            return self;
+        }
+
+        set.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+
+        let mut a = 0;
+        let mut b = 1;
+
+        while b < set.len() {
+            if set[a].partial_cmp(&set[b]).is_some() {
+                a += 1;
+                b += 1;
+                continue;
+            }
+
+            match (&set[a], &set[b]) {
+                (Sequence::Single(_), _) => {
+                    set.remove(a);
+                }
+                (Sequence::Range(_, _), Sequence::Single(_)) => {
+                    set.remove(b);
+                }
+                (Sequence::Range(a1, a2), Sequence::Range(b1, b2)) => {
+                    let min = a1.clone().min(a2.clone()).min(b1.clone()).min(b2.clone());
+                    let max = a1.clone().max(a2.clone()).max(b1.clone()).max(b2.clone());
+                    let _ = mem::replace(&mut set[a], Sequence::Range(min, max));
+                    set.remove(b);
+                }
+            }
+        }
+
+        self
+    }
+}
 
 impl From<Sequence> for SequenceSet {
     fn from(sequence: Sequence) -> Self {
@@ -138,6 +183,30 @@ impl FromStr for SequenceSet {
 pub enum Sequence {
     Single(SeqOrUid),
     Range(SeqOrUid, SeqOrUid),
+}
+
+impl Sequence {
+    pub fn normalize(&mut self) -> &mut Self {
+        match self {
+            Sequence::Single(SeqOrUid::Asterisk) => {
+                let begin = NonZeroU32::new(1).unwrap();
+                let range = Sequence::Range(begin.into(), SeqOrUid::Asterisk);
+                let _ = mem::replace(self, range);
+            }
+            Sequence::Range(SeqOrUid::Value(a), SeqOrUid::Value(b)) if *a == *b => {
+                let range = Sequence::Single(a.clone().into());
+                let _ = mem::replace(self, range);
+            }
+            Sequence::Range(SeqOrUid::Value(a), SeqOrUid::Value(b)) if *a > *b => {
+                mem::swap(a, b);
+            }
+            _ => {
+                // already normalized
+            }
+        }
+
+        self
+    }
 }
 
 impl PartialOrd for Sequence {
@@ -950,6 +1019,49 @@ mod tests {
             let clean: Vec<_> = seq.iter(largest).collect();
 
             assert_eq!(naive, clean);
+        }
+    }
+
+    #[test]
+    fn normalize_sequence() {
+        let tests = vec![
+            ("*", "1:*"),
+            ("1:*", "1:*"),
+            ("*:1", "*:1"),
+            ("1", "1"),
+            ("1:1", "1"),
+            ("1:2", "1:2"),
+            ("2:1", "1:2"),
+        ];
+
+        for (test, expected) in tests {
+            let expected = Sequence::try_from(expected).unwrap();
+            let mut got = Sequence::try_from(test).unwrap();
+            got.normalize();
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn normalize_sequence_set() {
+        let tests = [
+            ("1,2,3,4", "1,2,3,4"),
+            ("3,1,2,4", "1,2,3,4"),
+            ("3:1,5", "1:3,5"),
+            ("5,3:1", "1:3,5"),
+            ("3,3:1", "1:3"),
+            ("3:1,1", "1:3"),
+            ("3:1,2:5", "1:5"),
+            ("3:1,4:9", "1:3,4:9"),
+            ("9:4,3:1", "1:3,4:9"),
+            ("8:10,3:1,2:5,9", "1:5,8:10"),
+        ];
+
+        for (test, expected) in tests {
+            let expected = SequenceSet::try_from(expected).unwrap();
+            let mut got = SequenceSet::try_from(test).unwrap();
+            got.normalize();
+            assert_eq!(expected, got);
         }
     }
 }

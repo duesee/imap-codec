@@ -35,7 +35,7 @@ quirk = [
     "quirk_spaces_between_addresses",
     "quirk_empty_continue_req",
     "quirk_body_fld_enc_nil_to_empty",
-    "quirk_dedup_sort_seq_encoding",
+    "quirk_always_normalize_sequence_sets",
 ]
 # Make `\r` in `\r\n` optional.
 quirk_crlf_relaxed = []
@@ -61,8 +61,8 @@ quirk_trailing_space_search = []
 quirk_empty_continue_req = []
 # Encode NIL `body-fld-enc` as empty string.
 quirk_body_fld_enc_nil_to_empty = []
-# Dedup and sort sequence sets during encoding
-quirk_dedup_sort_seq_encoding = []
+# Always normalize sequence sets during encoding
+quirk_always_normalize_sequence_sets = []
 
 # <Forward to imap-types>
 arbitrary = ["imap-types/arbitrary"]

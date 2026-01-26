@@ -1024,61 +1024,32 @@ impl EncodeIntoContext for SearchKey<'_> {
 }
 
 impl EncodeIntoContext for SequenceSet {
-    #[cfg(not(feature = "quirk_dedup_sort_seq_encoding"))]
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        join_serializable(self.0.as_ref(), b",", ctx)
-    }
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        let mut set = self.clone();
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        set.normalize();
 
-    #[cfg(feature = "quirk_dedup_sort_seq_encoding")]
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        let mut seq_set = self.0.as_ref().to_vec();
+        #[cfg(not(feature = "quirk_always_normalize_sequence_sets"))]
+        let set = self;
 
-        if seq_set.len() == 1 {
-            return seq_set.remove(0).encode_ctx(ctx);
-        }
-
-        seq_set.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-
-        let mut a = 0;
-        let mut b = 1;
-
-        while b < seq_set.len() {
-            if seq_set[a].partial_cmp(&seq_set[b]).is_some() {
-                a += 1;
-                b += 1;
-                continue;
-            }
-
-            match (&seq_set[a], &seq_set[b]) {
-                (Sequence::Single(_), _) => {
-                    seq_set.remove(a);
-                }
-                (Sequence::Range(_, _), Sequence::Single(_)) => {
-                    seq_set.remove(b);
-                }
-                (Sequence::Range(a1, a2), Sequence::Range(b1, b2)) => {
-                    let min = a1.clone().min(a2.clone()).min(b1.clone()).min(b2.clone());
-                    let max = a1.clone().max(a2.clone()).max(b1.clone()).max(b2.clone());
-                    let _ = std::mem::replace(&mut seq_set[a], Sequence::Range(min, max));
-                    seq_set.remove(b);
-                }
-            }
-        }
-
-        join_serializable(&seq_set, b",", ctx)
+        join_serializable(set.0.as_ref(), b",", ctx)
     }
 }
 
 impl EncodeIntoContext for Sequence {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        let mut seq = self.clone();
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        seq.normalize();
+
+        #[cfg(not(feature = "quirk_always_normalize_sequence_sets"))]
+        let seq = self;
+
+        match seq {
             Sequence::Single(seq_no) => seq_no.encode_ctx(ctx),
             Sequence::Range(from, to) => {
-                #[cfg(feature = "quirk_dedup_sort_seq_encoding")]
-                let from = from.min(to);
-                #[cfg(feature = "quirk_dedup_sort_seq_encoding")]
-                let to = from.max(to);
-
                 from.encode_ctx(ctx)?;
                 ctx.write_all(b":")?;
                 to.encode_ctx(ctx)
@@ -2172,32 +2143,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[cfg(feature = "quirk_dedup_sort_seq_encoding")]
-    #[test]
-    fn test_sequence_reordering() {
-        let tests = [
-            ("1,2,3,4", "1,2,3,4"),
-            ("3,1,2,4", "1,2,3,4"),
-            ("3:1,5", "1:3,5"),
-            ("5,3:1", "1:3,5"),
-            ("3,3:1", "1:3"),
-            ("3:1,1", "1:3"),
-            ("3:1,2:5", "1:5"),
-            ("3:1,4:9", "1:3,4:9"),
-            ("9:4,3:1", "1:3,4:9"),
-            ("8:10,3:1,2:5,9", "1:5,8:10"),
-        ];
-
-        for (expected, got) in tests {
-            let mut ctx = EncodeContext::default();
-            SequenceSet::try_from(expected)
-                .unwrap()
-                .encode_ctx(&mut ctx)
-                .unwrap();
-            assert_eq!(got, escape_byte_string(&ctx.accumulator));
-        }
-    }
 
     #[test]
     fn test_api_encoder_usage() {
