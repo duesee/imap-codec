@@ -789,7 +789,7 @@ fn merge_ranges<T: Ord + Copy>(mut ranges: Vec<Range<T>>) -> Vec<Range<T>> {
 
     for range in ranges.into_iter().skip(1) {
         let last = merged.last_mut().unwrap();
-        if range.start < last.end {
+        if range.start <= last.end {
             last.end = last.end.max(range.end);
         } else {
             merged.push(range);
@@ -1138,8 +1138,9 @@ mod tests {
             ("3,3:1", "1:3"),
             ("3:1,1", "1:3"),
             ("3:1,2:5", "1:5"),
-            ("3:1,4:9", "1:3,4:9"),
-            ("9:4,3:1", "1:3,4:9"),
+            ("3:1,4:9", "1:9"),
+            ("9:4,3:1", "1:9"),
+            ("9:5,3:1", "1:3,5:9"),
             ("8:10,12,3:1,2:5,9", "1:5,8:10,12"),
         ];
 
