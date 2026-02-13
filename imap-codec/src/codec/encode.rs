@@ -1025,13 +1025,29 @@ impl EncodeIntoContext for SearchKey<'_> {
 
 impl EncodeIntoContext for SequenceSet {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        join_serializable(self.0.as_ref(), b",", ctx)
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        let mut set = self.clone();
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        set.normalize();
+
+        #[cfg(not(feature = "quirk_always_normalize_sequence_sets"))]
+        let set = self;
+
+        join_serializable(set.0.as_ref(), b",", ctx)
     }
 }
 
 impl EncodeIntoContext for Sequence {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
-        match self {
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        let mut seq = self.clone();
+        #[cfg(feature = "quirk_always_normalize_sequence_sets")]
+        seq.normalize();
+
+        #[cfg(not(feature = "quirk_always_normalize_sequence_sets"))]
+        let seq = self;
+
+        match seq {
             Sequence::Single(seq_no) => seq_no.encode_ctx(ctx),
             Sequence::Range(from, to) => {
                 from.encode_ctx(ctx)?;

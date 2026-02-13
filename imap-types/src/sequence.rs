@@ -1,8 +1,9 @@
 use std::{
-    cmp::max,
-    collections::VecDeque,
+    cmp::{Ordering, max},
+    collections::{HashSet, VecDeque},
     fmt::Debug,
     iter::Rev,
+    mem,
     num::NonZeroU32,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     str::FromStr,
@@ -33,6 +34,77 @@ pub const MAX: NonZeroU32 = match NonZeroU32::new(u32::MAX) {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
 pub struct SequenceSet(pub Vec1<Sequence>);
+
+impl SequenceSet {
+    pub fn normalize(&mut self) -> &mut Self {
+        let mut singles = HashSet::with_capacity(self.0.0.len());
+        let mut ranges = Vec::with_capacity(self.0.0.len());
+
+        // First, normalize all sequences
+        for seq in &mut self.0.0 {
+            match seq.normalize() {
+                Sequence::Single(id) => {
+                    singles.insert(id.to_non_zero_u32());
+                    // Push a 1-lenth range so they can merge nicely
+                    // later on
+                    ranges.push(id.to_non_zero_u32()..id.to_non_zero_u32().saturating_add(1));
+                }
+                Sequence::Range(a, b) => {
+                    ranges.push(a.to_non_zero_u32()..b.to_non_zero_u32().saturating_add(1));
+                }
+            }
+        }
+
+        // TODO: Improve this loop, for eg. with a .retain().
+        for single in singles.clone() {
+            for range in &mut ranges {
+                if single.get() == range.start.get().max(2) - 1 {
+                    singles.remove(&single);
+                    range.start = single;
+                } else if single.get() == range.end.get() {
+                    singles.remove(&single);
+                    range.end = single;
+                } else if range.contains(&single) {
+                    singles.remove(&single);
+                }
+            }
+        }
+
+        // Rebuild the inner sequence set with merged ranges
+        self.0.0.clear();
+        for range in merge_ranges(ranges) {
+            singles.retain(|single| !range.contains(single));
+
+            match (range.start, range.end) {
+                (a, b) if a == b || a.saturating_add(1) == b => {
+                    let a = NonZeroU32::new(a.get()).unwrap();
+                    self.0.0.push(Sequence::Single(a.into()));
+                }
+                (a, NonZeroU32::MAX) => {
+                    self.0.0.push(Sequence::Range(a.into(), SeqOrUid::Asterisk))
+                }
+                (a, b) => {
+                    let b = NonZeroU32::new(b.get().max(2) - 1).unwrap();
+                    self.0.0.push(Sequence::Range(a.into(), b.into()));
+                }
+            }
+        }
+
+        // Add remaining singles that don't belong to any range to the
+        // sequence set
+        for single in singles {
+            self.0.0.push(single.into());
+        }
+
+        // Sort the merged sequence set
+        self.0.0.sort_by_key(|seq| match seq {
+            Sequence::Single(a) => a.to_non_zero_u32(),
+            Sequence::Range(a, _) => a.to_non_zero_u32(),
+        });
+
+        self
+    }
+}
 
 impl From<Sequence> for SequenceSet {
     fn from(sequence: Sequence) -> Self {
@@ -140,6 +212,66 @@ pub enum Sequence {
     Range(SeqOrUid, SeqOrUid),
 }
 
+impl Sequence {
+    pub fn normalize(&mut self) -> &mut Self {
+        match self {
+            Sequence::Range(a, b) if *a == *b => {
+                let range = Sequence::Single(*a);
+                let _ = mem::replace(self, range);
+            }
+            Sequence::Range(a, b) if *a > *b => {
+                mem::swap(a, b);
+            }
+            _ => {
+                // already normalized
+            }
+        };
+
+        self
+    }
+}
+
+impl PartialOrd for Sequence {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Sequence::Single(a), Sequence::Single(b)) => a.partial_cmp(b),
+            (Sequence::Single(a), Sequence::Range(b1, b2)) => {
+                if a < b1.min(b2) {
+                    return Some(Ordering::Less);
+                }
+
+                if a > b1.max(b2) {
+                    return Some(Ordering::Greater);
+                }
+
+                None
+            }
+            (Sequence::Range(a1, a2), Sequence::Single(b)) => {
+                if b < a1.min(a2) {
+                    return Some(Ordering::Greater);
+                }
+
+                if b > a1.max(a2) {
+                    return Some(Ordering::Less);
+                }
+
+                None
+            }
+            (Sequence::Range(a1, a2), Sequence::Range(b1, b2)) => {
+                if a1.max(a2) < b1 && a1.max(a2) < b2 {
+                    return Some(Ordering::Less);
+                }
+
+                if a1.min(a2) > b1 && a1.min(a2) > b2 {
+                    return Some(Ordering::Greater);
+                }
+
+                None
+            }
+        }
+    }
+}
+
 impl From<SeqOrUid> for Sequence {
     fn from(value: SeqOrUid) -> Self {
         Self::Single(value)
@@ -192,9 +324,39 @@ pub enum SeqOrUid {
     Asterisk,
 }
 
+impl SeqOrUid {
+    pub fn to_non_zero_u32(&self) -> NonZeroU32 {
+        match self {
+            SeqOrUid::Value(n) => *n,
+            SeqOrUid::Asterisk => NonZeroU32::MAX,
+        }
+    }
+}
+
+impl Ord for SeqOrUid {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (SeqOrUid::Value(a), SeqOrUid::Value(b)) => a.cmp(b),
+            (SeqOrUid::Asterisk, SeqOrUid::Asterisk) => Ordering::Equal,
+            (_, SeqOrUid::Asterisk) => Ordering::Less,
+            (SeqOrUid::Asterisk, _) => Ordering::Greater,
+        }
+    }
+}
+
+impl PartialOrd for SeqOrUid {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl From<NonZeroU32> for SeqOrUid {
     fn from(value: NonZeroU32) -> Self {
-        Self::Value(value)
+        if value == NonZeroU32::MAX {
+            Self::Asterisk
+        } else {
+            Self::Value(value)
+        }
     }
 }
 
@@ -615,6 +777,28 @@ fn cleanup(remaining: VecDeque<(u32, u32)>) -> VecDeque<(u32, u32)> {
     stack
 }
 
+fn merge_ranges<T: Ord + Copy>(mut ranges: Vec<Range<T>>) -> Vec<Range<T>> {
+    if ranges.is_empty() {
+        return ranges;
+    }
+
+    ranges.sort_unstable_by_key(|r| r.start);
+
+    let mut merged = Vec::with_capacity(ranges.len());
+    merged.push(ranges[0].clone());
+
+    for range in ranges.into_iter().skip(1) {
+        let last = merged.last_mut().unwrap();
+        if range.start <= last.end {
+            last.end = last.end.max(range.end);
+        } else {
+            merged.push(range);
+        }
+    }
+
+    merged
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU32;
@@ -892,6 +1076,79 @@ mod tests {
             let clean: Vec<_> = seq.iter(largest).collect();
 
             assert_eq!(naive, clean);
+        }
+    }
+
+    #[test]
+    fn ordering_sequence() {
+        let tests = vec![
+            ("1", "1", Some(Ordering::Equal)),
+            ("1", "2", Some(Ordering::Less)),
+            ("2", "1", Some(Ordering::Greater)),
+            ("1", "2:4", Some(Ordering::Less)),
+            ("2", "2:4", None),
+            ("4", "2:4", None),
+            ("7", "2:4", Some(Ordering::Greater)),
+            ("2:4", "1", Some(Ordering::Greater)),
+            ("2:4", "2", None),
+            ("2:4", "4", None),
+            ("2:4", "7", Some(Ordering::Less)),
+            ("1:2", "3:4", Some(Ordering::Less)),
+            ("3:4", "1:2", Some(Ordering::Greater)),
+            ("1:2", "2:4", None),
+            ("2:4", "3:8", None),
+        ];
+
+        for (a, b, expected) in tests {
+            let a = Sequence::try_from(a).unwrap();
+            let b = Sequence::try_from(b).unwrap();
+            let got = a.partial_cmp(&b);
+
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn normalize_sequence() {
+        let tests = vec![
+            ("1:*", "1:*"),
+            ("*:1", "1:*"),
+            ("1", "1"),
+            ("1:1", "1"),
+            ("1:2", "1:2"),
+            ("2:1", "1:2"),
+        ];
+
+        for (test, expected) in tests {
+            let expected = Sequence::try_from(expected).unwrap();
+            let mut got = Sequence::try_from(test).unwrap();
+            got.normalize();
+            assert_eq!(expected, got);
+        }
+    }
+
+    #[test]
+    fn normalize_sequence_set() {
+        let tests = [
+            ("1,2,3,4", "1:4"),
+            ("4,1,3,2", "1:4"),
+            ("3,1,2,4", "1:4"),
+            ("3:1,5", "1:3,5"),
+            ("5,3:1", "1:3,5"),
+            ("3,3:1", "1:3"),
+            ("3:1,1", "1:3"),
+            ("3:1,2:5", "1:5"),
+            ("3:1,4:9", "1:9"),
+            ("9:4,3:1", "1:9"),
+            ("9:5,3:1", "1:3,5:9"),
+            ("8:10,12,3:1,2:5,9", "1:5,8:10,12"),
+        ];
+
+        for (test, expected) in tests {
+            let expected = SequenceSet::try_from(expected).unwrap();
+            let mut got = SequenceSet::try_from(test).unwrap();
+            got.normalize();
+            assert_eq!(expected, got);
         }
     }
 }
