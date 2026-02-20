@@ -1227,9 +1227,9 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "binary" => Self::Binary,
             "unselect" => Self::Unselect,
             #[cfg(feature = "ext_condstore_qresync")]
-            "condstore" => Self::Unselect,
+            "condstore" => Self::CondStore,
             #[cfg(feature = "ext_condstore_qresync")]
-            "qresync" => Self::Unselect,
+            "qresync" => Self::QResync,
             "uidplus" => Self::UidPlus,
             #[cfg(feature = "ext_utf8")]
             "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
