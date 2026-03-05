@@ -33,6 +33,7 @@ quirk = [
     "quirk_trailing_space_id",
     "quirk_trailing_space_search",
     "quirk_spaces_between_addresses",
+    "quirk_spaces_between_body_parts",
     "quirk_empty_continue_req",
     "quirk_body_fld_enc_nil_to_empty",
     "quirk_always_normalize_sequence_sets",
@@ -49,6 +50,8 @@ quirk_rectify_numbers = []
 quirk_excessive_space_quota_resource = []
 # Accept spaces between envelope addresses in `FETCH` data response.
 quirk_spaces_between_addresses = []
+# Accept spaces between body parts in multipart BODYSTRUCTURE responses.
+quirk_spaces_between_body_parts = []
 # Accept a trailing space in `STATUS` data response.
 quirk_trailing_space_status = []
 # Accept a trailing space in `CAPABILITY` data response.

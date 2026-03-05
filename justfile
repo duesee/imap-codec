@@ -71,6 +71,7 @@ cargo_hack mode: install_cargo_hack
         quirk_trailing_space_search,\
         quirk_trailing_space_status,\
         quirk_spaces_between_addresses,\
+        quirk_spaces_between_body_parts,\
         quirk_empty_continue_req,\
         quirk_body_fld_enc_nil_to_empty\
         {{ mode }}
