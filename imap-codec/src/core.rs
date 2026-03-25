@@ -87,25 +87,33 @@ pub(crate) fn string(input: &[u8]) -> IMAPResult<&[u8], IString> {
 /// This function only allocates a new String, when needed, i.e. when
 /// quoted chars need to be replaced.
 pub(crate) fn quoted(input: &[u8]) -> IMAPResult<&[u8], Quoted> {
-    let mut parser = tuple((
-        dquote,
+    // RFC 3501: quoted = DQUOTE *QUOTED-CHAR DQUOTE — zero characters between quotes is valid.
+    // Mail.ru (and others) emit `""` in envelope addresses.
+    let mut parser = alt((
+        map(tuple((dquote, dquote)), |_| unescape_quoted("")),
         map(
-            escaped(
-                take_while1(is_any_text_char_except_quoted_specials),
-                '\\',
-                one_of("\\\""),
-            ),
-            // # Safety
-            //
-            // `unwrap` is safe because val contains ASCII-only characters.
-            |val| from_utf8(val).unwrap(),
+            tuple((
+                dquote,
+                map(
+                    escaped(
+                        take_while1(is_any_text_char_except_quoted_specials),
+                        '\\',
+                        one_of("\\\""),
+                    ),
+                    // # Safety
+                    //
+                    // `unwrap` is safe because val contains ASCII-only characters.
+                    |val| unescape_quoted(from_utf8(val).unwrap()),
+                ),
+                dquote,
+            )),
+            |(_, cow, _)| cow,
         ),
-        dquote,
     ));
 
-    let (remaining, (_, quoted, _)) = parser(input)?;
+    let (remaining, cow) = parser(input)?;
 
-    Ok((remaining, Quoted::unvalidated(unescape_quoted(quoted))))
+    Ok((remaining, Quoted::unvalidated(cow)))
 }
 
 /// `QUOTED-CHAR = <any TEXT-CHAR except quoted-specials> / "\" quoted-specials`
@@ -359,6 +367,11 @@ mod tests {
         //assert_eq!(val, r#"Hello \"World\""#);
         // ... or this (Hello "World")?
         assert_eq!(val, Quoted::try_from("Hello \"World\"").unwrap());
+
+        // RFC 3501: quoted = DQUOTE *QUOTED-CHAR DQUOTE (zero chars allowed; Mail.ru uses "")
+        let (rem, val) = quoted(br#""""#).unwrap();
+        assert_eq!(rem, b"");
+        assert_eq!(val, Quoted::try_from("").unwrap());
 
         // Test Incomplete
         assert!(matches!(quoted(br#""#), Err(nom::Err::Incomplete(_))));

@@ -359,7 +359,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::testing::known_answer_test_encode;
+    use crate::{body::body, envelope::envelope, testing::known_answer_test_encode};
 
     #[test]
     fn test_encode_message_data_item_name() {
@@ -541,5 +541,46 @@ mod tests {
         for test in tests {
             known_answer_test_encode(test)
         }
+    }
+
+    #[test]
+    fn mailru_fixture_bodystructure_only_parses() {
+        static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
+        let line = &LINE[..LINE.len() - 2];
+        let key = b"BODYSTRUCTURE ";
+        let i = line
+            .windows(key.len())
+            .position(|w| w == key)
+            .expect("BODYSTRUCTURE");
+        let rest = &line[i + key.len()..];
+        let r = body(8)(rest);
+        assert!(r.is_ok(), "body: {r:?}");
+        let (rem, _) = r.unwrap();
+        assert_eq!(
+            rem,
+            b")",
+            "after body: {:?}",
+            core::str::from_utf8(rem).ok()
+        );
+    }
+
+    #[test]
+    fn mailru_fixture_envelope_only_parses() {
+        static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
+        let line = &LINE[..LINE.len() - 2];
+        let key = b"ENVELOPE ";
+        let i = line
+            .windows(key.len())
+            .position(|w| w == key)
+            .expect("ENVELOPE");
+        let rest = &line[i + key.len()..];
+        let r = envelope(rest);
+        assert!(r.is_ok(), "envelope: {r:?}");
+        let (rem, _) = r.unwrap();
+        assert!(
+            rem.starts_with(b" BODYSTRUCTURE"),
+            "after envelope: {:?}",
+            core::str::from_utf8(rem).unwrap_or("non-utf8")
+        );
     }
 }

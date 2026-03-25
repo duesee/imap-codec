@@ -810,4 +810,16 @@ mod tests {
         #[cfg(feature = "quirk_trailing_space_capability")]
         assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n").is_ok());
     }
+
+    /// Real Mail.ru `FETCH` line (see `tests/mailru_fetch_repro.rs`).
+    #[test]
+    fn test_parse_mailru_fetch_fixture() {
+        static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
+        let parsed = response(LINE);
+        if let Err(ref e) = parsed {
+            eprintln!("{e:?}");
+        }
+        let (rem, _) = parsed.unwrap();
+        assert!(rem.is_empty());
+    }
 }
