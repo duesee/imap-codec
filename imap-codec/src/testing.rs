@@ -80,6 +80,18 @@ macro_rules! impl_kat_inverse {
     };
 }
 
+/// Strip `\r\n` or `\n` from the end of an included wire capture.
+///
+/// Git may normalize line endings on checkout unless the file is marked `binary` in
+/// `.gitattributes`. Substring tests that slice before `BODYSTRUCTURE` / `ENVELOPE` must not use
+/// a fixed `len - 2` chop, which breaks when the terminator is a single `\n`.
+pub(crate) fn trim_line_end(bytes: &[u8]) -> &[u8] {
+    bytes
+        .strip_suffix(b"\r\n")
+        .or_else(|| bytes.strip_suffix(b"\n"))
+        .unwrap_or(bytes)
+}
+
 impl_kat_inverse! {kat_inverse_greeting, GreetingCodec, Greeting}
 impl_kat_inverse! {kat_inverse_command, CommandCodec, Command}
 impl_kat_inverse! {kat_inverse_response, ResponseCodec, Response}

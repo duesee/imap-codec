@@ -815,6 +815,10 @@ mod tests {
     #[test]
     fn test_parse_mailru_fetch_fixture() {
         static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
+        assert!(
+            LINE.ends_with(b"\r\n"),
+            "IMAP lines must end with CRLF; mark imap-codec/tests/fixtures_mailru_fetch_2829.bin as `binary` in `.gitattributes` so Git does not strip `\\r`"
+        );
         let parsed = response(LINE);
         if let Err(ref e) = parsed {
             eprintln!("{e:?}");

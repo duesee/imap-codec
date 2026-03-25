@@ -72,7 +72,8 @@ cargo_hack mode: install_cargo_hack
         quirk_trailing_space_status,\
         quirk_spaces_between_addresses,\
         quirk_empty_continue_req,\
-        quirk_body_fld_enc_nil_to_empty\
+        quirk_body_fld_enc_nil_to_empty,\
+        quirk_body_fld_param_nil_value\
         {{ mode }}
     cargo hack check -p imap-types \
         --no-dev-deps \

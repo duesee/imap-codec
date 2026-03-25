@@ -359,7 +359,11 @@ mod tests {
     };
 
     use super::*;
-    use crate::{body::body, envelope::envelope, testing::known_answer_test_encode};
+    use crate::{
+        body::body,
+        envelope::envelope,
+        testing::{known_answer_test_encode, trim_line_end},
+    };
 
     #[test]
     fn test_encode_message_data_item_name() {
@@ -546,7 +550,7 @@ mod tests {
     #[test]
     fn mailru_fixture_bodystructure_only_parses() {
         static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
-        let line = &LINE[..LINE.len() - 2];
+        let line = trim_line_end(LINE);
         let key = b"BODYSTRUCTURE ";
         let i = line
             .windows(key.len())
@@ -567,7 +571,7 @@ mod tests {
     #[test]
     fn mailru_fixture_envelope_only_parses() {
         static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
-        let line = &LINE[..LINE.len() - 2];
+        let line = trim_line_end(LINE);
         let key = b"ENVELOPE ";
         let i = line
             .windows(key.len())

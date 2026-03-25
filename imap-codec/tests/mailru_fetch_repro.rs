@@ -18,6 +18,10 @@ fn mailru_minimal_fetch_empty_address_name_parses() {
 fn mailru_fetch_with_mixed_alternative_bodystructure_parses() {
     // Captured from a real Mail.ru IMAP `FETCH (UID FLAGS ENVELOPE BODYSTRUCTURE)` line.
     static LINE: &[u8] = include_bytes!("fixtures_mailru_fetch_2829.bin");
+    assert!(
+        LINE.ends_with(b"\r\n"),
+        "fixture must end with CRLF (see root `.gitattributes` for this file)"
+    );
 
     let decoded = ResponseCodec::default().decode(LINE);
     if let Err(e) = &decoded {

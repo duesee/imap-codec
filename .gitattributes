@@ -1,0 +1,2 @@
+# Wire-accurate bytes (must keep CRLF); Git must not normalize to LF on Unix checkouts.
+imap-codec/tests/fixtures_mailru_fetch_2829.bin binary
