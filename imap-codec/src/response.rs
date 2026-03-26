@@ -814,12 +814,10 @@ mod tests {
     /// Real Mail.ru `FETCH` line (see `tests/mailru_fetch_repro.rs`).
     #[test]
     fn test_parse_mailru_fetch_fixture() {
-        static LINE: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
-        assert!(
-            LINE.ends_with(b"\r\n"),
-            "IMAP lines must end with CRLF; mark imap-codec/tests/fixtures_mailru_fetch_2829.bin as `binary` in `.gitattributes` so Git does not strip `\\r`"
-        );
-        let parsed = response(LINE);
+        static RAW: &[u8] = include_bytes!("../tests/fixtures_mailru_fetch_2829.bin");
+        use crate::testing::normalize_imap_line_crlf;
+        let line = normalize_imap_line_crlf(RAW);
+        let parsed = response(line.as_ref());
         if let Err(ref e) = parsed {
             eprintln!("{e:?}");
         }

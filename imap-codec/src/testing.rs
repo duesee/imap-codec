@@ -92,6 +92,18 @@ pub(crate) fn trim_line_end(bytes: &[u8]) -> &[u8] {
         .unwrap_or(bytes)
 }
 
+/// Ensure a wire line ends with `\r\n` for parsers that use strict `CRLF` (default features).
+///
+/// Git often stores/transcodes captures as LF-only; `include_bytes!` then lacks `\r`.
+pub(crate) fn normalize_imap_line_crlf(bytes: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+    if bytes.ends_with(b"\r\n") {
+        return std::borrow::Cow::Borrowed(bytes);
+    }
+    let mut v = trim_line_end(bytes).to_vec();
+    v.extend_from_slice(b"\r\n");
+    std::borrow::Cow::Owned(v)
+}
+
 impl_kat_inverse! {kat_inverse_greeting, GreetingCodec, Greeting}
 impl_kat_inverse! {kat_inverse_command, CommandCodec, Command}
 impl_kat_inverse! {kat_inverse_response, ResponseCodec, Response}
