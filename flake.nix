@@ -31,6 +31,14 @@
         };
     in
     {
+      formatter = eachSupportedSystem (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        pkgs.nixfmt-tree
+      );
+
       devShells = eachSupportedSystem mkDevShells;
     };
 }
