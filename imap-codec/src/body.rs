@@ -454,8 +454,13 @@ fn body_type_mpart_limited(
         }));
     }
 
+    let body_parser = body(remaining_recursion);
+
+    #[cfg(feature = "quirk_spaces_between_body_parts")]
+    let body_parser = preceded(many0(sp), body_parser);
+
     let mut parser = tuple((
-        many1(body(remaining_recursion)),
+        many1(body_parser),
         sp,
         media_subtype,
         opt(preceded(sp, body_ext_mpart)),
@@ -788,6 +793,32 @@ mod tests {
             assert_eq!(body_fld_octets(b"-0)").unwrap().1, 0);
             assert_eq!(body_fld_octets(b"-1)").unwrap().1, 0);
             assert_eq!(body_fld_octets(b"-999999)").unwrap().1, 0);
+        }
+    }
+
+    #[test]
+    fn test_spaces_between_body_parts_quirk() {
+        use super::body_type_mpart_limited;
+
+        // Trailing ")" simulates the enclosing body delimiter needed by the streaming parser.
+
+        // Adjacent bodies (no space between parts) should always parse.
+        let adjacent = b"(\"TEXT\" \"PLAIN\" NIL NIL NIL \"7BIT\" 0 0)(\"TEXT\" \"HTML\" NIL NIL NIL \"7BIT\" 0 0) \"alternative\")";
+        assert!(body_type_mpart_limited(adjacent, 8).is_ok());
+
+        // Bodies with spaces between parts (common server quirk).
+        let spaced = b"(\"TEXT\" \"PLAIN\" NIL NIL NIL \"7BIT\" 0 0) (\"TEXT\" \"HTML\" NIL NIL NIL \"7BIT\" 0 0) \"alternative\")";
+
+        #[cfg(not(feature = "quirk_spaces_between_body_parts"))]
+        {
+            // Without quirk, the parser stops after the first body and fails
+            // because it can't parse the space-separated second body.
+            assert!(body_type_mpart_limited(spaced, 8).is_err());
+        }
+
+        #[cfg(feature = "quirk_spaces_between_body_parts")]
+        {
+            assert!(body_type_mpart_limited(spaced, 8).is_ok());
         }
     }
 }
