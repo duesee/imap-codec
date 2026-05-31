@@ -547,6 +547,45 @@ mod tests {
         ]);
     }
 
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[test]
+    fn test_kat_inverse_response_vanished() {
+        kat_inverse_response(&[
+            (
+                b"* VANISHED 1\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Vanished {
+                    earlier: false,
+                    known_uids: "1".try_into().unwrap(),
+                }),
+            ),
+            (
+                b"* VANISHED 1:5,7\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Vanished {
+                    earlier: false,
+                    known_uids: "1:5,7".try_into().unwrap(),
+                }),
+            ),
+            (
+                b"* VANISHED (EARLIER) 1:5,7,9:11\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Vanished {
+                    earlier: true,
+                    known_uids: "1:5,7,9:11".try_into().unwrap(),
+                }),
+            ),
+        ]);
+    }
+
+    // NOTE: regression test for https://github.com/duesee/imap-codec/issues/705
+    #[cfg(feature = "ext_condstore_qresync")]
+    #[test]
+    fn test_parse_response_vanished_with_leading_seq_rejected() {
+        assert!(response_data(b"* 5 VANISHED 1:3\r\n").is_err());
+        assert!(response_data(b"* 5 VANISHED (EARLIER) 1:3\r\n").is_err());
+    }
+
     #[test]
     fn test_kat_inverse_response_status() {
         kat_inverse_response(&[
