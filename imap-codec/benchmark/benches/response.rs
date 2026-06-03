@@ -1,6 +1,6 @@
-use std::num::NonZeroU32;
+use std::{hint::black_box, num::NonZeroU32};
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use imap_codec::{ResponseCodec, decode::Decoder, encode::Encoder, imap_types::response::Response};
 use imap_proto::Response as ImapProtoResponse;
 use imap_types::{core::Vec1, fetch::MessageDataItem, response::Data};

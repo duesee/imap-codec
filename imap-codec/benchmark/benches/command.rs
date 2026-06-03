@@ -1,4 +1,6 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use imap_codec::{CommandCodec, decode::Decoder, encode::Encoder, imap_types::command::Command};
 use imap_proto_stalwart::{
     Command as ImapProtoStalwartCommand, receiver::Receiver as ImapProtoStalwartReceiver,
