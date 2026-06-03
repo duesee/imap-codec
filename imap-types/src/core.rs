@@ -48,7 +48,7 @@ use arbitrary::Arbitrary;
 use bounded_static_derive::ToStatic;
 #[cfg(feature = "tag_generator")]
 #[cfg(not(debug_assertions))]
-use rand::distributions::{Alphanumeric, DistString};
+use rand::distr::{Alphanumeric, SampleString};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -1193,7 +1193,7 @@ impl TagGenerator {
     pub fn generate(&mut self) -> Tag<'static> {
         #[cfg(not(debug_assertions))]
         let inner = {
-            let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+            let token = Alphanumeric.sample_string(&mut rand::rng(), 8);
             format!("{}.{}.{token}", self.global, self.counter)
         };
 
