@@ -1106,6 +1106,8 @@ pub enum Capability<'a> {
     Binary,
     /// UIDPLUS extension (RFC 4351)
     UidPlus,
+    /// LIST-EXTENDED extension (RFC 5258)
+    ListExtended,
     /// CONDSTORE extension (RFC 7162)
     #[cfg(feature = "ext_condstore_qresync")]
     CondStore,
@@ -1155,6 +1157,7 @@ impl Display for Capability<'_> {
             Self::MetadataServer => write!(f, "METADATA-SERVER"),
             Self::Binary => write!(f, "BINARY"),
             Self::UidPlus => write!(f, "UIDPLUS"),
+            Self::ListExtended => write!(f, "LIST-EXTENDED"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => write!(f, "CONDSTORE"),
             #[cfg(feature = "ext_condstore_qresync")]
@@ -1225,6 +1228,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             #[cfg(feature = "ext_metadata")]
             "metadata-server" => Self::MetadataServer,
             "binary" => Self::Binary,
+            "list-extended" => Self::ListExtended,
             "unselect" => Self::Unselect,
             #[cfg(feature = "ext_condstore_qresync")]
             "condstore" => Self::CondStore,
@@ -1317,6 +1321,15 @@ mod tests {
     fn test_conversion_data() {
         let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
         let _ = Data::fetch(1, vec![MessageDataItem::Rfc822Size(123)]).unwrap();
+    }
+
+    #[test]
+    fn test_capability_list_extended() {
+        assert_eq!(
+            Capability::from(Atom::try_from("LIST-extended").unwrap()),
+            Capability::ListExtended,
+        );
+        assert_eq!(Capability::ListExtended.to_string(), "LIST-EXTENDED");
     }
 
     #[test]
