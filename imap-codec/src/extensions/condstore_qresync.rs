@@ -140,7 +140,19 @@ pub(crate) fn entry_type_req(input: &[u8]) -> IMAPResult<&[u8], EntryTypeReq> {
 
 #[cfg(test)]
 mod tests {
-    use crate::response::resp_text;
+    use std::num::NonZeroU32;
+
+    use imap_types::{
+        core::Vec1,
+        fetch::MessageDataItem,
+        response::{Data, Response},
+    };
+
+    use super::*;
+    use crate::{
+        response::resp_text,
+        testing::{kat_inverse_response, known_answer_test_encode},
+    };
 
     #[test]
     fn test_condstore_qresync_codes() {
@@ -150,5 +162,50 @@ mod tests {
                 .is_ok()
         );
         assert!(resp_text(b"[HIGHESTMODSEQ 715194045007] Highest\r\n").is_ok());
+    }
+
+    #[test]
+    fn test_encode_message_data_item_modseq() {
+        known_answer_test_encode((
+            MessageDataItem::ModSeq(NonZeroU64::try_from(624140003).unwrap()),
+            b"MODSEQ (624140003)".as_ref(),
+        ));
+    }
+
+    /// RFC 7162, Section 3.1.4.2, Example 13.
+    #[test]
+    fn test_kat_inverse_response_fetch_modseq() {
+        kat_inverse_response(&[
+            (
+                b"* 1 FETCH (MODSEQ (624140003))\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(Data::Fetch {
+                    seq: NonZeroU32::new(1).unwrap(),
+                    items: Vec1::from(MessageDataItem::ModSeq(
+                        NonZeroU64::try_from(624140003).unwrap(),
+                    )),
+                }),
+            ),
+            (
+                b"* 2 FETCH (MODSEQ (624140007))\r\n",
+                b"",
+                Response::Data(Data::Fetch {
+                    seq: NonZeroU32::new(2).unwrap(),
+                    items: Vec1::from(MessageDataItem::ModSeq(
+                        NonZeroU64::try_from(624140007).unwrap(),
+                    )),
+                }),
+            ),
+            (
+                b"* 3 FETCH (MODSEQ (624140005))\r\n",
+                b"",
+                Response::Data(Data::Fetch {
+                    seq: NonZeroU32::new(3).unwrap(),
+                    items: Vec1::from(MessageDataItem::ModSeq(
+                        NonZeroU64::try_from(624140005).unwrap(),
+                    )),
+                }),
+            ),
+        ]);
     }
 }

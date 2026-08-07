@@ -1777,7 +1777,7 @@ impl EncodeIntoContext for MessageDataItem<'_> {
                 size.encode_ctx(ctx)
             }
             #[cfg(feature = "ext_condstore_qresync")]
-            Self::ModSeq(value) => write!(ctx, "MODSEQ {value}"),
+            Self::ModSeq(value) => write!(ctx, "MODSEQ ({value})"),
         }
     }
 }
