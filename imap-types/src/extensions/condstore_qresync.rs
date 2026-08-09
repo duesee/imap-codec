@@ -67,7 +67,6 @@ impl Display for AttributeFlag<'_> {
     }
 }
 
-#[cfg(feature = "ext_condstore_qresync")]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
@@ -77,7 +76,6 @@ pub enum EntryTypeReq {
     All,
 }
 
-#[cfg(feature = "ext_condstore_qresync")]
 impl Display for EntryTypeReq {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

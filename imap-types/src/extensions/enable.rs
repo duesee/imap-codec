@@ -40,7 +40,6 @@ impl<'a> CommandBody<'a> {
 #[non_exhaustive]
 pub enum CapabilityEnable<'a> {
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     CondStore,
     #[cfg(feature = "ext_metadata")]
     /// Client can handle unsolicited server annotations and mailbox annotations.

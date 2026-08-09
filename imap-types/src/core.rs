@@ -1162,7 +1162,6 @@ impl AsRef<str> for Tag<'_> {
 }
 
 #[cfg(feature = "tag_generator")]
-#[cfg_attr(docsrs, doc(cfg(feature = "tag_generator")))]
 #[derive(Debug)]
 pub struct TagGenerator {
     global: usize,
