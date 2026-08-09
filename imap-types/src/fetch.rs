@@ -242,7 +242,6 @@ pub enum MessageDataItemName<'a> {
     },
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     ModSeq,
 }
 
@@ -383,7 +382,6 @@ pub enum MessageDataItem<'a> {
     },
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     ModSeq(NonZeroU64),
 }
 

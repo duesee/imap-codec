@@ -436,15 +436,12 @@ pub enum Data<'a> {
         Vec<NonZeroU32>,
         /// MODSEQ
         #[cfg(feature = "ext_condstore_qresync")]
-        #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
         Option<NonZeroU64>,
     ),
 
     Sort(
         Vec<NonZeroU32>,
-        #[cfg(feature = "ext_condstore_qresync")]
-        #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
-        Option<NonZeroU64>,
+        #[cfg(feature = "ext_condstore_qresync")] Option<NonZeroU64>,
     ),
 
     Thread(Vec<Thread>),
@@ -592,7 +589,6 @@ pub enum Data<'a> {
     },
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     Vanished {
         earlier: bool,
         known_uids: SequenceSet,
@@ -872,11 +868,11 @@ pub enum Code<'a> {
 
     /// IMAP4 Login Referrals (RFC 2221)
     // TODO(misuse): the imap url is more complicated than that...
-    #[cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals"))]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(feature = "ext_mailbox_referrals", feature = "ext_login_referrals")))
-    )]
+    #[cfg(any(
+        feature = "ext_mailbox_referrals",
+        feature = "ext_login_referrals",
+        doc
+    ))]
     Referral(Cow<'a, str>),
 
     CompressionActive,
@@ -920,7 +916,6 @@ pub enum Code<'a> {
     /// MUST send the OK untagged response including HIGHESTMODSEQ response
     /// code with every successful SELECT or EXAMINE command
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     HighestModSeq(NonZeroU64),
 
     /// IMAP4 Extension for Conditional STORE Operation (RFC 4551)
@@ -932,7 +927,6 @@ pub enum Code<'a> {
     /// message set (for STORE) or set of UIDs (for UID STORE) of all
     /// messages that failed the UNCHANGESINCE test.
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     Modified(SequenceSet),
 
     /// IMAP4 Extension for Conditional STORE Operation (RFC 4551)
@@ -940,7 +934,6 @@ pub enum Code<'a> {
     /// for the mailbox MUST send the OK untagged response including NOMODSEQ
     /// response code with every successful SELECT or EXAMINE command.
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     NoModSeq,
 
     /// A server implementing the extension defined in this document MUST return the CLOSED
@@ -957,7 +950,6 @@ pub enum Code<'a> {
     /// UNSELECT \[UNSELECT\] command (or similar), whose purpose is to close the currently selected
     /// mailbox without opening a new one.
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     Closed,
 
     /// Additional response codes defined by particular client or server
@@ -1060,17 +1052,14 @@ pub enum Capability<'a> {
     Auth(AuthMechanism<'a>),
     LoginDisabled,
     #[cfg(feature = "starttls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTls,
     /// See RFC 2177.
     Idle,
     /// See RFC 2193.
     #[cfg(feature = "ext_mailbox_referrals")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_mailbox_referrals")))]
     MailboxReferrals,
     /// See RFC 2221.
     #[cfg(feature = "ext_login_referrals")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_login_referrals")))]
     LoginReferrals,
     SaslIr,
     /// See RFC 5161.

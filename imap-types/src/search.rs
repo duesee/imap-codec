@@ -163,7 +163,6 @@ pub enum SearchKey<'a> {
     Unseen,
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
     ModSequence {
         entry: Option<(AttributeFlag<'a>, EntryTypeReq)>,
         modseq: u64,
