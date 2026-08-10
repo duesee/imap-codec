@@ -15,10 +15,16 @@ default:
 ci: (ci_impl ""           ""               ) \
     (ci_impl ""           " --all-features") \
     (ci_impl " --release" ""               ) \
-    (ci_impl " --release" " --all-features")
+    (ci_impl " --release" " --all-features") \
+    (docsrs_impl)
 
 [private]
 ci_impl mode features: (check_impl mode features) (test_impl mode features)
+
+[private]
+docsrs_impl: install_rust_nightly install_cargo_docs_rs
+             cargo +nightly docs-rs -p imap-types
+             cargo +nightly docs-rs -p imap-codec
 
 # Check syntax, formatting, clippy, deny, semver, ...
 check: (check_impl ""           ""               ) \
@@ -222,7 +228,8 @@ install: install_rust_msrv \
          install_cargo_fuzz \
          install_cargo_grcov \
          install_cargo_hack \
-         install_cargo_semver_checks
+         install_cargo_semver_checks \
+         install_cargo_docs_rs
 
 [private]
 install_rust_msrv:
@@ -263,3 +270,7 @@ install_cargo_hack:
 [private]
 install_cargo_semver_checks:
     cargo install --locked cargo-semver-checks
+
+[private]
+install_cargo_docs_rs:
+    cargo install --locked cargo-docs-rs
