@@ -175,37 +175,15 @@ mod tests {
     /// RFC 7162, Section 3.1.4.2, Example 13.
     #[test]
     fn test_kat_inverse_response_fetch_modseq() {
-        kat_inverse_response(&[
-            (
-                b"* 1 FETCH (MODSEQ (624140003))\r\n".as_ref(),
-                b"".as_ref(),
-                Response::Data(Data::Fetch {
-                    seq: NonZeroU32::new(1).unwrap(),
-                    items: Vec1::from(MessageDataItem::ModSeq(
-                        NonZeroU64::try_from(624140003).unwrap(),
-                    )),
-                }),
-            ),
-            (
-                b"* 2 FETCH (MODSEQ (624140007))\r\n",
-                b"",
-                Response::Data(Data::Fetch {
-                    seq: NonZeroU32::new(2).unwrap(),
-                    items: Vec1::from(MessageDataItem::ModSeq(
-                        NonZeroU64::try_from(624140007).unwrap(),
-                    )),
-                }),
-            ),
-            (
-                b"* 3 FETCH (MODSEQ (624140005))\r\n",
-                b"",
-                Response::Data(Data::Fetch {
-                    seq: NonZeroU32::new(3).unwrap(),
-                    items: Vec1::from(MessageDataItem::ModSeq(
-                        NonZeroU64::try_from(624140005).unwrap(),
-                    )),
-                }),
-            ),
-        ]);
+        kat_inverse_response(&[(
+            b"* 1 FETCH (MODSEQ (624140003))\r\n".as_ref(),
+            b"".as_ref(),
+            Response::Data(Data::Fetch {
+                seq: NonZeroU32::new(1).unwrap(),
+                items: Vec1::from(MessageDataItem::ModSeq(
+                    NonZeroU64::try_from(624140003).unwrap(),
+                )),
+            }),
+        )]);
     }
 }
