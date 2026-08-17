@@ -34,7 +34,6 @@ pub enum StatusDataItemName {
     DeletedStorage,
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     HighestModSeq,
 }
 
@@ -69,7 +68,6 @@ pub enum StatusDataItem {
     DeletedStorage(u64),
 
     #[cfg(feature = "ext_condstore_qresync")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ext_condstore_qresync")))]
     /// The highest mod-sequence value of all messages in the mailbox.
     /// This is the same value that is returned by the server in the HIGHESTMODSEQ response code in
     /// an OK untagged response (see Section 3.1.2.1).

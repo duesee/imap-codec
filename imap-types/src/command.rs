@@ -174,7 +174,6 @@ pub enum CommandBody<'a> {
     /// Try to avoid STARTTLS using implicit TLS on port 993.
     /// </div>
     #[cfg(feature = "starttls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "starttls")))]
     StartTLS,
 
     /// ### 6.2.2.  AUTHENTICATE Command
@@ -1854,7 +1853,6 @@ impl<'a> CommandBody<'a> {
 }
 
 #[cfg(feature = "ext_condstore_qresync")]
-#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
@@ -1870,7 +1868,6 @@ pub enum SelectParameter {
 }
 
 #[cfg(feature = "ext_condstore_qresync")]
-#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
@@ -1881,7 +1878,6 @@ pub enum FetchModifier {
 }
 
 #[cfg(feature = "ext_condstore_qresync")]
-#[cfg_attr(docsrs, doc(cfg("ext_condstore_qresync")))]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
