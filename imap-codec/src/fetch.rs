@@ -139,6 +139,14 @@ pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> 
 /// ```
 ///
 /// Note: MAY change for a message
+///
+/// From RFC 7162 (CONDSTORE/QRESYNC):
+///
+/// ```abnf
+/// msg-att-dynamic =/ fetch-mod-resp
+///
+/// fetch-mod-resp = "MODSEQ" SP "(" permsg-modsequence ")"
+/// ```
 pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
     let flags = map(
         preceded(
