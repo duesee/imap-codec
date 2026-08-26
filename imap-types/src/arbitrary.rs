@@ -234,11 +234,11 @@ fn arbitrary_search_key_limited<'a>(
         return arbitrary_search_key_leaf(u);
     }
 
-    let till = if cfg!(feature = "ext_condstore_qresync") {
-        37
-    } else {
-        36
-    };
+    let till = 36;
+    #[cfg(feature = "ext_within")]
+    let till = till + 2; // OLDER and YOUNGER
+    #[cfg(feature = "ext_condstore_qresync")]
+    let till = till + 1; // MODSEQ
 
     Ok(match u.int_in_range(0u8..=till)? {
         0 => SearchKey::And({
@@ -298,8 +298,12 @@ fn arbitrary_search_key_limited<'a>(
         34 => SearchKey::Unflagged,
         35 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
         36 => SearchKey::Unseen,
+        #[cfg(feature = "ext_within")]
+        37 => SearchKey::Older(Arbitrary::arbitrary(u)?),
+        #[cfg(feature = "ext_within")]
+        38 => SearchKey::Younger(Arbitrary::arbitrary(u)?),
         #[cfg(feature = "ext_condstore_qresync")]
-        37 => SearchKey::ModSequence {
+        value if value == till => SearchKey::ModSequence {
             entry: Arbitrary::arbitrary(u)?,
             modseq: Arbitrary::arbitrary(u)?,
         },
@@ -308,7 +312,11 @@ fn arbitrary_search_key_limited<'a>(
 }
 
 fn arbitrary_search_key_leaf<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<SearchKey<'a>> {
-    Ok(match u.int_in_range(0u8..=33)? {
+    let till = 33;
+    #[cfg(feature = "ext_within")]
+    let till = till + 2; // OLDER and YOUNGER
+
+    Ok(match u.int_in_range(0u8..=till)? {
         0 => SearchKey::SequenceSet(SequenceSet::arbitrary(u)?),
         1 => SearchKey::All,
         2 => SearchKey::Answered,
@@ -343,6 +351,10 @@ fn arbitrary_search_key_leaf<'a>(u: &mut Unstructured<'a>) -> arbitrary::Result<
         31 => SearchKey::Unflagged,
         32 => SearchKey::Unkeyword(Atom::arbitrary(u)?),
         33 => SearchKey::Unseen,
+        #[cfg(feature = "ext_within")]
+        34 => SearchKey::Older(Arbitrary::arbitrary(u)?),
+        #[cfg(feature = "ext_within")]
+        35 => SearchKey::Younger(Arbitrary::arbitrary(u)?),
         _ => unreachable!(),
     })
 }

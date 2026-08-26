@@ -1111,6 +1111,9 @@ pub enum Capability<'a> {
     StatusSize,
     #[cfg(feature = "ext_utf8")]
     Utf8(Utf8Kind),
+    /// WITHIN extension (RFC 5032)
+    #[cfg(feature = "ext_within")]
+    Within,
     /// Other/Unknown
     Other(CapabilityOther<'a>),
 }
@@ -1160,6 +1163,8 @@ impl Display for Capability<'_> {
             Self::StatusSize => write!(f, "STATUS=SIZE"),
             #[cfg(feature = "ext_utf8")]
             Self::Utf8(kind) => write!(f, "UTF8={kind}"),
+            #[cfg(feature = "ext_within")]
+            Self::Within => write!(f, "WITHIN"),
             Self::Other(other) => write!(f, "{}", other.0),
         }
     }
@@ -1235,6 +1240,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
             #[cfg(feature = "ext_utf8")]
             "utf8=only" => Self::Utf8(Utf8Kind::Only),
+            #[cfg(feature = "ext_within")]
+            "within" => Self::Within,
             _ => {
                 // TODO(efficiency)
                 if let Some((left, right)) = split_once_cow(cow.clone(), "=") {
@@ -1336,6 +1343,16 @@ mod tests {
             Capability::StatusSize,
         );
         assert_eq!(Capability::StatusSize.to_string(), "STATUS=SIZE");
+    }
+
+    #[cfg(feature = "ext_within")]
+    #[test]
+    fn test_capability_within() {
+        assert_eq!(
+            Capability::from(Atom::try_from("within").unwrap()),
+            Capability::Within,
+        );
+        assert_eq!(Capability::Within.to_string(), "WITHIN");
     }
 
     #[test]

@@ -12,6 +12,8 @@ use nom::{
     sequence::{delimited, separated_pair, tuple},
 };
 
+#[cfg(feature = "ext_within")]
+use crate::core::nz_number;
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::search_modsequence;
 use crate::{
@@ -63,6 +65,7 @@ pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///              "KEYWORD" SP flag-keyword /
 ///              "NEW" /
 ///              "OLD" /
+///              "OLDER" SP nz-number / ; RFC 5032
 ///              "ON" SP date /
 ///              "RECENT" /
 ///              "SEEN" /
@@ -87,6 +90,7 @@ pub(crate) fn search(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///              "SMALLER" SP number /
 ///              "UID" SP sequence-set /
 ///              "UNDRAFT" /
+///              "YOUNGER" SP nz-number / ; RFC 5032
 ///              search-modsequence / ; RFC 7162
 ///              sequence-set /
 ///              "(" search-key *(SP search-key) ")"
@@ -140,6 +144,12 @@ fn search_key_limited(input: &[u8], remaining_recursion: usize) -> IMAPResult<&[
                 |(_, _, val)| SearchKey::Keyword(val),
             ),
             value(SearchKey::New, tag_no_case(b"NEW")),
+            // Match OLDER before OLD.
+            #[cfg(feature = "ext_within")]
+            map(
+                tuple((tag_no_case(b"OLDER"), sp, nz_number)),
+                |(_, _, val)| SearchKey::Older(val),
+            ),
             value(SearchKey::Old, tag_no_case(b"OLD")),
             map(
                 tuple((tag_no_case(b"ON"), sp, map_opt(date, |date| date))),
@@ -211,6 +221,11 @@ fn search_key_limited(input: &[u8], remaining_recursion: usize) -> IMAPResult<&[
                 tuple((tag_no_case(b"UID"), sp, sequence_set)),
                 |(_, _, val)| SearchKey::Uid(val),
             ),
+            #[cfg(feature = "ext_within")]
+            map(
+                tuple((tag_no_case(b"YOUNGER"), sp, nz_number)),
+                |(_, _, val)| SearchKey::Younger(val),
+            ),
             value(SearchKey::Undraft, tag_no_case(b"UNDRAFT")),
             #[cfg(feature = "ext_condstore_qresync")]
             map(search_modsequence, |(entry, modseq)| {
@@ -242,6 +257,9 @@ pub(crate) fn search_criteria(input: &[u8]) -> IMAPResult<&[u8], (Charset, Vec1<
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "ext_within")]
+    use std::num::NonZeroU32;
+
     use imap_types::{
         core::{AString, Atom},
         datetime::NaiveDate,
@@ -249,7 +267,48 @@ mod tests {
     };
 
     use super::*;
+    #[cfg(feature = "ext_within")]
+    use crate::testing::kat_inverse_command;
     use crate::testing::known_answer_test_encode;
+
+    #[cfg(feature = "ext_within")]
+    #[test]
+    fn test_kat_inverse_search_within() {
+        kat_inverse_command(&[
+            (
+                b"a1 SEARCH UNSEEN YOUNGER 259200\r\n",
+                b"",
+                CommandBody::Search {
+                    charset: None,
+                    criteria: vec![
+                        SearchKey::Unseen,
+                        SearchKey::Younger(NonZeroU32::new(259200).unwrap()),
+                    ]
+                    .try_into()
+                    .unwrap(),
+                    uid: false,
+                }
+                .tag("a1")
+                .unwrap(),
+            ),
+            (
+                b"A2 SEARCH OLDER 4294967295 OLD\r\n",
+                b"",
+                CommandBody::Search {
+                    charset: None,
+                    criteria: vec![
+                        SearchKey::Older(NonZeroU32::new(u32::MAX).unwrap()),
+                        SearchKey::Old,
+                    ]
+                    .try_into()
+                    .unwrap(),
+                    uid: false,
+                }
+                .tag("A2")
+                .unwrap(),
+            ),
+        ]);
+    }
 
     #[test]
     fn test_parse_search() {
@@ -367,6 +426,13 @@ mod tests {
             ),
             (SearchKey::Larger(42), b"LARGER 42"),
             (SearchKey::New, b"NEW"),
+            #[cfg(feature = "ext_within")]
+            (SearchKey::Older(NonZeroU32::new(42).unwrap()), b"OLDER 42"),
+            #[cfg(feature = "ext_within")]
+            (
+                SearchKey::Younger(NonZeroU32::new(42).unwrap()),
+                b"YOUNGER 42",
+            ),
             (SearchKey::Not(Box::new(SearchKey::New)), b"NOT NEW"),
             (SearchKey::Old, b"OLD"),
             (

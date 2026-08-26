@@ -1,5 +1,8 @@
 //! Search-related types.
 
+#[cfg(feature = "ext_within")]
+use std::num::NonZeroU32;
+
 use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -95,6 +98,12 @@ pub enum SearchKey<'a> {
     /// NEW").
     Old,
 
+    #[cfg(feature = "ext_within")]
+    /// Messages whose internal date is less recent than or equal to the current
+    /// date and time of the server minus the interval, specified in seconds
+    /// [RFC-5032].
+    Older(NonZeroU32),
+
     /// Messages whose internal date (disregarding time and timezone)
     /// is within the specified date.
     On(NaiveDate),
@@ -161,6 +170,12 @@ pub enum SearchKey<'a> {
 
     /// Messages that do not have the \Seen flag set.
     Unseen,
+
+    #[cfg(feature = "ext_within")]
+    /// Messages whose internal date is more recent than or equal to the current
+    /// date and time of the server minus the interval, specified in seconds
+    /// [RFC-5032].
+    Younger(NonZeroU32),
 
     #[cfg(feature = "ext_condstore_qresync")]
     ModSequence {

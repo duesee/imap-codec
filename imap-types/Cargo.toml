@@ -29,6 +29,7 @@ ext_metadata = []
 ext_namespace = []
 ext_status_size = []
 ext_utf8 = []
+ext_within = []
 
 [dependencies]
 arbitrary = { version = "1.4.2", optional = true, default-features = false, features = ["derive"] }
