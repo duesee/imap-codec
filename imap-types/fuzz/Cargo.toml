@@ -23,6 +23,7 @@ ext_metadata = ["imap-types/ext_metadata"]
 ext_namespace = ["imap-types/ext_namespace"]
 ext_status_size = ["imap-types/ext_status_size"]
 ext_utf8 = ["imap-types/ext_utf8"]
+ext_within = ["imap-types/ext_within"]
 # </Forward to imap-types>
 
 # Use (most) IMAP extensions.
@@ -36,6 +37,7 @@ ext = [
     "ext_namespace",
     "ext_status_size",
     "ext_utf8",
+    "ext_within",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.
 debug = []

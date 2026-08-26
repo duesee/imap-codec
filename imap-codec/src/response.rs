@@ -518,6 +518,14 @@ mod tests {
                     Data::capability(vec![Capability::Imap4Rev1, Capability::StatusSize]).unwrap(),
                 ),
             ),
+            #[cfg(feature = "ext_within")]
+            (
+                b"* CAPABILITY IMAP4REV1 WITHIN\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(
+                    Data::capability(vec![Capability::Imap4Rev1, Capability::Within]).unwrap(),
+                ),
+            ),
             (
                 b"* LIST (\\Noselect) \"/\" bbb\r\n",
                 b"",

@@ -1000,6 +1000,10 @@ impl EncodeIntoContext for SearchKey<'_> {
                 date.encode_ctx(ctx)
             }
             SearchKey::Smaller(number) => write!(ctx, "SMALLER {number}"),
+            #[cfg(feature = "ext_within")]
+            SearchKey::Older(seconds) => write!(ctx, "OLDER {seconds}"),
+            #[cfg(feature = "ext_within")]
+            SearchKey::Younger(seconds) => write!(ctx, "YOUNGER {seconds}"),
             SearchKey::Uid(sequence_set) => {
                 ctx.write_all(b"UID ")?;
                 sequence_set.encode_ctx(ctx)
