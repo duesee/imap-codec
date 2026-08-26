@@ -33,6 +33,10 @@ pub enum StatusDataItemName {
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     DeletedStorage,
 
+    #[cfg(feature = "ext_status_size")]
+    /// The total size of the mailbox in octets.
+    Size,
+
     #[cfg(feature = "ext_condstore_qresync")]
     HighestModSeq,
 }
@@ -66,6 +70,11 @@ pub enum StatusDataItem {
 
     /// The amount of storage space that can be reclaimed by performing EXPUNGE on the mailbox.
     DeletedStorage(u64),
+
+    #[cfg(feature = "ext_status_size")]
+    /// The total size of the mailbox in octets. Refer to RFC 8438 and RFC 9051,
+    /// Section 6.3.11 for more information.
+    Size(u64),
 
     #[cfg(feature = "ext_condstore_qresync")]
     /// The highest mod-sequence value of all messages in the mailbox.

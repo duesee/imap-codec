@@ -25,6 +25,7 @@ ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_metadata = ["imap-codec/ext_metadata"]
 ext_namespace = ["imap-codec/ext_namespace"]
+ext_status_size = ["imap-codec/ext_status_size"]
 ext_utf8 = ["imap-codec/ext_utf8"]
 
 # IMAP quirks
@@ -41,6 +42,7 @@ ext = [
     #"ext_mailbox_referrals",
     "ext_metadata",
     "ext_namespace",
+    "ext_status_size",
     "ext_utf8",
 ]
 # Enable `Debug`-printing during parsing. This is useful to analyze crashes.

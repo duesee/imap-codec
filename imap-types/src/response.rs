@@ -1106,6 +1106,9 @@ pub enum Capability<'a> {
     /// NAMESPACE extension (RFC 2342)
     #[cfg(feature = "ext_namespace")]
     Namespace,
+    /// STATUS=SIZE extension (RFC 8438)
+    #[cfg(feature = "ext_status_size")]
+    StatusSize,
     #[cfg(feature = "ext_utf8")]
     Utf8(Utf8Kind),
     /// Other/Unknown
@@ -1153,6 +1156,8 @@ impl Display for Capability<'_> {
             Self::QResync => write!(f, "QRESYNC"),
             #[cfg(feature = "ext_namespace")]
             Self::Namespace => write!(f, "NAMESPACE"),
+            #[cfg(feature = "ext_status_size")]
+            Self::StatusSize => write!(f, "STATUS=SIZE"),
             #[cfg(feature = "ext_utf8")]
             Self::Utf8(kind) => write!(f, "UTF8={kind}"),
             Self::Other(other) => write!(f, "{}", other.0),
@@ -1223,6 +1228,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "condstore" => Self::CondStore,
             #[cfg(feature = "ext_condstore_qresync")]
             "qresync" => Self::QResync,
+            #[cfg(feature = "ext_status_size")]
+            "status=size" => Self::StatusSize,
             "uidplus" => Self::UidPlus,
             #[cfg(feature = "ext_utf8")]
             "utf8=accept" => Self::Utf8(Utf8Kind::Accept),
@@ -1319,6 +1326,16 @@ mod tests {
             Capability::ListExtended,
         );
         assert_eq!(Capability::ListExtended.to_string(), "LIST-EXTENDED");
+    }
+
+    #[cfg(feature = "ext_status_size")]
+    #[test]
+    fn test_capability_status_size() {
+        assert_eq!(
+            Capability::from(Atom::try_from("status=size").unwrap()),
+            Capability::StatusSize,
+        );
+        assert_eq!(Capability::StatusSize.to_string(), "STATUS=SIZE");
     }
 
     #[test]
