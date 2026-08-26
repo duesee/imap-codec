@@ -32,6 +32,8 @@ pub(crate) fn status_att(input: &[u8]) -> IMAPResult<&[u8], StatusDataItemName> 
             tag_no_case(b"DELETED-STORAGE"),
         ),
         value(StatusDataItemName::Deleted, tag_no_case(b"DELETED")),
+        #[cfg(feature = "ext_status_size")]
+        value(StatusDataItemName::Size, tag_no_case(b"SIZE")),
         #[cfg(feature = "ext_condstore_qresync")]
         value(
             StatusDataItemName::HighestModSeq,
@@ -87,6 +89,11 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
             preceded(tag_no_case(b"DELETED "), number),
             StatusDataItem::Deleted,
         ),
+        #[cfg(feature = "ext_status_size")]
+        map(
+            preceded(tag_no_case(b"SIZE "), number64),
+            StatusDataItem::Size,
+        ),
         #[cfg(feature = "ext_condstore_qresync")]
         map(
             preceded(tag_no_case(b"HIGHESTMODSEQ "), mod_sequence_valzer),
@@ -99,8 +106,51 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
 mod tests {
     use std::num::NonZeroU32;
 
+    #[cfg(feature = "ext_status_size")]
+    use imap_types::{
+        command::CommandBody,
+        mailbox::Mailbox,
+        response::{Data, Response},
+    };
+
     use super::*;
     use crate::testing::known_answer_test_encode;
+    #[cfg(feature = "ext_status_size")]
+    use crate::testing::{kat_inverse_command, kat_inverse_response};
+
+    #[cfg(feature = "ext_status_size")]
+    #[test]
+    fn test_kat_inverse_status_size() {
+        kat_inverse_command(&[(
+            b"A01 STATUS frop (MESSAGES SIZE UIDNEXT)\r\n",
+            b"",
+            CommandBody::status(
+                "frop",
+                vec![
+                    StatusDataItemName::Messages,
+                    StatusDataItemName::Size,
+                    StatusDataItemName::UidNext,
+                ],
+            )
+            .unwrap()
+            .tag("A01")
+            .unwrap(),
+        )]);
+
+        kat_inverse_response(&[(
+            b"* STATUS frop (MESSAGES 8 SIZE 44421 UIDNEXT 242344)\r\n",
+            b"",
+            Response::Data(Data::Status {
+                mailbox: Mailbox::try_from("frop").unwrap(),
+                items: vec![
+                    StatusDataItem::Messages(8),
+                    StatusDataItem::Size(44421),
+                    StatusDataItem::UidNext(NonZeroU32::new(242344).unwrap()),
+                ]
+                .into(),
+            }),
+        )]);
+    }
 
     #[test]
     fn test_encode_status_data_item_name() {
@@ -112,6 +162,8 @@ mod tests {
             (StatusDataItemName::Unseen, b"UNSEEN"),
             (StatusDataItemName::Deleted, b"DELETED"),
             (StatusDataItemName::DeletedStorage, b"DELETED-STORAGE"),
+            #[cfg(feature = "ext_status_size")]
+            (StatusDataItemName::Size, b"SIZE"),
         ];
 
         for test in tests {
@@ -138,6 +190,8 @@ mod tests {
                 StatusDataItem::DeletedStorage(u64::MAX),
                 b"DELETED-STORAGE 18446744073709551615",
             ),
+            #[cfg(feature = "ext_status_size")]
+            (StatusDataItem::Size(u64::MAX), b"SIZE 18446744073709551615"),
         ];
 
         for test in tests {

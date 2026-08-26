@@ -859,6 +859,8 @@ impl EncodeIntoContext for StatusDataItemName {
             Self::Unseen => ctx.write_all(b"UNSEEN"),
             Self::Deleted => ctx.write_all(b"DELETED"),
             Self::DeletedStorage => ctx.write_all(b"DELETED-STORAGE"),
+            #[cfg(feature = "ext_status_size")]
+            Self::Size => ctx.write_all(b"SIZE"),
             #[cfg(feature = "ext_condstore_qresync")]
             Self::HighestModSeq => ctx.write_all(b"HIGHESTMODSEQ"),
         }
@@ -1699,6 +1701,11 @@ impl EncodeIntoContext for StatusDataItem {
             Self::DeletedStorage(count) => {
                 ctx.write_all(b"DELETED-STORAGE ")?;
                 count.encode_ctx(ctx)
+            }
+            #[cfg(feature = "ext_status_size")]
+            Self::Size(size) => {
+                ctx.write_all(b"SIZE ")?;
+                size.encode_ctx(ctx)
             }
             #[cfg(feature = "ext_condstore_qresync")]
             Self::HighestModSeq(value) => {
