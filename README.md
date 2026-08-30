@@ -17,6 +17,7 @@ Let's talk on [Matrix]!
 ## Features
 
 * Complete [formal syntax] of IMAP4rev1 is implemented. Furthermore, several IMAP [extensions] are supported.
+  Extensions are enabled via `ext_` features, e.g., `ext_condstore_qresync`, `ext_id`, `ext_login_referrals`, `ext_mailbox_referrals`, `ext_metadata`, and `ext_sort_thread`. See the [extensions] documentation for the full and up-to-date list.
 * Correctness and misuse-resistance are enforced on the type level. It's not possible to construct a message that violates the IMAP specification.
 * Messages automatically use the most efficient representation. For example, atoms are preferred over quoted strings, and quoted strings are preferred over literals. It's equally easy to manually choose a representation.
 * Parsing works in streaming mode. `Incomplete` is returned when there is insufficient data to make a final decision. No message will be truncated.
