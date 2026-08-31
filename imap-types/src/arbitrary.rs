@@ -15,7 +15,7 @@ use crate::{
         Text, Vec1, Vec2,
     },
     datetime::{DateTime, NaiveDate},
-    extensions::{enable::CapabilityEnable, quota::Resource},
+    extensions::{enable::CapabilityEnable, list_extended::TaggedExtComp, quota::Resource},
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
     response::{
@@ -214,6 +214,45 @@ impl<'a> Arbitrary<'a> for CodeOther<'a> {
         // `CodeOther` is a fallback and should usually not be created.
         Ok(CodeOther::unvalidated(b"IMAP-CODEC-CODE-OTHER>".as_ref()))
     }
+}
+
+impl<'a> Arbitrary<'a> for TaggedExtComp<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_tagged_ext_comp_limited(u, 3);
+        #[cfg(feature = "arbitrary_simplified")]
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+}
+
+#[cfg(not(feature = "arbitrary_simplified"))]
+fn arbitrary_tagged_ext_comp_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<TaggedExtComp<'a>> {
+    // At the recursion limit, only the non-recursive `Single` alternative.
+    if depth == 0 {
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+
+    Ok(match u.int_in_range(0u8..=2)? {
+        // astring
+        0 => TaggedExtComp::Single(AString::arbitrary(u)?),
+        // tagged-ext-comp *(SP tagged-ext-comp) -- at least two components.
+        1 => {
+            let len = u.arbitrary_len::<AString>()?.clamp(2, 3);
+            let mut items = Vec::with_capacity(len);
+
+            for _ in 0..len {
+                items.push(arbitrary_tagged_ext_comp_limited(u, depth - 1)?);
+            }
+
+            TaggedExtComp::Multi(Vec2::try_from(items).unwrap())
+        }
+        // "(" tagged-ext-comp ")"
+        2 => TaggedExtComp::Group(Box::new(arbitrary_tagged_ext_comp_limited(u, depth - 1)?)),
+        _ => unreachable!(),
+    })
 }
 
 impl<'a> Arbitrary<'a> for SearchKey<'a> {
