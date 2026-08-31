@@ -33,7 +33,7 @@ ext_within = []
 
 [dependencies]
 arbitrary = { version = "1.4.2", optional = true, default-features = false, features = ["derive"] }
-base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+base64 = { version = "0.23", default-features = false, features = ["alloc"] }
 bounded-static-derive = { version = "0.8.0", default-features = false }
 bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false }
@@ -42,7 +42,7 @@ serde = { version = "1.0.228", features = ["derive"], optional = true }
 thiserror = "2.0.18"
 
 [dev-dependencies]
-criterion = { version = "0.7.0", default-features = false }
+criterion = { version = "0.8.2", default-features = false }
 rand = { version = "0.10", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 
