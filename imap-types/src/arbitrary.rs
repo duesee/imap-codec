@@ -63,6 +63,8 @@ macro_rules! impl_arbitrary_try_from_t {
 impl_arbitrary_try_from! { Atom<'a>, &str }
 impl_arbitrary_try_from! { AtomExt<'a>, &str }
 impl_arbitrary_try_from! { Quoted<'a>, &str }
+#[cfg(feature = "ext_utf8")]
+impl_arbitrary_try_from! { QuotedUtf8<'a>, &str }
 impl_arbitrary_try_from! { Tag<'a>, &str }
 impl_arbitrary_try_from! { Text<'a>, &str }
 impl_arbitrary_try_from! { ListCharString<'a>, &str }

@@ -181,11 +181,17 @@ mod tests {
         let tests = [
             b"NAMESPACE ((\"0\" \"\\\"\")) NIL NIL\r\n".as_ref(),
             #[cfg(feature = "ext_utf8")]
-            b"NAMESPACE ((\"^^\x00\" \"\x07\")) NIL NIL\r\n",
+            b"NAMESPACE ((\"^^\" \"\x07\")) NIL NIL\r\n",
         ];
 
         for test in tests.into_iter() {
             namespace_response(test).unwrap();
         }
+    }
+
+    #[cfg(feature = "ext_utf8")]
+    #[test]
+    fn parse_namespace_response_nul() {
+        assert!(namespace_response(b"NAMESPACE ((\"^^\x00\" \"\x07\")) NIL NIL\r\n").is_err());
     }
 }
