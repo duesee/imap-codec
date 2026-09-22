@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Made `QuotedUtf8` construction fallible and contents private (`ext_utf8`)
+  * Breaking API change for `ext_utf8` to validate construction, same as `Quoted`
+  * Replace `From<String>` / `into` with `TryFrom` / `try_into` and handle `ValidationError`
+  * Use `inner` or `into_inner` to access contents
 * Changed `Status` to make it easier to use
 * Check only explicit features for SemVer violations
 * Renamed `NonEmptyVec` to `Vec1`
@@ -36,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Reject NUL, CR, and LF in UTF-8 quoted strings (`ext_utf8`)
+  * Per RFC 9755 Section 3 and RFC 3501 Section 9
+* Generate only valid `QuotedUtf8` values during structured fuzzing
 * Fixed examples in README (and test them in CI now)
   * Thanks, @coalooball!
 * Fixed broken links in README
