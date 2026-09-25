@@ -154,6 +154,34 @@ pub enum FlagNameAttribute<'a> {
     /// last time the mailbox was selected. (`\Unmarked`)
     Unmarked,
 
+    /// The mailbox name was subscribed to using the SUBSCRIBE command.
+    /// (`\Subscribed`)
+    ///
+    /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    Subscribed,
+
+    /// The mailbox is a remote mailbox. (`\Remote`)
+    ///
+    /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    Remote,
+
+    /// The mailbox has child mailboxes. (`\HasChildren`)
+    ///
+    /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    HasChildren,
+
+    /// The mailbox has no child mailboxes. (`\HasNoChildren`)
+    ///
+    /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    HasNoChildren,
+
+    /// The mailbox name does not refer to an existing mailbox. (`\NonExistent`)
+    ///
+    /// Note: `\NonExistent` implies `\Noselect`.
+    ///
+    /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    NonExistent,
+
     /// An extension flags.
     Extension(FlagNameAttributeExtension<'a>),
 }
@@ -173,7 +201,10 @@ impl FlagNameAttribute<'_> {
     pub fn is_selectability(&self) -> bool {
         matches!(
             self,
-            FlagNameAttribute::Noselect | FlagNameAttribute::Marked | FlagNameAttribute::Unmarked
+            FlagNameAttribute::Noselect
+                | FlagNameAttribute::Marked
+                | FlagNameAttribute::Unmarked
+                | FlagNameAttribute::NonExistent
         )
     }
 }
@@ -185,6 +216,11 @@ impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
             "noselect" => Self::Noselect,
             "marked" => Self::Marked,
             "unmarked" => Self::Unmarked,
+            "subscribed" => Self::Subscribed,
+            "remote" => Self::Remote,
+            "haschildren" => Self::HasChildren,
+            "hasnochildren" => Self::HasNoChildren,
+            "nonexistent" => Self::NonExistent,
             _ => Self::Extension(FlagNameAttributeExtension(atom)),
         }
     }
@@ -197,6 +233,11 @@ impl Display for FlagNameAttribute<'_> {
             Self::Noselect => f.write_str("\\Noselect"),
             Self::Marked => f.write_str("\\Marked"),
             Self::Unmarked => f.write_str("\\Unmarked"),
+            Self::Subscribed => f.write_str("\\Subscribed"),
+            Self::Remote => f.write_str("\\Remote"),
+            Self::HasChildren => f.write_str("\\HasChildren"),
+            Self::HasNoChildren => f.write_str("\\HasNoChildren"),
+            Self::NonExistent => f.write_str("\\NonExistent"),
             Self::Extension(extension) => write!(f, "\\{}", extension.0),
         }
     }
@@ -242,5 +283,40 @@ mod tests {
         let atom = FlagNameAttributeExtension(Atom::try_from("Custom").unwrap());
         let flag_name_attribute = FlagNameAttribute::from(atom.clone());
         assert_eq!(flag_name_attribute, FlagNameAttribute::Extension(atom));
+    }
+
+    #[test]
+    fn test_flagnameattribute_list_extended() {
+        // Case-insensitive parsing and canonical rendering of the RFC 5258
+        // mailbox attributes.
+        for (input, expected, rendered) in [
+            ("subscribed", FlagNameAttribute::Subscribed, "\\Subscribed"),
+            ("REMOTE", FlagNameAttribute::Remote, "\\Remote"),
+            (
+                "HasChildren",
+                FlagNameAttribute::HasChildren,
+                "\\HasChildren",
+            ),
+            (
+                "hasnochildren",
+                FlagNameAttribute::HasNoChildren,
+                "\\HasNoChildren",
+            ),
+            (
+                "NonExistent",
+                FlagNameAttribute::NonExistent,
+                "\\NonExistent",
+            ),
+        ] {
+            let got = FlagNameAttribute::from(Atom::try_from(input).unwrap());
+            assert_eq!(got, expected);
+            assert_eq!(got.to_string(), rendered);
+        }
+
+        // `\NonExistent` implies `\Noselect`, so it counts as a selectability
+        // attribute; the others don't.
+        assert!(FlagNameAttribute::NonExistent.is_selectability());
+        assert!(!FlagNameAttribute::Subscribed.is_selectability());
+        assert!(!FlagNameAttribute::HasChildren.is_selectability());
     }
 }
