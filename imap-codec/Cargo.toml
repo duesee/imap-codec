@@ -85,7 +85,7 @@ ext_within = ["imap-types/ext_within"]
 
 [dependencies]
 abnf-core = "0.6.0"
-base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+base64 = { version = "0.23", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { version = "2.0.0-alpha.7", path = "../imap-types", default-features = false }
 nom = { version = "7", default-features = false }
