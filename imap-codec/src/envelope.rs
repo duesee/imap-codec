@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use abnf_core::streaming::sp;
 use imap_types::{
     core::NString,

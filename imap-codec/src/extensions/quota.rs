@@ -1,6 +1,7 @@
 //! IMAP QUOTA Extension
 
-use std::io::Write;
+use alloc::string::ToString;
+use core::fmt::{self, Write};
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -196,20 +197,20 @@ pub(crate) fn setquota_resource(input: &[u8]) -> IMAPResult<&[u8], QuotaSet> {
 // }
 
 impl EncodeIntoContext for Resource<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         ctx.write_all(self.to_string().as_bytes())
     }
 }
 
 impl EncodeIntoContext for QuotaGet<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {} {}", self.usage, self.limit)
     }
 }
 
 impl EncodeIntoContext for QuotaSet<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         self.resource.encode_ctx(ctx)?;
         write!(ctx, " {}", self.limit)
     }
@@ -217,6 +218,8 @@ impl EncodeIntoContext for QuotaSet<'_> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use imap_types::{
         command::{Command, CommandBody},
         core::{IString, Tag},

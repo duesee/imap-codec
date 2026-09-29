@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use abnf_core::streaming::sp;
 use imap_types::{
     command::CommandBody,
@@ -257,8 +259,9 @@ pub(crate) fn search_criteria(input: &[u8]) -> IMAPResult<&[u8], (Charset, Vec1<
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
     #[cfg(feature = "ext_within")]
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
 
     use imap_types::{
         core::{AString, Atom},

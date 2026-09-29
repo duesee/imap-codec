@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use abnf_core::streaming::sp;
 use imap_types::flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm};
 use nom::{
@@ -133,6 +135,8 @@ pub(crate) fn mbx_list_flags(input: &[u8]) -> IMAPResult<&[u8], Vec<FlagNameAttr
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use imap_types::{
         core::Atom,
         flag::{Flag, FlagFetch, FlagNameAttribute, FlagPerm},

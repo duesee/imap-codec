@@ -6,7 +6,7 @@
 // capability     =/ "COMPRESS=" algorithm
 // resp-text-code =/ "COMPRESSIONACTIVE"
 
-use std::io::Write;
+use core::fmt::{self, Write};
 
 use imap_types::{command::CommandBody, extensions::compress::CompressionAlgorithm};
 use nom::{
@@ -33,7 +33,7 @@ pub(crate) fn compress(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 }
 
 impl EncodeIntoContext for CompressionAlgorithm {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         write!(ctx, "{self}")
     }
 }

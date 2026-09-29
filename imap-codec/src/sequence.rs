@@ -83,6 +83,8 @@ pub(crate) fn seq_number(input: &[u8]) -> IMAPResult<&[u8], SeqOrUid> {
 
 #[cfg(test)]
 mod tests {
+    use std::println;
+
     use super::*;
     use crate::encode::{EncodeContext, EncodeIntoContext};
 

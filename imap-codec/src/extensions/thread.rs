@@ -1,4 +1,5 @@
-use std::io::Write;
+use alloc::string::ToString;
+use core::fmt;
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -23,13 +24,13 @@ use crate::{
 };
 
 impl EncodeIntoContext for Thread {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         ctx.write_all(self.to_string().as_bytes())
     }
 }
 
 impl EncodeIntoContext for ThreadingAlgorithm<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             ThreadingAlgorithm::OrderedSubject => ctx.write_all(b"ORDEREDSUBJECT"),
             ThreadingAlgorithm::References => ctx.write_all(b"REFERENCES"),
@@ -39,7 +40,7 @@ impl EncodeIntoContext for ThreadingAlgorithm<'_> {
 }
 
 impl EncodeIntoContext for ThreadingAlgorithmOther<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         ctx.write_all(self.as_ref().as_bytes())
     }
 }
@@ -155,7 +156,9 @@ pub(crate) fn thread_list_limited(
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use alloc::{string::ToString, vec};
+    use core::num::NonZeroU32;
+    use std::println;
 
     use imap_types::core::{Vec1, Vec2};
 

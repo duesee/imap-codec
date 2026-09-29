@@ -1,4 +1,8 @@
-use std::{borrow::Cow, io::Write, num::NonZeroU32};
+use alloc::{borrow::Cow, vec::Vec};
+use core::{
+    fmt::{self, Write},
+    num::NonZeroU32,
+};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -70,7 +74,7 @@ pub(crate) fn literal8(input: &[u8]) -> IMAPResult<&[u8], Literal8> {
 }
 
 impl EncodeIntoContext for LiteralOrLiteral8<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             LiteralOrLiteral8::Literal(lit) => lit.encode_ctx(ctx),
             LiteralOrLiteral8::Literal8(lit8) => lit8.encode_ctx(ctx),
@@ -79,7 +83,7 @@ impl EncodeIntoContext for LiteralOrLiteral8<'_> {
 }
 
 impl EncodeIntoContext for Literal8<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self.mode {
             LiteralMode::Sync => write!(ctx, "~{{{}}}\r\n", self.data.len())?,
             LiteralMode::NonSync => write!(ctx, "~{{{}+}}\r\n", self.data.len())?,

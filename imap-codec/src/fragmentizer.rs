@@ -42,7 +42,8 @@
 //! }
 //! # }
 //! ```
-use std::{collections::VecDeque, ops::Range};
+use alloc::{collections::VecDeque, vec::Vec};
+use core::ops::Range;
 
 use imap_types::{
     core::{LiteralMode, Tag},
@@ -615,8 +616,8 @@ fn parse_tag(message_bytes: &[u8]) -> Option<Tag> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::collections::VecDeque;
     use core::panic;
-    use std::collections::VecDeque;
 
     use imap_types::{
         command::{Command, CommandBody},

@@ -1,4 +1,4 @@
-use std::{io::Write, num::NonZeroU32};
+use core::{fmt, num::NonZeroU32};
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -96,13 +96,13 @@ pub(crate) fn uid_range(input: &[u8]) -> IMAPResult<&[u8], (NonZeroU32, NonZeroU
 }
 
 impl EncodeIntoContext for UidSet {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         join_serializable(self.0.as_ref(), b",", ctx)
     }
 }
 
 impl EncodeIntoContext for UidElement {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             UidElement::Single(uid) => uid.encode_ctx(ctx),
             Range(start, end) => {

@@ -49,7 +49,11 @@ impl_codec_new!(IdleDoneCodec);
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use alloc::vec;
+    #[cfg(feature = "ext_condstore_qresync")]
+    use alloc::vec::Vec;
+    use core::num::NonZeroU32;
+    use std::dbg;
 
     use imap_types::{
         auth::AuthenticateData,
@@ -215,7 +219,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = GreetingCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -265,7 +269,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = CommandCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -309,7 +313,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = ResponseCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {

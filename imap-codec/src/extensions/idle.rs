@@ -7,7 +7,7 @@
 //
 // command_auth =/ idle
 
-use std::io::Write;
+use core::fmt;
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -55,13 +55,15 @@ pub(crate) fn idle_done(input: &[u8]) -> IMAPResult<&[u8], IdleDone> {
 }
 
 impl EncodeIntoContext for IdleDone {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         ctx.write_all(b"DONE\r\n")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::dbg;
+
     use imap_types::command::{Command, CommandBody};
 
     use super::*;
@@ -109,7 +111,7 @@ mod tests {
         for (test, expected) in tests {
             let got = IdleDoneCodec::default().decode(test);
 
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
 
             assert_eq!(expected, got);
         }

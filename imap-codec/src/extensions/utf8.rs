@@ -1,4 +1,7 @@
-use std::{io::Write, str::from_utf8};
+use core::{
+    fmt::{self, Write},
+    str::from_utf8,
+};
 
 use abnf_core::streaming::dquote;
 use imap_types::{
@@ -22,7 +25,7 @@ use crate::{
 };
 
 impl EncodeIntoContext for QuotedUtf8<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         write!(ctx, "\"{}\"", escape_quoted(self.inner()))
     }
 }
@@ -65,7 +68,7 @@ pub(crate) fn quoted_utf8(input: &[u8]) -> IMAPResult<&[u8], QuotedUtf8> {
 
 #[cfg(test)]
 mod test {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
 
     use imap_types::{
         command::CommandBody,

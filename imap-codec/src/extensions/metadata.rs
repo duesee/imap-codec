@@ -1,6 +1,6 @@
 //! The IMAP METADATA Extension
 
-use std::io::Write;
+use core::fmt;
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -218,7 +218,7 @@ pub(crate) fn entry_list(input: &[u8]) -> IMAPResult<&[u8], Vec1<Entry>> {
 }
 
 impl EncodeIntoContext for MetadataResponse<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             MetadataResponse::WithValues(list) => {
                 ctx.write_all(b"(")?;
@@ -252,7 +252,7 @@ pub(crate) fn metadata_code(input: &[u8]) -> IMAPResult<&[u8], MetadataCode> {
 }
 
 impl EncodeIntoContext for MetadataCode {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             MetadataCode::LongEntries(number) => {
                 ctx.write_all(b"LONGENTRIES ")?;
@@ -269,13 +269,13 @@ impl EncodeIntoContext for MetadataCode {
 }
 
 impl EncodeIntoContext for Entry<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         self.inner().encode_ctx(ctx)
     }
 }
 
 impl EncodeIntoContext for GetMetadataOption {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         match self {
             GetMetadataOption::MaxSize(number) => {
                 ctx.write_all(b"MAXSIZE ")?;
@@ -290,7 +290,7 @@ impl EncodeIntoContext for GetMetadataOption {
 }
 
 impl EncodeIntoContext for Depth {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         ctx.write_all(match self {
             Depth::Null => b"0",
             Depth::One => b"1",
@@ -300,7 +300,7 @@ impl EncodeIntoContext for Depth {
 }
 
 impl EncodeIntoContext for EntryValue<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         self.entry.encode_ctx(ctx)?;
         ctx.write_all(b" ")?;
         self.value.encode_ctx(ctx)
@@ -309,6 +309,8 @@ impl EncodeIntoContext for EntryValue<'_> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use imap_types::{
         command::{Command, CommandBody},
         core::{AString, IString, Literal, LiteralMode, NString, NString8, Text, Vec1},

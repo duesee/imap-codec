@@ -454,7 +454,8 @@ pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use alloc::vec;
+    use core::num::NonZeroU32;
 
     use imap_types::{
         body::{

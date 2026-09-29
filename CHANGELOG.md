@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added quirk for trailing space in STATUS. Thanks, @nbdd0121!
 * Increased MSRV to 1.78.
 * Made imap-types `no_std` (requires `alloc`), unless `arbitrary` or `tag_generator` are enabled
+* Made imap-codec `no_std` (requires `alloc`)
 
 ### Changed
 

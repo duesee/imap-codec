@@ -1,4 +1,5 @@
-use std::{borrow::Cow, num::NonZeroU32, str::from_utf8};
+use alloc::{borrow::Cow, vec::Vec};
+use core::{num::NonZeroU32, str::from_utf8};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -206,7 +207,7 @@ pub(crate) fn astring(input: &[u8]) -> IMAPResult<&[u8], AString> {
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
             //   * are valid according to `AtomExt::verify(), i.e., `unvalidated` is safe.
             AString::Atom(AtomExt::unvalidated(Cow::Borrowed(
-                std::str::from_utf8(bytes).unwrap(),
+                core::str::from_utf8(bytes).unwrap(),
             )))
         }),
         map(string, AString::String),
@@ -321,6 +322,8 @@ pub fn fuzz_tag_imap(input: &[u8]) -> IResult<&[u8], Tag> {
 
 #[cfg(test)]
 mod tests {
+    use std::println;
+
     use super::*;
     use crate::encode::{EncodeContext, EncodeIntoContext};
 

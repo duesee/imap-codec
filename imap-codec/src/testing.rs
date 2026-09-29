@@ -1,4 +1,5 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
+use std::println;
 
 use imap_types::{
     auth::AuthenticateData,
