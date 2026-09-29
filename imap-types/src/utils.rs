@@ -1,6 +1,6 @@
 //! Functions that may come in handy.
 
-use std::borrow::Cow;
+use alloc::{borrow::Cow, format, string::String, vec::Vec};
 
 /// Converts bytes into a ready-to-be-printed form.
 pub fn escape_byte_string<B>(bytes: B) -> String
@@ -139,6 +139,8 @@ pub fn unescape_quoted(escaped: &str) -> Cow<'_, str> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::*;
 
     #[test]

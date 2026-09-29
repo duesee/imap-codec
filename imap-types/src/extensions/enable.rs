@@ -6,7 +6,7 @@
 //! * the [CommandBody] enum with a new variant [CommandBody::Enable], and
 //! * the [Data](crate::response::Data) enum with a new variant [Data::Enabled](crate::response::Data#variant.Enabled).
 
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
@@ -79,7 +79,7 @@ impl<'a> From<Atom<'a>> for CapabilityEnable<'a> {
 }
 
 impl Display for CapabilityEnable<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             #[cfg(feature = "ext_condstore_qresync")]
             Self::CondStore => write!(f, "CONDSTORE"),

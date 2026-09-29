@@ -142,6 +142,7 @@
 //! (See, e.g., `imap-types/fuzz/fuzz_targets/to_static.rs`)
 //! When the `serde` feature is used, all types implement [Serde](https://serde.rs/)'s [Serialize](https://docs.serde.rs/serde/trait.Serialize.html) and
 //! [Deserialize](https://docs.serde.rs/serde/trait.Deserialize.html) traits. (Try running `cargo run --example serde_json`.)
+//! imap-types is `no_std` and requires `alloc`. The `arbitrary` and `tag_generator` features require `std`.
 //! Using `tag_generator` unlocks a `TagGenerator` to generate random tags.
 //! This may help to prevent attacks that depend on the knowledge of the next tag.
 //!
@@ -168,6 +169,7 @@
 //! [RFC 7888]: https://datatracker.ietf.org/doc/html/rfc7888
 //! [RFC 9208]: https://datatracker.ietf.org/doc/html/rfc9208
 
+#![no_std]
 // TODO(#660)
 #![allow(unknown_lints)]
 #![allow(mismatched_lifetime_syntaxes)]
@@ -176,6 +178,10 @@
 // TODO(#313)
 // #![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+
+extern crate alloc;
+#[cfg(any(test, feature = "arbitrary", feature = "tag_generator"))]
+extern crate std;
 
 use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 

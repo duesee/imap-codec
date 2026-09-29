@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -54,7 +54,7 @@ impl<'a> TryFrom<&'a str> for AttributeFlag<'a> {
 }
 
 impl Display for AttributeFlag<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             AttributeFlag::Answered => f.write_str("\\\\Answered"),
             AttributeFlag::Flagged => f.write_str("\\\\Flagged"),
@@ -77,7 +77,7 @@ pub enum EntryTypeReq {
 }
 
 impl Display for EntryTypeReq {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             EntryTypeReq::Private => write!(f, "priv"),
             EntryTypeReq::Shared => write!(f, "shared"),

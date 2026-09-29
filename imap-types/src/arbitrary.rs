@@ -1,3 +1,7 @@
+#[cfg(not(feature = "arbitrary_simplified"))]
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{FixedOffset, TimeZone};
 

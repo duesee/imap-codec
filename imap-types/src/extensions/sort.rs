@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::{Arbitrary, Unstructured};
@@ -28,7 +28,7 @@ impl<'a> From<Atom<'a>> for SortAlgorithm<'a> {
 }
 
 impl Display for SortAlgorithm<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             SortAlgorithm::Display => f.write_str("DISPLAY"),
             SortAlgorithm::Other(other) => f.write_str(other.as_ref()),

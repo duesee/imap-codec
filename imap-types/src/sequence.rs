@@ -1,6 +1,10 @@
-use std::{
+use alloc::{
+    collections::{BTreeSet, VecDeque},
+    vec,
+    vec::Vec,
+};
+use core::{
     cmp::{Ordering, max},
-    collections::{HashSet, VecDeque},
     fmt::Debug,
     iter::Rev,
     mem,
@@ -37,7 +41,7 @@ pub struct SequenceSet(pub Vec1<Sequence>);
 
 impl SequenceSet {
     pub fn normalize(&mut self) -> &mut Self {
-        let mut singles = HashSet::with_capacity(self.0.0.len());
+        let mut singles = BTreeSet::new();
         let mut ranges = Vec::with_capacity(self.0.0.len());
 
         // First, normalize all sequences
@@ -801,7 +805,8 @@ fn merge_ranges<T: Ord + Copy>(mut ranges: Vec<Range<T>>) -> Vec<Range<T>> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
+    use std::{print, println};
 
     use super::*;
     use crate::core::Vec1;

@@ -1,5 +1,7 @@
 //! Body(structure)-related types.
 
+use alloc::{boxed::Box, vec::Vec};
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 use bounded_static_derive::ToStatic;

@@ -1,7 +1,8 @@
 //! Search-related types.
 
+use alloc::boxed::Box;
 #[cfg(feature = "ext_within")]
-use std::num::NonZeroU32;
+use core::num::NonZeroU32;
 
 use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]

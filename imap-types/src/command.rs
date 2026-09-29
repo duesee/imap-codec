@@ -2,11 +2,11 @@
 //!
 //! See <https://tools.ietf.org/html/rfc3501#section-6>.
 
-use std::borrow::Cow;
+use alloc::{borrow::Cow, vec::Vec};
 #[cfg(feature = "ext_condstore_qresync")]
-use std::num::NonZeroU32;
+use core::num::NonZeroU32;
 #[cfg(feature = "ext_condstore_qresync")]
-use std::num::NonZeroU64;
+use core::num::NonZeroU64;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -1933,6 +1933,9 @@ pub mod error {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{boxed::Box, format, vec};
+    use std::println;
+
     use chrono::DateTime as ChronoDateTime;
 
     use super::*;

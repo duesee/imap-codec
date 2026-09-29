@@ -1,9 +1,13 @@
 //! # 7. Server Responses
 
+use alloc::{
+    borrow::{Cow, ToOwned},
+    string::String,
+    vec::Vec,
+};
 #[cfg(feature = "ext_condstore_qresync")]
-use std::num::NonZeroU64;
-use std::{
-    borrow::Cow,
+use core::num::NonZeroU64;
+use core::{
     fmt::{Debug, Display, Formatter},
     num::{NonZeroU32, TryFromIntError},
 };
@@ -723,7 +727,7 @@ struct CommandContinuationRequestBasicShadow<'a> {
 impl<'a> TryFrom<CommandContinuationRequestBasicShadow<'a>>
     for CommandContinuationRequestBasic<'a>
 {
-    type Error = ContinueError<std::convert::Infallible>;
+    type Error = ContinueError<core::convert::Infallible>;
 
     fn try_from(value: CommandContinuationRequestBasicShadow<'a>) -> Result<Self, Self::Error> {
         Self::new(value.code, value.text)
@@ -1006,11 +1010,11 @@ pub struct CodeOther<'a>(Cow<'a, [u8]>);
 
 // We want a more readable `Debug` implementation.
 impl Debug for CodeOther<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
         impl Debug for BStr<'_> {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
                 write!(
                     f,
                     "b\"{}\"",
@@ -1119,7 +1123,7 @@ pub enum Capability<'a> {
 }
 
 impl Display for Capability<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             Self::Imap4Rev1 => write!(f, "IMAP4REV1"),
             Self::Auth(mechanism) => write!(f, "AUTH={mechanism}"),
@@ -1318,6 +1322,9 @@ pub mod error {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{string::ToString, vec};
+    use std::println;
+
     use super::*;
 
     #[test]

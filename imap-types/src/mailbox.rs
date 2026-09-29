@@ -1,6 +1,7 @@
 //! Mailbox-related types.
 
-use std::{borrow::Cow, str::from_utf8};
+use alloc::{borrow::Cow, string::String, vec::Vec};
+use core::str::from_utf8;
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -284,7 +285,9 @@ pub mod error {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
+    #[cfg(feature = "serde")]
+    use alloc::string::ToString;
 
     use super::*;
     #[cfg(feature = "serde")]

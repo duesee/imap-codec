@@ -1,6 +1,6 @@
 //! Flag-related types.
 
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -79,7 +79,7 @@ impl<'a> TryFrom<&'a str> for Flag<'a> {
 }
 
 impl Display for Flag<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             Flag::Answered => f.write_str("\\Answered"),
             Flag::Deleted => f.write_str("\\Deleted"),
@@ -191,7 +191,7 @@ impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
 }
 
 impl Display for FlagNameAttribute<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             Self::Noinferiors => f.write_str("\\Noinferiors"),
             Self::Noselect => f.write_str("\\Noselect"),

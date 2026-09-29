@@ -35,12 +35,18 @@
 //! ```
 
 #[cfg(feature = "tag_generator")]
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{
+use alloc::format;
+use alloc::{
     borrow::Cow,
+    string::String,
+    vec,
+    vec::{IntoIter, Vec},
+};
+#[cfg(feature = "tag_generator")]
+use core::sync::atomic::{AtomicUsize, Ordering};
+use core::{
     fmt::{Debug, Display, Formatter},
     str::from_utf8,
-    vec::IntoIter,
 };
 
 #[cfg(feature = "arbitrary")]
@@ -113,7 +119,7 @@ pub struct Atom<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
 impl Debug for Atom<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "Atom({:?})", self.0)
     }
 }
@@ -228,7 +234,7 @@ impl AsRef<str> for Atom<'_> {
 }
 
 impl Display for Atom<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
@@ -263,7 +269,7 @@ pub struct AtomExt<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
 impl Debug for AtomExt<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "AtomExt({:?})", self.0)
     }
 }
@@ -543,11 +549,11 @@ where
 
 // We want a more readable `Debug` implementation.
 impl Debug for Literal<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
         impl Debug for BStr<'_> {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
                 write!(
                     f,
                     "b\"{}\"",
@@ -763,7 +769,7 @@ pub enum LiteralMode {
 pub struct Quoted<'a>(pub(crate) Cow<'a, str>);
 
 impl Debug for Quoted<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "Quoted({:?})", self.0)
     }
 }
@@ -1061,7 +1067,7 @@ pub struct Tag<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
 impl Debug for Tag<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "Tag({:?})", self.0)
     }
 }
@@ -1233,13 +1239,13 @@ pub struct Text<'a>(pub(crate) Cow<'a, str>);
 
 // We want a slightly more dense `Debug` implementation.
 impl Debug for Text<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "Text({:?})", self.0)
     }
 }
 
 impl Display for Text<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "{}", self.0.as_ref())
     }
 }
@@ -1534,7 +1540,7 @@ impl<T, const N: usize> Debug for VecN<T, N>
 where
     T: Debug,
 {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         self.0.fmt(f)?;
         match N {
             0 => write!(f, "*"),
@@ -1631,7 +1637,10 @@ impl<T> From<(T, T)> for Vec2<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::from_utf8;
+    use alloc::borrow::ToOwned;
+    #[cfg(feature = "serde")]
+    use alloc::string::ToString;
+    use core::str::from_utf8;
     #[cfg(feature = "tag_generator")]
     use std::{collections::BTreeSet, thread, time::Duration};
 

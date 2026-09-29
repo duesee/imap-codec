@@ -1,6 +1,6 @@
 //! Error-related types.
 
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 use thiserror::Error;
 
@@ -13,7 +13,7 @@ pub struct ValidationError {
 }
 
 impl Display for ValidationError {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "Validation failed: {}", self.kind)
     }
 }

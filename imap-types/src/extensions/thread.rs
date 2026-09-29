@@ -1,4 +1,5 @@
-use std::{
+use alloc::{vec, vec::Vec};
+use core::{
     fmt::{Display, Formatter},
     num::NonZeroU32,
 };
@@ -27,7 +28,7 @@ pub enum Thread {
 }
 
 impl Display for Thread {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         let empty_answers: Vec<Thread> = vec![];
 
         write!(f, "(")?;
@@ -78,7 +79,7 @@ impl Display for Thread {
     }
 }
 
-fn write_prefix(f: &mut Formatter, prefix: &Vec1<NonZeroU32>) -> std::fmt::Result {
+fn write_prefix(f: &mut Formatter, prefix: &Vec1<NonZeroU32>) -> core::fmt::Result {
     let (head, tail) = prefix.as_ref().split_first().unwrap();
 
     write!(f, "{head}")?;
@@ -156,7 +157,7 @@ impl<'a> From<Atom<'a>> for ThreadingAlgorithm<'a> {
 }
 
 impl Display for ThreadingAlgorithm<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         f.write_str(match self {
             ThreadingAlgorithm::OrderedSubject => "ORDEREDSUBJECT",
             ThreadingAlgorithm::References => "REFERENCES",

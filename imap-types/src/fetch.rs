@@ -1,8 +1,9 @@
 //! Fetch-related types.
 
+use alloc::{vec, vec::Vec};
 #[cfg(feature = "ext_condstore_qresync")]
-use std::num::NonZeroU64;
-use std::{
+use core::num::NonZeroU64;
+use core::{
     fmt::{Display, Formatter},
     num::NonZeroU32,
 };
@@ -49,7 +50,7 @@ impl Macro {
 }
 
 impl Display for Macro {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Macro::All => "ALL",
             Macro::Fast => "FAST",
