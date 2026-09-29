@@ -21,6 +21,7 @@ starttls = ["imap-codec/starttls"]
 # IMAP Extensions
 ext_condstore_qresync = ["imap-codec/ext_condstore_qresync"]
 ext_id = ["imap-codec/ext_id"]
+ext_list_extended = ["imap-codec/ext_list_extended"]
 ext_login_referrals = ["imap-codec/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-codec/ext_mailbox_referrals"]
 ext_metadata = ["imap-codec/ext_metadata"]
@@ -39,6 +40,7 @@ ext = [
     # TODO: Disabled due to #633
     #"ext_condstore_qresync",
     "ext_id",
+    #"ext_list_extended",
     #"ext_login_referrals",
     #"ext_mailbox_referrals",
     "ext_metadata",

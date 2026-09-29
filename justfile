@@ -61,6 +61,7 @@ cargo_hack mode: install_cargo_hack
         starttls,\
         ext_condstore_qresync,\
         ext_id,\
+        ext_list_extended,\
         ext_login_referrals,\
         ext_mailbox_referrals,\
         ext_metadata,\
@@ -95,6 +96,7 @@ cargo_hack mode: install_cargo_hack
         starttls,\
         ext_condstore_qresync,\
         ext_id,\
+        ext_list_extended,\
         ext_login_referrals,\
         ext_mailbox_referrals,\
         ext_metadata,\
