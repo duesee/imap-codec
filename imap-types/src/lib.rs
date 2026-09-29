@@ -122,6 +122,7 @@
 //! | starttls              | IMAP4rev1 ([RFC 3501]; section 6.2.1)                                                                                        |            |
 //! | ext_condstore_qresync | IMAP Extensions: Quick Flag Changes Resynchronization (CONDSTORE) and Quick Mailbox Resynchronization (QRESYNC) ([RFC 7162]) | Unfinished |
 //! | ext_id                | IMAP4 ID extension ([RFC 2971])                                                                                              | Unfinished |
+//! | ext_list_extended     | IMAP4 LIST Command Extensions ([RFC 5258])                                                                                   | Unfinished |
 //! | ext_login_referrals   | IMAP4 Login Referrals ([RFC 2221])                                                                                           | Unfinished |
 //! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
 //! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
@@ -161,6 +162,7 @@
 //! [RFC 4978]: https://datatracker.ietf.org/doc/html/rfc4978
 //! [RFC 5161]: https://datatracker.ietf.org/doc/html/rfc5161
 //! [RFC 5256]: https://datatracker.ietf.org/doc/html/rfc5256
+//! [RFC 5258]: https://datatracker.ietf.org/doc/html/rfc5258
 //! [RFC 5464]: https://datatracker.ietf.org/doc/html/rfc5464
 //! [RFC 5957]: https://datatracker.ietf.org/doc/html/rfc5957
 //! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851

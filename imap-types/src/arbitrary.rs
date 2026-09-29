@@ -3,6 +3,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
+#[cfg(feature = "ext_list_extended")]
+use crate::extensions::list_extended::TaggedExtComp;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::QuotedUtf8;
 use crate::{
@@ -15,7 +17,7 @@ use crate::{
         Text, Vec1, Vec2,
     },
     datetime::{DateTime, NaiveDate},
-    extensions::{enable::CapabilityEnable, list_extended::TaggedExtComp, quota::Resource},
+    extensions::{enable::CapabilityEnable, quota::Resource},
     flag::{Flag, FlagNameAttribute},
     mailbox::{ListCharString, Mailbox, MailboxOther},
     response::{
@@ -218,6 +220,7 @@ impl<'a> Arbitrary<'a> for CodeOther<'a> {
     }
 }
 
+#[cfg(feature = "ext_list_extended")]
 impl<'a> Arbitrary<'a> for TaggedExtComp<'a> {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         #[cfg(not(feature = "arbitrary_simplified"))]
@@ -227,7 +230,7 @@ impl<'a> Arbitrary<'a> for TaggedExtComp<'a> {
     }
 }
 
-#[cfg(not(feature = "arbitrary_simplified"))]
+#[cfg(all(feature = "ext_list_extended", not(feature = "arbitrary_simplified")))]
 fn arbitrary_tagged_ext_comp_limited<'a>(
     u: &mut Unstructured<'a>,
     depth: u8,
