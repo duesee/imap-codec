@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use alloc::{borrow::Cow, vec, vec::Vec};
 
 #[cfg(not(feature = "quirk_crlf_relaxed"))]
 use abnf_core::streaming::crlf;
@@ -806,7 +806,8 @@ pub(crate) fn uid(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
+    use std::println;
 
     use imap_types::{
         core::Tag,

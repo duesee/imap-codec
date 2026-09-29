@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use abnf_core::streaming::{dquote, sp};
 use imap_types::{
     core::QuotedChar,
@@ -43,7 +45,7 @@ pub(crate) fn list_mailbox(input: &[u8]) -> IMAPResult<&[u8], ListMailbox> {
             //   * contain ASCII-only characters, i.e., `from_utf8` will return `Ok`.
             //   * are valid according to `ListCharString::verify()`, i.e., `unvalidated` is safe.
             ListMailbox::Token(ListCharString::unvalidated(
-                std::str::from_utf8(bytes).unwrap(),
+                core::str::from_utf8(bytes).unwrap(),
             ))
         }),
         map(string, ListMailbox::String),

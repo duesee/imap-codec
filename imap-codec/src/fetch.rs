@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use core::num::NonZeroU32;
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -359,6 +359,8 @@ pub(crate) fn header_fld_name(input: &[u8]) -> IMAPResult<&[u8], AString> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use imap_types::{
         body::{BasicFields, Body, BodyStructure, SpecificFields},
         core::{IString, NString},

@@ -1,4 +1,4 @@
-use std::io::Write;
+use core::fmt;
 
 use abnf_core::streaming::sp;
 use imap_types::{
@@ -88,7 +88,7 @@ pub(crate) fn sort_key(input: &[u8]) -> IMAPResult<&[u8], SortKey> {
 }
 
 impl EncodeIntoContext for SortCriterion {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         if self.reverse {
             ctx.write_all(b"REVERSE ")?;
         }

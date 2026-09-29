@@ -9,7 +9,7 @@
 //!
 //! Have a look at the [parse_command](https://github.com/duesee/imap-codec/blob/main/imap-codec/examples/parse_command.rs) example to see how a real-world application could decode IMAP.
 
-use std::{
+use core::{
     num::{ParseIntError, TryFromIntError},
     str::Utf8Error,
 };
@@ -401,7 +401,11 @@ impl Decoder for IdleDoneCodec {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use alloc::vec;
+    #[cfg(feature = "ext_condstore_qresync")]
+    use alloc::vec::Vec;
+    use core::num::NonZeroU32;
+    use std::dbg;
 
     use imap_types::{
         command::{Command, CommandBody},
@@ -454,7 +458,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = GreetingCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -538,7 +542,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = CommandCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -627,7 +631,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = AuthenticateDataCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -658,7 +662,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = IdleDoneCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {
@@ -750,7 +754,7 @@ mod tests {
 
         for (test, expected) in tests {
             let got = ResponseCodec::default().decode(test);
-            dbg!((std::str::from_utf8(test).unwrap(), &expected, &got));
+            dbg!((core::str::from_utf8(test).unwrap(), &expected, &got));
             assert_eq!(expected, got);
 
             {

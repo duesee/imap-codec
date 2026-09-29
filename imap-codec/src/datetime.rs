@@ -185,7 +185,7 @@ fn digit_1_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
             // # Safety
             //
             // `bytes` is always UTF-8.
-            std::str::from_utf8(bytes).unwrap()
+            core::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u8>,
     )(input)
@@ -197,7 +197,7 @@ fn digit_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
             // # Safety
             //
             // `bytes` is always UTF-8.
-            std::str::from_utf8(bytes).unwrap()
+            core::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u8>,
     )(input)
@@ -209,7 +209,7 @@ fn digit_4(input: &[u8]) -> IMAPResult<&[u8], u16> {
             // # Safety
             //
             // `bytes` is always UTF-8.
-            std::str::from_utf8(bytes).unwrap()
+            core::str::from_utf8(bytes).unwrap()
         }),
         str::parse::<u16>,
     )(input)
@@ -217,7 +217,8 @@ fn digit_4(input: &[u8]) -> IMAPResult<&[u8], u16> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::from_utf8;
+    use core::str::from_utf8;
+    use std::{eprintln, println};
 
     use super::*;
     use crate::testing::known_answer_test_encode;

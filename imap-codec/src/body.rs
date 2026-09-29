@@ -1,3 +1,5 @@
+use alloc::{boxed::Box, vec, vec::Vec};
+
 use abnf_core::streaming::sp;
 use imap_types::{
     body::{
@@ -597,7 +599,8 @@ pub(crate) fn media_text(input: &[u8]) -> IMAPResult<&[u8], IString> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
+    use std::{dbg, println};
 
     use imap_types::{
         core::{Literal, Quoted},

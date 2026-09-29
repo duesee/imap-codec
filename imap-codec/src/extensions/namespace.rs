@@ -1,6 +1,7 @@
 //! The IMAP NAMESPACE Extension
 
-use std::io::Write;
+use alloc::vec::Vec;
+use core::fmt::{self, Write};
 
 use abnf_core::streaming::{dquote, sp};
 use imap_types::{
@@ -119,7 +120,7 @@ fn namespace_response_extension(input: &[u8]) -> IMAPResult<&[u8], NamespaceResp
 }
 
 impl EncodeIntoContext for Namespace<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         write!(ctx, "(")?;
         self.prefix.encode_ctx(ctx)?;
         write!(ctx, " ")?;
@@ -144,7 +145,7 @@ impl EncodeIntoContext for Namespace<'_> {
 }
 
 impl EncodeIntoContext for NamespaceResponseExtension<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         write!(ctx, " ")?;
         self.key.encode_ctx(ctx)?;
 
@@ -160,7 +161,7 @@ impl EncodeIntoContext for NamespaceResponseExtension<'_> {
     }
 }
 
-pub fn encode_namespaces(ctx: &mut EncodeContext, list: &Namespaces<'_>) -> std::io::Result<()> {
+pub fn encode_namespaces(ctx: &mut EncodeContext, list: &Namespaces<'_>) -> fmt::Result {
     if list.is_empty() {
         ctx.write_all(b"NIL")
     } else {

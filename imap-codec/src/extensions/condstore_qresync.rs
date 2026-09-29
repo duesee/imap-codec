@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use core::num::NonZeroU64;
 
 use abnf_core::streaming::sp;
 #[cfg(feature = "ext_condstore_qresync")]
@@ -140,7 +140,7 @@ pub(crate) fn entry_type_req(input: &[u8]) -> IMAPResult<&[u8], EntryTypeReq> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
 
     use imap_types::{
         core::Vec1,

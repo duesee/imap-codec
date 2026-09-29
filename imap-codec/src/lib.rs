@@ -102,12 +102,17 @@
 //! [IMAP4rev1]: https://tools.ietf.org/html/rfc3501
 //! [parse_command]: https://github.com/duesee/imap-codec/blob/main/examples/parse_command.rs
 
+#![no_std]
 // TODO(#660)
 #![allow(unknown_lints)]
 #![allow(mismatched_lifetime_syntaxes)]
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+
+extern crate alloc;
+#[cfg(test)]
+extern crate std;
 
 // Test examples from repository root README.
 #[doc = include_str!("../../README.md")]

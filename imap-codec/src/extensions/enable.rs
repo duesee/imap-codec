@@ -6,7 +6,7 @@
 // command-any   =/ "ENABLE" 1*(SP capability)
 // response-data =/ "*" SP enable-data CRLF
 
-use std::io::Write;
+use core::fmt::{self, Write};
 
 use abnf_core::streaming::sp;
 use imap_types::{command::CommandBody, extensions::enable::CapabilityEnable, response::Data};
@@ -67,13 +67,15 @@ pub(crate) fn enable_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
 }
 
 impl EncodeIntoContext for CapabilityEnable<'_> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> std::io::Result<()> {
+    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
         write!(ctx, "{self}")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     #[cfg(feature = "ext_utf8")]
     use imap_types::extensions::utf8::Utf8Kind;
     use imap_types::{command::Command, core::Atom, extensions::enable::CapabilityEnable};

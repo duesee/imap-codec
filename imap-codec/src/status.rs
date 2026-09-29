@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use abnf_core::streaming::sp;
 use imap_types::status::{StatusDataItem, StatusDataItemName};
 use nom::{
@@ -104,7 +106,9 @@ fn status_att_val(input: &[u8]) -> IMAPResult<&[u8], StatusDataItem> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    #[cfg(feature = "ext_status_size")]
+    use alloc::vec;
+    use core::num::NonZeroU32;
 
     #[cfg(feature = "ext_status_size")]
     use imap_types::{

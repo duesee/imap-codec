@@ -5,6 +5,8 @@
 // command_any ::= "CAPABILITY" / "LOGOUT" / "NOOP" / x_command / id
 // response_data ::= "*" SPACE (resp_cond_state / resp_cond_bye / mailbox_data / message_data / capability_data / id_response)
 
+use alloc::vec::Vec;
+
 use abnf_core::streaming::sp;
 use imap_types::core::{IString, NString};
 use nom::{
@@ -75,6 +77,8 @@ pub(crate) fn id_params_list(input: &[u8]) -> IMAPResult<&[u8], Option<Vec<(IStr
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use imap_types::{
         command::{Command, CommandBody},
         core::{IString, NString},
