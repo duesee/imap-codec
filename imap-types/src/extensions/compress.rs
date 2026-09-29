@@ -10,7 +10,7 @@
 //! * the [`Command`](crate::command::Command) enum with a new variant [`Command::Compress`](crate::command::Command#variant.Compress), and
 //! * the [`Code`](crate::response::Code) enum with a new variant [`Code::CompressionActive`](crate::response::Code#variant.CompressionActive).
 
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -43,7 +43,7 @@ pub enum CompressionAlgorithm {
 }
 
 impl Display for CompressionAlgorithm {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Self::Deflate => "DEFLATE",
         })

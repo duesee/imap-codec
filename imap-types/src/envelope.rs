@@ -1,5 +1,7 @@
 //! Envelope-related types.
 
+use alloc::vec::Vec;
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 use bounded_static_derive::ToStatic;

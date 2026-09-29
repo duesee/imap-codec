@@ -1,7 +1,11 @@
 //! Authentication-related types.
 
-use std::{
+use alloc::{
     borrow::Cow,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
@@ -163,7 +167,7 @@ impl<'a> From<Atom<'a>> for AuthMechanism<'a> {
 }
 
 impl Display for AuthMechanism<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(self.as_ref())
     }
 }

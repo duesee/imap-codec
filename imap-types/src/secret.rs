@@ -3,7 +3,7 @@
 //! This module provides a `Secret<T>` ensuring that sensitive values are not
 //! `Debug`-printed by accident.
 
-use std::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -39,7 +39,7 @@ impl<T> Debug for Secret<T>
 where
     T: Debug,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         #[cfg(not(debug_assertions))]
         return write!(f, "/* REDACTED */");
         #[cfg(debug_assertions)]
@@ -58,6 +58,9 @@ mod tests {
     #[cfg(not(debug_assertions))]
     #[allow(clippy::redundant_clone)]
     fn test_that_secret_is_redacted() {
+        use alloc::{format, vec};
+        use std::println;
+
         use super::Secret;
         use crate::auth::{AuthMechanism, AuthenticateData};
 

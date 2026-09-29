@@ -1,9 +1,7 @@
 //! IMAP4 Binary Content Extension
 
-use std::{
-    borrow::Cow,
-    fmt::{Debug, Formatter},
-};
+use alloc::borrow::Cow;
+use core::fmt::{Debug, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -41,11 +39,11 @@ pub struct Literal8<'a> {
 
 // We want a more readable `Debug` implementation.
 impl Debug for Literal8<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         struct BStr<'a>(&'a Cow<'a, [u8]>);
 
         impl Debug for BStr<'_> {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
                 write!(
                     f,
                     "b\"{}\"",

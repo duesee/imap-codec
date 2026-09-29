@@ -1,6 +1,6 @@
 //! Date and time-related types.
 
-use std::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Formatter};
 
 use bounded_static::{IntoBoundedStatic, ToBoundedStatic};
 use chrono::{Datelike, FixedOffset};
@@ -64,7 +64,7 @@ impl TryFrom<chrono::DateTime<FixedOffset>> for DateTime {
 }
 
 impl Debug for DateTime {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
@@ -134,7 +134,7 @@ impl TryFrom<chrono::NaiveDate> for NaiveDate {
 }
 
 impl Debug for NaiveDate {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
@@ -184,6 +184,10 @@ pub mod error {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "serde")]
+    use alloc::string::ToString;
+    use std::println;
+
     use chrono::{TimeZone, Timelike};
 
     use super::*;

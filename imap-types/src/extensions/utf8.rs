@@ -1,7 +1,5 @@
-use std::{
-    borrow::Cow,
-    fmt::{Debug, Display, Formatter},
-};
+use alloc::{borrow::Cow, string::String};
+use core::fmt::{Debug, Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -22,7 +20,7 @@ pub enum Utf8Kind {
 }
 
 impl Display for Utf8Kind {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         f.write_str(match self {
             Self::Accept => "ACCEPT",
             Self::Only => "ONLY",
@@ -42,7 +40,7 @@ impl Display for Utf8Kind {
 pub struct QuotedUtf8<'a>(pub(crate) Cow<'a, str>);
 
 impl Debug for QuotedUtf8<'_> {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         write!(f, "QuotedUtf8({:?})", self.0)
     }
 }
@@ -122,7 +120,7 @@ impl AsRef<str> for QuotedUtf8<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use alloc::borrow::{Cow, ToOwned};
 
     use super::QuotedUtf8;
     use crate::error::{ValidationError, ValidationErrorKind};

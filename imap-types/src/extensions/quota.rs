@@ -33,10 +33,8 @@
 //!     - [`StatusDataItem::Deleted`](crate::status::StatusDataItem::Deleted)
 //!     - [`StatusDataItem::DeletedStorage`](crate::status::StatusDataItem::DeletedStorage)
 
-use std::{
-    borrow::Cow,
-    fmt::{Display, Formatter},
-};
+use alloc::{borrow::Cow, string::String, vec::Vec};
+use core::fmt::{Display, Formatter};
 
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
@@ -207,7 +205,7 @@ impl<'a> From<Atom<'a>> for Resource<'a> {
 }
 
 impl Display for Resource<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Self::Storage => "STORAGE",
             Self::Message => "MESSAGE",
