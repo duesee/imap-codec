@@ -217,13 +217,25 @@ pub(crate) fn body_fields(input: &[u8]) -> IMAPResult<&[u8], BasicFields> {
 ///                  ")" / nil
 /// ```
 pub(crate) fn body_fld_param(input: &[u8]) -> IMAPResult<&[u8], Vec<(IString, IString)>> {
+    #[cfg(not(feature = "quirk_body_fld_param_value_nil"))]
+    let value = string;
+
+    #[cfg(feature = "quirk_body_fld_param_value_nil")]
+    let value = alt((
+        string,
+        map(nil, |_| {
+            log::warn!("Rectified NIL body-fld-param value to empty string");
+            IString::try_from("").unwrap()
+        }),
+    ));
+
     let mut parser = alt((
         delimited(
             tag(b"("),
             // Quirk: See https://github.com/emersion/go-imap/issues/557
             separated_list0(
                 sp,
-                map(tuple((string, sp, string)), |(key, _, value)| (key, value)),
+                map(tuple((string, sp, value)), |(key, _, value)| (key, value)),
             ),
             tag(b")"),
         ),
@@ -594,7 +606,11 @@ mod tests {
     };
 
     use super::*;
-    use crate::testing::{kat_inverse_response, known_answer_test_encode};
+    use crate::{
+        ResponseCodec,
+        decode::Decoder,
+        testing::{kat_inverse_response, known_answer_test_encode},
+    };
 
     #[test]
     fn test_parse_media_basic() {
@@ -788,6 +804,50 @@ mod tests {
             assert_eq!(body_fld_octets(b"-0)").unwrap().1, 0);
             assert_eq!(body_fld_octets(b"-1)").unwrap().1, 0);
             assert_eq!(body_fld_octets(b"-999999)").unwrap().1, 0);
+        }
+    }
+
+    #[test]
+    fn test_body_fld_param_nil_quirk() {
+        let input = b"(\"boundary\" NIL \"charset\" \"utf-8\"))";
+
+        #[cfg(not(feature = "quirk_body_fld_param_value_nil"))]
+        assert!(body_fld_param(input).is_err());
+
+        #[cfg(feature = "quirk_body_fld_param_value_nil")]
+        assert_eq!(
+            body_fld_param(input).unwrap(),
+            (
+                &b")"[..],
+                vec![
+                    (
+                        IString::try_from("boundary").unwrap(),
+                        IString::try_from("").unwrap(),
+                    ),
+                    (
+                        IString::try_from("charset").unwrap(),
+                        IString::try_from("utf-8").unwrap(),
+                    ),
+                ]
+            )
+        );
+    }
+
+    /// Reproducer from a Mail.ru `FETCH` response.
+    #[test]
+    fn test_body_fld_param_nil_quirk_mailru_fetch() {
+        let input = b"* 2010 FETCH (UID 154395 FLAGS (\\Seen) ENVELOPE (\"Fri, 17 Apr 2026 14:15:28 +0000\" \"subject\" ((\"name\" NIL \"local\" \"example.org\")) NIL NIL ((\"\" NIL \"local\" \"example.org\")) NIL NIL NIL \"<id@example.org>\") BODYSTRUCTURE ((\"text\" \"plain\" (\"charset\" \"US-ASCII\") NIL NIL \"8bit\" 7078 0 NIL NIL NIL NIL)(\"text\" \"html\" (\"charset\" \"utf-8\") NIL NIL \"quoted-printable\" 37865 0 NIL NIL NIL NIL) \"alternative\" (\"boundary\" NIL)))\r\n";
+
+        let got = ResponseCodec::default().decode(input);
+
+        #[cfg(not(feature = "quirk_body_fld_param_value_nil"))]
+        assert!(got.is_err());
+
+        #[cfg(feature = "quirk_body_fld_param_value_nil")]
+        {
+            let (remaining, response) = got.unwrap();
+            assert!(remaining.is_empty());
+            assert!(matches!(response, Response::Data(Data::Fetch { .. })));
         }
     }
 }
