@@ -6,6 +6,8 @@ pub mod compress;
 pub mod condstore_qresync;
 pub mod enable;
 pub mod idle;
+#[cfg(feature = "ext_list_extended")]
+pub mod list_extended;
 #[cfg(feature = "ext_metadata")]
 pub mod metadata;
 pub mod r#move;

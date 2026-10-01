@@ -3,6 +3,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
+#[cfg(feature = "ext_list_extended")]
+use crate::extensions::list_extended::TaggedExtComp;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::QuotedUtf8;
 use crate::{
@@ -216,6 +218,46 @@ impl<'a> Arbitrary<'a> for CodeOther<'a> {
         // `CodeOther` is a fallback and should usually not be created.
         Ok(CodeOther::unvalidated(b"IMAP-CODEC-CODE-OTHER>".as_ref()))
     }
+}
+
+#[cfg(feature = "ext_list_extended")]
+impl<'a> Arbitrary<'a> for TaggedExtComp<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_tagged_ext_comp_limited(u, 3);
+        #[cfg(feature = "arbitrary_simplified")]
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+}
+
+#[cfg(all(feature = "ext_list_extended", not(feature = "arbitrary_simplified")))]
+fn arbitrary_tagged_ext_comp_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<TaggedExtComp<'a>> {
+    // At the recursion limit, only the non-recursive `Single` alternative.
+    if depth == 0 {
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+
+    Ok(match u.int_in_range(0u8..=2)? {
+        // astring
+        0 => TaggedExtComp::Single(AString::arbitrary(u)?),
+        // tagged-ext-comp *(SP tagged-ext-comp) -- at least two components.
+        1 => {
+            let len = u.arbitrary_len::<AString>()?.clamp(2, 3);
+            let mut items = Vec::with_capacity(len);
+
+            for _ in 0..len {
+                items.push(arbitrary_tagged_ext_comp_limited(u, depth - 1)?);
+            }
+
+            TaggedExtComp::Multi(Vec2::try_from(items).unwrap())
+        }
+        // "(" tagged-ext-comp ")"
+        2 => TaggedExtComp::Group(Box::new(arbitrary_tagged_ext_comp_limited(u, depth - 1)?)),
+        _ => unreachable!(),
+    })
 }
 
 impl<'a> Arbitrary<'a> for SearchKey<'a> {
