@@ -215,11 +215,11 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
             MessageDataItem::Rfc822,
         ),
         map(
-            preceded(tag_no_case(b"BODYSTRUCTURE "), body(8)),
+            preceded(tag_no_case(b"BODYSTRUCTURE "), body(16)),
             MessageDataItem::BodyStructure,
         ),
         map(
-            preceded(tag_no_case(b"BODY "), body(8)),
+            preceded(tag_no_case(b"BODY "), body(16)),
             MessageDataItem::Body,
         ),
         map(
@@ -368,6 +368,25 @@ mod tests {
 
     use super::*;
     use crate::testing::known_answer_test_encode;
+
+    #[test]
+    fn test_parse_body_structure_forwarded_twice() {
+        // A message forwarded as an attachment twice, each time with a cover note.
+        let text = r#"("TEXT" "PLAIN" NIL NIL NIL "7BIT" 1 1)"#;
+        let html = r#"("TEXT" "HTML" NIL NIL NIL "7BIT" 1 1)"#;
+        let pdf = r#"("APPLICATION" "PDF" NIL NIL NIL "BASE64" 1)"#;
+        let envelope = "(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)";
+        let message = |body: String| {
+            format!(r#"("MESSAGE" "RFC822" NIL NIL NIL "7BIT" 1 {envelope} {body} 1)"#)
+        };
+
+        let original = format!(r#"(({text}{html} "ALTERNATIVE"){pdf} "MIXED")"#);
+        let forwarded = format!(r#"({text}{} "MIXED")"#, message(original));
+        let forwarded_twice = format!(r#"({text}{} "MIXED")"#, message(forwarded));
+
+        let input = format!("BODYSTRUCTURE {forwarded_twice}|");
+        assert!(msg_att_static(input.as_bytes()).is_ok());
+    }
 
     #[test]
     fn test_encode_message_data_item_name() {

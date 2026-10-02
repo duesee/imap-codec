@@ -70,7 +70,7 @@ fn body_type_1part_limited(
         }));
     }
 
-    let body_type_msg = |input| body_type_msg_limited(input, 8);
+    let body_type_msg = |input| body_type_msg_limited(input, remaining_recursions);
 
     let mut parser = tuple((
         alt((body_type_msg, body_type_text, body_type_basic)),
@@ -658,6 +658,28 @@ mod tests {
     #[test]
     fn test_body_rec() {
         let _ = body(8)(str::repeat("(", 1_000_000).as_bytes());
+    }
+
+    #[test]
+    fn test_body_rec_message() {
+        // `depth` message/rfc822 parts, each encapsulating the next.
+        let nested = |depth: usize| {
+            let message = r#"("MESSAGE" "RFC822" NIL NIL NIL "7BIT" 1 (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL) "#;
+            let text = r#"("TEXT" "PLAIN" NIL NIL NIL "7BIT" 1 1)"#;
+            format!("{}{}{}", message.repeat(depth), text, " 1)".repeat(depth))
+        };
+
+        // Encapsulated messages must count against the same limit as multiparts.
+        assert!(body(8)(nested(3).as_bytes()).is_ok());
+        assert!(matches!(
+            body(8)(nested(4).as_bytes()),
+            Err(nom::Err::Failure(IMAPParseError {
+                kind: IMAPErrorKind::RecursionLimitExceeded,
+                ..
+            }))
+        ));
+
+        let _ = body(8)(nested(100_000).as_bytes());
     }
 
     #[test]
