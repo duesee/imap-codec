@@ -48,6 +48,46 @@ pub enum TaggedExtComp<'a> {
     Group(Box<TaggedExtComp<'a>>),
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> Arbitrary<'a> for TaggedExtComp<'a> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        #[cfg(not(feature = "arbitrary_simplified"))]
+        return arbitrary_tagged_ext_comp_limited(u, 3);
+        #[cfg(feature = "arbitrary_simplified")]
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+}
+
+#[cfg(all(feature = "arbitrary", not(feature = "arbitrary_simplified")))]
+fn arbitrary_tagged_ext_comp_limited<'a>(
+    u: &mut Unstructured<'a>,
+    depth: u8,
+) -> arbitrary::Result<TaggedExtComp<'a>> {
+    // At the recursion limit, only the non-recursive `Single` alternative.
+    if depth == 0 {
+        return Ok(TaggedExtComp::Single(AString::arbitrary(u)?));
+    }
+
+    Ok(match u.int_in_range(0u8..=2)? {
+        // astring
+        0 => TaggedExtComp::Single(AString::arbitrary(u)?),
+        // tagged-ext-comp *(SP tagged-ext-comp) -- at least two components.
+        1 => {
+            let len = u.arbitrary_len::<AString>()?.clamp(2, 3);
+            let mut items = Vec::with_capacity(len);
+
+            for _ in 0..len {
+                items.push(arbitrary_tagged_ext_comp_limited(u, depth - 1)?);
+            }
+
+            TaggedExtComp::Multi(Vec2::try_from(items).unwrap())
+        }
+        // "(" tagged-ext-comp ")"
+        2 => TaggedExtComp::Group(Box::new(arbitrary_tagged_ext_comp_limited(u, depth - 1)?)),
+        _ => unreachable!(),
+    })
+}
+
 /// The value of a generic `mbox-list-extended-item` (`tagged-ext-val`).
 ///
 /// ```abnf
