@@ -5,6 +5,10 @@
 //! This module provides the extended data items (`CHILDINFO`, and generic
 //! vendor/standard items) returned in `LIST` responses.
 
+use alloc::boxed::Box;
+#[cfg(all(feature = "arbitrary", not(feature = "arbitrary_simplified")))]
+use alloc::vec::Vec;
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::{Arbitrary, Unstructured};
 use bounded_static_derive::ToStatic;
