@@ -88,11 +88,11 @@ ext_within = ["imap-types/ext_within"]
 # </Forward to imap-types>
 
 [dependencies]
-abnf-core = "0.6.0"
+abnf-core = "0.6.1"
 base64 = { version = "0.23", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 imap-types = { version = "2.0.0-alpha.7", path = "../imap-types", default-features = false }
-nom = { version = "7", default-features = false }
+nom = { version = "7", default-features = false, features = ["alloc"] }
 log = { version = "0.4.31", default-features = false }
 
 [package.metadata.docs.rs]
