@@ -9,8 +9,10 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_list_extended")]
+use crate::core::Vec1;
 use crate::{
-    core::{AString, IString, Vec1, impl_try_from},
+    core::{AString, IString, impl_try_from},
     error::{ValidationError, ValidationErrorKind},
     mailbox::error::MailboxOtherError,
     utils::indicators::is_list_char,
@@ -145,6 +147,7 @@ impl TryFrom<String> for ListMailbox<'_> {
 ///
 /// [`Single`]: MboxOrPat::Single
 /// [`Multi`]: MboxOrPat::Multi
+#[cfg(feature = "ext_list_extended")]
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
@@ -157,12 +160,14 @@ pub enum MboxOrPat<'a> {
     Multi(Vec1<ListMailbox<'a>>),
 }
 
+#[cfg(feature = "ext_list_extended")]
 impl<'a> From<ListMailbox<'a>> for MboxOrPat<'a> {
     fn from(mailbox: ListMailbox<'a>) -> Self {
         MboxOrPat::Single(mailbox)
     }
 }
 
+#[cfg(feature = "ext_list_extended")]
 impl<'a> TryFrom<&'a str> for MboxOrPat<'a> {
     type Error = ValidationError;
 
@@ -171,6 +176,7 @@ impl<'a> TryFrom<&'a str> for MboxOrPat<'a> {
     }
 }
 
+#[cfg(feature = "ext_list_extended")]
 impl TryFrom<String> for MboxOrPat<'_> {
     type Error = ValidationError;
 
@@ -333,7 +339,11 @@ pub mod error {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{borrow::Cow, string::ToString, vec};
+    use alloc::borrow::Cow;
+    #[cfg(any(feature = "serde", feature = "ext_list_extended"))]
+    use alloc::string::ToString;
+    #[cfg(feature = "ext_list_extended")]
+    use alloc::vec;
 
     use super::*;
     #[cfg(feature = "serde")]
@@ -415,6 +425,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "ext_list_extended")]
     #[test]
     fn test_conversion_mbox_or_pat() {
         assert_eq!(
