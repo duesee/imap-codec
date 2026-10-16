@@ -1,8 +1,8 @@
 [package]
 name = "imap-types"
 description = "Misuse-resistant data structures for IMAP"
-keywords = ["email", "imap", "types"]
-categories = ["email", "data-structures", "network-programming"]
+keywords = ["email", "imap", "types", "no-std"]
+categories = ["email", "data-structures", "network-programming", "no-std"]
 version = "2.0.0-alpha.7"
 authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
 repository = "https://github.com/duesee/imap-codec"
