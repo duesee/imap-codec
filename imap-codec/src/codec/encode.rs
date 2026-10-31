@@ -1173,6 +1173,16 @@ impl EncodeIntoContext for MessageDataItemName<'_> {
             }
             #[cfg(feature = "ext_condstore_qresync")]
             MessageDataItemName::ModSeq => ctx.write_all(b"MODSEQ"),
+            #[cfg(feature = "ext_gmail")]
+            MessageDataItemName::GmailMessageId => ctx.write_all(b"X-GM-MSGID"),
+            #[cfg(feature = "ext_gmail")]
+            MessageDataItemName::GmailThreadId => ctx.write_all(b"X-GM-THRID"),
+            #[cfg(feature = "ext_gmail")]
+            MessageDataItemName::GmailLabels => ctx.write_all(b"X-GM-LABELS"),
+            #[cfg(feature = "ext_objectid")]
+            MessageDataItemName::EmailId => ctx.write_all(b"EMAILID"),
+            #[cfg(feature = "ext_objectid")]
+            MessageDataItemName::ThreadId => ctx.write_all(b"THREADID"),
         }
     }
 }
@@ -1794,6 +1804,16 @@ impl EncodeIntoContext for MessageDataItem<'_> {
             }
             #[cfg(feature = "ext_condstore_qresync")]
             Self::ModSeq(value) => write!(ctx, "MODSEQ ({value})"),
+            #[cfg(feature = "ext_gmail")]
+            Self::GmailMessageId(id) => write!(ctx, "X-GM-MSGID {id}"),
+            #[cfg(feature = "ext_gmail")]
+            Self::GmailThreadId(id) => write!(ctx, "X-GM-THRID {id}"),
+            #[cfg(feature = "ext_gmail")]
+            Self::GmailLabels(labels) => crate::extensions::gmail::encode_gmail_labels(labels, ctx),
+            #[cfg(feature = "ext_objectid")]
+            Self::EmailId(id) => crate::extensions::objectid::encode_email_id(id, ctx),
+            #[cfg(feature = "ext_objectid")]
+            Self::ThreadId(id) => crate::extensions::objectid::encode_thread_id(id, ctx),
         }
     }
 }
