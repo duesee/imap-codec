@@ -60,12 +60,14 @@ cargo_hack mode: install_cargo_hack
         --group-features \
         starttls,\
         ext_condstore_qresync,\
+        ext_gmail,\
         ext_id,\
         ext_list_extended,\
         ext_login_referrals,\
         ext_mailbox_referrals,\
         ext_metadata,\
         ext_namespace,\
+        ext_objectid,\
         ext_status_size,\
         ext_utf8,\
         ext_within \
@@ -95,12 +97,14 @@ cargo_hack mode: install_cargo_hack
         --group-features \
         starttls,\
         ext_condstore_qresync,\
+        ext_gmail,\
         ext_id,\
         ext_list_extended,\
         ext_login_referrals,\
         ext_mailbox_referrals,\
         ext_metadata,\
         ext_namespace,\
+        ext_objectid,\
         ext_status_size,\
         ext_utf8,\
         ext_within\

@@ -14,6 +14,10 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_gmail")]
+use crate::extensions::gmail::GmailLabel;
+#[cfg(feature = "ext_objectid")]
+use crate::extensions::objectid::ObjectId;
 use crate::{
     body::BodyStructure,
     core::{AString, NString, NString8, Vec1},
@@ -244,6 +248,36 @@ pub enum MessageDataItemName<'a> {
 
     #[cfg(feature = "ext_condstore_qresync")]
     ModSeq,
+
+    /// ```imap
+    /// X-GM-MSGID
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailMessageId,
+
+    /// ```imap
+    /// X-GM-THRID
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailThreadId,
+
+    /// ```imap
+    /// X-GM-LABELS
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailLabels,
+
+    /// ```imap
+    /// EMAILID
+    /// ```
+    #[cfg(feature = "ext_objectid")]
+    EmailId,
+
+    /// ```imap
+    /// THREADID
+    /// ```
+    #[cfg(feature = "ext_objectid")]
+    ThreadId,
 }
 
 /// Message data item.
@@ -384,6 +418,48 @@ pub enum MessageDataItem<'a> {
 
     #[cfg(feature = "ext_condstore_qresync")]
     ModSeq(NonZeroU64),
+
+    /// Gmail's message ID, the same in every label the message has.
+    ///
+    /// ```imap
+    /// X-GM-MSGID 1278455344230334865
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailMessageId(u64),
+
+    /// Gmail's thread ID.
+    ///
+    /// ```imap
+    /// X-GM-THRID 1266894439832287888
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailThreadId(u64),
+
+    /// The message's Gmail labels.
+    ///
+    /// ```imap
+    /// X-GM-LABELS (\Inbox \Sent Important "Muy Importante")
+    /// ```
+    #[cfg(feature = "ext_gmail")]
+    GmailLabels(Vec<GmailLabel<'a>>),
+
+    /// The message's RFC 8474 email ID, stable across moves and UIDVALIDITY
+    /// changes.
+    ///
+    /// ```imap
+    /// EMAILID (M6d99ac3275bb4e)
+    /// ```
+    #[cfg(feature = "ext_objectid")]
+    EmailId(ObjectId<'a>),
+
+    /// The message's RFC 8474 thread ID; `None` when the server doesn't
+    /// thread (`THREADID NIL`).
+    ///
+    /// ```imap
+    /// THREADID (T64b478a75b7ea9de)
+    /// ```
+    #[cfg(feature = "ext_objectid")]
+    ThreadId(Option<ObjectId<'a>>),
 }
 
 /// A part specifier is either a part number or one of the following:

@@ -5,6 +5,8 @@ pub mod compress;
 #[cfg(feature = "ext_condstore_qresync")]
 pub mod condstore_qresync;
 pub mod enable;
+#[cfg(feature = "ext_gmail")]
+pub mod gmail;
 pub mod idle;
 #[cfg(feature = "ext_list_extended")]
 pub mod list_extended;
@@ -13,6 +15,8 @@ pub mod metadata;
 pub mod r#move;
 #[cfg(feature = "ext_namespace")]
 pub mod namespace;
+#[cfg(feature = "ext_objectid")]
+pub mod objectid;
 pub mod quota;
 pub mod sort;
 pub mod thread;

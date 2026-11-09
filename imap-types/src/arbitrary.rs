@@ -7,6 +7,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
+#[cfg(feature = "ext_objectid")]
+use crate::extensions::objectid::ObjectId;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::QuotedUtf8;
 use crate::{
@@ -66,6 +68,8 @@ macro_rules! impl_arbitrary_try_from_t {
 
 impl_arbitrary_try_from! { Atom<'a>, &str }
 impl_arbitrary_try_from! { AtomExt<'a>, &str }
+#[cfg(feature = "ext_objectid")]
+impl_arbitrary_try_from! { ObjectId<'a>, &str }
 impl_arbitrary_try_from! { Quoted<'a>, &str }
 #[cfg(feature = "ext_utf8")]
 impl_arbitrary_try_from! { QuotedUtf8<'a>, &str }
