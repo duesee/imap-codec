@@ -511,6 +511,13 @@ mod tests {
                 b"".as_ref(),
                 Response::Data(Data::Capability(Vec1::from(Capability::Imap4Rev1))),
             ),
+            (
+                b"* CAPABILITY IMAP4REV1 IMAP4REV2\r\n".as_ref(),
+                b"".as_ref(),
+                Response::Data(
+                    Data::capability(vec![Capability::Imap4Rev1, Capability::Imap4Rev2]).unwrap(),
+                ),
+            ),
             #[cfg(feature = "ext_status_size")]
             (
                 b"* CAPABILITY IMAP4REV1 STATUS=SIZE\r\n".as_ref(),
