@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * BINARY
   * METADATA
 * Implemented `AuthenticateData::Cancel`
+* Added `Capability::Imap4Rev2` (RFC 9051)
 * Implemented `AuthMechanism::ScramSha3_512{,Plus}`
 * Implemented more common traits for types
   * Thanks, @jakoschiko!

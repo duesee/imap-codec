@@ -1053,6 +1053,8 @@ impl<'a> CodeOther<'a> {
 #[non_exhaustive]
 pub enum Capability<'a> {
     Imap4Rev1,
+    /// See RFC 9051.
+    Imap4Rev2,
     Auth(AuthMechanism<'a>),
     LoginDisabled,
     #[cfg(feature = "starttls")]
@@ -1126,6 +1128,7 @@ impl Display for Capability<'_> {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match self {
             Self::Imap4Rev1 => write!(f, "IMAP4REV1"),
+            Self::Imap4Rev2 => write!(f, "IMAP4REV2"),
             Self::Auth(mechanism) => write!(f, "AUTH={mechanism}"),
             Self::LoginDisabled => write!(f, "LOGINDISABLED"),
             #[cfg(feature = "starttls")]
@@ -1208,6 +1211,7 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
 
         match cow.to_ascii_lowercase().as_ref() {
             "imap4rev1" => Self::Imap4Rev1,
+            "imap4rev2" => Self::Imap4Rev2,
             "logindisabled" => Self::LoginDisabled,
             #[cfg(feature = "starttls")]
             "starttls" => Self::StartTls,
@@ -1331,6 +1335,15 @@ mod tests {
     fn test_conversion_data() {
         let _ = Data::capability(vec![Capability::Imap4Rev1]).unwrap();
         let _ = Data::fetch(1, vec![MessageDataItem::Rfc822Size(123)]).unwrap();
+    }
+
+    #[test]
+    fn test_capability_imap4rev2() {
+        assert_eq!(
+            Capability::from(Atom::try_from("IMAP4rev2").unwrap()),
+            Capability::Imap4Rev2,
+        );
+        assert_eq!(Capability::Imap4Rev2.to_string(), "IMAP4REV2");
     }
 
     #[test]
