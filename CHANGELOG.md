@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Increased MSRV to 1.78.
 * Made imap-types `no_std` (requires `alloc`), unless `arbitrary` or `tag_generator` are enabled
 * Made imap-codec `no_std` (requires `alloc`)
+* Added `ResponseCodec::with_body_recursion_limit` to configure the recursion limit of `BODY` and `BODYSTRUCTURE`
 
 ### Changed
 

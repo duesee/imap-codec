@@ -21,9 +21,11 @@ pub struct CommandCodec;
 pub struct AuthenticateDataCodec;
 
 /// Codec for responses.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
-pub struct ResponseCodec;
+pub struct ResponseCodec {
+    body_recursion_limit: usize,
+}
 
 /// Codec for idle dones.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -46,6 +48,21 @@ impl_codec_new!(CommandCodec);
 impl_codec_new!(AuthenticateDataCodec);
 impl_codec_new!(ResponseCodec);
 impl_codec_new!(IdleDoneCodec);
+
+impl Default for ResponseCodec {
+    fn default() -> Self {
+        Self {
+            body_recursion_limit: 8,
+        }
+    }
+}
+
+impl ResponseCodec {
+    pub fn with_body_recursion_limit(mut self, limit: usize) -> Self {
+        self.body_recursion_limit = limit;
+        self
+    }
+}
 
 #[cfg(test)]
 mod tests {

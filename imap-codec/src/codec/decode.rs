@@ -351,7 +351,7 @@ impl Decoder for ResponseCodec {
         &self,
         input: &'a [u8],
     ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'static>> {
-        match response(input) {
+        match response(input, self.body_recursion_limit) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(ResponseDecodeError::Incomplete),
             Err(nom::Err::Error(error) | nom::Err::Failure(error)) => match error {

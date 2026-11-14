@@ -249,7 +249,9 @@ pub(crate) fn resp_cond_bye(input: &[u8]) -> IMAPResult<&[u8], (Option<Code>, Te
 // ----- response -----
 
 /// `response = *(continue-req / response-data) response-done`
-pub(crate) fn response(input: &[u8]) -> IMAPResult<&[u8], Response> {
+pub(crate) fn response(input: &[u8], body_recursion_limit: usize) -> IMAPResult<&[u8], Response> {
+    let response_data = |input| response_data(input, body_recursion_limit);
+
     // Divert from standard here for better usability.
     // response_data already contains the bye response, thus
     // response_done could also be response_tagged.
@@ -331,7 +333,12 @@ pub(crate) fn continue_req(input: &[u8]) -> IMAPResult<&[u8], CommandContinuatio
 ///                    id_response ; (See RFC 2971)
 ///                  ) CRLF
 /// ```
-pub(crate) fn response_data(input: &[u8]) -> IMAPResult<&[u8], Response> {
+pub(crate) fn response_data(
+    input: &[u8],
+    body_recursion_limit: usize,
+) -> IMAPResult<&[u8], Response> {
+    let message_data = |input| message_data(input, body_recursion_limit);
+
     delimited(
         tag(b"* "),
         alt((
@@ -416,12 +423,14 @@ pub(crate) fn response_fatal(input: &[u8]) -> IMAPResult<&[u8], Status> {
 ///
 /// expunged-resp = "VANISHED" [SP "(EARLIER)"] SP known-uids
 /// ```
-pub(crate) fn message_data(input: &[u8]) -> IMAPResult<&[u8], Data> {
+pub(crate) fn message_data(input: &[u8], body_recursion_limit: usize) -> IMAPResult<&[u8], Data> {
     #[derive(Clone)]
     enum TmpData<'a> {
         Expunge,
         Fetch(Vec1<MessageDataItem<'a>>),
     }
+
+    let msg_att = |input| msg_att(input, body_recursion_limit);
 
     alt((
         map(
@@ -599,8 +608,8 @@ mod tests {
     #[cfg(feature = "ext_condstore_qresync")]
     #[test]
     fn test_parse_response_vanished_with_leading_seq_rejected() {
-        assert!(response_data(b"* 5 VANISHED 1:3\r\n").is_err());
-        assert!(response_data(b"* 5 VANISHED (EARLIER) 1:3\r\n").is_err());
+        assert!(response_data(b"* 5 VANISHED 1:3\r\n", 8).is_err());
+        assert!(response_data(b"* 5 VANISHED (EARLIER) 1:3\r\n", 8).is_err());
     }
 
     #[test]
@@ -815,7 +824,7 @@ mod tests {
         ];
 
         for test in tests {
-            assert!(response(test).is_err());
+            assert!(response(test, 8).is_err());
         }
     }
 
@@ -839,25 +848,25 @@ mod tests {
 
     #[test]
     fn test_parse_resp_space_quirk() {
-        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0)\r\n").is_ok());
-        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0)  \r\n").is_err());
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0)\r\n", 8).is_ok());
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0)  \r\n", 8).is_err());
 
         #[cfg(not(feature = "quirk_trailing_space_status"))]
-        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_err());
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n", 8).is_err());
 
         #[cfg(feature = "quirk_trailing_space_status")]
-        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n").is_ok());
+        assert!(response_data(b"* STATUS INBOX (MESSAGES 100 UNSEEN 0) \r\n", 8).is_ok());
     }
 
     #[test]
     fn test_quirk_trailing_space_capability() {
-        assert!(response_data(b"* CAPABILITY IMAP4REV1\r\n").is_ok());
-        assert!(response_data(b"* CAPABILITY IMAP4REV1  \r\n").is_err());
+        assert!(response_data(b"* CAPABILITY IMAP4REV1\r\n", 8).is_ok());
+        assert!(response_data(b"* CAPABILITY IMAP4REV1  \r\n", 8).is_err());
 
         #[cfg(not(feature = "quirk_trailing_space_capability"))]
-        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n").is_err());
+        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n", 8).is_err());
 
         #[cfg(feature = "quirk_trailing_space_capability")]
-        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n").is_ok());
+        assert!(response_data(b"* CAPABILITY IMAP4REV1 \r\n", 8).is_ok());
     }
 }
