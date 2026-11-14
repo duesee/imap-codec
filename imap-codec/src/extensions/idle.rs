@@ -102,10 +102,22 @@ mod tests {
             (b"done".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
             (b"done\r".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
             // Failed
-            (b"donee\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b" done\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b"done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b" done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
+            (
+                b"donee\r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 4 }),
+            ),
+            (
+                b" done\r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"done \r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 4 }),
+            ),
+            (
+                b" done \r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 0 }),
+            ),
         ];
 
         for (test, expected) in tests {

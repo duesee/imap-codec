@@ -1258,7 +1258,7 @@ mod tests {
         assert_eq!(
             fragmentizer.decode_message(&response_codec),
             Err(DecodeMessageError::DecodingFailure(
-                ResponseDecodeError::Failed
+                ResponseDecodeError::Failed { offset: 3 }
             )),
         );
 

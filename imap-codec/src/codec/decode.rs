@@ -22,7 +22,10 @@ use imap_types::{
     extensions::idle::IdleDone,
     response::{Greeting, Response},
 };
-use nom::error::{ErrorKind, FromExternalError, ParseError};
+use nom::{
+    InputLength,
+    error::{ErrorKind, FromExternalError, ParseError},
+};
 
 use crate::{
     AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
@@ -38,7 +41,6 @@ pub(crate) type IMAPResult<'a, I, O> = Result<(I, O), nom::Err<IMAPParseError<'a
 /// An extended version of [`nom::error::Error`].
 #[derive(Debug)]
 pub(crate) struct IMAPParseError<'a, I> {
-    #[allow(unused)]
     pub input: I,
     pub kind: IMAPErrorKind<'a>,
 }
@@ -60,7 +62,7 @@ pub(crate) enum IMAPErrorKind<'a> {
     Nom(#[allow(dead_code)] ErrorKind),
 }
 
-impl<I> ParseError<I> for IMAPParseError<'_, I> {
+impl<I: InputLength> ParseError<I> for IMAPParseError<'_, I> {
     fn from_error_kind(input: I, kind: ErrorKind) -> Self {
         Self {
             input,
@@ -68,10 +70,18 @@ impl<I> ParseError<I> for IMAPParseError<'_, I> {
         }
     }
 
-    fn append(input: I, kind: ErrorKind, _: Self) -> Self {
-        Self {
-            input,
-            kind: IMAPErrorKind::Nom(kind),
+    // Keep the inner error (like `nom::error::Error` does), so that the
+    // reported input points to where parsing stopped.
+    fn append(_: I, _: ErrorKind, other: Self) -> Self {
+        other
+    }
+
+    // Keep the error of the alternative that got furthest.
+    fn or(self, other: Self) -> Self {
+        if self.input.input_len() < other.input.input_len() {
+            self
+        } else {
+            other
         }
     }
 }
@@ -142,7 +152,10 @@ pub enum GreetingDecodeError {
     Incomplete,
 
     /// Decoding failed.
-    Failed,
+    Failed {
+        /// Offset into the input at which decoding failed.
+        offset: usize,
+    },
 }
 
 impl IntoStatic for GreetingDecodeError {
@@ -209,7 +222,10 @@ pub enum CommandDecodeError<'a> {
     },
 
     /// Decoding failed.
-    Failed,
+    Failed {
+        /// Offset into the input at which decoding failed.
+        offset: usize,
+    },
 }
 
 impl IntoStatic for CommandDecodeError<'_> {
@@ -225,7 +241,7 @@ impl IntoStatic for CommandDecodeError<'_> {
                     mode,
                 }
             }
-            CommandDecodeError::Failed => CommandDecodeError::Failed,
+            CommandDecodeError::Failed { offset } => CommandDecodeError::Failed { offset },
         }
     }
 }
@@ -237,7 +253,10 @@ pub enum AuthenticateDataDecodeError {
     Incomplete,
 
     /// Decoding failed.
-    Failed,
+    Failed {
+        /// Offset into the input at which decoding failed.
+        offset: usize,
+    },
 }
 
 impl IntoStatic for AuthenticateDataDecodeError {
@@ -268,7 +287,10 @@ pub enum ResponseDecodeError {
     },
 
     /// Decoding failed.
-    Failed,
+    Failed {
+        /// Offset into the input at which decoding failed.
+        offset: usize,
+    },
 }
 
 impl IntoStatic for ResponseDecodeError {
@@ -286,7 +308,10 @@ pub enum IdleDoneDecodeError {
     Incomplete,
 
     /// Decoding failed.
-    Failed,
+    Failed {
+        /// Offset into the input at which decoding failed.
+        offset: usize,
+    },
 }
 
 impl IntoStatic for IdleDoneDecodeError {
@@ -310,7 +335,11 @@ impl Decoder for GreetingCodec {
         match greeting(input) {
             Ok((rem, grt)) => Ok((rem, grt)),
             Err(nom::Err::Incomplete(_)) => Err(GreetingDecodeError::Incomplete),
-            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => Err(GreetingDecodeError::Failed),
+            Err(nom::Err::Failure(error)) | Err(nom::Err::Error(error)) => {
+                Err(GreetingDecodeError::Failed {
+                    offset: input.len().saturating_sub(error.input.len()),
+                })
+            }
         }
     }
 }
@@ -336,9 +365,13 @@ impl Decoder for CommandCodec {
                     length,
                     mode,
                 }),
-                _ => Err(CommandDecodeError::Failed),
+                _ => Err(CommandDecodeError::Failed {
+                    offset: input.len().saturating_sub(error.input.len()),
+                }),
             },
-            Err(nom::Err::Error(_)) => Err(CommandDecodeError::Failed),
+            Err(nom::Err::Error(error)) => Err(CommandDecodeError::Failed {
+                offset: input.len().saturating_sub(error.input.len()),
+            }),
         }
     }
 }
@@ -359,7 +392,9 @@ impl Decoder for ResponseCodec {
                     kind: IMAPErrorKind::Literal { length, .. },
                     ..
                 } => Err(ResponseDecodeError::LiteralFound { length }),
-                _ => Err(ResponseDecodeError::Failed),
+                _ => Err(ResponseDecodeError::Failed {
+                    offset: input.len().saturating_sub(error.input.len()),
+                }),
             },
         }
     }
@@ -376,8 +411,10 @@ impl Decoder for AuthenticateDataCodec {
         match authenticate_data(input) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(AuthenticateDataDecodeError::Incomplete),
-            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => {
-                Err(AuthenticateDataDecodeError::Failed)
+            Err(nom::Err::Failure(error)) | Err(nom::Err::Error(error)) => {
+                Err(AuthenticateDataDecodeError::Failed {
+                    offset: input.len().saturating_sub(error.input.len()),
+                })
             }
         }
     }
@@ -394,7 +431,11 @@ impl Decoder for IdleDoneCodec {
         match idle_done(input) {
             Ok((rem, rsp)) => Ok((rem, rsp)),
             Err(nom::Err::Incomplete(_)) => Err(IdleDoneDecodeError::Incomplete),
-            Err(nom::Err::Failure(_)) | Err(nom::Err::Error(_)) => Err(IdleDoneDecodeError::Failed),
+            Err(nom::Err::Failure(error)) | Err(nom::Err::Error(error)) => {
+                Err(IdleDoneDecodeError::Failed {
+                    offset: input.len().saturating_sub(error.input.len()),
+                })
+            }
         }
     }
 }
@@ -452,8 +493,14 @@ mod tests {
             (b"* OK .".as_ref(), Err(GreetingDecodeError::Incomplete)),
             (b"* OK .\r".as_ref(), Err(GreetingDecodeError::Incomplete)),
             // Failed
-            (b"**".as_ref(), Err(GreetingDecodeError::Failed)),
-            (b"* NO x\r\n".as_ref(), Err(GreetingDecodeError::Failed)),
+            (
+                b"**".as_ref(),
+                Err(GreetingDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"* NO x\r\n".as_ref(),
+                Err(GreetingDecodeError::Failed { offset: 2 }),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -536,8 +583,14 @@ mod tests {
                 Err(CommandDecodeError::Incomplete),
             ),
             // Failed
-            (b"* noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
-            (b"A  noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
+            (
+                b"* noop\r\n".as_ref(),
+                Err(CommandDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"A  noop\r\n".as_ref(),
+                Err(CommandDecodeError::Failed { offset: 2 }),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -613,19 +666,19 @@ mod tests {
             // Failed
             (
                 b"VGVzdA== \r\n".as_ref(),
-                Err(AuthenticateDataDecodeError::Failed),
+                Err(AuthenticateDataDecodeError::Failed { offset: 8 }),
             ),
             (
                 b" VGVzdA== \r\n".as_ref(),
-                Err(AuthenticateDataDecodeError::Failed),
+                Err(AuthenticateDataDecodeError::Failed { offset: 0 }),
             ),
             (
                 b" V GVzdA== \r\n".as_ref(),
-                Err(AuthenticateDataDecodeError::Failed),
+                Err(AuthenticateDataDecodeError::Failed { offset: 0 }),
             ),
             (
                 b" V GVzdA= \r\n".as_ref(),
-                Err(AuthenticateDataDecodeError::Failed),
+                Err(AuthenticateDataDecodeError::Failed { offset: 0 }),
             ),
         ];
 
@@ -654,10 +707,22 @@ mod tests {
             (b"done".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
             (b"done\r".as_ref(), Err(IdleDoneDecodeError::Incomplete)),
             // Failed
-            (b"donee\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b" done\r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b"done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
-            (b" done \r\n".as_ref(), Err(IdleDoneDecodeError::Failed)),
+            (
+                b"donee\r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 4 }),
+            ),
+            (
+                b" done\r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"done \r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 4 }),
+            ),
+            (
+                b" done \r\n".as_ref(),
+                Err(IdleDoneDecodeError::Failed { offset: 0 }),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -745,11 +810,22 @@ mod tests {
             // Failed
             (
                 b"*  search 1 2 3\r\n".as_ref(),
-                Err(ResponseDecodeError::Failed),
+                Err(ResponseDecodeError::Failed { offset: 2 }),
             ),
             #[cfg(not(feature = "quirk_trailing_space_search"))]
-            (b"* search \r\n".as_ref(), Err(ResponseDecodeError::Failed)),
-            (b"A search\r\n".as_ref(), Err(ResponseDecodeError::Failed)),
+            (
+                b"* search \r\n".as_ref(),
+                Err(ResponseDecodeError::Failed { offset: 8 }),
+            ),
+            (
+                b"A search\r\n".as_ref(),
+                Err(ResponseDecodeError::Failed { offset: 2 }),
+            ),
+            // Seven nested multiparts exceed the body recursion limit.
+            (
+                b"* 7 FETCH (UID 34 BODYSTRUCTURE ((((((((\"text\" \"plain\" (\"charset\" \"us-ascii\") NIL NIL \"7bit\" 2 1) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n".as_ref(),
+                Err(ResponseDecodeError::Failed { offset: 40 }),
+            ),
         ];
 
         for (test, expected) in tests {

@@ -141,7 +141,7 @@ mod test {
                 assert!(
                     matches!(
                         ResponseCodec::default().decode(&response),
-                        Err(ResponseDecodeError::Failed)
+                        Err(ResponseDecodeError::Failed { .. })
                     ),
                     "{response:?}"
                 );

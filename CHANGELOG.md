@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Renamed `NonEmptyVec` to `Vec1`
 * Updated `CONTRIBUTING.md`
 * Changed serde representation for many `enum`s from externally to adjacently tagged
+* Report the input offset at which decoding failed in `*DecodeError::Failed`
+  * Breaking API change: `Failed` is now `Failed { offset }` in all `*DecodeError`s
+  * Match `Failed { .. }` to ignore the offset
 
 ### Fixed
 
