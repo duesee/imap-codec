@@ -123,7 +123,12 @@ pub(crate) fn fetch_att(input: &[u8]) -> IMAPResult<&[u8], MessageDataItemName> 
 ///           (msg-att-dynamic / msg-att-static) *(SP (msg-att-dynamic / msg-att-static))
 ///           ")"
 /// ```
-pub(crate) fn msg_att(input: &[u8]) -> IMAPResult<&[u8], Vec1<MessageDataItem>> {
+pub(crate) fn msg_att(
+    input: &[u8],
+    body_recursion_limit: usize,
+) -> IMAPResult<&[u8], Vec1<MessageDataItem>> {
+    let msg_att_static = |input| msg_att_static(input, body_recursion_limit);
+
     delimited(
         tag(b"("),
         map(
@@ -188,7 +193,10 @@ pub(crate) fn msg_att_dynamic(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem
 /// ```
 ///
 /// Note: MUST NOT change for a message
-pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem> {
+pub(crate) fn msg_att_static(
+    input: &[u8],
+    body_recursion_limit: usize,
+) -> IMAPResult<&[u8], MessageDataItem> {
     alt((
         map(
             preceded(tag_no_case(b"ENVELOPE "), envelope),
@@ -215,11 +223,11 @@ pub(crate) fn msg_att_static(input: &[u8]) -> IMAPResult<&[u8], MessageDataItem>
             MessageDataItem::Rfc822,
         ),
         map(
-            preceded(tag_no_case(b"BODYSTRUCTURE "), body(8)),
+            preceded(tag_no_case(b"BODYSTRUCTURE "), body(body_recursion_limit)),
             MessageDataItem::BodyStructure,
         ),
         map(
-            preceded(tag_no_case(b"BODY "), body(8)),
+            preceded(tag_no_case(b"BODY "), body(body_recursion_limit)),
             MessageDataItem::Body,
         ),
         map(
@@ -369,7 +377,11 @@ mod tests {
     };
 
     use super::*;
-    use crate::testing::known_answer_test_encode;
+    use crate::{
+        ResponseCodec,
+        decode::{Decoder, ResponseDecodeError},
+        testing::known_answer_test_encode,
+    };
 
     #[test]
     fn test_parse_body_structure_forwarded_twice() {
@@ -387,7 +399,52 @@ mod tests {
         let forwarded_twice = format!(r#"({text}{} "MIXED")"#, message(forwarded));
 
         let input = format!("BODYSTRUCTURE {forwarded_twice}|");
-        assert!(msg_att_static(input.as_bytes()).is_ok());
+        assert!(msg_att_static(input.as_bytes(), 8).is_ok());
+    }
+
+    #[test]
+    fn test_parse_body_structure_nested_multiparts() {
+        let input = b"* 7 FETCH (UID 34 BODYSTRUCTURE ((((((((\"text\" \"plain\" (\"charset\" \"us-ascii\") NIL NIL \"7bit\" 2 1) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n";
+
+        assert_eq!(
+            ResponseCodec::default().decode(input),
+            Err(ResponseDecodeError::Failed)
+        );
+        assert!(
+            ResponseCodec::default()
+                .with_body_recursion_limit(16)
+                .decode(input)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn test_parse_body_structure_nesting_limit() {
+        let text = r#"("TEXT" "PLAIN" NIL NIL NIL "7BIT" 1 1)"#;
+        let message = r#"("MESSAGE" "RFC822" NIL NIL NIL "7BIT" 1 (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL) "#;
+
+        for (codec, limit) in [
+            (ResponseCodec::default(), 8),
+            (ResponseCodec::default().with_body_recursion_limit(16), 16),
+        ] {
+            for (open, close) in [("(", r#" "MIXED")"#), (message, " 1)")] {
+                for item in ["BODY", "BODYSTRUCTURE"] {
+                    let nested = |depth: usize| {
+                        format!(
+                            "* 1 FETCH ({item} {}{text}{})\r\n",
+                            open.repeat(depth),
+                            close.repeat(depth)
+                        )
+                    };
+
+                    assert!(codec.decode(nested(limit - 2).as_bytes()).is_ok());
+                    assert_eq!(
+                        codec.decode(nested(limit - 1).as_bytes()),
+                        Err(ResponseDecodeError::Failed)
+                    );
+                }
+            }
+        }
     }
 
     #[test]
