@@ -126,6 +126,7 @@
 //! | ext_login_referrals   | IMAP4 Login Referrals ([RFC 2221])                                                                                           | Unfinished |
 //! | ext_mailbox_referrals | IMAP4 Mailbox Referrals ([RFC 2193])                                                                                         | Unfinished |
 //! | ext_metadata          | The IMAP METADATA Extension ([RFC 5464])                                                                                     | Unfinished |
+//! | ext_notify            | The IMAP NOTIFY Extension ([RFC 5465])                                                                                       | Unfinished |
 //!
 //! STARTTLS is not an IMAP extension but feature-gated because it [should be avoided](https://nostarttls.secvuln.info/).
 //! For better performance and security, use "implicit TLS", i.e., IMAP-over-TLS on port 993, and don't use STARTTLS at all.
@@ -165,6 +166,7 @@
 //! [RFC 5256]: https://datatracker.ietf.org/doc/html/rfc5256
 //! [RFC 5258]: https://datatracker.ietf.org/doc/html/rfc5258
 //! [RFC 5464]: https://datatracker.ietf.org/doc/html/rfc5464
+//! [RFC 5465]: https://datatracker.ietf.org/doc/html/rfc5465
 //! [RFC 5957]: https://datatracker.ietf.org/doc/html/rfc5957
 //! [RFC 6851]: https://datatracker.ietf.org/doc/html/rfc6851
 //! [RFC 7162]: https://datatracker.ietf.org/doc/html/rfc7162

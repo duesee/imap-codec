@@ -25,6 +25,8 @@ use crate::core::{IString, NString};
 use crate::extensions::metadata::{MetadataCode, MetadataResponse};
 #[cfg(feature = "ext_namespace")]
 use crate::extensions::namespace::Namespaces;
+#[cfg(feature = "ext_notify")]
+use crate::extensions::notify::SupportedEvent;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::Utf8Kind;
 #[cfg(feature = "ext_condstore_qresync")]
@@ -892,6 +894,14 @@ pub enum Code<'a> {
     /// Metadata
     Metadata(MetadataCode),
 
+    #[cfg(feature = "ext_notify")]
+    /// The server stopped sending NOTIFY events, as after `NOTIFY NONE` (RFC 5465).
+    NotificationOverflow,
+
+    #[cfg(feature = "ext_notify")]
+    /// NOTIFY asked for an unsupported event; these are the supported ones (RFC 5465).
+    BadEvent(Vec1<SupportedEvent<'a>>),
+
     /// Server does not know how to decode the section's CTE.
     UnknownCte,
 
@@ -1095,6 +1105,9 @@ pub enum Capability<'a> {
     #[cfg(feature = "ext_metadata")]
     /// Server supports (only) server annotations.
     MetadataServer,
+    #[cfg(feature = "ext_notify")]
+    /// IMAP NOTIFY Extension (RFC 5465)
+    Notify,
     /// IMAP4 Binary Content Extension
     Binary,
     /// UIDPLUS extension (RFC 4351)
@@ -1154,6 +1167,8 @@ impl Display for Capability<'_> {
             Self::Metadata => write!(f, "METADATA"),
             #[cfg(feature = "ext_metadata")]
             Self::MetadataServer => write!(f, "METADATA-SERVER"),
+            #[cfg(feature = "ext_notify")]
+            Self::Notify => write!(f, "NOTIFY"),
             Self::Binary => write!(f, "BINARY"),
             Self::UidPlus => write!(f, "UIDPLUS"),
             Self::ListExtended => write!(f, "LIST-EXTENDED"),
@@ -1230,6 +1245,8 @@ impl<'a> From<Atom<'a>> for Capability<'a> {
             "metadata" => Self::Metadata,
             #[cfg(feature = "ext_metadata")]
             "metadata-server" => Self::MetadataServer,
+            #[cfg(feature = "ext_notify")]
+            "notify" => Self::Notify,
             "binary" => Self::Binary,
             "list-extended" => Self::ListExtended,
             "unselect" => Self::Unselect,

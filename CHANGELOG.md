@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * SORT and THREAD
   * BINARY
   * METADATA
+  * NOTIFY (`ext_notify`)
 * Implemented `AuthenticateData::Cancel`
 * Implemented `AuthMechanism::ScramSha3_512{,Plus}`
 * Implemented more common traits for types

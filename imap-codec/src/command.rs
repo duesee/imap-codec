@@ -40,6 +40,8 @@ use crate::extensions::id::id;
 use crate::extensions::metadata::{getmetadata, setmetadata};
 #[cfg(feature = "ext_namespace")]
 use crate::extensions::namespace::namespace_command;
+#[cfg(feature = "ext_notify")]
+use crate::extensions::notify::notify;
 use crate::{
     auth::auth_type,
     core::{astring, base64, literal, tag_imap},
@@ -143,7 +145,8 @@ pub(crate) fn command_any(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
 ///                getquotaroot / ; RFC 9208
 ///                setquota /     ; RFC 9208
 ///                setmetadata /  ; RFC 5464
-///                getmetadata    ; RFC 5464
+///                getmetadata /  ; RFC 5464
+///                notify         ; RFC 5465
 /// ```
 ///
 /// Note: Valid only in Authenticated or Selected state
@@ -172,6 +175,8 @@ pub(crate) fn command_auth(input: &[u8]) -> IMAPResult<&[u8], CommandBody> {
         getmetadata,
         #[cfg(feature = "ext_namespace")]
         namespace_command,
+        #[cfg(feature = "ext_notify")]
+        notify,
     ))(input)
 }
 

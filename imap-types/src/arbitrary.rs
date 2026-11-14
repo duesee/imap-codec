@@ -7,6 +7,8 @@ use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
+#[cfg(feature = "ext_notify")]
+use crate::extensions::notify::EventOther;
 #[cfg(feature = "ext_utf8")]
 use crate::extensions::utf8::QuotedUtf8;
 use crate::{
@@ -75,6 +77,8 @@ impl_arbitrary_try_from! { ListCharString<'a>, &str }
 impl_arbitrary_try_from! { QuotedChar, char }
 impl_arbitrary_try_from! { Mailbox<'a>, &str }
 impl_arbitrary_try_from! { Capability<'a>, Atom<'a> }
+#[cfg(feature = "ext_notify")]
+impl_arbitrary_try_from! { EventOther<'a>, Atom<'a> }
 impl_arbitrary_try_from! { Flag<'a>, &str }
 #[cfg(feature = "ext_condstore_qresync")]
 impl_arbitrary_try_from! { AttributeFlag<'a>, &str }

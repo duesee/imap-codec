@@ -18,6 +18,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::{IString, NString};
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::{Entry, EntryValue, GetMetadataOption};
+#[cfg(feature = "ext_notify")]
+use crate::extensions::notify::Notify;
 use crate::{
     auth::AuthMechanism,
     command::error::{AppendError, CopyError, ListError, LoginError, RenameError},
@@ -1542,6 +1544,13 @@ pub enum CommandBody<'a> {
     /// This extension must only be used when the server advertised support for it sending the NAMESPACE capability.
     /// </div>
     Namespace,
+    #[cfg(feature = "ext_notify")]
+    /// Ask to be told about changes to mailboxes other than the selected one (RFC 5465).
+    ///
+    /// <div class="warning">
+    /// This extension must only be used when the server advertised support for it sending the NOTIFY capability.
+    /// </div>
+    Notify(Notify<'a>),
 }
 
 impl<'a> CommandBody<'a> {
@@ -1848,6 +1857,8 @@ impl<'a> CommandBody<'a> {
             Self::GetMetadata { .. } => "GETMETADATA",
             #[cfg(feature = "ext_namespace")]
             Self::Namespace => "NAMESPACE",
+            #[cfg(feature = "ext_notify")]
+            Self::Notify(_) => "NOTIFY",
         }
     }
 }

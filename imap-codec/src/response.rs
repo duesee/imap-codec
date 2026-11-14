@@ -26,6 +26,8 @@ use nom::{
 use crate::extensions::id::id_response;
 #[cfg(feature = "ext_metadata")]
 use crate::extensions::metadata::metadata_code;
+#[cfg(feature = "ext_notify")]
+use crate::extensions::notify::bad_event;
 use crate::{
     core::{atom, charset, nz_number, tag_imap, text},
     decode::IMAPResult,
@@ -213,6 +215,14 @@ pub(crate) fn resp_text_code(input: &[u8]) -> IMAPResult<&[u8], Code> {
                 Code::Modified,
             ),
             value(Code::Closed, tag_no_case(b"CLOSED")),
+        )),
+        #[cfg(feature = "ext_notify")]
+        alt((
+            value(
+                Code::NotificationOverflow,
+                tag_no_case(b"NOTIFICATIONOVERFLOW"),
+            ),
+            map(bad_event, Code::BadEvent),
         )),
     ))(input)
 }

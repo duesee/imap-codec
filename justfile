@@ -66,6 +66,7 @@ cargo_hack mode: install_cargo_hack
         ext_mailbox_referrals,\
         ext_metadata,\
         ext_namespace,\
+        ext_notify,\
         ext_status_size,\
         ext_utf8,\
         ext_within \
@@ -101,6 +102,7 @@ cargo_hack mode: install_cargo_hack
         ext_mailbox_referrals,\
         ext_metadata,\
         ext_namespace,\
+        ext_notify,\
         ext_status_size,\
         ext_utf8,\
         ext_within\

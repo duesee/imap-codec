@@ -694,6 +694,8 @@ impl EncodeIntoContext for CommandBody<'_> {
             }
             #[cfg(feature = "ext_namespace")]
             &CommandBody::Namespace => ctx.write_all(b"NAMESPACE"),
+            #[cfg(feature = "ext_notify")]
+            CommandBody::Notify(notify) => notify.encode_ctx(ctx),
         }
     }
 }
@@ -1401,6 +1403,14 @@ impl EncodeIntoContext for Code<'_> {
             Code::Metadata(code) => {
                 ctx.write_all(b"METADATA ")?;
                 code.encode_ctx(ctx)
+            }
+            #[cfg(feature = "ext_notify")]
+            Code::NotificationOverflow => ctx.write_all(b"NOTIFICATIONOVERFLOW"),
+            #[cfg(feature = "ext_notify")]
+            Code::BadEvent(names) => {
+                ctx.write_all(b"BADEVENT (")?;
+                join_serializable(names.as_ref(), b" ", ctx)?;
+                ctx.write_all(b")")
             }
             Code::UnknownCte => ctx.write_all(b"UNKNOWN-CTE"),
             Code::AppendUid { uid_validity, uid } => {

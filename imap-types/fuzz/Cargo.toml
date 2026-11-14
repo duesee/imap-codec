@@ -22,6 +22,7 @@ ext_login_referrals = ["imap-types/ext_login_referrals"]
 ext_mailbox_referrals = ["imap-types/ext_mailbox_referrals"]
 ext_metadata = ["imap-types/ext_metadata"]
 ext_namespace = ["imap-types/ext_namespace"]
+ext_notify = ["imap-types/ext_notify"]
 ext_status_size = ["imap-types/ext_status_size"]
 ext_utf8 = ["imap-types/ext_utf8"]
 ext_within = ["imap-types/ext_within"]
@@ -37,6 +38,7 @@ ext = [
     #"ext_mailbox_referrals",
     "ext_metadata",
     "ext_namespace",
+    "ext_notify",
     "ext_status_size",
     "ext_utf8",
     "ext_within",
