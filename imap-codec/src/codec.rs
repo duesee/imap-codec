@@ -230,8 +230,14 @@ mod tests {
             (b"* OK .".as_ref(), Err(GreetingDecodeError::Incomplete)),
             (b"* OK .\r".as_ref(), Err(GreetingDecodeError::Incomplete)),
             // Failed
-            (b"**".as_ref(), Err(GreetingDecodeError::Failed)),
-            (b"* NO x\r\n".as_ref(), Err(GreetingDecodeError::Failed)),
+            (
+                b"**".as_ref(),
+                Err(GreetingDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"* NO x\r\n".as_ref(),
+                Err(GreetingDecodeError::Failed { offset: 2 }),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -280,8 +286,14 @@ mod tests {
                 Err(CommandDecodeError::Incomplete),
             ),
             // Failed
-            (b"* noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
-            (b"A  noop\r\n".as_ref(), Err(CommandDecodeError::Failed)),
+            (
+                b"* noop\r\n".as_ref(),
+                Err(CommandDecodeError::Failed { offset: 0 }),
+            ),
+            (
+                b"A  noop\r\n".as_ref(),
+                Err(CommandDecodeError::Failed { offset: 2 }),
+            ),
         ];
 
         for (test, expected) in tests {
@@ -323,9 +335,12 @@ mod tests {
             // Failed
             (
                 b"*  search 1 2 3\r\n".as_ref(),
-                Err(ResponseDecodeError::Failed),
+                Err(ResponseDecodeError::Failed { offset: 2 }),
             ),
-            (b"A search\r\n".as_ref(), Err(ResponseDecodeError::Failed)),
+            (
+                b"A search\r\n".as_ref(),
+                Err(ResponseDecodeError::Failed { offset: 2 }),
+            ),
         ];
 
         for (test, expected) in tests {

@@ -406,10 +406,10 @@ mod tests {
     fn test_parse_body_structure_nested_multiparts() {
         let input = b"* 7 FETCH (UID 34 BODYSTRUCTURE ((((((((\"text\" \"plain\" (\"charset\" \"us-ascii\") NIL NIL \"7bit\" 2 1) \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\") \"mixed\"))\r\n";
 
-        assert_eq!(
+        assert!(matches!(
             ResponseCodec::default().decode(input),
-            Err(ResponseDecodeError::Failed)
-        );
+            Err(ResponseDecodeError::Failed { .. })
+        ));
         assert!(
             ResponseCodec::default()
                 .with_body_recursion_limit(16)
@@ -438,10 +438,10 @@ mod tests {
                     };
 
                     assert!(codec.decode(nested(limit - 2).as_bytes()).is_ok());
-                    assert_eq!(
+                    assert!(matches!(
                         codec.decode(nested(limit - 1).as_bytes()),
-                        Err(ResponseDecodeError::Failed)
-                    );
+                        Err(ResponseDecodeError::Failed { .. })
+                    ));
                 }
             }
         }
