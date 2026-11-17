@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Made `{DateTime,NaiveDate}::unvalidated` `panic!` in debug on wrong input
 * Mention `panic!` in `unvalidated` documentation
 * Fixed typo in `AuthMechanism` documentation
+* Reject `zone` minutes above 59 in `date-time` (e.g., `+0099` was parsed as `+0139`)
 
 ## [Version 1.0.0] - 2023-08-22
 
