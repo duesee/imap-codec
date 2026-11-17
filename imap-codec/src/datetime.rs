@@ -163,10 +163,16 @@ pub(crate) fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
 /// ```abnf
 /// zone = ("+" / "-") 4DIGIT
 /// ```
+///
+/// Returns `None` when `mm` is not a valid minute (above 59).
 pub(crate) fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;
+
+    if mm > 59 {
+        return Ok((remaining, None));
+    }
 
     let offset = 3600 * (hh as i32) + 60 * (mm as i32);
 
@@ -400,6 +406,9 @@ mod tests {
             b"\" 1-Feb-2020 99:99:99 +0100\"xxx",
             b"\"31-Feb-2020 00:00:00 +0100\"xxx",
             b"\"99-Feb-2020 99:99:99 +0100\"xxx",
+            b"\" 1-Feb-2020 12:34:56 +0060\"xxx",
+            b"\" 1-Feb-2020 12:34:56 +0099\"xxx",
+            b"\" 1-Feb-2020 12:34:56 -0099\"xxx",
         ];
 
         for test in &tests[..5] {
@@ -415,6 +424,9 @@ mod tests {
 
     #[test]
     fn test_zone() {
+        assert_eq!(zone(b"+0060").unwrap().1, None);
+        assert_eq!(zone(b"-0099").unwrap().1, None);
+
         let (rem, val) = zone(b"+0000xxx").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"xxx");
