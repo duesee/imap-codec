@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Mention `panic!` in `unvalidated` documentation
 * Fixed typo in `AuthMechanism` documentation
 * Reject `zone` minutes above 59 in `date-time` (e.g., `+0099` was parsed as `+0139`)
+* Generate valid `DateTime` and `NaiveDate` values in `Arbitrary` (most were rejected, and offsets were never negative)
 
 ## [Version 1.0.0] - 2023-08-22
 
