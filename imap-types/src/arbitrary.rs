@@ -520,15 +520,21 @@ impl<'a> Arbitrary<'a> for DateTime {
                 u.int_in_range(1..=31)?,
             )
             .ok_or(arbitrary::Error::IncorrectFormat)?,
-            chrono::NaiveTime::arbitrary(u)?,
+            chrono::NaiveTime::from_hms_opt(
+                u.int_in_range(0..=23)?,
+                u.int_in_range(0..=59)?,
+                u.int_in_range(0..=59)?,
+            )
+            .ok_or(arbitrary::Error::IncorrectFormat)?,
         );
 
-        let hours = u.int_in_range(0..=23 * 3600)?;
+        let hours = u.int_in_range(0..=23)? * 3600;
         let minutes = u.int_in_range(0..=59)? * 60;
+        let sign = if bool::arbitrary(u)? { -1 } else { 1 };
         // Seconds must be zero due to IMAPs encoding.
 
         DateTime::try_from(
-            FixedOffset::east_opt(hours + minutes)
+            FixedOffset::east_opt(sign * (hours + minutes))
                 .unwrap()
                 .from_local_datetime(&local_datetime)
                 .unwrap(),
@@ -539,8 +545,14 @@ impl<'a> Arbitrary<'a> for DateTime {
 
 impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        NaiveDate::try_from(chrono::NaiveDate::arbitrary(u)?)
-            .map_err(|_| arbitrary::Error::IncorrectFormat)
+        let date = chrono::NaiveDate::from_ymd_opt(
+            u.int_in_range(0..=9999)?,
+            u.int_in_range(1..=12)?,
+            u.int_in_range(1..=31)?,
+        )
+        .ok_or(arbitrary::Error::IncorrectFormat)?;
+
+        NaiveDate::try_from(date).map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 
@@ -549,6 +561,7 @@ mod tests {
     use arbitrary::{Arbitrary, Error, Unstructured};
     use rand::{Rng, SeedableRng, rngs::SmallRng};
 
+    use super::{DateTime, NaiveDate};
     use crate::{
         IntoStatic, ToStatic,
         command::Command,
@@ -597,6 +610,33 @@ mod tests {
                 }
             }
         };
+    }
+
+    #[test]
+    fn test_arbitrary_date_time_and_naive_date() {
+        let mut rng = SmallRng::seed_from_u64(1337);
+        let mut data = [0u8; 64];
+        let (mut date_times, mut negative_offsets, mut naive_dates) = (0, 0, 0);
+
+        for _ in 0..1_000 {
+            rng.fill_bytes(&mut data);
+            if let Ok(date_time) = DateTime::arbitrary(&mut Unstructured::new(&data)) {
+                date_times += 1;
+
+                if date_time.as_ref().offset().local_minus_utc() < 0 {
+                    negative_offsets += 1;
+                }
+            }
+
+            rng.fill_bytes(&mut data);
+            if NaiveDate::arbitrary(&mut Unstructured::new(&data)).is_ok() {
+                naive_dates += 1;
+            }
+        }
+
+        assert!(date_times > 500, "date_times: {date_times}");
+        assert!(negative_offsets > 0, "negative_offsets: {negative_offsets}");
+        assert!(naive_dates > 500, "naive_dates: {naive_dates}");
     }
 
     #[test]
