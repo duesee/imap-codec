@@ -1936,15 +1936,13 @@ mod tests {
     use alloc::{boxed::Box, format, vec};
     use std::println;
 
-    use chrono::DateTime as ChronoDateTime;
-
     use super::*;
     #[cfg(feature = "ext_utf8")]
     use crate::extensions::{enable::CapabilityEnable, utf8::Utf8Kind};
     use crate::{
         auth::AuthMechanism,
         core::{AString, Charset, IString, Literal, LiteralMode, Vec1},
-        datetime::DateTime,
+        datetime::{DateTime, NaiveDate},
         extensions::{binary::Literal8, compress::CompressionAlgorithm},
         fetch::{Macro, MacroOrMessageDataItemNames, MessageDataItemName, Part, Section},
         flag::{Flag, StoreType},
@@ -2009,26 +2007,14 @@ mod tests {
             CommandBody::append(
                 "inbox",
                 vec![],
-                Some(
-                    DateTime::try_from(
-                        ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
-                            .unwrap(),
-                    )
-                    .unwrap(),
-                ),
+                Some(DateTime::new(NaiveDate::new(2003, 7, 1).unwrap(), 10, 52, 37, 120).unwrap()),
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),
             CommandBody::append(
                 "inbox",
                 vec![Flag::Keyword("test".try_into().unwrap())],
-                Some(
-                    DateTime::try_from(
-                        ChronoDateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
-                            .unwrap(),
-                    )
-                    .unwrap(),
-                ),
+                Some(DateTime::new(NaiveDate::new(2003, 7, 1).unwrap(), 10, 52, 37, 120).unwrap()),
                 vec![0xff, 0xff, 0xff],
             )
             .unwrap(),

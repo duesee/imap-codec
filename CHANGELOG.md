@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Made imap-types `no_std` (requires `alloc`), unless `arbitrary` or `tag_generator` are enabled
 * Made imap-codec `no_std` (requires `alloc`)
 * Added `ResponseCodec::with_body_recursion_limit` to configure the recursion limit of `BODY` and `BODYSTRUCTURE`
+* Added `DateTime::new`, `NaiveDate::new` and field accessors (`date`, `hour`, `minute`, `second`, `offset_minutes`, `year`, `month`, `day`)
 
 ### Changed
 
@@ -40,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Renamed `NonEmptyVec` to `Vec1`
 * Updated `CONTRIBUTING.md`
 * Changed serde representation for many `enum`s from externally to adjacently tagged
+* Removed the `chrono` dependency (unmaintained, RUSTSEC-2026-0543)
+  * imap-codec no longer depends on any date library
 
 ### Fixed
 
