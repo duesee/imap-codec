@@ -55,7 +55,6 @@ use core::{
 };
 
 use base64::{Engine, engine::general_purpose::STANDARD as base64};
-use chrono::{DateTime as ChronoDateTime, FixedOffset};
 #[cfg(feature = "ext_condstore_qresync")]
 use imap_types::command::{FetchModifier, SelectParameter, StoreModifier};
 use imap_types::{
@@ -90,7 +89,10 @@ use utils::{List1AttributeValueOrNil, List1OrNil, join_serializable};
 
 #[cfg(feature = "ext_namespace")]
 use crate::extensions::namespace::encode_namespaces;
-use crate::{AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec};
+use crate::{
+    AuthenticateDataCodec, CommandCodec, GreetingCodec, IdleDoneCodec, ResponseCodec,
+    datetime::MONTHS,
+};
 
 /// Encoder.
 ///
@@ -898,7 +900,24 @@ impl EncodeIntoContext for FlagPerm<'_> {
 
 impl EncodeIntoContext for DateTime {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
-        self.as_ref().encode_ctx(ctx)
+        let date = self.date();
+        let offset = self.offset_minutes();
+        let sign = if offset < 0 { '-' } else { '+' };
+        let offset = offset.unsigned_abs();
+
+        write!(
+            ctx,
+            "\"{:02}-{}-{:04} {:02}:{:02}:{:02} {}{:02}{:02}\"",
+            date.day(),
+            MONTHS[usize::from(date.month() - 1)],
+            date.year(),
+            self.hour(),
+            self.minute(),
+            self.second(),
+            sign,
+            offset / 60,
+            offset % 60,
+        )
     }
 }
 
@@ -1080,7 +1099,13 @@ impl EncodeIntoContext for SeqOrUid {
 
 impl EncodeIntoContext for NaiveDate {
     fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
-        write!(ctx, "\"{}\"", self.as_ref().format("%d-%b-%Y"))
+        write!(
+            ctx,
+            "\"{:02}-{}-{:04}\"",
+            self.day(),
+            MONTHS[usize::from(self.month() - 1)],
+            self.year(),
+        )
     }
 }
 
@@ -2034,12 +2059,6 @@ impl EncodeIntoContext for BodyExtension<'_> {
                 ctx.write_all(b")")
             }
         }
-    }
-}
-
-impl EncodeIntoContext for ChronoDateTime<FixedOffset> {
-    fn encode_ctx(&self, ctx: &mut EncodeContext) -> fmt::Result {
-        write!(ctx, "\"{}\"", self.format("%d-%b-%Y %H:%M:%S %z"))
     }
 }
 

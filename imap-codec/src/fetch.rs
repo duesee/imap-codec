@@ -372,7 +372,7 @@ mod tests {
     use imap_types::{
         body::{BasicFields, Body, BodyStructure, SpecificFields},
         core::{IString, NString},
-        datetime::DateTime,
+        datetime::{DateTime, NaiveDate},
         envelope::Envelope,
     };
 
@@ -550,11 +550,7 @@ mod tests {
             (MessageDataItem::Flags(vec![]), b"FLAGS ()"),
             (
                 MessageDataItem::InternalDate(
-                    DateTime::try_from(
-                        chrono::DateTime::parse_from_rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
-                            .unwrap(),
-                    )
-                    .unwrap(),
+                    DateTime::new(NaiveDate::new(2003, 7, 1).unwrap(), 10, 52, 37, 120).unwrap(),
                 ),
                 b"INTERNALDATE \"01-Jul-2003 10:52:37 +0200\"",
             ),

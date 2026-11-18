@@ -3,7 +3,6 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use arbitrary::{Arbitrary, Unstructured};
-use chrono::{FixedOffset, TimeZone};
 
 #[cfg(feature = "ext_condstore_qresync")]
 use crate::extensions::condstore_qresync::AttributeFlag;
@@ -511,33 +510,12 @@ fn arbitrary_body_extension_leaf<'a>(
 
 impl<'a> Arbitrary<'a> for DateTime {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        // Note: `chrono`s `NaiveDate::arbitrary` may `panic!`.
-        //       Thus, we implement this manually here.
-        let local_datetime = chrono::NaiveDateTime::new(
-            chrono::NaiveDate::from_ymd_opt(
-                u.int_in_range(0..=9999)?,
-                u.int_in_range(1..=12)?,
-                u.int_in_range(1..=31)?,
-            )
-            .ok_or(arbitrary::Error::IncorrectFormat)?,
-            chrono::NaiveTime::from_hms_opt(
-                u.int_in_range(0..=23)?,
-                u.int_in_range(0..=59)?,
-                u.int_in_range(0..=59)?,
-            )
-            .ok_or(arbitrary::Error::IncorrectFormat)?,
-        );
-
-        let hours = u.int_in_range(0..=23)? * 3600;
-        let minutes = u.int_in_range(0..=59)? * 60;
-        let sign = if bool::arbitrary(u)? { -1 } else { 1 };
-        // Seconds must be zero due to IMAPs encoding.
-
-        DateTime::try_from(
-            FixedOffset::east_opt(sign * (hours + minutes))
-                .unwrap()
-                .from_local_datetime(&local_datetime)
-                .unwrap(),
+        DateTime::new(
+            NaiveDate::arbitrary(u)?,
+            u.int_in_range(0..=23)?,
+            u.int_in_range(0..=59)?,
+            u.int_in_range(0..=59)?,
+            u.int_in_range(-1439..=1439)?,
         )
         .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
@@ -545,14 +523,12 @@ impl<'a> Arbitrary<'a> for DateTime {
 
 impl<'a> Arbitrary<'a> for NaiveDate {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let date = chrono::NaiveDate::from_ymd_opt(
+        NaiveDate::new(
             u.int_in_range(0..=9999)?,
             u.int_in_range(1..=12)?,
             u.int_in_range(1..=31)?,
         )
-        .ok_or(arbitrary::Error::IncorrectFormat)?;
-
-        NaiveDate::try_from(date).map_err(|_| arbitrary::Error::IncorrectFormat)
+        .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 
@@ -623,7 +599,7 @@ mod tests {
             if let Ok(date_time) = DateTime::arbitrary(&mut Unstructured::new(&data)) {
                 date_times += 1;
 
-                if date_time.as_ref().offset().local_minus_utc() < 0 {
+                if date_time.offset_minutes() < 0 {
                     negative_offsets += 1;
                 }
             }

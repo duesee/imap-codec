@@ -7,7 +7,7 @@ use imap_codec::{
         body::{BasicFields, Body, BodyStructure, SpecificFields},
         command::{Command, CommandBody},
         core::{AString, IString, Literal, NString, Quoted, Tag},
-        datetime::DateTime,
+        datetime::{DateTime, NaiveDate},
         envelope::{Address, Envelope},
         fetch::{Macro, MessageDataItem, MessageDataItemName, Section},
         flag::{Flag, FlagFetch, FlagPerm, StoreResponse, StoreType},
@@ -956,10 +956,7 @@ fn test_transcript_from_rfc() {
                         12,
                         vec![
                             MessageDataItem::Flags(vec![FlagFetch::Flag(Flag::Seen)]),
-                            MessageDataItem::InternalDate(DateTime::try_from(
-                                chrono::DateTime::parse_from_rfc3339("1996-07-17T02:44:25-07:00")
-                                    .unwrap(),
-                            ).unwrap()),
+                            MessageDataItem::InternalDate(DateTime::new(NaiveDate::new(1996, 7, 17).unwrap(), 2, 44, 25, -420).unwrap()),
                             MessageDataItem::Rfc822Size(4286),
                             MessageDataItem::Envelope(Envelope {
                                 date: NString::from(

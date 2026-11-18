@@ -2,9 +2,6 @@ use abnf_core::{
     is_digit,
     streaming::{dquote, sp},
 };
-use chrono::{
-    FixedOffset, LocalResult, NaiveDate as ChronoNaiveDate, NaiveDateTime, NaiveTime, TimeZone,
-};
 use imap_types::datetime::{DateTime, NaiveDate};
 use nom::{
     branch::alt,
@@ -31,10 +28,7 @@ pub(crate) fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
 
     let (remaining, (d, _, m, _, y)) = parser(input)?;
 
-    Ok((
-        remaining,
-        ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into()).map(NaiveDate::unvalidated),
-    ))
+    Ok((remaining, NaiveDate::new(y, m, d).ok()))
 }
 
 /// Day of month.
@@ -45,6 +39,11 @@ pub(crate) fn date_text(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveDate>> {
 pub(crate) fn date_day(input: &[u8]) -> IMAPResult<&[u8], u8> {
     digit_1_2(input)
 }
+
+/// Month names as encoded in `date-month`, indexed by `month - 1`.
+pub(crate) const MONTHS: [&str; 12] = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 /// ```abnf
 /// date-month = "Jan" / "Feb" / "Mar" / "Apr" /
@@ -80,15 +79,14 @@ pub(crate) fn date_year(input: &[u8]) -> IMAPResult<&[u8], u16> {
 /// ```abnf
 /// time = 2DIGIT ":" 2DIGIT ":" 2DIGIT
 /// ```
-pub(crate) fn time(input: &[u8]) -> IMAPResult<&[u8], Option<NaiveTime>> {
+///
+/// Values are not range-checked here, see [`DateTime::new`].
+pub(crate) fn time(input: &[u8]) -> IMAPResult<&[u8], (u8, u8, u8)> {
     let mut parser = tuple((digit_2, tag(b":"), digit_2, tag(b":"), digit_2));
 
     let (remaining, (h, _, m, _, s)) = parser(input)?;
 
-    Ok((
-        remaining,
-        NaiveTime::from_hms_opt(h.into(), m.into(), s.into()),
-    ))
+    Ok((remaining, (h, m, s)))
 }
 
 /// ```abnf
@@ -115,24 +113,16 @@ pub(crate) fn date_time(input: &[u8]) -> IMAPResult<&[u8], DateTime> {
         dquote,
     );
 
-    let (remaining, (d, _, m, _, y, _, time, _, zone)) = parser(input)?;
+    let (remaining, (d, _, m, _, y, _, (hour, minute, second), _, zone)) = parser(input)?;
 
-    let date = ChronoNaiveDate::from_ymd_opt(y.into(), m.into(), d.into());
+    let datetime = zone.and_then(|offset| {
+        let date = NaiveDate::new(y, m, d).ok()?;
+        DateTime::new(date, hour, minute, second, offset).ok()
+    });
 
-    match (date, time, zone) {
-        (Some(date), Some(time), Some(zone)) => {
-            let local_datetime = NaiveDateTime::new(date, time);
-
-            if let LocalResult::Single(datetime) = zone.from_local_datetime(&local_datetime) {
-                Ok((remaining, DateTime::unvalidated(datetime)))
-            } else {
-                Err(nom::Err::Failure(IMAPParseError {
-                    input,
-                    kind: IMAPErrorKind::BadDateTime,
-                }))
-            }
-        }
-        _ => Err(nom::Err::Failure(IMAPParseError {
+    match datetime {
+        Some(datetime) => Ok((remaining, datetime)),
+        None => Err(nom::Err::Failure(IMAPParseError {
             input,
             kind: IMAPErrorKind::BadDateTime,
         })),
@@ -164,8 +154,9 @@ pub(crate) fn date_day_fixed(input: &[u8]) -> IMAPResult<&[u8], u8> {
 /// zone = ("+" / "-") 4DIGIT
 /// ```
 ///
-/// Returns `None` when `mm` is not a valid minute (above 59).
-pub(crate) fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
+/// Returns the offset in minutes east of UTC, or `None` when `mm` is not a
+/// valid minute. Hours are range-checked by [`DateTime::new`].
+pub(crate) fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<i16>> {
     let mut parser = tuple((alt((char('+'), char('-'))), digit_2, digit_2));
 
     let (remaining, (sign, hh, mm)) = parser(input)?;
@@ -174,15 +165,15 @@ pub(crate) fn zone(input: &[u8]) -> IMAPResult<&[u8], Option<FixedOffset>> {
         return Ok((remaining, None));
     }
 
-    let offset = 3600 * (hh as i32) + 60 * (mm as i32);
+    let offset = i16::from(hh) * 60 + i16::from(mm);
 
     let zone = match sign {
-        '+' => FixedOffset::east_opt(offset),
-        '-' => FixedOffset::west_opt(offset),
+        '+' => offset,
+        '-' => -offset,
         _ => unreachable!(),
     };
 
-    Ok((remaining, zone))
+    Ok((remaining, Some(zone)))
 }
 
 fn digit_1_2(input: &[u8]) -> IMAPResult<&[u8], u8> {
@@ -229,24 +220,72 @@ mod tests {
     use super::*;
     use crate::testing::known_answer_test_encode;
 
+    fn date_time_of(y: u16, mo: u8, d: u8, h: u8, mi: u8, s: u8, offset: i16) -> DateTime {
+        DateTime::new(NaiveDate::new(y, mo, d).unwrap(), h, mi, s, offset).unwrap()
+    }
+
+    #[test]
+    fn test_encode_naive_date() {
+        let tests = [
+            (
+                NaiveDate::new(2023, 4, 12).unwrap(),
+                b"\"12-Apr-2023\"".as_ref(),
+            ),
+            (
+                NaiveDate::new(7, 1, 1).unwrap(),
+                b"\"01-Jan-0007\"".as_ref(),
+            ),
+            (
+                NaiveDate::new(9999, 12, 31).unwrap(),
+                b"\"31-Dec-9999\"".as_ref(),
+            ),
+        ];
+
+        for test in tests {
+            known_answer_test_encode(test);
+        }
+    }
+
+    #[test]
+    fn test_date_leap_day() {
+        let (_, val) = date(b"29-Feb-2020").unwrap();
+        assert_eq!(val, NaiveDate::new(2020, 2, 29).ok());
+
+        let (_, val) = date(b"29-Feb-2019").unwrap();
+        assert_eq!(val, None);
+    }
+
+    #[test]
+    fn test_date_time_zone_bounds() {
+        assert!(date_time(b"\" 1-Feb-2020 12:34:56 +2400\"xxx").is_err());
+        assert_eq!(
+            date_time(b"\" 1-Feb-2020 12:34:56 -2359\"xxx").unwrap().1,
+            date_time_of(2020, 2, 1, 12, 34, 56, -1439)
+        );
+    }
+
     #[test]
     fn test_encode_date_time() {
         let tests = [
             (
-                DateTime::try_from(
-                    chrono::DateTime::parse_from_rfc2822("Mon, 7 Feb 1994 21:52:25 -0800 (PST)")
-                        .unwrap(),
-                )
-                .unwrap(),
+                date_time_of(1994, 2, 7, 21, 52, 25, -480),
                 b"\"07-Feb-1994 21:52:25 -0800\"".as_ref(),
             ),
             (
-                DateTime::try_from(
-                    chrono::DateTime::parse_from_rfc2822("Mon, 7 Feb 0000 21:52:25 -0800 (PST)")
-                        .unwrap(),
-                )
-                .unwrap(),
+                date_time_of(0, 2, 7, 21, 52, 25, -480),
                 b"\"07-Feb-0000 21:52:25 -0800\"".as_ref(),
+            ),
+            (
+                date_time_of(2020, 12, 31, 0, 0, 0, 0),
+                b"\"31-Dec-2020 00:00:00 +0000\"".as_ref(),
+            ),
+            (
+                date_time_of(2020, 1, 1, 23, 59, 59, 1439),
+                b"\"01-Jan-2020 23:59:59 +2359\"".as_ref(),
+            ),
+            (
+                date_time_of(2020, 1, 1, 0, 0, 0, -1),
+                b"\"01-Jan-2020 00:00:00 -0001\"".as_ref(),
             ),
         ];
 
@@ -259,34 +298,22 @@ mod tests {
     fn test_date() {
         let (rem, val) = date(b"1-Feb-2020xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(
-            val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
-        );
+        assert_eq!(val, NaiveDate::new(2020, 2, 1).ok());
 
         let (rem, val) = date(b"\"1-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(
-            val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
-        );
+        assert_eq!(val, NaiveDate::new(2020, 2, 1).ok());
 
         let (rem, val) = date(b"\"01-Feb-2020\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(
-            val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
-        );
+        assert_eq!(val, NaiveDate::new(2020, 2, 1).ok());
     }
 
     #[test]
     fn test_date_text() {
         let (rem, val) = date_text(b"1-Feb-2020").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(
-            val,
-            ChronoNaiveDate::from_ymd_opt(2020, 2, 1).map(NaiveDate::unvalidated)
-        );
+        assert_eq!(val, NaiveDate::new(2020, 2, 1).ok());
     }
 
     #[test]
@@ -353,19 +380,19 @@ mod tests {
 
         let (rem, val) = time(b"12:34:56xxx").unwrap();
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, NaiveTime::from_hms_opt(12, 34, 56));
+        assert_eq!(val, (12, 34, 56));
 
         let (rem, val) = time(b"99:99:99 ").unwrap();
         assert_eq!(rem, b" ");
-        assert_eq!(val, NaiveTime::from_hms_opt(99, 99, 99));
+        assert_eq!(val, (99, 99, 99));
 
         let (rem, val) = time(b"12:34:56").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, NaiveTime::from_hms_opt(12, 34, 56));
+        assert_eq!(val, (12, 34, 56));
 
         let (rem, val) = time(b"99:99:99").unwrap();
         assert_eq!(rem, b"");
-        assert_eq!(val, NaiveTime::from_hms_opt(99, 99, 99));
+        assert_eq!(val, (99, 99, 99));
     }
 
     #[test]
@@ -373,18 +400,7 @@ mod tests {
         let (rem, val) = date_time(b"\" 1-Feb-1985 12:34:56 +0100\"xxx").unwrap();
         assert_eq!(rem, b"xxx");
 
-        let local_datetime = NaiveDateTime::new(
-            ChronoNaiveDate::from_ymd_opt(1985, 2, 1).unwrap(),
-            NaiveTime::from_hms_opt(12, 34, 56).unwrap(),
-        );
-
-        let datetime = DateTime::try_from(
-            FixedOffset::east_opt(3600)
-                .unwrap()
-                .from_local_datetime(&local_datetime)
-                .unwrap(),
-        )
-        .unwrap();
+        let datetime = date_time_of(1985, 2, 1, 12, 34, 56, 60);
 
         println!("{val:?} == \n{datetime:?}");
 
@@ -430,26 +446,26 @@ mod tests {
         let (rem, val) = zone(b"+0000xxx").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, FixedOffset::east_opt(0));
+        assert_eq!(val, Some(0));
 
         let (rem, val) = zone(b"+0000").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"");
-        assert_eq!(val, FixedOffset::east_opt(0));
+        assert_eq!(val, Some(0));
 
         let (rem, val) = zone(b"-0205xxx").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"xxx");
-        assert_eq!(val, FixedOffset::west_opt(2 * 3600 + 5 * 60));
+        assert_eq!(val, Some(-(2 * 60 + 5)));
 
         let (rem, val) = zone(b"-1159").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"");
-        assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
+        assert_eq!(val, Some(-(11 * 60 + 59)));
 
         let (rem, val) = zone(b"-1159").unwrap();
         eprintln!("{val:?}");
         assert_eq!(rem, b"");
-        assert_eq!(val, FixedOffset::west_opt(11 * 3600 + 59 * 60));
+        assert_eq!(val, Some(-(11 * 60 + 59)));
     }
 }

@@ -1306,7 +1306,6 @@ version = "2.0.0-alpha.10"
 dependencies = [
  "abnf-core",
  "base64 0.23.1",
- "chrono",
  "imap-types",
  "log",
  "nom 7.1.3",
