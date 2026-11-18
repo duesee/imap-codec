@@ -18,8 +18,9 @@ allow = [
     "Unicode-3.0"
 ]
 
+[advisories]
+ignore = ["RUSTSEC-2026-0543"]
 # Uncomment if imap-codec-bench is not excluded
-# [advisories]
 # ignore = ["RUSTSEC-2024-0379"]
 
 [licenses.private]
