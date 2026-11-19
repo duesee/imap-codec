@@ -158,21 +158,25 @@ pub enum FlagNameAttribute<'a> {
     /// (`\Subscribed`)
     ///
     /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    #[cfg(feature = "ext_list_extended")]
     Subscribed,
 
     /// The mailbox is a remote mailbox. (`\Remote`)
     ///
     /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    #[cfg(feature = "ext_list_extended")]
     Remote,
 
     /// The mailbox has child mailboxes. (`\HasChildren`)
     ///
     /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    #[cfg(feature = "ext_list_extended")]
     HasChildren,
 
     /// The mailbox has no child mailboxes. (`\HasNoChildren`)
     ///
     /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    #[cfg(feature = "ext_list_extended")]
     HasNoChildren,
 
     /// The mailbox name does not refer to an existing mailbox. (`\NonExistent`)
@@ -180,6 +184,7 @@ pub enum FlagNameAttribute<'a> {
     /// Note: `\NonExistent` implies `\Noselect`.
     ///
     /// See [RFC 5258](https://www.rfc-editor.org/rfc/rfc5258).
+    #[cfg(feature = "ext_list_extended")]
     NonExistent,
 
     /// An extension flags.
@@ -199,13 +204,14 @@ pub struct FlagNameAttributeExtension<'a>(Atom<'a>);
 
 impl FlagNameAttribute<'_> {
     pub fn is_selectability(&self) -> bool {
-        matches!(
-            self,
+        match self {
             FlagNameAttribute::Noselect
-                | FlagNameAttribute::Marked
-                | FlagNameAttribute::Unmarked
-                | FlagNameAttribute::NonExistent
-        )
+            | FlagNameAttribute::Marked
+            | FlagNameAttribute::Unmarked => true,
+            #[cfg(feature = "ext_list_extended")]
+            FlagNameAttribute::NonExistent => true,
+            _ => false,
+        }
     }
 }
 
@@ -216,10 +222,15 @@ impl<'a> From<Atom<'a>> for FlagNameAttribute<'a> {
             "noselect" => Self::Noselect,
             "marked" => Self::Marked,
             "unmarked" => Self::Unmarked,
+            #[cfg(feature = "ext_list_extended")]
             "subscribed" => Self::Subscribed,
+            #[cfg(feature = "ext_list_extended")]
             "remote" => Self::Remote,
+            #[cfg(feature = "ext_list_extended")]
             "haschildren" => Self::HasChildren,
+            #[cfg(feature = "ext_list_extended")]
             "hasnochildren" => Self::HasNoChildren,
+            #[cfg(feature = "ext_list_extended")]
             "nonexistent" => Self::NonExistent,
             _ => Self::Extension(FlagNameAttributeExtension(atom)),
         }
@@ -233,10 +244,15 @@ impl Display for FlagNameAttribute<'_> {
             Self::Noselect => f.write_str("\\Noselect"),
             Self::Marked => f.write_str("\\Marked"),
             Self::Unmarked => f.write_str("\\Unmarked"),
+            #[cfg(feature = "ext_list_extended")]
             Self::Subscribed => f.write_str("\\Subscribed"),
+            #[cfg(feature = "ext_list_extended")]
             Self::Remote => f.write_str("\\Remote"),
+            #[cfg(feature = "ext_list_extended")]
             Self::HasChildren => f.write_str("\\HasChildren"),
+            #[cfg(feature = "ext_list_extended")]
             Self::HasNoChildren => f.write_str("\\HasNoChildren"),
+            #[cfg(feature = "ext_list_extended")]
             Self::NonExistent => f.write_str("\\NonExistent"),
             Self::Extension(extension) => write!(f, "\\{}", extension.0),
         }
@@ -262,6 +278,7 @@ pub enum StoreResponse {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "ext_list_extended")]
     use alloc::string::ToString;
 
     use super::*;
@@ -287,6 +304,7 @@ mod tests {
         assert_eq!(flag_name_attribute, FlagNameAttribute::Extension(atom));
     }
 
+    #[cfg(feature = "ext_list_extended")]
     #[test]
     fn test_flagnameattribute_list_extended() {
         // Case-insensitive parsing and canonical rendering of the RFC 5258
