@@ -24,15 +24,9 @@ use crate::{
     error::{ValidationError, ValidationErrorKind},
 };
 
-pub const ONE: NonZeroU32 = match NonZeroU32::new(1) {
-    Some(one) => one,
-    None => panic!(),
-};
-pub const MIN: NonZeroU32 = ONE;
-pub const MAX: NonZeroU32 = match NonZeroU32::new(u32::MAX) {
-    Some(max) => max,
-    None => panic!(),
-};
+pub const ONE: NonZeroU32 = NonZeroU32::MIN;
+pub const MIN: NonZeroU32 = NonZeroU32::MIN;
+pub const MAX: NonZeroU32 = NonZeroU32::MAX;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
