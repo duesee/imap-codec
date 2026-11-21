@@ -9,6 +9,8 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_list_extended")]
+use crate::core::Vec1;
 use crate::{
     core::{AString, IString, impl_try_from},
     error::{ValidationError, ValidationErrorKind},
@@ -128,6 +130,58 @@ impl TryFrom<String> for ListMailbox<'_> {
         }
 
         Ok(ListMailbox::String(s.try_into()?))
+    }
+}
+
+/// The mailbox pattern argument of the extended `LIST` command (`mbox-or-pat`).
+///
+/// ```abnf
+/// mbox-or-pat = list-mailbox / patterns
+/// patterns = "(" list-mailbox *(SP list-mailbox) ")"
+/// ```
+///
+/// A plain (non-extended) `LIST` command always uses the [`Single`] form. The
+/// parenthesized pattern [`Multi`] form requires the `LIST-EXTENDED` extension.
+///
+/// See [RFC 5258, section 3](https://www.rfc-editor.org/rfc/rfc5258#section-3).
+///
+/// [`Single`]: MboxOrPat::Single
+/// [`Multi`]: MboxOrPat::Multi
+#[cfg(feature = "ext_list_extended")]
+#[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
+pub enum MboxOrPat<'a> {
+    /// A single, unparenthesized mailbox pattern.
+    Single(ListMailbox<'a>),
+
+    /// A parenthesized, non-empty list of mailbox patterns.
+    Multi(Vec1<ListMailbox<'a>>),
+}
+
+#[cfg(feature = "ext_list_extended")]
+impl<'a> From<ListMailbox<'a>> for MboxOrPat<'a> {
+    fn from(mailbox: ListMailbox<'a>) -> Self {
+        MboxOrPat::Single(mailbox)
+    }
+}
+
+#[cfg(feature = "ext_list_extended")]
+impl<'a> TryFrom<&'a str> for MboxOrPat<'a> {
+    type Error = ValidationError;
+
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
+        Ok(MboxOrPat::Single(ListMailbox::try_from(s)?))
+    }
+}
+
+#[cfg(feature = "ext_list_extended")]
+impl TryFrom<String> for MboxOrPat<'_> {
+    type Error = ValidationError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Ok(MboxOrPat::Single(ListMailbox::try_from(s)?))
     }
 }
 
@@ -286,8 +340,10 @@ pub mod error {
 #[cfg(test)]
 mod tests {
     use alloc::borrow::Cow;
-    #[cfg(feature = "serde")]
+    #[cfg(any(feature = "serde", feature = "ext_list_extended"))]
     use alloc::string::ToString;
+    #[cfg(feature = "ext_list_extended")]
+    use alloc::vec;
 
     use super::*;
     #[cfg(feature = "serde")]
@@ -367,5 +423,31 @@ mod tests {
             err.to_string(),
             r"Reserved: Please use one of the typed variants"
         );
+    }
+
+    #[cfg(feature = "ext_list_extended")]
+    #[test]
+    fn test_conversion_mbox_or_pat() {
+        assert_eq!(
+            MboxOrPat::try_from("*").unwrap(),
+            MboxOrPat::Single(ListMailbox::try_from("*").unwrap())
+        );
+        assert_eq!(
+            MboxOrPat::try_from("%".to_string()).unwrap(),
+            MboxOrPat::Single(ListMailbox::try_from("%").unwrap())
+        );
+        assert_eq!(
+            MboxOrPat::from(ListMailbox::try_from("foo").unwrap()),
+            MboxOrPat::Single(ListMailbox::try_from("foo").unwrap())
+        );
+
+        let patterns = MboxOrPat::Multi(
+            Vec1::try_from(vec![
+                ListMailbox::try_from("foo").unwrap(),
+                ListMailbox::try_from("bar/%").unwrap(),
+            ])
+            .unwrap(),
+        );
+        assert!(matches!(patterns, MboxOrPat::Multi(_)));
     }
 }
